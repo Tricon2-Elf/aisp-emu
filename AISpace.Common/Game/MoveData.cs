@@ -27,7 +27,7 @@ public class MoveData(Vector3 position, sbyte yaw, byte animation)
         var z = reader.ReadFloat();
         var yaw = reader.ReadSByte();
         var d = reader.ReadByte();
-        MoveData temp = new MoveData(new Vector3(x,y,z), yaw, d);
+        var temp = new MoveData(new Vector3(x,y,z), yaw, d);
         return temp;
 
     }

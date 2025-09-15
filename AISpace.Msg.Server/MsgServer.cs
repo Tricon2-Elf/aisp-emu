@@ -30,9 +30,9 @@ public class MsgServer(int port = 50052)
                 case PacketType.Ping:
                     _ = Client.SendAsync(PacketType.Ping, PingRequest.FromBytes(payload).ToBytes());
                     break;
-                case PacketType.VersionCheckRequest:
+                case PacketType.Msg_VersionCheckRequest:
                     var req = VersionCheckRequest.FromBytes(payload);
-                    _ = Client.SendAsync(PacketType.VersionCheckResponse, new VersionCheckResponse(0, req.Major, req.Minor, req.Version).ToBytes());
+                    _ = Client.SendAsync(PacketType.Msg_VersionCheckResponse, new VersionCheckResponse(0, req.Major, req.Minor, req.Version).ToBytes());
                     break;
                 case PacketType.ItemGetBaseListRequest:
                     _ = Client.SendAsync(PacketType.ItemGetBaseListResponse, new ItemGetBaseListResponse().ToBytes());
@@ -50,7 +50,7 @@ public class MsgServer(int port = 50052)
                     DataResp.AddEquip(10100140, 0);
                     DataResp.AddEquip(10200130, 0);
                     DataResp.AddEquip(10100190, 0);
-                    _ = Client.SendAsync(PacketType.AvatarDataResponse, DataResp.ToBytes());
+                    _ = Client.SendAsync(PacketType.Msg_AvatarDataResponse, DataResp.ToBytes());
                     var avatarGetDataResp = new AvatarGetDataResponse(0);
                     _ = Client.SendAsync(PacketType.AvatarGetDataResponse, avatarGetDataResp.ToBytes());
                         break;
@@ -68,7 +68,10 @@ public class MsgServer(int port = 50052)
                     break;
                 case PacketType.ChannelSelectRequest:
                     var channelSelectReq = ChannelSelectRequest.FromBytes(payload);
-                    var channelSelectResp = new ChannelSelectResponse(0, new ServerInfo("127.0.0.1", 50054), 10990300, 10990300);
+
+                    //10990100
+                    //10990110
+                    var channelSelectResp = new ChannelSelectResponse(0, new ServerInfo("127.0.0.1", 50054), 10990200, 10990200);
                     _ = Client.SendAsync(PacketType.ChannelSelectResponse, channelSelectResp.ToBytes());
                     break;
                 case PacketType.MailBoxGetDataRequest:

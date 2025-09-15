@@ -14,10 +14,10 @@ public class TcpServer(string IPAddress, int Port, bool Encrypted)
 {
     private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
     private readonly TcpListener _listener = new(System.Net.IPAddress.Parse(IPAddress), Port);
-    private readonly Channel<PacketContext> _packetChannel = Channel.CreateBounded<PacketContext>(1000);
+    private readonly Channel<Packet> _packetChannel = Channel.CreateBounded<Packet>(1000);
     private readonly CancellationTokenSource _cts = new();
 
-    public ChannelReader<PacketContext> PacketReader => _packetChannel.Reader;
+    public ChannelReader<Packet> PacketReader => _packetChannel.Reader;
 
     private readonly ConcurrentDictionary<Guid, ClientContext> _clients = new();
 
@@ -132,7 +132,7 @@ public class TcpServer(string IPAddress, int Port, bool Encrypted)
                     await ReadExactAsync(stream, payload, _cts.Token);
 
                 //Need to check if PacketType is supported. If not send a logout?
-                _packetChannel.Writer.TryWrite(new PacketContext(context, type, payload, typeShort));
+                _packetChannel.Writer.TryWrite(new Packet(context, type, payload, typeShort));
             }
         }
         catch (Exception ex)

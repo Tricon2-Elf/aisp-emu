@@ -7,7 +7,7 @@ public class CharaData(uint chara_id, uint character_id, string name)
     public uint character_id = character_id;
     public string name = name;
     public CharaVisual visual = new(1, 1, 1, 1, 2, 0, 0);
-    public MoveData moveData = new(new System.Numerics.Vector3(-4069f, -0.043f, -2813.927f), 0, 0);
+    public MoveData moveData = new(new System.Numerics.Vector3(0, 0, 0), 0, 0);
     //X-4069.790 Y-0.043 Z-2813.927
     public List<Game.ItemSlotInfo> Equips = new(30);
 
@@ -22,10 +22,10 @@ public class CharaData(uint chara_id, uint character_id, string name)
         writer.Write(chara_id, character_id);
         writer.WriteFixedAsciiString(name, 37);
         writer.Write(visual.ToBytes());
+        //writer.Write(new byte[6]);
+        writer.Write(moveData.ToBytes());
+        writer.Write(moveData.ToBytes());
         writer.Write(new byte[6]);
-        writer.Write(moveData.ToBytes());
-        writer.Write(moveData.ToBytes());
-
         writer.Write(new byte[8]);
         writer.Write((ushort)Equips.Count);
         foreach (var item in Equips)

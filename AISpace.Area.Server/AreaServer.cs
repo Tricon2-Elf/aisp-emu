@@ -38,11 +38,11 @@ public class AreaServer(int port = 50054)
                     Client.lastPing = DateTimeOffset.Now;
                     _ = Client.SendAsync(PacketType.Ping, ping.ToBytes());
                     break;
-                case PacketType.VersionCheckRequest:
+                case PacketType.Msg_VersionCheckRequest:
                     var req = VersionCheckRequest.FromBytes(payload);
                     _logger.Info($"Client: {ClientID} Version: {packet.Client.Version}");
                     var resp = new VersionCheckResponse(0, req.Major, req.Minor, req.Version);
-                    _ = Client.SendAsync(PacketType.VersionCheckResponse, resp.ToBytes());
+                    _ = Client.SendAsync(PacketType.Msg_VersionCheckResponse, resp.ToBytes());
                     break;
                 case PacketType.AreasvEnterRequest:
                     var enterReq = AreasvEnterRequest.FromBytes(payload);
@@ -53,6 +53,31 @@ public class AreaServer(int port = 50054)
                     //Change enterResp to have the correct ID for the user
                     var enterResp = new AreasvEnterResponse(0, 25);
                     _ = Client.SendAsync(PacketType.AreasvEnterResponse, enterResp.ToBytes());
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(10000);
+                        _logger.Info($"Attempting to add Avatar");
+                        //0 X -227.392 Y -0.043 Z -1418.097 Yaw047 D0
+                        var charaData = new CharaData(24, 24, "randomuser");
+                        charaData.AddEquip(10100140, 0);
+                        charaData.AddEquip(10200130, 0);
+                        charaData.AddEquip(10100190, 0);
+                        //Need to set AvatarData ID
+                        var avatarData = new AvatarData(1, charaData);
+                        var notifyData = new AvatarNotifyData(0, avatarData);
+                        await Task.Delay(1000);
+
+                        var moveData = new MoveData(new Vector3(-227.392f, -0.043f, -1418.097f), -119, 0);
+                        var moveNotify = new AvatarNotifyMove(24, moveData);
+                        _ = Client.SendAsync(PacketType.AvatarNotifyMove, moveNotify.ToBytes());
+
+
+                        //result: 0 X-7363.452 Y2.509 Z-16686.670 Yaw-119 D0
+                        //var moveData = new MoveData(new Vector3(-7363f, -2.5f, -16686f), -119, 0);
+                        //var moveNotify = new AvatarNotifyMove(22, moveData);
+                        //_ = Client.SendAsync(PacketType.AvatarNotifyMove, moveNotify.ToBytes());
+                    });
+                    
                     break;
                 case PacketType.AvatarGetDataRequest:
                     _logger.Info(BitConverter.ToString(payload));
@@ -155,9 +180,6 @@ public class AreaServer(int port = 50054)
                     _logger.Error($"Area: Unknown packet type: {packet.RawType:X4}");
                     break;
             }
-
-
-
         }
 
     }

@@ -1,5 +1,4 @@
-﻿using System.Buffers.Binary;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using NLog;
 using Org.BouncyCastle.Crypto.Engines;
@@ -10,16 +9,12 @@ namespace AISpace.Common.Network;
 public enum ClientState
 {
     Init = 1,
-    ClientSendPublicKey = 2,
-    ClientWaitingSharedKeys = 3,
-    ServerWaitingKeyExchange = 4,
-    ServerGenerateKeys = 5,
-    ClientReady = 6,
-    ServerReady = 7,
 }
 
 public class ClientContext(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, string _Version = "")
 {
+    private const byte HeaderPrefix = 0x03;
+    private const int HeaderSize = 2;
     private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
     public CamelliaEngine Camellia = new();
     public KeyParameter? CamelliaKey;
@@ -38,13 +33,13 @@ public class ClientContext(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns
     public async Task SendAsync(PacketType type, byte[] data, CancellationToken ct = default)
     {
         var writer = new PacketWriter();
-        writer.WriteByte(0x03);
-        writer.WriteUIntLE((uint)data.Length+2);          // some ushort
-        writer.WriteUShortLE((ushort)type);//Packet Type
-        writer.WriteBytes(data);
+        ushort packetType = (ushort)type;
+
+        writer.Write(HeaderPrefix);
+        writer.Write((uint)data.Length + HeaderSize);
+        writer.Write(packetType);
+        writer.Write(data);
         byte[] dataToSend = writer.ToBytes();
-        //if(type != PacketType.Ping)
-        //    _logger.Info($"Sending {type} [{string.Join(", ", dataToSend)}]");
         await Stream.WriteAsync(dataToSend, ct);
     }
 }
