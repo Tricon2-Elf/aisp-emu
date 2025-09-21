@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Msg;
 

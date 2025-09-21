@@ -46,7 +46,7 @@ internal class AuthServer
             string ClientID = packet.Client.Id.ToString();
             var payload = packet.Data;
             var packetType = packet.Type;
-            await _dispatcher.DispatchAsync(domain, packetType, payload, connection);
+            await _dispatcher.DispatchAsync(domain, packetType, payload, connection, ct);
 
         }
     }

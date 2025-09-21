@@ -1,5 +1,5 @@
 using System.Text;
-using AISpace.Common.Network.Packets.Msg;
+using AISpace.Common.Network.Packets.Common;
 using NLog;
 
 namespace AISpace.Common.Network.Handlers;

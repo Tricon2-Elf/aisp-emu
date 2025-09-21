@@ -1,4 +1,4 @@
-using AISpace.Common.Network.Packets.Msg;
+using AISpace.Common.Network.Packets;
 using NLog;
 
 namespace AISpace.Common.Network.Handlers;
