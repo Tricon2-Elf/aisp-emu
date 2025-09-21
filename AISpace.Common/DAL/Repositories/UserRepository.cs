@@ -3,19 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.DAL.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository(MainContext db) : IUserRepository
 {
-    private readonly MainContext _context;
 
-    public UserRepository(MainContext context)
-    {
-        _context = context;
-
-    }
-
+    private readonly MainContext _db = db;
     public async Task<bool> ValidateCredentialsAsync(string username, string password)
     {
-        return await _context.Users
+        return await _db.Users
             .AnyAsync(u => u.Username == username && u.Password == password);
     }
 
@@ -25,34 +19,34 @@ public class UserRepository : IUserRepository
             return;
 
         var user = new User { Username = username, Password = password };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
     }
 
     public async Task<User?> GetUserByUsernameAsync(string username)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        return await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
     }
 
     public async Task<User?> GetUserByIdAsync(int userId)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        return await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
     }
 
     public async Task AddSessionAsync(uint userId, string otp)
     {
         var session = new UserSession { UserID = userId, OTP = otp };
-        _context.UserSessions.Add(session);
-        await _context.SaveChangesAsync();
+        _db.UserSessions.Add(session);
+        await _db.SaveChangesAsync();
     }
     public async Task<bool> ValidateSessionAsync(int userId, string otp)
     {
-        return await _context.UserSessions
+        return await _db.UserSessions
             .AnyAsync(s => s.Id == userId && s.OTP == otp);
     }
 
     public async Task<UserSession?> GetSessionAsync(int userId, string otp)
     {
-        return await _context.UserSessions.FirstOrDefaultAsync(s => s.Id == userId && s.OTP == otp);
+        return await _db.UserSessions.FirstOrDefaultAsync(s => s.Id == userId && s.OTP == otp);
     }
 }

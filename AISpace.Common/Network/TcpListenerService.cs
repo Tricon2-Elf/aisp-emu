@@ -7,16 +7,32 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network;
 
+public class AuthChannel
+{
+    public Channel<Packet> Channel { get; } = System.Threading.Channels.Channel.CreateUnbounded<Packet>();
+}
+
+public class AreaChannel
+{
+    public Channel<Packet> Channel { get; } = System.Threading.Channels.Channel.CreateUnbounded<Packet>();
+}
+
+public class MsgChannel
+{
+    public Channel<Packet> Channel { get; } = System.Threading.Channels.Channel.CreateUnbounded<Packet>();
+}
+
+
 public sealed class TCPServerConfig
 {
     public string BindAddress { get; set; } = "0.0.0.0";
     public int Port { get; set; } = 5005;
 }
-public class TcpListenerService(ILogger<TcpListenerService> logger,
+public class TcpListenerService<TChannel>(ILogger<TcpListenerService<TChannel>> logger,
                               Channel<Packet> channel,
                               TCPServerConfig config) : BackgroundService
 {
-    private readonly ILogger<TcpListenerService> _logger = logger;
+    private readonly ILogger<TcpListenerService<TChannel>> _logger = logger;
     private readonly TcpListener _tcpListener = new(System.Net.IPAddress.Parse(config.BindAddress), config.Port);
     private readonly Channel<Packet> _channel = channel; //Channel.CreateBounded<Packet>(1000);
     private readonly CancellationTokenSource _cts = new();

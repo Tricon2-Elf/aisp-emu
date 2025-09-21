@@ -3,51 +3,58 @@ using AISpace.Common.DAL;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Network;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NLog;
+using Scrutor;
 
 namespace AISpace.Auth.Server;
 
 internal class AuthServer
 {
-    private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+    ILogger<AuthServer> _logger;
 
-    private readonly TcpListenerService server;
+    private readonly TcpListenerService<AuthChannel> _listener;
+    private readonly MainContext _db;
     private readonly PacketDispatcher _dispatcher;
     private readonly UserRepository _userRepo;
     private readonly WorldRepository _worldRepo;
-    private readonly MainContext context;
     private readonly ChannelReader<Packet> _packetChannel;
-    private readonly MessageDomain domain = MessageDomain.Auth;
+    public readonly MessageDomain ActiveDomain = MessageDomain.Auth;
 
-    public AuthServer(IServiceProvider services, int port, Channel<Packet> packetChannel)
+    public AuthServer(ILogger<AuthServer> logger, 
+        TcpListenerService<AuthChannel> listener, 
+        MainContext db, 
+        UserRepository userRepo, 
+        WorldRepository worldRepo, 
+        PacketDispatcher dispatcher)
     {
-        _dispatcher = services.GetRequiredService<PacketDispatcher>();
-        _packetChannel = packetChannel.Reader;
-        //server = new TcpListenerService("0.0.0.0", port, false);
+        _logger = logger;
+        _db = db;
+        _listener = listener;
+        _packetChannel = _listener.PacketReader;
+        _dispatcher = dispatcher;
+        _userRepo = userRepo;
+        _worldRepo = worldRepo;
 
         //Setup DB
-        context = new MainContext();
-        context.Database.EnsureCreated();
+        _db.Database.EnsureCreated();
     }
     public async void Start(CancellationToken ct = default)
     {
-        _logger.Info("Starting Auth server");
+        _logger.LogInformation("Starting Auth server");
 
-        _logger.Info("Starting Database connection");
+        _logger.LogInformation("Starting Database connection");
         await _userRepo.AddUserAsync("hideki@animetoshokan.org", "password");
         await _worldRepo.AddWorldAsync("test", "test2");
-        _logger.Info("Starting TCP Server");
-        await server.StartAsync(ct);
 
-        _logger.Info("Starting Main Loop");
-        await foreach (var packet in _packetChannel.ReadAllAsync())
+        
+        _logger.LogInformation("Starting TCP Server");
+        await _listener.StartAsync(ct);
+
+        _logger.LogInformation("Starting Main Loop");
+        await foreach (var packet in _packetChannel.ReadAllAsync(ct))
         {
-            ClientConnection connection = packet.Client;
-            string ClientID = packet.Client.Id.ToString();
-            var payload = packet.Data;
-            var packetType = packet.Type;
-            await _dispatcher.DispatchAsync(domain, packetType, payload, connection, ct);
-
+            await _dispatcher.DispatchAsync(ActiveDomain, packet.Type, packet.Data, packet.Client, ct);
         }
     }
 
