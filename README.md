@@ -1,6 +1,6 @@
-# AI-Space Private Server
+# AI-Space Emulator
 
-AI-Space Private Server is a fan-made emulator for the discontinued Japanese MMO **AISp@ce**. The goal of this project is to recreate the original experience for educational purposes and to keep the game playable after its shutdown.
+AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MMO **AISp@ce**. The goal of this project is to recreate the original experience for educational purposes and to keep the game playable after its shutdown.
 
 ## Project scope
 
