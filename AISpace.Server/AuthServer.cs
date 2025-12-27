@@ -32,7 +32,7 @@ public class AuthServer : BackgroundService
 
         //Setup DB. Since dev just nuke and recreate
         //Nuke DB
-        _db.Database.EnsureDeleted();
+        //_db.Database.EnsureDeleted();
         //Create DB
         _db.Database.EnsureCreated();
 
