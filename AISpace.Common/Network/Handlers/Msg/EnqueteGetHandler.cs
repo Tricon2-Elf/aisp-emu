@@ -14,17 +14,8 @@ public class EnqueteGetHandler : IPacketHandler
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        Console.WriteLine("Creating Quiz");
-        //Payload is empty.
-        List<EnqueteData> quizData = [];
-        EnqueteData test = new EnqueteData(0, "What is the music of life?");
-        test.answers.Add("Um... the lute? No, drums!");
-        test.answers.Add("Screaming?");
-        test.answers.Add("Silence, my brother");
-        test.answers.Add("Some kind of choir. With chanting");
-        quizData.Add(test);
-        EnqueteGetResponse enqueteGetResponse = new(0, quizData);
-        Console.WriteLine("Sending Quiz");
-        await connection.SendAsync(ResponseType, enqueteGetResponse, ct);
+        List<EnqueteData> questions = [new EnqueteData(0, "What is the music of life?", ["Um... the lute? No, drums!", "Screaming?", "Silence, my brother", "Some kind of choir. With chanting"])];
+
+        await connection.SendAsync(ResponseType, new EnqueteGetResponse(0, questions), ct);
     }
 }

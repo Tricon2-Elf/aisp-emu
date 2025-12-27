@@ -1,9 +1,7 @@
 ﻿namespace AISpace.Common.Game;
 
-public class EnqueteData(uint id, string question)
+public class EnqueteData(uint id, string question, List<string> answers)
 {
-    public List<string> answers = new(10);
-    //answers: [FixedArray<61>; 10],
 
     public byte[] ToBytes()
     {
@@ -13,7 +11,7 @@ public class EnqueteData(uint id, string question)
         writer.Write(id);
         writer.WriteFixedJisString(question, 181);
         foreach(var answer in answers)
-            writer.WriteFixedJisString(answer, 67);
+            writer.WriteFixedJisString(answer, 61);
         return writer.ToBytes();
     }
 }

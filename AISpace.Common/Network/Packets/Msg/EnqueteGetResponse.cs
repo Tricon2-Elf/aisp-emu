@@ -3,7 +3,7 @@ using AISpace.Common.Game;
 
 namespace AISpace.Common.Network.Packets.Msg;
 
-public class EnqueteGetResponse(uint result, List<EnqueteData> quiz) : IPacket<EnqueteGetResponse>
+public class EnqueteGetResponse(uint result, List<EnqueteData> Questions) : IPacket<EnqueteGetResponse>
 {
     public static EnqueteGetResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 
@@ -11,9 +11,9 @@ public class EnqueteGetResponse(uint result, List<EnqueteData> quiz) : IPacket<E
     {
         var writer = new PacketWriter();
         writer.Write(result);
-        writer.Write((uint)quiz.Count);
-        foreach (var item in quiz)
-            writer.Write(item.ToBytes());
+        writer.Write((uint)Questions.Count);
+        foreach (var question in Questions)
+            writer.Write(question.ToBytes());
         return writer.ToBytes();
     }
 }

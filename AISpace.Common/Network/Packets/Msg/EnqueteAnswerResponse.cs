@@ -1,7 +1,7 @@
 ﻿
 namespace AISpace.Common.Network.Packets.Msg;
 
-public class EnqueteAnswerResponse : IPacket<EnqueteAnswerResponse>
+public class EnqueteAnswerResponse(uint result) : IPacket<EnqueteAnswerResponse>
 {
     public static EnqueteAnswerResponse FromBytes(ReadOnlySpan<byte> data)
     {
@@ -10,6 +10,8 @@ public class EnqueteAnswerResponse : IPacket<EnqueteAnswerResponse>
 
     public byte[] ToBytes()
     {
-        throw new NotImplementedException();
+        using var writer = new PacketWriter();
+        writer.Write(result);
+        return writer.ToBytes();
     }
 }

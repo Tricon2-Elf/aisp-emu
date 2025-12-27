@@ -29,7 +29,7 @@ public enum PacketType : ushort
     Msg_AvatarDestroyRequest = 0x765A, // 30298 CProtoMsg_client::send_avatar_destroy
     Msg_AvatarDestroyResponse = 0x000, // TODO CProtoMsg_client::recv_avatar_destroy_r
     Msg_EnqueteGetRequest = 0xc578, //50552
-    Msg_EnqueteGetResponse = 0x24EE,
+    Msg_EnqueteGetResponse = 0x24EE, //9454
     Msg_EnqueteAnswerRequest = 0x0352,
     Msg_EnqueteAnswerResponse = 0x615A,
 
