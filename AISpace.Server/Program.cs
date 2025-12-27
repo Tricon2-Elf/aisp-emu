@@ -50,7 +50,7 @@ internal class Program
                 sp.GetRequiredService<ILogger<TcpListenerService>>(),
                 sp.GetRequiredService<AuthChannel>().Channel,
                 "Auth",
-                50050));
+                50050, sp.GetRequiredService<ILoggerFactory>()));
         builder.Services.AddHostedService<AuthServer>();
 
         builder.Services.AddSingleton<MsgChannel>(_ => new(Channel.CreateUnbounded<Packet>()));
@@ -59,7 +59,7 @@ internal class Program
             sp.GetRequiredService<ILogger<TcpListenerService>>(),
             sp.GetRequiredService<MsgChannel>().Channel,
             "Msg",
-            50052));
+            50052, sp.GetRequiredService<ILoggerFactory>()));
 
         builder.Services.AddHostedService<MsgServer>();
 
@@ -69,7 +69,7 @@ internal class Program
                 sp.GetRequiredService<ILogger<TcpListenerService>>(),
                 sp.GetRequiredService<AreaChannel>().Channel,
                 "Area",
-                50054));
+                50054, sp.GetRequiredService<ILoggerFactory>()));
         builder.Services.AddHostedService<AreaServer>();
 
 

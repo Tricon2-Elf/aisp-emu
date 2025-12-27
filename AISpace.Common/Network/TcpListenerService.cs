@@ -14,6 +14,7 @@ public record AreaChannel(Channel<Packet> Channel);
 public class TcpListenerService : BackgroundService
 {
     private readonly ILogger<TcpListenerService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly TcpListener _tcpListener;
     private readonly Channel<Packet> _channel;
     private readonly CancellationTokenSource _cts = new();
@@ -26,9 +27,11 @@ public class TcpListenerService : BackgroundService
 
     public TcpListenerService(ILogger<TcpListenerService> logger,
             Channel<Packet> channel, string Name,
-            int port)
+            int port,
+            ILoggerFactory loggerFactory)
     {
         _logger = logger;
+        _loggerFactory = loggerFactory;
         name = Name;
         _tcpListener = new(System.Net.IPAddress.Parse("0.0.0.0"), port);
         _channel = channel;
@@ -50,7 +53,7 @@ public class TcpListenerService : BackgroundService
         while (!_cts.Token.IsCancellationRequested)
         {
             var client = await _tcpListener.AcceptTcpClientAsync(_cts.Token);
-            var context = new ClientConnection(Guid.NewGuid(), client.Client.RemoteEndPoint!, client.GetStream());
+            var context = new ClientConnection(Guid.NewGuid(), client.Client.RemoteEndPoint!, client.GetStream(), _loggerFactory.CreateLogger<ClientConnection>());
             _clients[context.Id] = context;
             if (Encrypted)
                 _ = HandleClientKeyExchangeAsync(context);
@@ -122,9 +125,11 @@ public class TcpListenerService : BackgroundService
                     if (payloadLength > 0)
                         await ReadExactAsync(stream, payload, _cts.Token);
 
-                    //_logger.LogInformation("{name} Writing message to Channel {Id}", name, context.Id);
-                    //Need to check if PacketType is supported. If not send a logout?
-                    _channel.Writer.TryWrite(new Packet(context, type, payload, typeShort));
+                var hex = BitConverter.ToString(payload).Replace("-", " ");
+                _logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, hex);
+                //_logger.LogInformation("{name} Writing message to Channel {Id}", name, context.Id);
+                //Need to check if PacketType is supported. If not send a logout?
+                _channel.Writer.TryWrite(new Packet(context, type, payload, typeShort));
                 //}
                 //catch (Exception ex)
                 //{

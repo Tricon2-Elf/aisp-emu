@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using AISpace.Common.DAL.Entities;
+using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -15,7 +16,7 @@ public enum ClientState
     ConnectedToArea=4,
 }
 
-public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, string _Version = "")
+public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, ILogger<ClientConnection> logger)
 {
     private const byte HeaderPrefix = 0x03;
     private const int HeaderSize = 2;
@@ -25,9 +26,9 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
     public Guid Id = _Id;
     public EndPoint RemoteEndPoint = _RemoteEndPoint;
     public NetworkStream Stream = _ns;
-    public string Version = _Version;
     public int connectedChannel = 0;
     public DateTimeOffset lastPing;
+    private readonly ILogger<ClientConnection> _logger = logger;
 
 
     public bool IsAuthenticated => clientUser != null;
@@ -51,6 +52,9 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
         writer.Write(packetType);
         writer.Write(data);
         byte[] dataToSend = writer.ToBytes();
+
+        var hex = BitConverter.ToString(dataToSend).Replace("-", " ");
+        _logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, dataToSend.Length, hex);
         await SendRawAsync(dataToSend, ct);
     }
 
