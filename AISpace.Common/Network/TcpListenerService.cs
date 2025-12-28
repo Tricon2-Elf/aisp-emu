@@ -11,49 +11,36 @@ public record AuthChannel(Channel<Packet> Channel);
 public record MsgChannel(Channel<Packet> Channel);
 public record AreaChannel(Channel<Packet> Channel);
 
-public class TcpListenerService : BackgroundService
+public class TcpListenerService(ILogger<TcpListenerService> logger,
+        Channel<Packet> channel, string Name,
+        int port,
+        ILoggerFactory loggerFactory) : BackgroundService
 {
-    private readonly ILogger<TcpListenerService> _logger;
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly TcpListener _tcpListener;
-    private readonly Channel<Packet> _channel;
+    private readonly TcpListener _tcpListener = new(System.Net.IPAddress.Parse("0.0.0.0"), port);
     private readonly CancellationTokenSource _cts = new();
     private readonly bool Encrypted = false;
 
-    public ChannelReader<Packet> PacketReader => _channel.Reader;
+    public ChannelReader<Packet> PacketReader => channel.Reader;
 
     private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
-    private readonly string name;
-
-    public TcpListenerService(ILogger<TcpListenerService> logger,
-            Channel<Packet> channel, string Name,
-            int port,
-            ILoggerFactory loggerFactory)
-    {
-        _logger = logger;
-        _loggerFactory = loggerFactory;
-        name = Name;
-        _tcpListener = new(System.Net.IPAddress.Parse("0.0.0.0"), port);
-        _channel = channel;
-    }
 
     public override Task StopAsync(CancellationToken cancellationToken)
     {
         _cts.Cancel();
         _tcpListener.Stop();
-        _channel.Writer.Complete();
+        channel.Writer.Complete();
         return base.StopAsync(cancellationToken);
     }
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _tcpListener.Start();
-        _logger.LogInformation("Server {name} started on {LocalEP}", name, _tcpListener.LocalEndpoint);
+        logger.LogInformation("Server {name} started on {LocalEP}", Name, _tcpListener.LocalEndpoint);
 
 
         while (!_cts.Token.IsCancellationRequested)
         {
             var client = await _tcpListener.AcceptTcpClientAsync(_cts.Token);
-            var context = new ClientConnection(Guid.NewGuid(), client.Client.RemoteEndPoint!, client.GetStream(), _loggerFactory.CreateLogger<ClientConnection>());
+            var context = new ClientConnection(Guid.NewGuid(), client.Client.RemoteEndPoint!, client.GetStream(), loggerFactory.CreateLogger<ClientConnection>());
             _clients[context.Id] = context;
             if (Encrypted)
                 _ = HandleClientKeyExchangeAsync(context);
@@ -67,11 +54,11 @@ public class TcpListenerService : BackgroundService
     {
         int RsaSize = 16;
         context.CurrentState = ClientState.Init;
-        _logger.LogInformation("New Client. Starting Key Exchange");
+        logger.LogInformation("New Client. Starting Key Exchange");
         //Do key stuff
         using var stream = context.Stream;
         var buffer = new byte[4096];
-        _logger.LogInformation("Reading client RSA public key");
+        logger.LogInformation("Reading client RSA public key");
         // 1) read 16-byte RSA modulus from client
         int read = 0;
         while (read < RsaSize)
@@ -82,17 +69,16 @@ public class TcpListenerService : BackgroundService
         }
         byte[] camelliaKey = CryptoUtils.CreateCamelliaKey(buffer);
         context.SetCamelliaKey(camelliaKey);
-        _logger.LogInformation("Sending new Camellia key back to client");
-        //Move to CryptoUtils
-        await context.SendRawAsync(camelliaKey);
-        await context.SendRawAsync(camelliaKey);
-        _logger.LogInformation("Handing over to normal HandleClient");
+        logger.LogInformation("Sending new Camellia key back to client");
+
+        await context.SendRawAsync([.. camelliaKey, .. camelliaKey]);
+        logger.LogInformation("Handing over to normal HandleClient");
         _ = HandleClientAsync(context);
     }
 
     private async Task HandleClientAsync(ClientConnection context)
     {
-        _logger.LogInformation("{name} Handling new client {Id}", name, context.Id);
+        logger.LogInformation("{name} Handling new client {Id}", Name, context.Id);
         using var stream = context.Stream;
         var buffer = new byte[4096];
 
@@ -115,9 +101,9 @@ public class TcpListenerService : BackgroundService
 
                     await ReadExactAsync(stream, buffer.AsMemory(0, 2), _cts.Token);
                     ushort typeShort = BinaryPrimitives.ReadUInt16LittleEndian(buffer.AsSpan(0, 2));
-                    _logger.LogInformation("TypeShort: {type}", typeShort);
+                    logger.LogInformation("TypeShort: {type}", typeShort);
                     var type = (PacketType)typeShort;
-                    _logger.LogInformation("EnumType: {type}", type);
+                    logger.LogInformation("EnumType: {type}", type);
                     int payloadLength = packetLength - 2;//2 due to packettype being 2 bytes
 
                     byte[] payload = new byte[payloadLength];
@@ -126,10 +112,10 @@ public class TcpListenerService : BackgroundService
                         await ReadExactAsync(stream, payload, _cts.Token);
 
                 var hex = BitConverter.ToString(payload).Replace("-", " ");
-                _logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, hex);
+                logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, hex);
                 //_logger.LogInformation("{name} Writing message to Channel {Id}", name, context.Id);
                 //Need to check if PacketType is supported. If not send a logout?
-                _channel.Writer.TryWrite(new Packet(context, type, payload, typeShort));
+                channel.Writer.TryWrite(new Packet(context, type, payload, typeShort));
                 //}
                 //catch (Exception ex)
                 //{
@@ -139,11 +125,11 @@ public class TcpListenerService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError("Client {Id} error: {Message}", context.Id, ex.Message);
+            logger.LogError("Client {Id} error: {Message}", context.Id, ex.Message);
         }
 
         context.Stream.Close();
-        _logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
+        logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
     }
 
     private static async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
