@@ -1,10 +1,10 @@
-﻿using System.Net;
+﻿using System.Buffers.Binary;
+using System.Net;
 using System.Net.Sockets;
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.Network.Crypto;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Crypto.Engines;
-using Org.BouncyCastle.Crypto.Parameters;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Org.BouncyCastle.Crypto;
 
 namespace AISpace.Common.Network;
 
@@ -20,8 +20,8 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 {
     private const byte HeaderPrefix = 0x03;
     private const int HeaderSize = 2;
-    public CamelliaEngine Camellia = new();
-    public KeyParameter? CamelliaKey;
+    public VCECamellia128 C2S = new();
+    public VCECamellia128 S2C = new();
     public ClientState CurrentState;
     public Guid Id = _Id;
     public EndPoint RemoteEndPoint = _RemoteEndPoint;
@@ -37,25 +37,88 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public async Task SendRawAsync(byte[] data, CancellationToken ct = default) => await Stream.WriteAsync(data, ct);
 
-    public void SetCamelliaKey(byte[] key)
+    public void SetCamelliaKeys(byte[] s2cKey, byte[] c2sKey)
     {
-        CamelliaKey = new KeyParameter(key);
+        S2C.Init(s2cKey);
+        C2S.Init(c2sKey);
+    }
+
+    public void DecryptBlock(Span<byte> block16)
+    {
+        C2S.DecryptBlock(block16);
+    }
+
+    public void EncryptBlock(Span<byte> block16)
+    {
+        S2C.EncryptBlock(block16);
+    }
+
+    public void EncryptBlocks(Span<byte> data)
+    {
+        if (data.Length % 16 != 0)
+            throw new ArgumentException("Data length not multiple of 16");
+        for (int offset = 0; offset < data.Length; offset += 16)
+        {
+            EncryptBlock(data[offset..(offset + 16)]);
+            S2C.IncK0();
+        }
+    }
+
+    byte[] PrefixLengthUInt32Le(ReadOnlySpan<byte> cipher)
+    {
+        var outBuf = new byte[4 + cipher.Length];
+        logger.LogInformation("Adding Length of : {size}", (uint)cipher.Length);
+        // length of cipher only (not including the 4-byte prefix)
+        BinaryPrimitives.WriteUInt32LittleEndian(outBuf.AsSpan(0, 4), (uint)cipher.Length);
+
+        cipher.CopyTo(outBuf.AsSpan(4));
+        return outBuf;
     }
 
     public async Task SendAsync(PacketType type, byte[] data, CancellationToken ct = default)
     {
-        var writer = new PacketWriter();
-        ushort packetType = (ushort)type;
-        uint packetLength = (uint)data.Length + HeaderSize;
-        writer.Write(HeaderPrefix);
-        writer.Write(packetLength);
-        writer.Write(packetType);
-        writer.Write(data);
-        byte[] dataToSend = writer.ToBytes();
+        try
+        {
+            var writer = new PacketWriter();
+            ushort packetType = (ushort)type;
+            uint packetLength = (uint)data.Length + HeaderSize;
+            writer.Write(HeaderPrefix);
+            writer.Write(packetLength);
+            writer.Write(packetType);
+            writer.Write(data);
+            _logger.LogInformation("DataLength: {len}", data.Length);
+            byte[] dataToSend = writer.ToBytes();
 
-        var hex = BitConverter.ToString(dataToSend).Replace("-", " ");
-        _logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, dataToSend.Length, hex);
-        await SendRawAsync(dataToSend, ct);
+            var hex = BitConverter.ToString(dataToSend).Replace("-", " ");
+
+            _logger.LogInformation("Block1: {len}", dataToSend.Length);
+            //Encrypt the fucker
+            var cipher = PadZeros(dataToSend.AsSpan(), 16);
+            _logger.LogInformation("Block2: {len}", cipher.Length);
+            EncryptBlocks(cipher);
+
+            byte[] framed = PrefixLengthUInt32Le(cipher);
+
+            var hex2 = BitConverter.ToString(framed).Replace("-", " ");
+            _logger.LogInformation("Sending packet {PacketType} ({Length} bytes): {Hex}", type, dataToSend.Length, hex);
+            _logger.LogInformation("Sending ENCRPY {PacketType} ({Length} bytes): {Hex}", type, framed.Length, hex2);
+            await SendRawAsync(framed, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Err {ex}", ex);
+        }
+    }
+
+    static byte[] PadZeros(ReadOnlySpan<byte> data, int blockSize = 16)
+    {
+        int rem = data.Length % blockSize;
+        int pad = rem == 0 ? 0 : blockSize - rem;
+
+        var outBuf = new byte[data.Length + pad];
+        data.CopyTo(outBuf);
+        // new bytes already zero
+        return outBuf;
     }
 
     public async Task SendAsync<T>(PacketType type, IPacket<T> packet, CancellationToken ct = default) where T : IPacket<T> => await SendAsync(type, packet.ToBytes(), ct);
