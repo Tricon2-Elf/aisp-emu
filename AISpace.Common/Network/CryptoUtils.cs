@@ -1,11 +1,62 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using Org.BouncyCastle.Math;
+using System.Numerics;
 
 namespace AISpace.Common.Network;
 
 public class CryptoUtils
 {
+
+    private static readonly BigInteger RsaE = new(65537);
+
+    private static BigInteger FromLeUnsigned(ReadOnlySpan<byte> le)
+    {
+        // Add a zero sign byte to force unsigned positive
+        Span<byte> tmp = stackalloc byte[le.Length + 1];
+        le.CopyTo(tmp);
+        tmp[^1] = 0x00;
+
+        return new BigInteger(tmp);
+    }
+
+    private static byte[] ToFixedLe(BigInteger x, int size)
+    {
+        byte[] le = x.ToByteArray(isUnsigned: true, isBigEndian: false);
+
+        var result = new byte[size];
+        le.CopyTo(result);
+        return result;
+    }
+
+    private static byte[] CreatePlainKeyLe16(BigInteger n)
+    {
+        Span<byte> key = stackalloc byte[16];
+
+        while (true)
+        {
+            RandomNumberGenerator.Fill(key);
+
+            key[15] = 0; // force positive, matches original
+
+            BigInteger m = FromLeUnsigned(key);
+            if (m >= n)
+                continue;
+
+            return key.ToArray();
+        }
+    }
+
+    public static (byte[] PlainKeyLe, byte[] EncryptedKeyLe) CreateEncryptedKey(byte[] rsaNLe)
+    {
+        var n = FromLeUnsigned(rsaNLe);
+        var plainLe = CreatePlainKeyLe16(n);
+        var m = FromLeUnsigned(plainLe);
+        var c = BigInteger.ModPow(m, RsaE, n);
+        var cipherLe = ToFixedLe(c, 16);
+
+        return (plainLe, cipherLe);
+    }
+
     public static string GenerateOTP()
     {
         byte[] seed = Guid.NewGuid().ToByteArray();
@@ -16,63 +67,5 @@ public class CryptoUtils
         string opt = sb.ToString(0, 20);
         return opt;
     }
-    public static byte[] CreateKey(int size, BigInteger maxVal)
-    {
-        byte[] keyData = new byte[size];
 
-        // Fill with cryptographically strong random bytes
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(keyData);
-        }
-
-        // Ensure it's positive (BigInteger interprets byte[] as little-endian signed)
-        byte[] unsignedKey = new byte[size + 1];
-        Buffer.BlockCopy(keyData, 0, unsignedKey, 0, size);
-
-        BigInteger candidate = new BigInteger(unsignedKey);
-
-        // Reduce by modulus (introduces tiny bias if maxVal doesn't divide evenly)
-        BigInteger reduced = candidate.Remainder(maxVal);
-        if (reduced.SignValue < 0) reduced = reduced.Add(maxVal); // Just in case
-
-        byte[] result = reduced.ToByteArrayUnsigned();
-        if (result.Length < size)
-            Array.Resize(ref result, size);
-        else if (result.Length > size)
-            Array.Resize(ref result, size);
-        Array.Reverse(result);
-
-        return result;
-    }
-
-    public static byte[] CreateCamelliaKey(byte[] buffer)
-    {
-        byte[] nLength = new byte[16];
-
-        Array.Copy(buffer, nLength, 16);
-        Array.Reverse(nLength);
-        var n = new BigInteger(1, nLength.Reverse().ToArray());
-        var key = CryptoUtils.CreateKey(16, n);
-
-
-
-        var camelliaInt = new BigInteger(1, key.Reverse().ToArray());
-        BigInteger E = new BigInteger("65537"); // RSA e
-        var encS2C = camelliaInt.ModPow(E, n);
-
-        byte[] camelliaKey = ToFixedLe(encS2C, 16);
-        return camelliaKey;
-    }
-
-    // Helper: encode BigInteger -> fixed-size LE
-    private static byte[] ToFixedLe(BigInteger bi, int size)
-    {
-        var be = bi.ToByteArrayUnsigned(); // big-endian, no sign
-        var le = new byte[size];
-        int copy = Math.Min(be.Length, size);
-        for (int i = 0; i < copy; i++)
-            le[i] = be[be.Length - 1 - i]; // reverse
-        return le;
-    }
 }
