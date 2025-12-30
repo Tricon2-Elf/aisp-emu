@@ -1,37 +1,33 @@
-﻿using System.Drawing;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
-using Org.BouncyCastle.Math;
+using System.Numerics;
 
 namespace AISpace.Common.Network;
 
 public class CryptoUtils
 {
-    private static readonly BigInteger RsaE = BigInteger.ValueOf(65537);
 
-    // Rust: BigUint::from_bytes_le(bytes)
+    private static readonly BigInteger RsaE = new(65537);
+
     private static BigInteger FromLeUnsigned(ReadOnlySpan<byte> le)
     {
-        // BouncyCastle BigInteger expects big-endian magnitude
-        byte[] be = le.ToArray();
-        Array.Reverse(be);
-        return new BigInteger(1, be);
+        // Add a zero sign byte to force unsigned positive
+        Span<byte> tmp = stackalloc byte[le.Length + 1];
+        le.CopyTo(tmp);
+        tmp[^1] = 0x00;
+
+        return new BigInteger(tmp);
     }
 
-    // Rust: to_bytes_le() then copy into [0..len] and pad zeros
     private static byte[] ToFixedLe(BigInteger x, int size)
     {
-        var be = x.ToByteArrayUnsigned(); // big-endian
-        var le = new byte[size];
+        byte[] le = x.ToByteArray(isUnsigned: true, isBigEndian: false);
 
-        int len = Math.Min(size, be.Length);
-        for (int i = 0; i < len; i++)
-            le[i] = be[be.Length - 1 - i]; // grab LSBs and output LE
-
-        return le;
+        var result = new byte[size];
+        le.CopyTo(result);
+        return result;
     }
 
-        // Rust create_key::<16>: random 16 bytes, key[15]=0, reject if m>=n (m is LE integer)
     private static byte[] CreatePlainKeyLe16(BigInteger n)
     {
         Span<byte> key = stackalloc byte[16];
@@ -39,31 +35,27 @@ public class CryptoUtils
         while (true)
         {
             RandomNumberGenerator.Fill(key);
-            key[15] = 0; // match Rust
 
-            var m = FromLeUnsigned(key); // interpret bytes as LE integer
-            if (m.CompareTo(n) >= 0)
+            key[15] = 0; // force positive, matches original
+
+            BigInteger m = FromLeUnsigned(key);
+            if (m >= n)
                 continue;
 
-            return key.ToArray(); // plaintext key bytes (LE)
+            return key.ToArray();
         }
     }
 
     public static (byte[] PlainKeyLe, byte[] EncryptedKeyLe) CreateEncryptedKey(byte[] rsaNLe)
     {
-        var n = FromLeUnsigned(rsaNLe);          // FIX: modulus is LE on the wire
-        var plainLe = CreatePlainKeyLe16(n);     // plaintext key bytes (LE)
-        var m = FromLeUnsigned(plainLe);         // m = key as LE integer
-        var c = m.ModPow(RsaE, n);               // c = m^e mod n
-        var cipherLe = ToFixedLe(c, 16);         // fixed 16 bytes LE
+        var n = FromLeUnsigned(rsaNLe);
+        var plainLe = CreatePlainKeyLe16(n);
+        var m = FromLeUnsigned(plainLe);
+        var c = BigInteger.ModPow(m, RsaE, n);
+        var cipherLe = ToFixedLe(c, 16);
 
         return (plainLe, cipherLe);
     }
-
-
-
-
-
 
     public static string GenerateOTP()
     {
