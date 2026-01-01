@@ -1,36 +1,65 @@
 ﻿namespace AISpace.Common.Network;
 
-public class PacketMetadataAttribute : Attribute
+public enum ServerType
 {
-    public string DecompiledName { get; }
-    public PacketMetadataAttribute(string decompiledName) => DecompiledName = decompiledName;
+    Msg,
+    Auth,
+    Area
+}
+
+[AttributeUsage(AttributeTargets.All)]
+public class PacketMetadata(ServerType serverType, string decompiledName) : Attribute
+{
+    public ServerType Server { get; } = serverType;
+    public string DecompiledName { get; } = decompiledName;
 }
 
 public enum PacketType : ushort
 {
-    //Auth
-    VersionCheckRequest = 0x62BC, // 25276 CProtoAuth_client::send_check_version
-    VersionCheckResponse = 0xB6B4, // 46772 CProtoAuth_client::recv_check_version_r
-    Auth_WorldListRequest = 0x6676, // 26230 CProtoAuth_client::send_get_worldlist
-    Auth_WorldListResponse = 0xEE7E, // 61054 CProtoAuth_client::recv_get_worldlist_r
-    Auth_WorldSelectRequest = 0x7FE7, // 32743 CProtoAuth_client::send_select_world
-    Auth_WorldSelectResponse = 0x3491, // 13457 CProtoAuth_client::recv_select_world_r
+    [PacketMetadata(ServerType.Auth, "send_check_version")]
+    VersionCheckRequest = 0x62BC,
 
-    AuthenticateRequest = 0xF24B, // 62027 CProtoAuth_client::send_authenticate
-    AuthenticateResponse = 0xD4AB, // 54443 CProtoAuth_client::recv_authenticate_r
-    AuthenticateFailureResponse = 0xD845, //55365 CProtoAuth_client::recv_authenticate_r_failure
+    [PacketMetadata(ServerType.Auth, "recv_check_version_r")]
+    VersionCheckResponse = 0xB6B4,
 
-    //Msg types
-    Msg_VersionCheckRequest = 0x62BC, // 25276 CProtoMsg_client::send_check_version
-    Msg_VersionCheckResponse = 0xB6B4, // 46772 CProtoMsg_client::recv_check_version_r
-    Msg_AvatarCreateRequest = 0x29A4, // 10660 CProtoMsg_client::send_avatar_create
-    Msg_AvatarCreateResponse = 0x788F, // 30863 CProtoMsg_client::recv_avatar_create_r
-    Msg_AvatarDataResponse = 0x6747, // 26439 CProtoMsg_client::recv_avatar_data
-    Msg_AvatarDestroyRequest = 0x765A, // 30298 CProtoMsg_client::send_avatar_destroy
-    Msg_AvatarDestroyResponse = 0x000, // TODO CProtoMsg_client::recv_avatar_destroy_r
-    Msg_EnqueteGetRequest = 0xc578, //50552
-    Msg_EnqueteGetResponse = 0x24EE, //9454
-    Msg_EnqueteAnswerRequest = 0x0352,
+    [PacketMetadata(ServerType.Auth, "send_get_worldlist")]
+    Auth_WorldListRequest = 0x6676,
+
+    [PacketMetadata(ServerType.Auth, "recv_get_worldlist_r")]
+    Auth_WorldListResponse = 0xEE7E,
+
+    [PacketMetadata(ServerType.Auth, "send_select_world")]
+    Auth_WorldSelectRequest = 0x7FE7, 
+
+    [PacketMetadata(ServerType.Auth, "recv_select_world_r")]
+    Auth_WorldSelectResponse = 0x3491,
+
+    [PacketMetadata(ServerType.Auth, "send_authenticate")]
+    AuthenticateRequest = 0xF24B,
+
+    [PacketMetadata(ServerType.Auth, "recv_authenticate_r")]
+    AuthenticateResponse = 0xD4AB,
+
+    [PacketMetadata(ServerType.Auth, "recv_authenticate_r_failure")]
+    AuthenticateFailureResponse = 0xD845,
+
+    [PacketMetadata(ServerType.Msg, "send_avatar_create")]
+    Msg_AvatarCreateRequest = 0x29A4, 
+
+    [PacketMetadata(ServerType.Msg, "recv_avatar_create_r")]
+    Msg_AvatarCreateResponse = 0x788F,
+
+    [PacketMetadata(ServerType.Msg, "recv_avatar_data")]
+    Msg_AvatarDataResponse = 0x6747,
+
+    [PacketMetadata(ServerType.Msg, "send_avatar_destroy")]
+    Msg_AvatarDestroyRequest = 0x765A,
+
+    [PacketMetadata(ServerType.Msg, "recv_avatar_destroy_r")]
+    Msg_AvatarDestroyResponse = 0x000, // TODO 
+    Msg_EnqueteGetRequest = 0xc578,
+    Msg_EnqueteGetResponse = 0x24EE,
+    Msg_EnqueteAnswerRequest = 0x352,
     Msg_EnqueteAnswerResponse = 0x615A,
 
 
@@ -38,9 +67,14 @@ public enum PacketType : ushort
     LoginRequest = 0x34EF, // 13551
     LoginResponse = 0x1FEA, // 8170
     LogoutRequest = 0x0AD0, // 2768
-    LogoutResponse = 0xB7B9, // 47033 CProtoMsg_client::recv_logout_r
-    AdventureUploadRateGetRequest = 0x71CF, // 29135
-    AdventureUploadRateGetResponse = 0x9061, // 36961
+
+    [PacketMetadata(ServerType.Msg, "recv_logout_r")]
+    LogoutResponse = 0xB7B9,
+
+    [PacketMetadata(ServerType.Auth, "recv_notify_logout")]
+    LogoutNotify = 0x2D66, 
+    AdventureUploadRateGetRequest = 0x71CF,
+    AdventureUploadRateGetResponse = 0x9061,
     AiDownloadListGetRequest = 0x1D3F, // 7487
     AiDownloadListGetResponse = 0xBEE1, // 48865
     AiUploadRateGetRequest = 0xE30D, // 58125
