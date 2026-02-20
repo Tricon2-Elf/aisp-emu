@@ -1,10 +1,7 @@
 namespace AISpace.Common.Game;
 
-public class CharaData(uint chara_id, uint character_id, string name)
+public class CharaData(uint slotId, uint modelId, string name)
 {
-    public uint chara_id = chara_id; //Possibly Character Slot ID?
-    public uint character_id = character_id; //Possibly Avatar ID
-    public string name = name;
     public CharaVisual Visual = new(BloodType.A, 1, 1, 1, 2, 0, 0);
     public MovementData moveData = new(0, 0, 0, 0, 0);
 
@@ -13,7 +10,7 @@ public class CharaData(uint chara_id, uint character_id, string name)
 
     public void AddEquip(uint id, uint socket)
     {
-        Equips.Add(new ItemSlotInfo(id, socket));
+        Equips.Add(new ItemSlotInfo(id, (uint)Equips.Count));
     }
 
     public byte[] ToBytes()
@@ -23,24 +20,29 @@ public class CharaData(uint chara_id, uint character_id, string name)
             AddEquip(0, y++);
 
         var writer = new Network.PacketWriter();
-        writer.Write(chara_id);
-        writer.Write(character_id);
-        writer.WriteFixedString(name, 37, "SHIFT_JIS"); //37
-        writer.Write(Visual.ToBytes());
+        writer.Write(slotId);           // m_SlotId (4)
+        writer.Write(modelId);      // m_Model (4)
+        writer.WriteFixedString(name, 37, "SHIFT_JIS");
+        writer.Write(Visual.ToBytes());  // ReadAvatarVisual (19)
+        writer.Write(0u);                // m_pCharacter (4) - client expects this between Visual and quat
         writer.Write(0f); //Quaternion X
         writer.Write(0f); //Quaternion Y
         writer.Write(0f); //Quaternion Z
         writer.Write(0f); //Quaternion W
-        //writer.Write(moveData.ToBytes());
-        writer.Write(moveData.ToBytes());
-        writer.Write(new byte[4]);
-        writer.Write(new byte[8]);
-        writer.Write((ushort)30);
-        for (int i = 0; i < 30; i++)
-        {
+        writer.Write(moveData.ToBytes()); // ReadMoveData (14)
+        writer.Write(0f);                // Vec2 float_6c (8)
+        writer.Write(0f);
+        for (int i = 0; i < 30; i++)    // m_Equipment 30×(id,socket) - no count
             writer.Write(Equips[i].ToBytes());
-        }
-        writer.Write(new byte[1]);
-        return writer.ToBytes();
+        writer.Write(0u);               // dword_164 (4)
+        writer.Write(0u);               // dword_168 (4)
+        writer.Write(0u);               // dword_16c (4)
+        writer.Write(0f);                // Vec2 float_170 (8)
+        writer.Write(0f);
+        // field_178 (sub_798D80): 0 bytes padding so total CharaData = 383
+        writer.Write((byte)0);           // field_240: byte_0 (1)
+        writer.Write(0L);                // field_240: dword_8 (8)
+        writer.Write(0L);                // field_240: dword_10 (8)
+        return writer.ToBytes();        // 383 bytes
     }
 }
