@@ -18,31 +18,37 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger, 
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
+        //Check if the client is authenticated and has a character
         if (!connection.IsAuthenticated || connection.User == null || connection.User.Characters.First() == null)
             return;
         _logger.LogInformation("Received AvatarGetDataRequest from Client: {Id}, IsAuthed: {auth}", connection.Id, connection.IsAuthenticated);
         _logger.LogInformation("Received AvatarGetDataRequest from Client: {Id}", connection.Id);
 
         var cha = connection.User!.Characters.First();
-        if (cha == null)
-            return;
-        _logger.LogInformation("Processing AvatarGetDataRequest for Character: {CharacterName} (ID: {CharacterId})", cha.Name, cha.Id);
-        var charaData = new CharaData((uint)cha.Id, cha.ModelId, cha.Name);
-        charaData.Visual.VisualId = (uint)cha.Id;
-        charaData.Visual.BloodType = cha.BloodType;
-        charaData.Visual.Month = (byte)cha.Birthdate.Month;
-        charaData.Visual.Day = (byte)cha.Birthdate.Day;
-        charaData.Visual.Gender = (uint)cha.Gender;
-        charaData.Visual.Face = (byte)cha.FaceType;
-        charaData.Visual.Hairstyle = cha.Hairstyle;
 
-        for (byte slot = 0; slot < 30; slot++)
-        {
-            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == slot);
-            charaData.AddEquip(eq != null ? (uint)eq.ItemId : 0, slot);
-        }
+        _logger.LogInformation("Processing AvatarGetDataRequest for Character: {CharacterName} (ID: {CharacterId})", cha.Name, cha.Id);
+        // m_SlotId (CharaData first param): 0 = local player; for other players use unique slots 1, 2, 3...
+        var charaData = CreateCData(cha, new MovementData(0f, 0f, 0f, 0, MovementType.Stopped));
         var avatarData = new AvatarData(0, charaData);
         var notifyData = new AvatarNotifyData(0, avatarData);
         await connection.SendAsync(ResponseType, notifyData.ToBytes(), ct);
+    }
+
+    private static CharaData CreateCData(DAL.Entities.Character cha, MovementData pos)
+    {
+        var cd = new CharaData((uint)cha.Id, (uint)cha.Id, cha.Name) { moveData = pos };
+        cd.Visual.VisualId = (uint)cha.Id;
+        cd.Visual.BloodType = cha.BloodType;
+        cd.Visual.Month = (byte)cha.Birthdate.Month;
+        cd.Visual.Day = (byte)cha.Birthdate.Day;
+        cd.Visual.Gender = (uint)cha.Gender;
+        cd.Visual.Face = (byte)cha.FaceType;
+        cd.Visual.Hairstyle = cha.Hairstyle;
+        for (byte s = 0; s < 30; s++)
+        {
+            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
+            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
+        }
+        return cd;
     }
 }
