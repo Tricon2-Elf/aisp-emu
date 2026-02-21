@@ -82,9 +82,10 @@ public class AreaMapDataEnterEndHandler(ILogger<AreaMapDataEnterEndHandler> _log
         cd.Visual.Gender = (uint)cha.Gender;
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
-        for (byte s = 0; s < 30; s++) {
-                var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
-                cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
+        for (byte s = 0; s < 30; s++)
+        {
+            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
+            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
         }
         return cd;
     }
