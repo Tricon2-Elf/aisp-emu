@@ -16,7 +16,11 @@ public class AreaMapDataEnterEndHandler(ILogger<AreaMapDataEnterEndHandler> _log
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
         await connection.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
-        if (connection.User == null) return;
+        if (connection.User == null)
+        {
+            _logger.LogWarning("User not found for connection: {ConnectionId}", connection.Id);
+            return;
+        }
         var myChar = connection.User!.Characters.First();
         var myPos = new MovementData(0f, 0f, 0f, 0, MovementType.Stopped);
         var spawnMeForOthers = new AvatarNotifyData(0, new AvatarData(1, CreateCData(myChar, myPos))).ToBytes();
