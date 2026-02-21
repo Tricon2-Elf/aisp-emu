@@ -36,7 +36,7 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger, 
 
     private static CharaData CreateCData(DAL.Entities.Character cha, MovementData pos)
     {
-        var cd = new CharaData((uint)cha.Id, (uint)cha.Id, cha.Name) { moveData = pos };
+        var cd = new CharaData((uint)cha.Id, (uint)cha.ModelId, cha.Name) { moveData = pos };
         cd.Visual.VisualId = (uint)cha.Id;
         cd.Visual.BloodType = cha.BloodType;
         cd.Visual.Month = (byte)cha.Birthdate.Month;
@@ -45,9 +45,9 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger, 
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
         for (byte s = 0; s < 30; s++)
-        {
-            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
-            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
+            {
+                var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
+                cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
         }
         return cd;
     }
