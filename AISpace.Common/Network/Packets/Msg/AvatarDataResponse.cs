@@ -1,4 +1,4 @@
-﻿namespace AISpace.Common.Network.Packets.Msg;
+namespace AISpace.Common.Network.Packets.Msg;
 
 public class AvatarDataResponse(uint result, string name, uint modelId, uint islandId, uint slotId) : IPacket<AvatarDataResponse>
 {
@@ -20,17 +20,13 @@ public class AvatarDataResponse(uint result, string name, uint modelId, uint isl
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write(result);
-        var _equips = Equips;
-        while (_equips.Count < 30)
-            AddEquip(0, 0);
-
+        writer.Write(Visual.VisualId); // AvatarId
         writer.Write(name);
         writer.Write(modelId);
         writer.Write(Visual.ToBytes());
         writer.Write(islandId);
         writer.Write(slotId);
-        foreach (var equip in _equips)
+        foreach (var equip in Equips)
             writer.Write(equip.ToBytes());
         return writer.ToBytes();
     }
