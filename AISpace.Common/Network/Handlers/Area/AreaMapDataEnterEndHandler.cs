@@ -43,11 +43,6 @@ public class AreaMapDataEnterEndHandler(ILogger<AreaMapDataEnterEndHandler> _log
             }
         }
 
-        await SpawnFakePlayer(connection, ct);
-
-        var spawnMeForMe = new AvatarNotifyData(0, new AvatarData(1, CreateCData(myChar, myPos))).ToBytes();
-        await connection.SendAsync(PacketType.AvatarNotifyData, spawnMeForMe, ct);
-
         for (int i = 0; i < 100; i++)
         {
             await SpawnFakePlayer(connection, ct);
@@ -88,8 +83,8 @@ public class AreaMapDataEnterEndHandler(ILogger<AreaMapDataEnterEndHandler> _log
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
         for (byte s = 0; s < 30; s++) {
-            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
-            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
+                var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
+                cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
         }
         return cd;
     }
