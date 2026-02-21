@@ -27,7 +27,7 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
         {
             Character cha = connection.User!.Characters.First();
 
-            var dataResponse = new AvatarDataResponse(0, cha.Name, cha.ModelId, 0, 0);
+            var dataResponse = new AvatarDataResponse((uint)cha.Id, cha.Name, cha.ModelId, 0, 0);
             dataResponse.Visual.VisualId = (uint)cha.Id;
             dataResponse.Visual.BloodType = cha.BloodType;
             dataResponse.Visual.Month = (byte)cha.Birthdate.Month;
