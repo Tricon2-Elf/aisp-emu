@@ -1,4 +1,4 @@
-﻿using AISpace.Common.Game;
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Network.Packets.Msg;
 
@@ -27,6 +27,7 @@ public class ItemGetBaseListResponse : IPacket<ItemGetBaseListResponse>
                 Socket1 = uint.Parse(columns[1]),
                 Socket2 = uint.Parse(columns[1]),
                 Name = columns[2],
+                IconId = uint.Parse(columns[0]),
             };
             Items.Add(temp);
         }
