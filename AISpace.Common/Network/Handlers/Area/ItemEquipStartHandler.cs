@@ -17,11 +17,11 @@ public class ItemEquipStartHandler(ILogger<ItemEquipStartHandler> logger) : IPac
     {
         var request = ItemEquipStartRequest.FromBytes(payload.Span);
         _logger.LogInformation("Client {Id} requested ItemEquipStart for ObjId: {ObjId}", connection.Id, request.ObjId);
-
+        var cha = connection.User!.Characters.First();
         var response = new ItemEquipStartResponse(1);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        var forceStarted = new ItemEquipForceStarted(request.ObjId);
+        var forceStarted = new ItemEquipForceStarted((uint)cha.Id);
         await connection.SendAsync(PacketType.ItemEquipForceStarted, forceStarted.ToBytes(), ct);
     }
 }
