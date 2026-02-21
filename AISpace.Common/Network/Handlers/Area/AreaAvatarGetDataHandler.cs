@@ -27,16 +27,15 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger, 
         var cha = connection.User!.Characters.First();
 
         _logger.LogInformation("Processing AvatarGetDataRequest for Character: {CharacterName} (ID: {CharacterId})", cha.Name, cha.Id);
-        // m_SlotId (CharaData first param): 0 = local player; for other players use unique slots 1, 2, 3...
-        var charaData = CreateCData(cha, new MovementData(0f, 0f, 0f, 0, MovementType.Stopped));
-        var avatarData = new AvatarData(0, charaData);
+        var charaData = CreateCData(cha, new MovementData(0f, 0f, 0f, 0, MovementType.Stopped), 0);
+        var avatarData = new AvatarData((uint)cha.Id, charaData);
         var notifyData = new AvatarNotifyData(0, avatarData);
         await connection.SendAsync(ResponseType, notifyData.ToBytes(), ct);
     }
 
-    private static CharaData CreateCData(DAL.Entities.Character cha, MovementData pos)
+    private static CharaData CreateCData(DAL.Entities.Character cha, MovementData pos, uint slotId)
     {
-        var cd = new CharaData((uint)cha.Id, (uint)cha.ModelId, cha.Name) { moveData = pos };
+        var cd = new CharaData(slotId, (uint)cha.ModelId, cha.Name) { moveData = pos };
         cd.Visual.VisualId = (uint)cha.Id;
         cd.Visual.BloodType = cha.BloodType;
         cd.Visual.Month = (byte)cha.Birthdate.Month;
@@ -45,9 +44,9 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger, 
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
         for (byte s = 0; s < 30; s++)
-            {
-                var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
-                cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
+        {
+            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
+            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
         }
         return cd;
     }
