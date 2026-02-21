@@ -39,7 +39,6 @@ public class ItemData
     public uint EmotionId { get; set; } = 0;
     public uint _0x0458 { get; set; } = 0;
 
-
     public byte[] ToBytes()
     {
         var writer = new Network.PacketWriter();
