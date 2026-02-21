@@ -1,4 +1,4 @@
-﻿namespace AISpace.Common.Game;
+namespace AISpace.Common.Game;
 
 public class ItemData
 {
@@ -11,8 +11,8 @@ public class ItemData
     // used for item in data
     public uint ItemId { get; set; } = 0;
 
-    // used in skill manager
-    public uint SkillId { get; set; } = 0;
+    /// Used in skill manager; client also uses this as icon id for inventory
+    public uint IconId { get; set; } = 0;
 
     public string Name { get; set; } = "N/A";
 
@@ -45,7 +45,7 @@ public class ItemData
         writer.Write(Key);
         writer.Write(SortedListPriority);
         writer.Write(ItemId);
-        writer.Write(SkillId);
+        writer.Write(IconId);
         writer.WriteFixedString(Name, 97, "Shift_JIS");
         writer.Write(Category);
         writer.Write(Socket1);
