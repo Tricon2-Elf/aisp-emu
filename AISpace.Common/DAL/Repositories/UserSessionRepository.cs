@@ -1,12 +1,22 @@
 using AISpace.Common.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.DAL.Repositories;
 
-public class UserSessionRepository(MainContext db) : IUserSessionRepository
+public interface IUserSessionRepository
+{
+    Task<UserSession> CreateAsync(int userId, string otp, TimeSpan duration, CancellationToken ct = default);
+    Task<UserSession?> GetValidSessionAsync(string otp, CancellationToken ct = default);
+    Task InvalidateExpiredAsync(CancellationToken ct = default);
+    Task DeleteAllForUserAsync(int userId, CancellationToken ct = default);
+}
+
+public class UserSessionRepository(MainContext db, IDbContextFactory<MainContext> factory, ILogger<UserSessionRepository> logger) : IUserSessionRepository
 {
     public async Task<UserSession> CreateAsync(int userId, string otp, TimeSpan duration, CancellationToken ct = default)
     {
+        await using var ctx = await factory.CreateDbContextAsync(ct);
         var session = new UserSession
         {
             UserId = userId,
@@ -14,8 +24,8 @@ public class UserSessionRepository(MainContext db) : IUserSessionRepository
             ExpiresAt = DateTime.UtcNow.Add(duration)
         };
 
-        db.UserSessions.Add(session);
-        await db.SaveChangesAsync(ct);
+        ctx.UserSessions.Add(session);
+        await ctx.SaveChangesAsync(ct);
         return session;
     }
 
@@ -41,5 +51,16 @@ public class UserSessionRepository(MainContext db) : IUserSessionRepository
 
         db.UserSessions.RemoveRange(expired);
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task DeleteAllForUserAsync(int userId, CancellationToken ct = default)
+    {
+        logger.LogInformation("Deleting all sessions for user {UserId}", userId);
+        await using var ctx = await factory.CreateDbContextAsync(ct);
+        await ctx.UserSessions
+            .Where(s => s.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+        logger.LogInformation("Deleted all sessions for user {UserId}", userId);
+        await ctx.SaveChangesAsync(ct);
     }
 }
