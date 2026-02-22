@@ -21,8 +21,8 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
     const int BlockSize = 16;
     private const byte HeaderPrefix = 0x03;
     private const int HeaderSize = 2;
-    public VCECamellia128? C2S;
-    public VCECamellia128? S2C;
+    public VCECamellia128 C2S = new();
+    public VCECamellia128 S2C = new();
     public bool encrypted = true;
     public ClientState CurrentState;
     public Guid Id = _Id;
@@ -39,38 +39,22 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public void SetCamelliaKeys(byte[] s2cKey, byte[] c2sKey)
     {
-        C2S = new();
-        S2C = new();
         S2C.Init(s2cKey);
         C2S.Init(c2sKey);
     }
 
-    public void DecryptBlock(Span<byte> data)
-    {
-        if (data.Length % 16 != 0)
-            throw new ArgumentException("Data length not multiple of 16");
-        C2S!.DecryptBlock(data);
-    }
+    public void DecryptBlock(Span<byte> data) => C2S.DecryptBlock(data);
+
+    public void EncryptBlock(Span<byte> data) => S2C.EncryptBlock(data);
 
     public void DecryptBlocks(Span<byte> data)
     {
-        if (data.Length % 16 != 0)
-            throw new ArgumentException("Data length not multiple of 16");
         for (int offset = 0; offset < data.Length; offset += 16)
             DecryptBlock(data[offset..(offset + 16)]);
     }
 
-    public void EncryptBlock(Span<byte> data)
-    {
-        if (data.Length % 16 != 0)
-            throw new ArgumentException("Data length not multiple of 16");
-        S2C!.EncryptBlock(data);
-    }
-
     public void EncryptBlocks(Span<byte> data)
     {
-        if (data.Length % 16 != 0)
-            throw new ArgumentException("Data length not multiple of 16");
         for (int offset = 0; offset < data.Length; offset += 16)
             EncryptBlock(data[offset..(offset + 16)]);
     }
