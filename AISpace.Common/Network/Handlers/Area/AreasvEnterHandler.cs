@@ -7,59 +7,69 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreasvEnterHandler(IUserSessionRepository sessionRepo, ILogger<AreasvEnterHandler> logger) : IPacketHandler
+public class AreasvEnterHandler(ILogger<AreasvEnterHandler> _logger, IUserSessionRepository _sessionRepo, SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.AreasvEnterRequest;
-
     public PacketType ResponseType => PacketType.AreasvEnterResponse;
-
     public MessageDomain Domain => MessageDomain.Area;
-
-    private readonly IUserSessionRepository _sessionRepo = sessionRepo;
-    private readonly ILogger<AreasvEnterHandler> _logger = logger;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
         var loginReq = AreasvEnterRequest.FromBytes(payload.Span);
-        _logger.LogInformation("Client: {Id} EnterRequest UserID: {UserID}, SessionID: {OTP}", connection.Id, loginReq.UserID, loginReq.OTP);
         var session = await _sessionRepo.GetValidSessionAsync(loginReq.OTP, ct);
 
-        if (session is null || session.UserId != loginReq.UserID)
-        {
-            _logger.LogWarning("Client: {ClientId} Login failed for UserID: {UserID} with OTP: {OTP}", connection.Id, loginReq.UserID, loginReq.OTP);
+        if (session is null || session.UserId != loginReq.UserID) {
             await connection.SendAsync(ResponseType, new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(), ct);
             return;
         }
 
+        // 1. Привязываем ID
         connection.User = session.User;
         uint charId = (uint)connection.User.Characters.First().Id;
-        _logger.LogInformation("Client: {ClientId} LoginRequest UserID: {UserID}, OTP: {OTP}, Name: {name}, CharID {charid}, CharName: {cname}", connection.Id, loginReq.UserID, loginReq.OTP, connection.User.Username, charId, connection.User.Characters.First().Name);
+        connection.CharacterId = charId;
 
-        var response = new AreasvEnterResponse(0, 0);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        // 2. Регистрируем в мире (SharedState теперь почистит старую сессию)
+        state.RegisterClient("Area", connection);
 
-        _ = Task.Run(
-            async () =>
-            {
-                try
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(10), ct);
-                    //_logger.Info("Attempting to add Avatar");
-                    //var charaData = new CharaData(24, 24, "randomuser");
-                    //charaData.AddEquip(10100140, 0);
-                    //charaData.AddEquip(10200130, 0);
-                    //charaData.AddEquip(10100190, 0);
-                    //var avatarData = new AvatarData(1, charaData);
-                    //_ = new AvatarNotifyData(0, avatarData);
-                    //await Task.Delay(TimeSpan.FromSeconds(1), ct);
+        // 3. Отвечаем клиенту (Успех входа)
+        await connection.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
 
-                    //var moveData = new MovementData(-227.392f, -0.043f, -1418.097f, -119, MovementType.Stopped);
-                    //var moveNotify = new AvatarNotifyMove(0, (uint)connection.clientUser.Characters.First().Id, moveData);
-                    //await connection.SendAsync(PacketType.AvatarNotifyMove, moveNotify.ToBytes(), ct);
+        // 4. СИНХРОНИЗАЦИЯ: Чтобы все увидели всех
+        _ = Task.Run(async () => {
+            await Task.Delay(1500, ct); // Ждем прогрузку карты
+
+            var cha = connection.User.Characters.First();
+            var myPos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
+            
+            // Спавним МЕНЯ у МЕНЯ (Result 0)
+            await connection.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
+
+            foreach (var other in state.AreaClients.Values) {
+                if (other.Id == connection.Id) continue;
+
+                // Спавним МЕНЯ у ДРУГИХ
+                await other.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 1, myPos), ct);
+
+                // Спавним ДРУГИХ у МЕНЯ
+                var oCha = other.User?.Characters.FirstOrDefault();
+                if (oCha != null) {
+                    var oPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
+                    await connection.SendAsync(PacketType.AvatarNotifyData, CreateNotify(oCha, other.CharacterId, 1, oPos), ct);
                 }
-                catch (OperationCanceledException) { }
-            },
-            ct
-        );
+            }
+        }, ct);
+    }
+
+    static byte[] CreateNotify(DAL.Entities.Character cha, uint objId, uint res, MovementData pos) {
+        var cd = new CharaData(objId, cha.ModelId, cha.Name) { moveData = pos };
+        cd.Visual.VisualId = (uint)cha.Id;
+        cd.Visual.BloodType = cha.BloodType;
+        cd.Visual.Month = (byte)cha.Birthdate.Month;
+        cd.Visual.Day = (byte)cha.Birthdate.Day;
+        cd.Visual.Gender = (uint)cha.Gender;
+        cd.Visual.Face = (byte)cha.FaceType;
+        cd.Visual.Hairstyle = cha.Hairstyle;
+        foreach (var eq in cha.Equipment) cd.AddEquip((uint)eq.ItemId, eq.SlotIndex);
+        return new AvatarNotifyData(res, new AvatarData(objId, cd)).ToBytes();
     }
 }

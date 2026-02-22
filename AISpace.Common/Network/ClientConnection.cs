@@ -22,7 +22,7 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public uint CharacterId { get; set; } = 0;
     public float X { get; set; } = 0f;
-    public float Y { get; set; } = 0.1f;
+    public float Y { get; set; } = 0f;
     public float Z { get; set; } = 0f;
     public sbyte Rotation { get; set; } = 0;
     public MovementType CurrentAnimation { get; set; } = MovementType.Stopped;

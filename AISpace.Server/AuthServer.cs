@@ -36,7 +36,7 @@ public class AuthServer : BackgroundService
     {
         // Настройка мира
         if (!await _db.Worlds.AnyAsync()) {
-            await _worldRepo.AddAsync("Local", "Multiplayer Server", "192.168.31.157", 50052);
+            await _worldRepo.AddAsync("Local", "Multiplayer Server", "192.168.31.158", 50052);
         }
 
         // Создаем 10 тестовых аккаунтов, если их еще нет

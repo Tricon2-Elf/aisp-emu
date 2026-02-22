@@ -15,18 +15,24 @@ public class AuthenticateHandler(IUserRepository userRepo, ILogger<AuthenticateH
 
     public override async Task<AuthenticateResponse?> HandleAsync(AuthenticateRequest request, ClientConnection connection, CancellationToken ct = default)
     {
-        _logger.LogInformation("Username: '{Username}'", request.Username);
+        _logger.LogInformation("Login attempt: '{Username}'", request.Username);
 
+        // 1. Пытаемся найти пользователя
         User? validUser = await userRepo.AuthenticateAsync(request.Username, request.Password);
+        
         if (validUser is null)
         {
-            _logger.LogWarning("Authentication failed for user '{Username}'", request.Username);
+            _logger.LogWarning("Auth failed for '{Username}'. Password mismatch or user not found.", request.Username);
+            
+            // Отправляем явный отказ
             var failResp = new AuthenticateFailureResponse(AuthResponseResult.InvalidCredentials);
             await connection.SendAsync(PacketType.AuthenticateFailureResponse, failResp.ToBytes(), ct);
             return null;
         }
 
         connection.User = validUser;
+        _logger.LogInformation("User '{Username}' authenticated successfully. ID: {Id}", request.Username, validUser.Id);
+        
         return new AuthenticateResponse((uint)validUser.Id);
     }
 }

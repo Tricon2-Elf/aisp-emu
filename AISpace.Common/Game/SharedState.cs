@@ -11,11 +11,23 @@ public class SharedState
     public ConcurrentQueue<(string id, string message)> newMessages = new();
 
     public void RegisterClient(string serverName, ClientConnection client)
+{
+    if (serverName == "Area")
     {
-        if (serverName == "Auth") AuthClients[client.Id] = client;
-        else if (serverName == "Msg") MsgClients[client.Id] = client;
-        else if (serverName == "Area") AreaClients[client.Id] = client;
+        // Если игрок с таким CharacterId уже в мире - УДАЛЯЕМ его старое соединение
+        // Иначе клиент выдаст ошибку "Объект уже существует" и вылетит.
+        var ghost = AreaClients.Values.FirstOrDefault(c => c.CharacterId == client.CharacterId);
+        if (ghost != null && ghost.Id != client.Id)
+        {
+            AreaClients.TryRemove(ghost.Id, out _);
+        }
+        AreaClients[client.Id] = client;
     }
+    else if (serverName == "Msg") 
+    {
+        MsgClients[client.Id] = client;
+    }
+}
 
     public void UnregisterClient(string serverName, Guid clientId)
     {

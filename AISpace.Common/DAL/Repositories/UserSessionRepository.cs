@@ -13,7 +13,6 @@ public class UserSessionRepository(MainContext db) : IUserSessionRepository
             OTP = otp,
             ExpiresAt = DateTime.UtcNow.Add(duration)
         };
-
         db.UserSessions.Add(session);
         await db.SaveChangesAsync(ct);
         return session;
@@ -33,13 +32,21 @@ public class UserSessionRepository(MainContext db) : IUserSessionRepository
     public async Task InvalidateExpiredAsync(CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
-        var expired = await db.UserSessions
-            .Where(s => s.ExpiresAt <= now)
-            .ToListAsync(ct);
+        var expired = await db.UserSessions.Where(s => s.ExpiresAt <= now).ToListAsync(ct);
+        if (expired.Count > 0)
+        {
+            db.UserSessions.RemoveRange(expired);
+            await db.SaveChangesAsync(ct);
+        }
+    }
 
-        if (expired.Count == 0) return;
-
-        db.UserSessions.RemoveRange(expired);
-        await db.SaveChangesAsync(ct);
+    public async Task DeleteAllForUserAsync(int userId, CancellationToken ct = default)
+    {
+        var sessions = await db.UserSessions.Where(s => s.UserId == userId).ToListAsync(ct);
+        if (sessions.Count > 0)
+        {
+            db.UserSessions.RemoveRange(sessions);
+            await db.SaveChangesAsync(ct);
+        }
     }
 }

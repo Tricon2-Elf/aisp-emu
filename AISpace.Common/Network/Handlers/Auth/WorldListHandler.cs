@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Network.Packets.Auth;
 using Microsoft.Extensions.Logging;
@@ -10,21 +11,26 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
     public PacketType ResponseType => PacketType.Auth_WorldListResponse;
     public MessageDomain Domain => MessageDomain.Auth;
 
-    private readonly IWorldRepository _worldRepository = repo;
-    private readonly ILogger<WorldListHandler> _logger = logger;
-
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        try
-        {
-            var worlds = await _worldRepository.GetAllAsync();
-            var worldListResponse = new WorldListResponse(0, worlds);
+        var dbWorlds = await repo.GetAllAsync();
+        var patchedWorlds = new List<World>();
+        
+        string hardcodedIp = "192.168.31.158";
 
-            await connection.SendAsync(PacketType.Auth_WorldListResponse, worldListResponse.ToBytes(), ct);
-        }
-        catch (Exception ex)
+        foreach (var w in dbWorlds)
         {
-            _logger.LogError("{Message} | {all}", ex.Message, ex.ToString());
+            patchedWorlds.Add(new World 
+            { 
+                Id = w.Id, 
+                Name = w.Name, 
+                Description = w.Description + " (Multiplayer)", 
+                Port = w.Port,
+                Address = hardcodedIp
+            });
         }
+
+        var response = new WorldListResponse(0, patchedWorlds);
+        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

@@ -1,6 +1,4 @@
-﻿using AISpace.Common.Network;
-
-namespace AISpace.Common.Game;
+﻿namespace AISpace.Common.Game;
 
 public enum MovementType : byte
 {
@@ -11,32 +9,25 @@ public enum MovementType : byte
 
 public class MovementData(float x, float y, float z, sbyte rotation, MovementType animation)
 {
-    public float X = x;
-    public float Y = y;
-    public float Z = z;
+    public float X = x; public float Y = y; public float Z = z;
     public sbyte Rotation = rotation;
     public MovementType Animation = animation;
 
     public byte[] ToBytes()
     {
-        var writer = new PacketWriter();
-        writer.Write(X);
-        writer.Write(Y);
-        writer.Write(Z);
+        var writer = new Network.PacketWriter();
+        writer.Write(X); writer.Write(Y); writer.Write(Z);
         writer.Write(Rotation);
-        writer.Write((byte)Animation);
+        writer.Write((byte)Animation); // 14-й байт (Критично!)
         return writer.ToBytes();
     }
 
     public static MovementData FromBytes(ReadOnlySpan<byte> source)
     {
-        var reader = new PacketReader(source);
+        var reader = new Network.PacketReader(source);
         return new MovementData(
-            reader.ReadFloat(),
-            reader.ReadFloat(),
-            reader.ReadFloat(),
-            reader.ReadSByte(),
-            (MovementType)reader.ReadByte()
+            reader.ReadFloat(), reader.ReadFloat(), reader.ReadFloat(),
+            reader.ReadSByte(), (MovementType)reader.ReadByte()
         );
     }
 }

@@ -18,8 +18,6 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
 {
     private readonly TcpListener _tcpListener = new(System.Net.IPAddress.Parse("0.0.0.0"), port);
     private readonly CancellationTokenSource _cts = new();
-    
-    // Локальный список клиентов для управления ресурсами
     private readonly ConcurrentDictionary<Guid, ClientConnection> _localClients = new();
 
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -39,7 +37,7 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
                 
                 _ = HandleClientLifecycleAsync(client, context, ct);
             } 
-            catch { /* Игнорируем ошибки при остановке */ }
+            catch { }
         }
     }
 
@@ -51,7 +49,9 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
             if (first != 0) await HandleCryptoClientAsync(context);
             else { context.encrypted = false; await HandleClientAsync(context); }
         }
-        catch { }
+        catch (Exception ex) {
+            logger.LogDebug("[CONN END] {Id}: {Msg}", context.Id, ex.Message);
+        }
         finally 
         {
             CleanupClient(context); 
@@ -60,30 +60,28 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
     }
 
     private void CleanupClient(ClientConnection context)
-    {
-        // Удаляем клиента из глобального и локального списка
-        sharedState.UnregisterClient(Name, context.Id);
-        _localClients.TryRemove(context.Id, out _);
+{
+    sharedState.UnregisterClient(Name, context.Id);
+    _localClients.TryRemove(context.Id, out _);
 
-        if (Name == "Area")
+    if (Name == "Area" && context.CharacterId != 0)
+    {
+        logger.LogInformation($"[DISCONNECT] Character {context.CharacterId} left the world.");
+
+        // Создаем пакет уведомления об исчезновении (0xD3A4)
+        var disappear = new AISpace.Common.Network.Packets.Area.NotifyDisappearChara(context.CharacterId);
+        byte[] data = disappear.ToBytes();
+
+        foreach (var other in sharedState.AreaClients.Values)
         {
-            logger.LogInformation($"[DISCONNECT] Client {context.Id} disconnected.");
-            
-            // ВРЕМЕННО ОТКЛЮЧЕНО: Рассылка пакета уничтожения.
-            // Причина: Отправка AvatarDestroyResponse другим клиентам заставляет их думать, 
-            // что уничтожены ОНИ, а не вышедший игрок. 
-            // Пока мы не найдем пакет NotifyAvatarLeave (Уведомление об уходе), 
-            // безопаснее просто ничего не слать. Игрок останется "призраком" до перезахода других.
-            
-            /*
-            int charId = context.User?.Characters?.FirstOrDefault()?.Id ?? 0;
-            if (charId != 0)
+            if (other.Id != context.Id)
             {
-                // Тут должен быть пакет типа AreasvLeave или NotifyDelete, но не Response.
+                // Рассылаем всем остальным
+                _ = other.SendAsync(PacketType.NotifyDisappearChara, data);
             }
-            */
         }
     }
+}
 
     private async Task HandleClientAsync(ClientConnection context)
     {
@@ -94,13 +92,14 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
             if (read == 0) break;
             
             int pLen = buffer[0];
-            if (pLen < 2) continue; // Защита
-
             await ReadExactAsync(context.Stream, buffer.AsMemory(0, 2), _cts.Token);
             ushort type = BinaryPrimitives.ReadUInt16LittleEndian(buffer.AsSpan(0, 2));
             
             byte[] payload = new byte[pLen - 2];
             await ReadExactAsync(context.Stream, payload, _cts.Token);
+            
+            // ЛОГ ПАКЕТА БЕЗ ШИФРОВАНИЯ
+            logger.LogInformation("[RECV-PLAIN] Type: 0x{Type:X4}, Len: {Len}, Hex: {Hex}", type, payload.Length, BitConverter.ToString(payload));
             
             channel.Writer.TryWrite(new Packet(context, (PacketType)type, payload, type));
         }
@@ -114,6 +113,8 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
         var (c2sP, c2sE) = CryptoUtils.CreateEncryptedKey(rsaN);
         context.SetCamelliaKeys(s2cP, c2sP);
         await context.SendRawAsync([.. s2cE, .. c2sE]);
+        
+        logger.LogDebug("[CRYPTO] Keys exchanged for {Id}", context.Id);
 
         var header = new byte[4];
         while (!_cts.Token.IsCancellationRequested)
@@ -147,14 +148,16 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
                 if (offset + pStart + 2 > msgSize) break; 
 
                 ushort type = BinaryPrimitives.ReadUInt16LittleEndian(cipher.AsSpan(offset + pStart, 2));
-                
                 int payloadSize = pLen - 2;
-                if (payloadSize < 0) payloadSize = 0;
-
                 byte[] payload = payloadSize > 0 ? cipher.AsSpan(offset + pStart + 2, payloadSize).ToArray() : [];
                 
+                // ЛОГ ПОСЛЕ РАСШИФРОВКИ
+                if ((PacketType)type != PacketType.Ping) {
+                    logger.LogInformation("[RECV] {Server} Type: {Type} (0x{RawType:X4}), Len: {Len}, Hex: {Hex}", 
+                        Name, (PacketType)type, type, payload.Length, BitConverter.ToString(payload));
+                }
+
                 channel.Writer.TryWrite(new Packet(context, (PacketType)type, payload, type));
-                
                 offset += pStart + pLen;
             }
         }

@@ -1,4 +1,6 @@
-﻿namespace AISpace.Common.Network.Packets;
+﻿using AISpace.Common.Network;
+
+namespace AISpace.Common.Network.Packets;
 
 public class PostTalkRequest(uint messageID, uint distID, string message, uint balloonID) : IPacket<PostTalkRequest>
 {
@@ -7,17 +9,14 @@ public class PostTalkRequest(uint messageID, uint distID, string message, uint b
     public string Message = message;
     public uint BalloonID = balloonID;
 
-    //BalloonID is either normal talk or Shout
-
     public static PostTalkRequest FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
         uint msgId = reader.ReadUInt();
         uint distId = reader.ReadUInt();
-        string messsage = reader.ReadString();
+        string msg = reader.ReadString("Shift_JIS"); 
         uint balloonId = reader.ReadUInt();
-        var temp = new PostTalkRequest(msgId, distId, messsage, balloonId);
-        return temp;
+        return new PostTalkRequest(msgId, distId, msg, balloonId);
     }
 
     public byte[] ToBytes()
@@ -25,7 +24,7 @@ public class PostTalkRequest(uint messageID, uint distID, string message, uint b
         var writer = new PacketWriter();
         writer.Write(MessageID);
         writer.Write(DistID);
-        writer.Write(Message);
+        writer.Write(Message, "Shift_JIS"); 
         writer.Write(BalloonID);
         return writer.ToBytes();
     }

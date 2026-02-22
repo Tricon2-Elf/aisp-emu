@@ -8,41 +8,32 @@ namespace AISpace.Common.Network.Handlers;
 public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger, ICharacterRepository charRepo) : IPacketHandler
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
-
     public PacketType ResponseType => PacketType.AvatarNotifyData;
-
     public MessageDomain Domain => MessageDomain.Area;
-
-    private readonly ILogger<AreaAvatarGetDataHandler> _logger = logger;
-    private readonly ICharacterRepository _charRepo = charRepo;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        if (!connection.IsAuthenticated || connection.User == null || connection.User.Characters.First() == null)
-            return;
-        _logger.LogInformation("Received AvatarGetDataRequest from Client: {Id}, IsAuthed: {auth}", connection.Id, connection.IsAuthenticated);
-        _logger.LogInformation("Received AvatarGetDataRequest from Client: {Id}", connection.Id);
+        if (!connection.IsAuthenticated || connection.User == null) return;
 
-        var cha = connection.User!.Characters.First();
-        if (cha == null)
-            return;
-        _logger.LogInformation("Processing AvatarGetDataRequest for Character: {CharacterName} (ID: {CharacterId})", cha.Name, cha.Id);
-        var charaData = new CharaData((uint)cha.Id, cha.ModelId, cha.Name);
-        charaData.Visual.VisualId = (uint)cha.Id;
-        charaData.Visual.BloodType = cha.BloodType;
-        charaData.Visual.Month = (byte)cha.Birthdate.Month;
-        charaData.Visual.Day = (byte)cha.Birthdate.Day;
-        charaData.Visual.Gender = (uint)cha.Gender;
-        charaData.Visual.Face = (byte)cha.FaceType;
-        charaData.Visual.Hairstyle = cha.Hairstyle;
+        var cha = connection.User.Characters.First();
+        var pos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, connection.CurrentAnimation);
+        
+        var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name) { moveData = pos };
+        cd.Visual.VisualId = (uint)cha.Id;
+        cd.Visual.BloodType = cha.BloodType;
+        cd.Visual.Month = (byte)cha.Birthdate.Month;
+        cd.Visual.Day = (byte)cha.Birthdate.Day;
+        cd.Visual.Gender = (uint)cha.Gender;
+        cd.Visual.Face = (byte)cha.FaceType;
+        cd.Visual.Hairstyle = cha.Hairstyle;
 
-        for (byte slot = 0; slot < 30; slot++)
+        for (byte s = 0; s < 30; s++)
         {
-            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == slot);
-            charaData.AddEquip(eq != null ? (uint)eq.ItemId : 0, slot);
+            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
+            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
         }
-        var avatarData = new AvatarData(0, charaData);
-        var notifyData = new AvatarNotifyData(0, avatarData);
-        await connection.SendAsync(ResponseType, notifyData.ToBytes(), ct);
+
+        var avatarData = new AvatarData((uint)cha.Id, cd);
+        await connection.SendAsync(ResponseType, new AvatarNotifyData(0, avatarData).ToBytes(), ct);
     }
 }
