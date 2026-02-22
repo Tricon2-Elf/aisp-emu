@@ -1,5 +1,3 @@
-using AISpace.Common.Network;
-
 namespace AISpace.Common.Network.Packets.Area;
 
 /// <summary>Server notify: character is playing an emote. Client plays it when receiving this (recv_notify_emotion_chara).</summary>

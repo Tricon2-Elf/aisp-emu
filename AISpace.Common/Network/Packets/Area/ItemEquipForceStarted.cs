@@ -1,5 +1,3 @@
-using AISpace.Common.Network;
-
 namespace AISpace.Common.Network.Packets.Area;
 
 public class ItemEquipForceStarted(uint objId) : IPacket<ItemEquipForceStarted>

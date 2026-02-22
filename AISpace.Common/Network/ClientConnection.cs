@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Sockets;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Network.Crypto;
-using AISpace.Common.Network.Packets;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network;

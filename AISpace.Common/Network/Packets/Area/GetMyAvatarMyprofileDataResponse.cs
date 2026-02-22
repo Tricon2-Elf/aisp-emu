@@ -1,5 +1,3 @@
-using AISpace.Common.Network;
-
 namespace AISpace.Common.Network.Packets.Area;
 
 public class GetMyAvatarMyprofileDataResponse(uint result) : IPacket<GetMyAvatarMyprofileDataResponse>

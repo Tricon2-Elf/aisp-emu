@@ -1,5 +1,4 @@
 using System;
-using AISpace.Common.Network;
 
 namespace AISpace.Common.Network.Packets.Area;
 
