@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using AISpace.Common.Network;
 
 namespace AISpace.Common.Game;
@@ -9,25 +9,24 @@ public class SharedState
     public ConcurrentDictionary<Guid, ClientConnection> MsgClients = new();
     public ConcurrentDictionary<Guid, ClientConnection> AreaClients = new();
     public ConcurrentQueue<(string id, string message)> newMessages = new();
+    public readonly long StartTimeUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
     public void RegisterClient(string serverName, ClientConnection client)
-{
-    if (serverName == "Area")
     {
-        // Если игрок с таким CharacterId уже в мире - УДАЛЯЕМ его старое соединение
-        // Иначе клиент выдаст ошибку "Объект уже существует" и вылетит.
-        var ghost = AreaClients.Values.FirstOrDefault(c => c.CharacterId == client.CharacterId);
-        if (ghost != null && ghost.Id != client.Id)
+        if (serverName == "Area")
         {
-            AreaClients.TryRemove(ghost.Id, out _);
+            var ghost = AreaClients.Values.FirstOrDefault(c => c.CharacterId == client.CharacterId);
+            if (ghost != null && ghost.Id != client.Id)
+            {
+                AreaClients.TryRemove(ghost.Id, out _);
+            }
+            AreaClients[client.Id] = client;
         }
-        AreaClients[client.Id] = client;
+        else if (serverName == "Msg") 
+        {
+            MsgClients[client.Id] = client;
+        }
     }
-    else if (serverName == "Msg") 
-    {
-        MsgClients[client.Id] = client;
-    }
-}
 
     public void UnregisterClient(string serverName, Guid clientId)
     {
