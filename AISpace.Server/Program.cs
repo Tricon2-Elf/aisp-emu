@@ -1,4 +1,4 @@
-﻿global using System.Threading.Channels;
+global using System.Threading.Channels;
 global using AISpace.Common.Config;
 global using AISpace.Common.DAL;
 global using AISpace.Common.DAL.Repositories;
@@ -7,7 +7,6 @@ global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
 using System.Text;
 using AISpace.Common.Game;
-using AISpace.Common.Network.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using NLog.Extensions.Logging;
 
@@ -27,6 +26,7 @@ internal class Program
         builder.Services.Configure<ServerOptions>(builder.Configuration.GetSection("Server"));
         //Database
         builder.Services.AddDbContext<MainContext>();
+        builder.Services.AddDbContextFactory<MainContext>();
 
         //Repo
         builder.Services.AddScoped<IUserRepository, UserRepository>();
