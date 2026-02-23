@@ -1,11 +1,10 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Area;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger, ICharacterRepository charRepo) : IPacketHandler
+public class AreaAvatarGetDataHandler : IPacketHandler
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyData;
