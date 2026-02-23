@@ -15,27 +15,23 @@ public class CmdExecHandler(SharedState state, ILogger<CmdExecHandler> logger) :
     {
         var request = CmdExecRequest.FromBytes(payload.Span);
         
-        // 1. Обязательный ответ клиенту, что команда принята
         var response = new CmdExecResponse(request.MessageId, 0);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
 
         string cmd = request.Command.ToLower();
         logger.LogInformation($"[CMD] Player {connection.CharacterId} executed: /{cmd}");
 
-        // 2. Логика кнопки Escape
+        // логика кнопки escape
         if (cmd == "escape" || cmd == "reset")
         {
-            // Устанавливаем дефолтные координаты карты (обычно центр или вход)
             connection.X = 0f;
             connection.Y = 0.1f;
             connection.Z = 0f;
             connection.Rotation = 0;
 
-            // Создаем пакет перемещения
             var moveData = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
             var notify = new AvatarNotifyMove(1, connection.CharacterId, moveData).ToBytes();
 
-            // Сообщаем ВСЕМ (включая себя), что мы переместились
             foreach (var client in state.AreaClients.Values)
             {
                 await client.SendAsync(PacketType.AvatarNotifyMove, notify, ct);
