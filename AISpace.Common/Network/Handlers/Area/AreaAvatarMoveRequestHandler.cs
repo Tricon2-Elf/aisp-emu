@@ -1,10 +1,9 @@
 using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Game;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers.Area;
 
-public class AreaAvatarMoveRequestHandler(ILogger<AreaAvatarMoveRequestHandler> logger, SharedState state) : IPacketHandler
+public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.AvatarMoveRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyMove;
@@ -15,9 +14,8 @@ public class AreaAvatarMoveRequestHandler(ILogger<AreaAvatarMoveRequestHandler> 
         var avatarMove = AvatarMove.FromBytes(payload.Span);
         if (avatarMove.Moves.Length == 0) return;
 
-        var movement = avatarMove.Moves[^1]; // Берем последнюю точку
+        var movement = avatarMove.Moves[^1];
 
-        // Сохраняем позицию, чтобы новые игроки видели его тут
         connection.X = movement.X;
         connection.Y = movement.Y;
         connection.Z = movement.Z;
