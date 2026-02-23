@@ -1,11 +1,10 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Network.Packets.Auth;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers.Auth;
 
-public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> logger) : IPacketHandler
+public class WorldListHandler(IWorldRepository repo) : IPacketHandler
 {
     public PacketType RequestType => PacketType.Auth_WorldListRequest;
     public PacketType ResponseType => PacketType.Auth_WorldListResponse;
@@ -16,7 +15,7 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
         var dbWorlds = await repo.GetAllAsync();
         var patchedWorlds = new List<World>();
         
-        string hardcodedIp = "192.168.31.158";
+        string ipaddress = "192.168.31.158";
 
         foreach (var w in dbWorlds)
         {
@@ -26,7 +25,7 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
                 Name = w.Name, 
                 Description = w.Description + " (Multiplayer)", 
                 Port = w.Port,
-                Address = hardcodedIp
+                Address = ipaddress
             });
         }
 
