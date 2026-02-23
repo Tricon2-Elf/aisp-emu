@@ -1,25 +1,26 @@
-﻿using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.DAL.Repositories;
 
 public class UserRepository(MainContext db) : IUserRepository
 {
-
     private readonly MainContext _db = db;
+
     public async Task<User?> AuthenticateAsync(string username, string password)
     {
         var user = await _db.Users
             .Include(u => u.Characters)
-                .ThenInclude(c => c.Inventory)
-                    .ThenInclude(i => i.Item)
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Equipment)
-                    .ThenInclude(e => e.Item)
-            .SingleOrDefaultAsync(u => u.Username == username);
-        if (user is null) return null;
+            .FirstOrDefaultAsync(u => u.Username == username);
 
-        return user.VerifyPassword(password) ? user : null;
+        if (user == null) return null;
+
+        if (user.VerifyPassword(password))
+        {
+            return user;
+        }
+
+        return null;
     }
 
     public async Task AddAsync(string username, string password)
@@ -35,11 +36,6 @@ public class UserRepository(MainContext db) : IUserRepository
     {
         return await _db.Users
             .Include(u => u.Characters)
-                .ThenInclude(c => c.Inventory)
-                    .ThenInclude(i => i.Item)
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Equipment)
-                    .ThenInclude(e => e.Item)
             .FirstOrDefaultAsync(u => u.Username == username);
     }
 
@@ -47,11 +43,6 @@ public class UserRepository(MainContext db) : IUserRepository
     {
         return await _db.Users
             .Include(u => u.Characters)
-                .ThenInclude(c => c.Inventory)
-                    .ThenInclude(i => i.Item)
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Equipment)
-                    .ThenInclude(e => e.Item)
             .FirstOrDefaultAsync(u => u.Id == userId);
     }
 }
