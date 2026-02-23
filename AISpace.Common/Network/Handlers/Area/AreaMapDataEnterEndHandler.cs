@@ -1,11 +1,10 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Area;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreaMapDataEnterEndHandler(ILogger<AreaMapDataEnterEndHandler> logger, SharedState state) : IPacketHandler
+public class AreaMapDataEnterEndHandler(SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.MapDataEnterEndRequest;
     public PacketType ResponseType => PacketType.MapDataEnterEndResponse;
@@ -36,7 +35,6 @@ public class AreaMapDataEnterEndHandler(ILogger<AreaMapDataEnterEndHandler> logg
                 await connection.SendAsync(PacketType.AvatarNotifyData, spawnOtherForMe, ct);
             }
         }
-        
     }
 
     private static CharaData CreateCData(Character cha, MovementData pos)
