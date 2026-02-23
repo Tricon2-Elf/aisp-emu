@@ -13,12 +13,10 @@ public class AreaMapEnterHandler(ILogger<AreaMapEnterHandler> logger) : IPacketH
     {
         logger.LogInformation($"[MAP] Client {connection.Id} entering map (Escape/Entry)");
 
-        // Сбрасываем позицию при входе на карту
         connection.X = 0f;
-        connection.Y = 0.1f;
+        connection.Y = 0f;
         connection.Z = 0f;
 
-        // Результат 0 - успех
         var response = new AreaMapEnterResponse(0);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
     }
