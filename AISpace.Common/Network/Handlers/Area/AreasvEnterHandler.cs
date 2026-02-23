@@ -3,11 +3,10 @@ using AISpace.Common.Game;
 using AISpace.Common.Network;
 using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Network.Packets.Common;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreasvEnterHandler(ILogger<AreasvEnterHandler> _logger, IUserSessionRepository _sessionRepo, SharedState state) : IPacketHandler
+public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.AreasvEnterRequest;
     public PacketType ResponseType => PacketType.AreasvEnterResponse;
@@ -23,34 +22,27 @@ public class AreasvEnterHandler(ILogger<AreasvEnterHandler> _logger, IUserSessio
             return;
         }
 
-        // 1. Привязываем ID
         connection.User = session.User;
         uint charId = (uint)connection.User.Characters.First().Id;
         connection.CharacterId = charId;
 
-        // 2. Регистрируем в мире (SharedState теперь почистит старую сессию)
         state.RegisterClient("Area", connection);
 
-        // 3. Отвечаем клиенту (Успех входа)
         await connection.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
 
-        // 4. СИНХРОНИЗАЦИЯ: Чтобы все увидели всех
         _ = Task.Run(async () => {
-            await Task.Delay(1500, ct); // Ждем прогрузку карты
+            await Task.Delay(1000, ct); 
 
             var cha = connection.User.Characters.First();
             var myPos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
             
-            // Спавним МЕНЯ у МЕНЯ (Result 0)
             await connection.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
 
             foreach (var other in state.AreaClients.Values) {
                 if (other.Id == connection.Id) continue;
 
-                // Спавним МЕНЯ у ДРУГИХ
                 await other.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 1, myPos), ct);
 
-                // Спавним ДРУГИХ у МЕНЯ
                 var oCha = other.User?.Characters.FirstOrDefault();
                 if (oCha != null) {
                     var oPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
