@@ -1,10 +1,10 @@
-﻿namespace AISpace.Common.Game;
+namespace AISpace.Common.Game;
 
 public enum MovementType : byte
 {
     Stopped = 0,
     Walking = 1,
-    Running = 2,
+    Running = 3,
 }
 
 public class MovementData(float x, float y, float z, sbyte rotation, MovementType animation)
@@ -18,7 +18,7 @@ public class MovementData(float x, float y, float z, sbyte rotation, MovementTyp
         var writer = new Network.PacketWriter();
         writer.Write(X); writer.Write(Y); writer.Write(Z);
         writer.Write(Rotation);
-        writer.Write((byte)Animation); // 14-й байт (Критично!)
+        writer.Write((byte)Animation);
         return writer.ToBytes();
     }
 
