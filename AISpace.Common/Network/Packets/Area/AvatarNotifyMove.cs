@@ -1,4 +1,4 @@
-﻿using AISpace.Common.Game;
+using AISpace.Common.Game;
 using AISpace.Common.Network;
 
 namespace AISpace.Common.Network.Packets.Area;
@@ -21,19 +21,16 @@ public class AvatarNotifyMove : IPacket<AvatarNotifyMove>
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write(Result);   // 4 байта
-        writer.Write(AvatarId); // 4 байта
         
-        // Координаты (12 байт: X, Y, Z)
+        writer.Write(Result);
+        writer.Write(AvatarId);
+        
         writer.Write(Move.X);
         writer.Write(Move.Y);
         writer.Write(Move.Z);
+        writer.Write((sbyte)Move.Rotation);
+        writer.Write((byte)Move.Animation);
         
-        // ВАЖНО: В коде были значения 1021/1051. 
-        // Попробуем упаковать Rotation и Animation так, как ждет движок.
-        writer.Write((sbyte)Move.Rotation); // 1 байт
-        writer.Write((byte)Move.Animation); // 1 байт
-        
-        return writer.ToBytes(); // Итого 22 байта
+        return writer.ToBytes();
     }
 }
