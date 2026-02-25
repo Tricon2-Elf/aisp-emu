@@ -1,14 +1,16 @@
-﻿namespace AISpace.Common.Network.Packets.Msg;
+namespace AISpace.Common.Network.Packets.Msg;
 
-public class AvatarGetDataRequest : IPacket<AvatarGetDataRequest>
+public class AvatarGetDataResponse(uint result) : IPacket<AvatarGetDataResponse>
 {
-    public static AvatarGetDataRequest FromBytes(ReadOnlySpan<byte> data)
+    public static AvatarGetDataResponse FromBytes(ReadOnlySpan<byte> data)
     {
         throw new NotImplementedException();
     }
 
     public byte[] ToBytes()
     {
-        throw new NotImplementedException();
+        var writer = new PacketWriter();
+        writer.Write(result);
+        return writer.ToBytes();
     }
 }
