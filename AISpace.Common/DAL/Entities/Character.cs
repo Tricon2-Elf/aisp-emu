@@ -1,4 +1,4 @@
-﻿using AISpace.Common.Game;
+using AISpace.Common.Game;
 
 namespace AISpace.Common.DAL.Entities;
 
@@ -23,6 +23,11 @@ public class Character
 
     public int UserId { get; set; }
     public User User { get; set; } = default!;
+
+    public int? CircleId { get; set; }
+    public Circle? Circle { get; set; }
+    public uint CurrentMapId { get; set; }
+
     public ICollection<CharacterInventory> Inventory { get; set; } = new List<CharacterInventory>();
     public ICollection<CharacterEquipment> Equipment { get; set; } = new List<CharacterEquipment>();
 }
