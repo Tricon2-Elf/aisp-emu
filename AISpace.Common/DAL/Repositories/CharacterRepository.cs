@@ -1,4 +1,4 @@
-﻿using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -31,7 +31,6 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             Gender = Gender,
             FaceType = faceType,
             Hairstyle = hairStyle
-
         };
         db.Characters.Add(c);
         await db.SaveChangesAsync(ct);
@@ -40,26 +39,33 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
 
     public async Task AddInventoryAsync(int characterId, int itemId, int quantity, CancellationToken ct = default)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(quantity);
-
-        var existing = await db.CharacterInventories
-            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
-
-        if (existing is null)
+        try 
         {
-            db.CharacterInventories.Add(new CharacterInventory
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(quantity);
+
+            var existing = await db.CharacterInventories
+                .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
+
+            if (existing is null)
             {
-                CharacterId = characterId,
-                ItemId = itemId,
-                Quantity = quantity
-            });
-        }
-        else
-        {
-            existing.Quantity += quantity;
-        }
+                db.CharacterInventories.Add(new CharacterInventory
+                {
+                    CharacterId = characterId,
+                    ItemId = itemId,
+                    Quantity = quantity
+                });
+            }
+            else
+            {
+                existing.Quantity += quantity;
+            }
 
-        await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to add item {ItemId} to inventory for CharID {CharId}. Item might be missing in DB.", itemId, characterId);
+        }
     }
 
     public async Task EquipAsync(int characterId, byte slotIndex, int itemId, CancellationToken ct = default)
@@ -67,31 +73,31 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         _logger.LogInformation("Equipping item {ItemId} to character {CharacterId} in slot {SlotIndex}", itemId, characterId, slotIndex);
         if (slotIndex > 29) throw new ArgumentOutOfRangeException(nameof(slotIndex), "0..29 only");
 
-        // Ensure the character has the item in inventory
-        //var hasItem = await db.CharacterInventories
-        //    .AnyAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
-        //if (!hasItem)
-        //    throw new InvalidOperationException("Character does not own this item.");
-
-        // Upsert the equipment for this slot
-        var existing = await db.CharacterEquipments
-            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.SlotIndex == slotIndex, ct);
-
-        if (existing is null)
+        try
         {
-            db.CharacterEquipments.Add(new CharacterEquipment
+            var existing = await db.CharacterEquipments
+                .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.SlotIndex == slotIndex, ct);
+
+            if (existing is null)
             {
-                CharacterId = characterId,
-                SlotIndex = slotIndex,
-                ItemId = itemId
-            });
-        }
-        else
-        {
-            existing.ItemId = itemId;
-        }
+                db.CharacterEquipments.Add(new CharacterEquipment
+                {
+                    CharacterId = characterId,
+                    SlotIndex = slotIndex,
+                    ItemId = itemId
+                });
+            }
+            else
+            {
+                existing.ItemId = itemId;
+            }
 
-        await db.SaveChangesAsync(ct);
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to equip item {ItemId}. It probably does not exist in 'Items' table.", itemId);
+        }
     }
 
     public async Task UnequipAsync(int characterId, byte slotIndex, CancellationToken ct = default)
