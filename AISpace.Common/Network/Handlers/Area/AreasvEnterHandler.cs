@@ -8,6 +8,8 @@ namespace AISpace.Common.Network.Handlers;
 
 public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, SharedState state) : IPacketHandler
 {
+    private const float SpawnSpread = 50.0f;
+
     public PacketType RequestType => PacketType.AreasvEnterRequest;
     public PacketType ResponseType => PacketType.AreasvEnterResponse;
     public MessageDomain Domain => MessageDomain.Area;
@@ -23,8 +25,20 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, SharedState
         }
 
         connection.User = session.User;
-        uint charId = (uint)connection.User.Characters.First().Id;
+        var chara = connection.User.Characters.First();
+        uint charId = (uint)chara.Id;
         connection.CharacterId = charId;
+
+        uint mapId = chara.CurrentMapId;
+        var spawn = MapRegistry.GetSpawn(mapId);
+
+        float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
+        float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
+
+        connection.X = spawn.X + offsetX;
+        connection.Y = spawn.Y;
+        connection.Z = spawn.Z + offsetZ;
+        connection.Rotation = spawn.Rot;
 
         state.RegisterClient("Area", connection);
 
@@ -52,7 +66,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, SharedState
         }, ct);
     }
 
-    static byte[] CreateNotify(DAL.Entities.Character cha, uint objId, uint res, MovementData pos) {
+    public static byte[] CreateNotify(DAL.Entities.Character cha, uint objId, uint res, MovementData pos) {
         var cd = new CharaData(objId, cha.ModelId, cha.Name) { moveData = pos };
         cd.Visual.VisualId = (uint)cha.Id;
         cd.Visual.BloodType = cha.BloodType;
