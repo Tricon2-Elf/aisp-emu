@@ -14,14 +14,26 @@ public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
         var avatarMove = AvatarMove.FromBytes(payload.Span);
         if (avatarMove.Moves.Length == 0) return;
 
-        var movement = avatarMove.Moves[^1];
+        var lastMovement = avatarMove.Moves[^1];
 
-        connection.X = movement.X;
-        connection.Y = movement.Y;
-        connection.Z = movement.Z;
-        connection.Rotation = movement.Rotation;
+        byte maxAnimation = 0;
+        foreach (var m in avatarMove.Moves)
+        {
+            if ((byte)m.Animation > maxAnimation)
+            {
+                maxAnimation = (byte)m.Animation;
+            }
+        }
 
-        var notify = new AvatarNotifyMove(1, connection.CharacterId, movement).ToBytes();
+        lastMovement.Animation = (MovementType)maxAnimation;
+
+        connection.X = lastMovement.X;
+        connection.Y = lastMovement.Y;
+        connection.Z = lastMovement.Z;
+        connection.Rotation = lastMovement.Rotation;
+        connection.CurrentAnimation = lastMovement.Animation;
+
+        var notify = new AvatarNotifyMove(1, connection.CharacterId, lastMovement).ToBytes();
 
         foreach (var other in state.AreaClients.Values)
         {
