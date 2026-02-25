@@ -1,4 +1,4 @@
-using AISpace.Common.Game;
+﻿using AISpace.Common.Game;
 
 namespace AISpace.Common.Network.Packets.Msg;
 
