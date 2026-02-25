@@ -1,12 +1,16 @@
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.Network.Packets.Msg;
 using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Game;
 using Microsoft.Extensions.Logging;
+using AISpace.Common.Network.Handlers;
 
 namespace AISpace.Common.Network.Handlers.Msg;
 
 public class CmdExecHandler(SharedState state, ILogger<CmdExecHandler> logger) : IPacketHandler
 {
+    private const float SpawnSpread = 50.0f;
+
     public PacketType RequestType => PacketType.CmdExecRequest;
     public PacketType ResponseType => PacketType.CmdExecResponse;
     public MessageDomain Domain => MessageDomain.Msg;
@@ -19,25 +23,74 @@ public class CmdExecHandler(SharedState state, ILogger<CmdExecHandler> logger) :
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
 
         string cmd = request.Command.ToLower();
-        logger.LogInformation($"[CMD] Player {connection.CharacterId} executed: /{cmd}");
 
-        // логика кнопки escape
+        if (cmd == "pos" || cmd == "coords")
+        {
+            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == connection.CharacterId);
+            if (areaClient != null)
+            {
+                logger.LogCritical("\n" +
+                    "==========================================\n" +
+                    $"  LOCATION DATA for Char: {areaClient.CharacterId}\n" +
+                    $"  X: {areaClient.X}f\n" +
+                    $"  Y: {areaClient.Y}f\n" +
+                    $"  Z: {areaClient.Z}f\n" +
+                    $"  Rotation: {areaClient.Rotation}\n" +
+                    "==========================================");
+            }
+            return;
+        }
+
         if (cmd == "escape" || cmd == "reset")
         {
-            connection.X = 0f;
-            connection.Y = 0.1f;
-            connection.Z = 0f;
-            connection.Rotation = 0;
-
-            var moveData = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
-            var notify = new AvatarNotifyMove(1, connection.CharacterId, moveData).ToBytes();
-
-            foreach (var client in state.AreaClients.Values)
-            {
-                await client.SendAsync(PacketType.AvatarNotifyMove, notify, ct);
-            }
+            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == connection.CharacterId);
             
-            logger.LogInformation($"[ESCAPE] Player {connection.CharacterId} teleported to start point.");
+            if (areaClient != null && areaClient.User != null && areaClient.User.Characters.Count > 0)
+            {
+                var chara = areaClient.User.Characters.First();
+                uint mapId = chara.CurrentMapId;
+
+                var spawn = MapRegistry.GetSpawn(mapId);
+
+                float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
+                float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
+
+                areaClient.X = spawn.X + offsetX;
+                areaClient.Y = spawn.Y;
+                areaClient.Z = spawn.Z + offsetZ;
+                areaClient.Rotation = spawn.Rot;
+                areaClient.CurrentAnimation = MovementType.Stopped;
+
+                var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
+                
+                var notifyMove = new AvatarNotifyMove(1, areaClient.CharacterId, newPos).ToBytes();
+                await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
+
+                var disappearPacket = new NotifyDisappearChara(areaClient.CharacterId).ToBytes();
+                var appearPacket = CreateTeleportNotify(chara, areaClient.CharacterId, newPos);
+
+                foreach (var other in state.AreaClients.Values)
+                {
+                    if (other.Id == areaClient.Id) continue;
+                    
+                    await other.SendAsync(PacketType.NotifyDisappearChara, disappearPacket, ct);
+                    await other.SendAsync(PacketType.AvatarNotifyData, appearPacket, ct);
+                }
+            }
         }
+    }
+
+    private static byte[] CreateTeleportNotify(Character cha, uint objId, MovementData pos)
+    {
+        var cd = new CharaData(objId, cha.ModelId, cha.Name) { moveData = pos };
+        cd.Visual.VisualId = objId;
+        cd.Visual.BloodType = cha.BloodType;
+        cd.Visual.Month = (byte)cha.Birthdate.Month;
+        cd.Visual.Day = (byte)cha.Birthdate.Day;
+        cd.Visual.Gender = (uint)cha.Gender;
+        cd.Visual.Face = (byte)cha.FaceType;
+        cd.Visual.Hairstyle = cha.Hairstyle;
+        foreach (var eq in cha.Equipment) cd.AddEquip((uint)eq.ItemId, eq.SlotIndex);
+        return new AvatarNotifyData(1, new AvatarData(objId, cd)).ToBytes();
     }
 }
