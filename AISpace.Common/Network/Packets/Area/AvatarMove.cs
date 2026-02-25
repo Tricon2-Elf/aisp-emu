@@ -1,4 +1,4 @@
-﻿using AISpace.Common.Game;
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Network.Packets.Area;
 
@@ -9,7 +9,6 @@ public class AvatarMove(MovementData[] Moves) : IPacket<AvatarMove>
     public static AvatarMove FromBytes(ReadOnlySpan<byte> data)
     {
         var packetReader = new PacketReader(data);
-        // Вычисляем реальное количество точек движения
         int count = data.Length / 14; 
         if (count == 0) count = 1;
 
