@@ -42,6 +42,11 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public async Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) {
         try {
+            // ФИЛЬТР ЛОГОВ НА ОТПРАВКУ (Убираем Пинг и Время)
+            if (type != PacketType.Ping && type != PacketType.TimeZoneGetResponse) {
+                Logger.LogInformation("[SEND] Type: {Type} (0x{RawType:X4}), Len: {Len}", type, (ushort)type, payload.Length);
+            }
+
             var writer = new PacketWriter();
             writer.Write(HeaderPrefix);
             writer.Write((uint)payload.Length + 2);
