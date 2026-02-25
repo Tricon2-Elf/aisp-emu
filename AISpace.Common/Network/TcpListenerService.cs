@@ -49,9 +49,7 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
             if (first != 0) await HandleCryptoClientAsync(context);
             else { context.encrypted = false; await HandleClientAsync(context); }
         }
-        catch (Exception ex) {
-            logger.LogDebug("[CONN END] {Id}: {Msg}", context.Id, ex.Message);
-        }
+        catch (Exception) { }
         finally 
         {
             CleanupClient(context); 
@@ -60,28 +58,10 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
     }
 
     private void CleanupClient(ClientConnection context)
-{
-    sharedState.UnregisterClient(Name, context.Id);
-    _localClients.TryRemove(context.Id, out _);
-
-    if (Name == "Area" && context.CharacterId != 0)
     {
-        logger.LogInformation($"[DISCONNECT] Character {context.CharacterId} left the world.");
-
-        // Создаем пакет уведомления об исчезновении (0xD3A4)
-        var disappear = new AISpace.Common.Network.Packets.Area.NotifyDisappearChara(context.CharacterId);
-        byte[] data = disappear.ToBytes();
-
-        foreach (var other in sharedState.AreaClients.Values)
-        {
-            if (other.Id != context.Id)
-            {
-                // Рассылаем всем остальным
-                _ = other.SendAsync(PacketType.NotifyDisappearChara, data);
-            }
-        }
+        sharedState.UnregisterClient(Name, context.Id);
+        _localClients.TryRemove(context.Id, out _);
     }
-}
 
     private async Task HandleClientAsync(ClientConnection context)
     {
@@ -98,9 +78,6 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
             byte[] payload = new byte[pLen - 2];
             await ReadExactAsync(context.Stream, payload, _cts.Token);
             
-            // ЛОГ ПАКЕТА БЕЗ ШИФРОВАНИЯ
-            logger.LogInformation("[RECV-PLAIN] Type: 0x{Type:X4}, Len: {Len}, Hex: {Hex}", type, payload.Length, BitConverter.ToString(payload));
-            
             channel.Writer.TryWrite(new Packet(context, (PacketType)type, payload, type));
         }
     }
@@ -113,8 +90,6 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
         var (c2sP, c2sE) = CryptoUtils.CreateEncryptedKey(rsaN);
         context.SetCamelliaKeys(s2cP, c2sP);
         await context.SendRawAsync([.. s2cE, .. c2sE]);
-        
-        logger.LogDebug("[CRYPTO] Keys exchanged for {Id}", context.Id);
 
         var header = new byte[4];
         while (!_cts.Token.IsCancellationRequested)
@@ -151,10 +126,9 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
                 int payloadSize = pLen - 2;
                 byte[] payload = payloadSize > 0 ? cipher.AsSpan(offset + pStart + 2, payloadSize).ToArray() : [];
                 
-                // ЛОГ ПОСЛЕ РАСШИФРОВКИ
-                if ((PacketType)type != PacketType.Ping) {
-                    logger.LogInformation("[RECV] {Server} Type: {Type} (0x{RawType:X4}), Len: {Len}, Hex: {Hex}", 
-                        Name, (PacketType)type, type, payload.Length, BitConverter.ToString(payload));
+                if ((PacketType)type != PacketType.Ping && (PacketType)type != PacketType.TimeZoneGetRequest) {
+                    logger.LogInformation("[RECV] {Server} Type: {Type} (0x{RawType:X4}), Len: {Len}", 
+                        Name, (PacketType)type, type, payload.Length);
                 }
 
                 channel.Writer.TryWrite(new Packet(context, (PacketType)type, payload, type));
