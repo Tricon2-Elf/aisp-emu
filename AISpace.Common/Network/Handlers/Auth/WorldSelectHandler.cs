@@ -21,9 +21,9 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
         var WorldSelectReq = WorldSelectRequest.FromBytes(payload.Span);
         var selectedWorldID = (int)WorldSelectReq.WorldID;
         var world = await _worldRepository.GetByIdAsync(selectedWorldID);
-        if (world == null)//TODO: Should send a Logout notification?
+        if (world == null) //TODO: Should send a Logout notification?
             return;
-        if (!connection.IsAuthenticated)//TODO: Should send a Logout notification?
+        if (!connection.IsAuthenticated) //TODO: Should send a Logout notification?
             return;
 
         User clientUser = connection.User!;

@@ -22,7 +22,7 @@ public class SharedState
             }
             AreaClients[client.Id] = client;
         }
-        else if (serverName == "Msg") 
+        else if (serverName == "Msg")
         {
             MsgClients[client.Id] = client;
         }

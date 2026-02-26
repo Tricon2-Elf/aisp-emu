@@ -519,7 +519,7 @@ public enum PacketType : ushort
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_update_option_r")]
     UpdateOptionResponse = 0xB314, // 45844
-	
+
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_trashbox_open")]
     TrashboxOpenRequest = 0xF41F, // 62495
 
@@ -537,8 +537,8 @@ public enum PacketType : ushort
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_trashbox_discard_item_r")]
     TrashboxDiscardItemResponse = 0xBBEB, // 48107
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_edit_myprofile")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_edit_myprofile")]
     MyProfileAvatarEditRequest = 0xA063,
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_edit_myprofile_r")]
@@ -546,41 +546,41 @@ public enum PacketType : ushort
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_close_myprofile")]
     MyProfileCloseRequest = 0xEF6F,
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_trade_request")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_trade_request")]
     TradeRequest = 0x2896,
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_avatar_profile_data")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_avatar_profile_data")]
     AvatarProfileGetDataRequest = 0xCF9A, // 53146
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_friend_link_tag_get_other")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_friend_link_tag_get_other")]
     FriendLinkTagGetOtherRequest = 0xC9D8, // 51672
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_other_profile_text")]
     OtherProfileTextRequest = 0xD9DA, // 55770
-    
-	[PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_talk")]
+
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_talk")]
     CircleTalkRequest = 0xD65C, // 54876
-	
+
     [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_talk_forward")]
     TalkForwardNotify = 0x20F6,
-	
-	[PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_chat_forward")]
+
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_chat_forward")]
     CircleChatForwardNotify = 0x2035,
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_quest_work")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_quest_work")]
     QuestWorkGetRequest = 0xF582, // 62850
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_quest_history")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_quest_history")]
     QuestHistoryGetRequest = 0x4BED, // 19437
-	
+
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_quest_work_r")]
     QuestWorkGetResponse = 0x7162, // 29026
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_quest_history_r")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_quest_history_r")]
     QuestHistoryGetResponse = 0xF8D9, // 63705
-	
-	[PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_disappear_chara")]
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_disappear_chara")]
     NotifyDisappearChara = 0xD3A4, // 54180
     CircleCreateResponse = 0xFFEB,
 }

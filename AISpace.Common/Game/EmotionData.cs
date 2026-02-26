@@ -4,7 +4,7 @@ public class EmotionData
 {
     public uint Id { get; set; }
     public string Name { get; set; } = "";
-    public byte Category { get; set; } = 0; 
+    public byte Category { get; set; } = 0;
     public byte Unk2 { get; set; } = 0;
     public bool Flag1 { get; set; } = true;
     public bool Flag2 { get; set; } = true;

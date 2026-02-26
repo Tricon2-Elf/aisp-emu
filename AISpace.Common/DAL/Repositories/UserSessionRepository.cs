@@ -21,7 +21,7 @@ public class UserSessionRepository(MainContext db, IDbContextFactory<MainContext
         {
             UserId = userId,
             OTP = otp,
-            ExpiresAt = DateTime.UtcNow.Add(duration)
+            ExpiresAt = DateTime.UtcNow.Add(duration),
         };
 
         ctx.UserSessions.Add(session);
@@ -32,22 +32,16 @@ public class UserSessionRepository(MainContext db, IDbContextFactory<MainContext
     public async Task<UserSession?> GetValidSessionAsync(string otp, CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
-        return await db.UserSessions
-            .Include(s => s.User)
-                .ThenInclude(u => u.Characters)
-                    .ThenInclude(c => c.Equipment)
-            .Where(s => s.OTP == otp && s.ExpiresAt > now)
-            .SingleOrDefaultAsync(ct);
+        return await db.UserSessions.Include(s => s.User).ThenInclude(u => u.Characters).ThenInclude(c => c.Equipment).Where(s => s.OTP == otp && s.ExpiresAt > now).SingleOrDefaultAsync(ct);
     }
 
     public async Task InvalidateExpiredAsync(CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
-        var expired = await db.UserSessions
-            .Where(s => s.ExpiresAt <= now)
-            .ToListAsync(ct);
+        var expired = await db.UserSessions.Where(s => s.ExpiresAt <= now).ToListAsync(ct);
 
-        if (expired.Count == 0) return;
+        if (expired.Count == 0)
+            return;
 
         db.UserSessions.RemoveRange(expired);
         await db.SaveChangesAsync(ct);
@@ -57,9 +51,7 @@ public class UserSessionRepository(MainContext db, IDbContextFactory<MainContext
     {
         logger.LogInformation("Deleting all sessions for user {UserId}", userId);
         await using var ctx = await factory.CreateDbContextAsync(ct);
-        await ctx.UserSessions
-            .Where(s => s.UserId == userId)
-            .ExecuteDeleteAsync(ct);
+        await ctx.UserSessions.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
         logger.LogInformation("Deleted all sessions for user {UserId}", userId);
         await ctx.SaveChangesAsync(ct);
     }

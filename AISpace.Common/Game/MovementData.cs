@@ -29,9 +29,6 @@ public class MovementData(float x, float y, float z, sbyte rotation, MovementTyp
     public static MovementData FromBytes(ReadOnlySpan<byte> source)
     {
         var reader = new Network.PacketReader(source);
-        return new MovementData(
-            reader.ReadFloat(), reader.ReadFloat(), reader.ReadFloat(),
-            reader.ReadSByte(), (MovementType)reader.ReadByte()
-        );
+        return new MovementData(reader.ReadFloat(), reader.ReadFloat(), reader.ReadFloat(), reader.ReadSByte(), (MovementType)reader.ReadByte());
     }
 }

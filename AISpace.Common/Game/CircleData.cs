@@ -1,5 +1,5 @@
-using AISpace.Common.Network;
 using System.Text;
+using AISpace.Common.Network;
 
 namespace AISpace.Common.Game;
 
@@ -13,14 +13,14 @@ public class CircleData(uint id, string name, uint leaderId)
     {
         var writer = new PacketWriter();
         var enc = Encoding.GetEncoding("Shift_JIS");
-        
+
         writer.Write(Id);
         writer.Write((uint)1); // Status
 
         byte[] nameBytes = enc.GetBytes(Name);
         byte[] finalName = new byte[46];
         Array.Copy(nameBytes, finalName, Math.Min(nameBytes.Length, 45));
-        writer.Write(finalName); 
+        writer.Write(finalName);
 
         writer.Write(LeaderId);
 

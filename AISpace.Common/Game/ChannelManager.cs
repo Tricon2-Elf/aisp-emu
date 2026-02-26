@@ -4,10 +4,7 @@
     {
         readonly List<GameChannel> channels = [];
 
-        public ChannelManager()
-        {
-
-        }
+        public ChannelManager() { }
 
         public GameChannel GetChannel(int channelId)
         {

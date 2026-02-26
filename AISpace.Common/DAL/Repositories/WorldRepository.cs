@@ -20,7 +20,13 @@ public class WorldRepository(MainContext db) : IWorldRepository
     {
         if ((await GetByNameAsync(name)) != null)
             return;
-        var world = new World { Name = name, Description = description, Address = address, Port = port };
+        var world = new World
+        {
+            Name = name,
+            Description = description,
+            Address = address,
+            Port = port,
+        };
         _db.Worlds.Add(world);
         await _db.SaveChangesAsync();
     }

@@ -22,7 +22,6 @@ internal class Program
         builder.Logging.SetMinimumLevel(LogLevel.Information);
         builder.Logging.AddNLog();
 
-
         builder.Services.Configure<ServerOptions>(builder.Configuration.GetSection("Server"));
         //Database
         builder.Services.AddDbContext<MainContext>();
@@ -36,43 +35,22 @@ internal class Program
 
         builder.Services.AddSingleton<SharedState>();
         // Add all IPacketHandler classsess
-        builder.Services.Scan(scan => scan
-            .FromAssemblyOf<IPacketHandler>()
-            .AddClasses(classes => classes.AssignableTo<IPacketHandler>())
-            .AsImplementedInterfaces()
-            .WithScopedLifetime());
+        builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().WithScopedLifetime());
 
         builder.Services.AddSingleton<PacketDispatcher>();
 
         builder.Services.AddSingleton<AuthChannel>(_ => new(Channel.CreateUnbounded<Packet>()));
-        builder.Services.AddSingleton<IHostedService>(sp =>
-            new TcpListenerService(
-                sp.GetRequiredService<ILogger<TcpListenerService>>(),
-                sp.GetRequiredService<AuthChannel>().Channel,
-                "Auth",
-                50050, sp.GetRequiredService<ILoggerFactory>()));
+        builder.Services.AddSingleton<IHostedService>(sp => new TcpListenerService(sp.GetRequiredService<ILogger<TcpListenerService>>(), sp.GetRequiredService<AuthChannel>().Channel, "Auth", 50050, sp.GetRequiredService<ILoggerFactory>()));
         builder.Services.AddHostedService<AuthServer>();
 
         builder.Services.AddSingleton<MsgChannel>(_ => new(Channel.CreateUnbounded<Packet>()));
-        builder.Services.AddSingleton<IHostedService>(sp =>
-        new TcpListenerService(
-            sp.GetRequiredService<ILogger<TcpListenerService>>(),
-            sp.GetRequiredService<MsgChannel>().Channel,
-            "Msg",
-            50052, sp.GetRequiredService<ILoggerFactory>()));
+        builder.Services.AddSingleton<IHostedService>(sp => new TcpListenerService(sp.GetRequiredService<ILogger<TcpListenerService>>(), sp.GetRequiredService<MsgChannel>().Channel, "Msg", 50052, sp.GetRequiredService<ILoggerFactory>()));
 
         builder.Services.AddHostedService<MsgServer>();
 
         builder.Services.AddSingleton<AreaChannel>(_ => new(Channel.CreateUnbounded<Packet>()));
-        builder.Services.AddSingleton<IHostedService>(sp =>
-            new TcpListenerService(
-                sp.GetRequiredService<ILogger<TcpListenerService>>(),
-                sp.GetRequiredService<AreaChannel>().Channel,
-                "Area",
-                50054, sp.GetRequiredService<ILoggerFactory>()));
+        builder.Services.AddSingleton<IHostedService>(sp => new TcpListenerService(sp.GetRequiredService<ILogger<TcpListenerService>>(), sp.GetRequiredService<AreaChannel>().Channel, "Area", 50054, sp.GetRequiredService<ILoggerFactory>()));
         builder.Services.AddHostedService<AreaServer>();
-
-
 
         var host = builder.Build();
         await host.RunAsync();

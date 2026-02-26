@@ -12,11 +12,12 @@ public class AreaAvatarGetDataHandler : IPacketHandler
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        if (!connection.IsAuthenticated || connection.User == null) return;
+        if (!connection.IsAuthenticated || connection.User == null)
+            return;
 
         var cha = connection.User.Characters.First();
         var pos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, connection.CurrentAnimation);
-        
+
         var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name) { moveData = pos };
         cd.Visual.VisualId = (uint)cha.Id;
         cd.Visual.BloodType = cha.BloodType;

@@ -1,5 +1,5 @@
-using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Game;
+using AISpace.Common.Network.Packets.Area;
 
 namespace AISpace.Common.Network.Handlers;
 
@@ -37,7 +37,8 @@ public class AreaEmotionGetBaseListHandler : IPacketHandler
         Add(emotions, 24, "威張る", 1);
         Add(emotions, 25, "内緒", 1);
         Add(emotions, 26, "約束", 1);
-        for (uint i = 28; i <= 36; i++) Add(emotions, i, $"Game {i}", 1);
+        for (uint i = 28; i <= 36; i++)
+            Add(emotions, i, $"Game {i}", 1);
         Add(emotions, 105, "捕獲", 1);
 
         // --- PASSION (Category 0) - Heart ---
@@ -47,11 +48,12 @@ public class AreaEmotionGetBaseListHandler : IPacketHandler
 
         // --- ETC (Category 3) - etc ---
         Add(emotions, 27, "座る", 3);
-        for (uint i = 100; i <= 104; i++) Add(emotions, i, $"Wait {i}", 3);
+        for (uint i = 100; i <= 104; i++)
+            Add(emotions, i, $"Wait {i}", 3);
 
         // --- VOICE (Category 2) - Note ---
         // Return the base set of voices that worked (Akasaka Hitomi)
-        for (uint i = 1; i <= 50; i++) 
+        for (uint i = 1; i <= 50; i++)
         {
             uint id = 10101000 + i;
             Add(emotions, id, $"Player Voice {i}", 2);
@@ -61,8 +63,15 @@ public class AreaEmotionGetBaseListHandler : IPacketHandler
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 
-    private void Add(List<EmotionData> list, uint id, string name, byte cat) 
+    private void Add(List<EmotionData> list, uint id, string name, byte cat)
     {
-        list.Add(new EmotionData { Id = id, Name = name, Category = cat });
+        list.Add(
+            new EmotionData
+            {
+                Id = id,
+                Name = name,
+                Category = cat,
+            }
+        );
     }
 }

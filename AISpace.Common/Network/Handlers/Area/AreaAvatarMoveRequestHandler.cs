@@ -1,5 +1,5 @@
-using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Game;
+using AISpace.Common.Network.Packets.Area;
 
 namespace AISpace.Common.Network.Handlers.Area;
 
@@ -12,7 +12,8 @@ public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
         var avatarMove = AvatarMove.FromBytes(payload.Span);
-        if (avatarMove.Moves.Length == 0) return;
+        if (avatarMove.Moves.Length == 0)
+            return;
 
         var lastMovement = avatarMove.Moves[^1];
 
@@ -37,7 +38,8 @@ public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
 
         foreach (var other in state.AreaClients.Values)
         {
-            if (other.Id == connection.Id) continue; 
+            if (other.Id == connection.Id)
+                continue;
             _ = other.SendAsync(ResponseType, notify, ct);
         }
     }

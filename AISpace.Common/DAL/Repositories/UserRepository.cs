@@ -13,19 +13,13 @@ public interface IUserRepository
 
 public class UserRepository(MainContext db) : IUserRepository
 {
-
     private readonly MainContext _db = db;
+
     public async Task<User?> AuthenticateAsync(string username, string password)
     {
-        var user = await _db.Users
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Inventory)
-                    .ThenInclude(i => i.Item)
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Equipment)
-                    .ThenInclude(e => e.Item)
-            .SingleOrDefaultAsync(u => u.Username == username);
-        if (user is null) return null;
+        var user = await _db.Users.Include(u => u.Characters).ThenInclude(c => c.Inventory).ThenInclude(i => i.Item).Include(u => u.Characters).ThenInclude(c => c.Equipment).ThenInclude(e => e.Item).SingleOrDefaultAsync(u => u.Username == username);
+        if (user is null)
+            return null;
 
         return user.VerifyPassword(password) ? user : null;
     }
@@ -41,25 +35,11 @@ public class UserRepository(MainContext db) : IUserRepository
 
     public async Task<User?> GetByUsernameAsync(string username)
     {
-        return await _db.Users
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Inventory)
-                    .ThenInclude(i => i.Item)
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Equipment)
-                    .ThenInclude(e => e.Item)
-            .FirstOrDefaultAsync(u => u.Username == username);
+        return await _db.Users.Include(u => u.Characters).ThenInclude(c => c.Inventory).ThenInclude(i => i.Item).Include(u => u.Characters).ThenInclude(c => c.Equipment).ThenInclude(e => e.Item).FirstOrDefaultAsync(u => u.Username == username);
     }
 
     public async Task<User?> GetById(int userId)
     {
-        return await _db.Users
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Inventory)
-                    .ThenInclude(i => i.Item)
-            .Include(u => u.Characters)
-                .ThenInclude(c => c.Equipment)
-                    .ThenInclude(e => e.Item)
-            .FirstOrDefaultAsync(u => u.Id == userId);
+        return await _db.Users.Include(u => u.Characters).ThenInclude(c => c.Inventory).ThenInclude(i => i.Item).Include(u => u.Characters).ThenInclude(c => c.Equipment).ThenInclude(e => e.Item).FirstOrDefaultAsync(u => u.Id == userId);
     }
 }

@@ -1,5 +1,5 @@
-using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Game;
+using AISpace.Common.Network.Packets.Area;
 
 namespace AISpace.Common.Network.Handlers;
 
@@ -12,7 +12,7 @@ public class AreaEmotionCharaHandler(SharedState state) : IPacketHandler
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
         var request = EmotionCharaRequest.FromBytes(payload.Span);
-        
+
         // 1. Response to sender
         var response = new EmotionCharaResponse(connection.CharacterId, 0);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);

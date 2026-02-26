@@ -17,17 +17,9 @@ public interface ICharacterRepository
 
 public sealed class CharacterRepository(MainContext db, ILogger<CharacterRepository> _logger) : ICharacterRepository
 {
-    public async Task<Character?> GetByIdAsync(int id, CancellationToken ct = default) =>
-        await db.Characters
-            .Include(c => c.Inventory).ThenInclude(ci => ci.Item)
-            .Include(c => c.Equipment).ThenInclude(ce => ce.Item)
-            .SingleOrDefaultAsync(c => c.Id == id, ct);
+    public async Task<Character?> GetByIdAsync(int id, CancellationToken ct = default) => await db.Characters.Include(c => c.Inventory).ThenInclude(ci => ci.Item).Include(c => c.Equipment).ThenInclude(ce => ce.Item).SingleOrDefaultAsync(c => c.Id == id, ct);
 
-    public async Task<Character?> GetByNameAsync(string name, CancellationToken ct = default) =>
-        await db.Characters
-            .Include(c => c.Inventory).ThenInclude(ci => ci.Item)
-            .Include(c => c.Equipment).ThenInclude(ce => ce.Item)
-            .SingleOrDefaultAsync(c => c.Name == name, ct);
+    public async Task<Character?> GetByNameAsync(string name, CancellationToken ct = default) => await db.Characters.Include(c => c.Inventory).ThenInclude(ci => ci.Item).Include(c => c.Equipment).ThenInclude(ce => ce.Item).SingleOrDefaultAsync(c => c.Name == name, ct);
 
     public async Task<Character> CreateAsync(string name, int userId, uint modelId, BloodType bloodType, DateTime birthday, int Gender, uint faceType, uint hairStyle, CancellationToken ct = default)
     {
@@ -40,8 +32,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             Birthdate = birthday,
             Gender = Gender,
             FaceType = faceType,
-            Hairstyle = hairStyle
-
+            Hairstyle = hairStyle,
         };
         db.Characters.Add(c);
         await db.SaveChangesAsync(ct);
@@ -52,17 +43,18 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(quantity);
 
-        var existing = await db.CharacterInventories
-            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
+        var existing = await db.CharacterInventories.SingleOrDefaultAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
 
         if (existing is null)
         {
-            db.CharacterInventories.Add(new CharacterInventory
-            {
-                CharacterId = characterId,
-                ItemId = itemId,
-                Quantity = quantity
-            });
+            db.CharacterInventories.Add(
+                new CharacterInventory
+                {
+                    CharacterId = characterId,
+                    ItemId = itemId,
+                    Quantity = quantity,
+                }
+            );
         }
         else
         {
@@ -75,7 +67,8 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
     public async Task EquipAsync(int characterId, byte slotIndex, int itemId, CancellationToken ct = default)
     {
         _logger.LogInformation("Equipping item {ItemId} to character {CharacterId} in slot {SlotIndex}", itemId, characterId, slotIndex);
-        if (slotIndex > 29) throw new ArgumentOutOfRangeException(nameof(slotIndex), "0..29 only");
+        if (slotIndex > 29)
+            throw new ArgumentOutOfRangeException(nameof(slotIndex), "0..29 only");
 
         // Ensure the character has the item in inventory
         //var hasItem = await db.CharacterInventories
@@ -84,17 +77,18 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         //    throw new InvalidOperationException("Character does not own this item.");
 
         // Upsert the equipment for this slot
-        var existing = await db.CharacterEquipments
-            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.SlotIndex == slotIndex, ct);
+        var existing = await db.CharacterEquipments.SingleOrDefaultAsync(x => x.CharacterId == characterId && x.SlotIndex == slotIndex, ct);
 
         if (existing is null)
         {
-            db.CharacterEquipments.Add(new CharacterEquipment
-            {
-                CharacterId = characterId,
-                SlotIndex = slotIndex,
-                ItemId = itemId
-            });
+            db.CharacterEquipments.Add(
+                new CharacterEquipment
+                {
+                    CharacterId = characterId,
+                    SlotIndex = slotIndex,
+                    ItemId = itemId,
+                }
+            );
         }
         else
         {
@@ -106,10 +100,10 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
 
     public async Task UnequipAsync(int characterId, byte slotIndex, CancellationToken ct = default)
     {
-        var existing = await db.CharacterEquipments
-            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.SlotIndex == slotIndex, ct);
+        var existing = await db.CharacterEquipments.SingleOrDefaultAsync(x => x.CharacterId == characterId && x.SlotIndex == slotIndex, ct);
 
-        if (existing is null) return;
+        if (existing is null)
+            return;
 
         db.CharacterEquipments.Remove(existing);
         await db.SaveChangesAsync(ct);
