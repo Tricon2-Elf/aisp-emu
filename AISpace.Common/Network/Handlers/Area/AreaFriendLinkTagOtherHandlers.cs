@@ -1,9 +1,9 @@
 namespace AISpace.Common.Network.Handlers;
 
-public class AreaFriendLinkTagGetHandler : IPacketHandler
+public class AreaFriendLinkTagOtherHandler : IPacketHandler
 {
-    public PacketType RequestType => (PacketType)0x0F97; // Тот самый 3991
-    public PacketType ResponseType => (PacketType)0x239E; // recv_get_friend_link_tag_r
+    public PacketType RequestType => PacketType.FriendLinkTagGetOtherRequest;
+    public PacketType ResponseType => (PacketType)0x239E; // FriendLinkTagGetResponse
     public MessageDomain Domain => MessageDomain.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
@@ -19,7 +19,6 @@ public class AreaFriendLinkTagGetHandler : IPacketHandler
         writer.Write((uint)0); // questionnaire_tagdata
         writer.Write((uint)0); // questionnaire_slot
 
-        // Total 24 bytes (6 fields by 4 bytes)
         await connection.SendAsync(ResponseType, writer.ToBytes(), ct);
     }
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace AISpace.Common.Network.Packets.Area;
 
 public class TrashboxOpenResponse : IPacket<TrashboxOpenResponse>
