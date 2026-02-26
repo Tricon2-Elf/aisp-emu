@@ -11,12 +11,8 @@ public class AuthenticateRequest(string username, string password) : IPacket<Aut
 
         string username = reader.ReadString();
         string password = reader.ReadString();
-        var packet = new AuthenticateRequest(username, password);
-        return packet;
+        return new AuthenticateRequest(username, password);
     }
 
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
-    }
+    public byte[] ToBytes() => throw new NotImplementedException();
 }

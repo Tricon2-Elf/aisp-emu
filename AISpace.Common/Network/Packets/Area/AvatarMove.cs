@@ -1,4 +1,4 @@
-﻿using AISpace.Common.Game;
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Network.Packets.Area;
 
@@ -9,16 +9,17 @@ public class AvatarMove(MovementData[] Moves) : IPacket<AvatarMove>
     public static AvatarMove FromBytes(ReadOnlySpan<byte> data)
     {
         var packetReader = new PacketReader(data);
-        ushort MoveCount = 2;
-        MovementData[] movement = new MovementData[MoveCount];
-        for (int i = 0; i < MoveCount; i++)
+        int count = data.Length / 14;
+        if (count == 0)
+            count = 1;
+
+        var movement = new MovementData[count];
+        for (int i = 0; i < count; i++)
+        {
             movement[i] = MovementData.FromBytes(packetReader.ReadBytes(14));
-        AvatarMove avatarMove = new(movement);
-        return avatarMove;
+        }
+        return new AvatarMove(movement);
     }
 
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
-    }
+    public byte[] ToBytes() => throw new NotImplementedException();
 }
