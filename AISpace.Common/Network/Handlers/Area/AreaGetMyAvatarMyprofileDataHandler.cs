@@ -1,21 +1,22 @@
 using AISpace.Common.Network.Packets.Area;
-using Microsoft.Extensions.Logging;
+using AISpace.Common.DAL;
+using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreaGetMyAvatarMyprofileDataHandler(ILogger<AreaGetMyAvatarMyprofileDataHandler> logger) : IPacketHandler
+public class AreaGetMyAvatarMyprofileDataHandler(MainContext db) : IPacketHandler
 {
-    private readonly ILogger<AreaGetMyAvatarMyprofileDataHandler> _logger = logger;
-
     public PacketType RequestType => PacketType.GetMyAvatarMyprofileDataRequest;
-
     public PacketType ResponseType => PacketType.GetMyAvatarMyprofileDataResponse;
-
     public MessageDomain Domain => MessageDomain.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        var response = new GetMyAvatarMyprofileDataResponse(0);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        var cha = await db.Characters.FirstOrDefaultAsync(c => c.Id == connection.CharacterId, ct);
+        if (cha != null)
+        {
+            var response = new GetMyAvatarMyprofileDataResponse(cha);
+            await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        }
     }
 }

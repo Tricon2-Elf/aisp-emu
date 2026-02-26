@@ -15,18 +15,32 @@ public class AuthenticateHandler(IUserRepository userRepo, ILogger<AuthenticateH
 
     public override async Task<AuthenticateResponse?> HandleAsync(AuthenticateRequest request, ClientConnection connection, CancellationToken ct = default)
     {
-        _logger.LogInformation("Username: '{Username}'", request.Username);
+        _logger.LogInformation($"Auth request: {request.Username}");
 
-        User? validUser = await userRepo.AuthenticateAsync(request.Username, request.Password);
-        if (validUser is null)
+        var user = await userRepo.GetByUsernameAsync(request.Username);
+
+        if (user == null)
         {
-            _logger.LogWarning("Authentication failed for user '{Username}'", request.Username);
-            var failResp = new AuthenticateFailureResponse(AuthResponseResult.InvalidCredentials);
-            await connection.SendAsync(PacketType.AuthenticateFailureResponse, failResp.ToBytes(), ct);
-            return null;
+            _logger.LogInformation($"User '{request.Username}' not found. Creating new account...");
+            await userRepo.AddAsync(request.Username, request.Password);
+            
+            user = await userRepo.GetByUsernameAsync(request.Username);
+        }
+        else
+        {
+            if (!user.VerifyPassword(request.Password))
+            {
+                _logger.LogWarning($"Auth failed: Wrong password for user '{request.Username}'");
+                var failResp = new AuthenticateFailureResponse(AuthResponseResult.InvalidCredentials);
+                await connection.SendAsync(PacketType.AuthenticateFailureResponse, failResp.ToBytes(), ct);
+                return null;
+            }
         }
 
-        connection.User = validUser;
-        return new AuthenticateResponse((uint)validUser.Id);
+        if (user == null) return null;
+
+        _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
+        connection.User = user;
+        return new AuthenticateResponse((uint)user.Id);
     }
 }

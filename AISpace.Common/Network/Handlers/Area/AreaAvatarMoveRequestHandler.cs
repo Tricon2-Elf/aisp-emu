@@ -1,29 +1,44 @@
-using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Area;
-using Microsoft.Extensions.Logging;
-using NLog;
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Network.Handlers.Area;
 
-public class AreaAvatarMoveRequestHandler(ILogger<AreaAvatarMoveRequestHandler> _logger, SharedState state) : IPacketHandler
+public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.AvatarMoveRequest;
-
-    public PacketType ResponseType => PacketType.AvatarMoveRequest;
-
+    public PacketType ResponseType => PacketType.AvatarNotifyMove;
     public MessageDomain Domain => MessageDomain.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
         var avatarMove = AvatarMove.FromBytes(payload.Span);
-        var movement = avatarMove.Moves[0];
-        _logger.LogInformation($"X{movement.X:0} Y{movement.Y:0} Z{movement.Z:0} Rot{movement.Rotation:000} A{(byte)movement.Animation:0}");
-        var notify = new AvatarNotifyMove(1, (uint)connection.User!.Characters.First().Id, movement).ToBytes();
+        if (avatarMove.Moves.Length == 0) return;
+
+        var lastMovement = avatarMove.Moves[^1];
+
+        byte maxAnimation = 0;
+        foreach (var m in avatarMove.Moves)
+        {
+            if ((byte)m.Animation > maxAnimation)
+            {
+                maxAnimation = (byte)m.Animation;
+            }
+        }
+
+        lastMovement.Animation = (MovementType)maxAnimation;
+
+        connection.X = lastMovement.X;
+        connection.Y = lastMovement.Y;
+        connection.Z = lastMovement.Z;
+        connection.Rotation = lastMovement.Rotation;
+        connection.CurrentAnimation = lastMovement.Animation;
+
+        var notify = new AvatarNotifyMove(1, connection.CharacterId, lastMovement).ToBytes();
+
         foreach (var other in state.AreaClients.Values)
         {
-            if (other.Id == connection.Id)
-                continue;
-            await other.SendAsync(ResponseType, notify, ct);
+            if (other.Id == connection.Id) continue; 
+            _ = other.SendAsync(ResponseType, notify, ct);
         }
     }
 }

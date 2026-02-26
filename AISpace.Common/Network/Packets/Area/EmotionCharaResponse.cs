@@ -1,3 +1,5 @@
+using AISpace.Common.Network;
+
 namespace AISpace.Common.Network.Packets.Area;
 
 public class EmotionCharaResponse(uint objId, uint result) : IPacket<EmotionCharaResponse>

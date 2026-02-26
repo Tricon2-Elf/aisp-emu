@@ -1,20 +1,19 @@
-﻿namespace AISpace.Common.Network.Packets;
+using AISpace.Common.Network;
 
-public class TimeZoneGetResponse(uint Result, uint Timezone, uint Time, uint TimeZoneMax, byte Flag) : IPacket<TimeZoneGetResponse>
+namespace AISpace.Common.Network.Packets;
+
+public class TimeZoneGetResponse(uint result, uint timezone, float time, float timeZoneMax, byte flag) : IPacket<TimeZoneGetResponse>
 {
-    public static TimeZoneGetResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write(Result);
-        writer.Write(Timezone);
-        writer.Write(Time);
-        writer.Write(TimeZoneMax);
-        writer.Write(Flag);
+        writer.Write(result);
+        writer.Write(timezone);
+        writer.Write(time);
+        writer.Write(timeZoneMax);
+        writer.Write(flag);
         return writer.ToBytes();
     }
+
+    public static TimeZoneGetResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

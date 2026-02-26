@@ -1,46 +1,69 @@
-using AISpace.Common.Game;
+﻿using AISpace.Common.Game;
 
 namespace AISpace.Common.Network.Packets.Msg;
 
 public class ItemGetBaseListResponse : IPacket<ItemGetBaseListResponse>
 {
     uint result = 0;
-    readonly List<ItemData> Items;
+    readonly List<ItemData> Items = [];
+
+    // Белый список ID для стартовой одежды
+    private readonly HashSet<uint> _starterIds = [
+        10100220, 10200100, 10400030, 10500070, 
+        10100060, 10200090, 10400000, 10500010  
+    ];
 
     public ItemGetBaseListResponse()
     {
-        Items = [];
-        foreach (var row in File.ReadLines("testitems.csv"))
+        if (File.Exists("testitems.csv"))
         {
-            if (string.IsNullOrEmpty(row))
-                continue;
-            var columns = row.Split(',');
-
-            if (columns.Length < 3)
-                continue;
-
-            var temp = new ItemData
+            foreach (var line in File.ReadLines("testitems.csv"))
             {
-                Key = uint.Parse(columns[0]),
-                SortedListPriority = uint.Parse(columns[0]),
-                ItemId = uint.Parse(columns[0]),
-                Socket1 = uint.Parse(columns[1]),
-                Socket2 = uint.Parse(columns[1]),
-                Name = columns[2],
-                IconId = uint.Parse(columns[0]),
-            };
-            Items.Add(temp);
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                
+                var columns = line.Split(',');
+                if (columns.Length < 3) continue;
+
+                if (!uint.TryParse(columns[0], out var id)) continue;
+                if (!_starterIds.Contains(id)) continue;
+
+                uint socket = 0;
+                if (columns.Length > 1) uint.TryParse(columns[1], out socket);
+                
+                var name = columns[2];
+                
+                uint iconId = id;
+                if (columns.Length > 3 && uint.TryParse(columns[3], out var parsedIcon))
+                {
+                    iconId = parsedIcon;
+                }
+
+                uint category = 1; 
+                if (socket == 2) category = 2;
+                if (socket == 4) category = 8;
+                if (socket == 8) category = 8;
+                if (socket == 16) category = 4;
+
+                Items.Add(new ItemData
+                {
+                    Key = id,
+                    SortedListPriority = id,
+                    ItemId = id,
+                    IconId = iconId, // Теперь запишется в правильное место (после строк)
+                    Name = name,
+                    Socket1 = socket,
+                    Socket2 = socket,
+                    Category = category
+                });
+            }
         }
     }
 
-    public static ItemGetBaseListResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
+    public static ItemGetBaseListResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 
     public byte[] ToBytes()
     {
-        var writer = new PacketWriter();
+        var writer = new Network.PacketWriter();
         writer.Write(result);
         writer.Write((uint)Items.Count);
         foreach (var item in Items)

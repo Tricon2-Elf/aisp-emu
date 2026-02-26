@@ -1,3 +1,5 @@
+using AISpace.Common.Network;
+
 namespace AISpace.Common.Network.Packets.Area;
 
 public class ItemEquipStartResponse(uint result) : IPacket<ItemEquipStartResponse>

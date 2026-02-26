@@ -1,0 +1,54 @@
+---
+description: Overview of the AISp@ce Emulator project structure and architecture.
+globs: **/*
+alwaysApply: true
+---
+
+# AISp@ce Emulator Project Overview
+
+This project is a fan-made server emulator for the discontinued MMO **AISp@ce**, implemented in **.NET 10.0**.
+
+## Architecture
+
+The solution is divided into two main projects:
+
+1.  **AISpace.Server**: The executable server application.
+    -   Contains the entry point (`Program.cs`).
+    -   Implements specific server types: `AreaServer`, `AuthServer`, `MsgServer`.
+    -   Handles server configuration and startup.
+
+2.  **AISpace.Common**: A shared library containing core logic and data structures.
+    -   **Network**: Handles the custom network protocol.
+        -   `PacketReader`/`PacketWriter`: For reading/writing packets (little-endian).
+        -   `PacketType`: Enum defining packet IDs.
+        -   `PacketDispatcher` & `PacketHandlerBase`: For routing and handling incoming packets.
+        -   `ClientConnection`: Manages client state.
+        -   `Handers`: Packets use Handlers for handing incoming packets and organised by server type Auth,Msg,Area
+        -   `Packets`: Packets are organsised by server type Auth,Msg,Area. Only one of the methods needs implementing depending on packet direction
+    -   **DAL**: Data Access Layer using **Entity Framework Core**.
+        -   Repositories and database context.
+    -   **Game**: Game logic and models.
+
+## Key Technologies
+
+-   **.NET 9.0**: The runtime framework.
+-   **Entity Framework Core**: For database interactions.
+-   **NLog**: For logging.
+
+## Networking
+
+The project uses a custom binary protocol.
+-   **Endianness**: Little-endian for multi-byte numeric types.
+-   **Strings**: `CString` (null-terminated, ASCII default) and `FixedString` (fixed length, Shift_JIS default).
+-   **Encryption**: Uses a custom encryption scheme (VCE codec) after initial key exchange.
+
+## Documentation & Verification
+
+-   **New Documentation**: All new documentation should be added to the `/docs` directory.
+-   **Packet Verification**: The `/docs` directory may contain decompiled client code (e.g., `aisp-decompiled.c` or similar references). **Use this code to verify packet layouts and structures** when implementing network handlers.
+
+## Development Guidelines
+
+-   When adding new packet handlers, implement `PacketHandlerBase` and register them in the dispatcher.
+-   Use `PacketReader` and `PacketWriter` for all network I/O to ensure correct endianness and string encoding.
+-   Database operations should go through the DAL repositories in `AISpace.Common/DAL`.
