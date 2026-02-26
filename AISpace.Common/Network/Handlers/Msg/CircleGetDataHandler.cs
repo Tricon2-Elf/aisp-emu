@@ -13,6 +13,7 @@ public class CircleGetDataHandler(MainContext db) : IPacketHandler
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
+        /*
         var list = new List<CircleData>();
 
         if (connection.User != null)
@@ -50,5 +51,6 @@ public class CircleGetDataHandler(MainContext db) : IPacketHandler
         // 3. Отправляем финальный ответ
         var response = new CircleGetDataResponse(0, list);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        */
     }
 }

@@ -15,6 +15,7 @@ public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> lo
 
     public override async Task<CircleCreateResponse?> HandleAsync(CircleCreateRequest request, ClientConnection connection, CancellationToken ct = default)
     {
+        /*
         if (connection.User == null) return new CircleCreateResponse(1, null);
         var character = await db.Characters.FirstOrDefaultAsync(c => c.Id == connection.CharacterId, ct);
         if (character == null) return new CircleCreateResponse(1, null);
@@ -39,5 +40,7 @@ public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> lo
 
         var cData = new CircleData((uint)circle.Id, circle.Name, (uint)character.Id);
         return new CircleCreateResponse(0, cData);
+        */
+        return null;
     }
 }

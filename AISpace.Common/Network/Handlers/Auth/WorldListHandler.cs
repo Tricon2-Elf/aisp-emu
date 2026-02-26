@@ -14,22 +14,8 @@ public class WorldListHandler(IWorldRepository repo) : IPacketHandler
     {
         var dbWorlds = await repo.GetAllAsync();
         var patchedWorlds = new List<World>();
-        
-        string ipaddress = "192.168.31.158";
 
-        foreach (var w in dbWorlds)
-        {
-            patchedWorlds.Add(new World 
-            { 
-                Id = w.Id, 
-                Name = w.Name, 
-                Description = w.Description + " (Multiplayer)", 
-                Port = w.Port,
-                Address = ipaddress
-            });
-        }
-
-        var response = new WorldListResponse(0, patchedWorlds);
+        var response = new WorldListResponse(0, dbWorlds);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

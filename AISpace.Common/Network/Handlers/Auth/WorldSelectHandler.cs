@@ -24,12 +24,9 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
         
         await sessionRepo.CreateAsync(clientUser.Id, otp, TimeSpan.FromHours(1), ct);
 
-        string myPublicIp = "192.168.31.158"; 
-        ushort msgPort = 50052;
+        logger.LogInformation($"[HARDCODE] Sending client {clientUser.Username} to {world.Address}:{world.Port}");
 
-        logger.LogInformation($"[HARDCODE] Sending client {clientUser.Username} to {myPublicIp}:{msgPort}");
-
-        var WorldSelectResp = new WorldSelectResponse(0, myPublicIp, msgPort, otp);
-        await connection.SendAsync(PacketType.Auth_WorldSelectResponse, WorldSelectResp.ToBytes(), ct);
+        var worldSelectResp = new WorldSelectResponse(0, world.Address, world.Port, otp);
+        await connection.SendAsync(PacketType.Auth_WorldSelectResponse, worldSelectResp.ToBytes(), ct);
     }
 }

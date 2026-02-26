@@ -15,9 +15,9 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        string myIp = "192.168.31.158"; 
-        ushort areaPort = 50054;      
-        uint mapID = 10990100; 
+        string myIp = "127.0.0.1";
+        ushort areaPort = 50054;
+        uint mapID = 10990100;
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();

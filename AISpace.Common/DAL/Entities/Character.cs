@@ -25,7 +25,6 @@ public class Character
     public User User { get; set; } = default!;
 
     public int? CircleId { get; set; }
-    public Circle? Circle { get; set; }
     public uint CurrentMapId { get; set; }
 
     public ICollection<CharacterInventory> Inventory { get; set; } = new List<CharacterInventory>();

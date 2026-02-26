@@ -16,8 +16,7 @@ public class AuthServer : BackgroundService
     private readonly PacketDispatcher _dispatcher;
     private readonly AuthChannel _authChannel;
 
-    public AuthServer(ILogger<AuthServer> logger, MainContext db, IUserRepository userRepo, 
-                      AuthChannel channel, IWorldRepository worldRepo, PacketDispatcher dispatcher)
+    public AuthServer(ILogger<AuthServer> logger, MainContext db, IUserRepository userRepo, AuthChannel channel, IWorldRepository worldRepo, PacketDispatcher dispatcher)
     {
         _logger = logger;
         _db = db;
@@ -34,7 +33,7 @@ public class AuthServer : BackgroundService
     {
         if (!await _db.Worlds.AnyAsync()) 
         {
-            await _worldRepo.AddAsync("Local", "AI Sp@ce Server", "192.168.31.158", 50052);
+            await _worldRepo.AddAsync("Local", "AI Sp@ce Server", "127.0.0.1", 50052);
         }
 
         if (!await _db.Users.AnyAsync())
