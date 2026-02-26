@@ -365,3 +365,4 @@ FodyWeavers.xsd
 *.db-shm
 *.db-wal
 aisp-decompiled.c
+.cursor
