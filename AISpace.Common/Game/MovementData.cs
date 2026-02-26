@@ -1,10 +1,10 @@
-﻿namespace AISpace.Common.Game;
+namespace AISpace.Common.Game;
 
 public enum MovementType : byte
 {
     Stopped = 0,
     Walking = 1,
-    Running = 2,
+    Running = 3,
 }
 
 public class MovementData(float x, float y, float z, sbyte rotation, MovementType animation)
@@ -29,12 +29,9 @@ public class MovementData(float x, float y, float z, sbyte rotation, MovementTyp
     public static MovementData FromBytes(ReadOnlySpan<byte> source)
     {
         var reader = new Network.PacketReader(source);
-        var x = reader.ReadFloat();
-        var y = reader.ReadFloat();
-        var z = reader.ReadFloat();
-        var rotation = reader.ReadSByte();
-        var movementType = (MovementType)reader.ReadByte();
-        var moveData = new MovementData(x, y, z, rotation, movementType);
-        return moveData;
+        return new MovementData(
+            reader.ReadFloat(), reader.ReadFloat(), reader.ReadFloat(),
+            reader.ReadSByte(), (MovementType)reader.ReadByte()
+        );
     }
 }
