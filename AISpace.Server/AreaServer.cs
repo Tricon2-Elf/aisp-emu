@@ -1,5 +1,6 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
+using AISpace.Common.Network.Packets;
 
 namespace AISpace.Server;
 
@@ -66,7 +67,7 @@ public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserReposit
             var timePacket = new TimeZoneGetResponse(0, t.phase, t.current, t.max, 0);
             byte[] data = timePacket.ToBytes();
 
-            foreach (var client in _state.AreaClients.Values)
+            foreach (var client in state.AreaClients.Values)
             {
                 if (client.IsAuthenticated)
                     _ = client.SendAsync(PacketType.TimeZoneGetResponse, data);

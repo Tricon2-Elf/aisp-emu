@@ -1,8 +1,8 @@
 namespace AISpace.Common.Network.Packets.Msg;
 
-public class AvatarGetDataResponse(uint result) : IPacket<AvatarGetDataResponse>
+public class AvatarGetDataRequest(uint result) : IPacket<AvatarGetDataRequest>
 {
-    public static AvatarGetDataResponse FromBytes(ReadOnlySpan<byte> data)
+    public static AvatarGetDataRequest FromBytes(ReadOnlySpan<byte> data)
     {
         throw new NotImplementedException();
     }

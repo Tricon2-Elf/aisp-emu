@@ -582,4 +582,5 @@ public enum PacketType : ushort
 	
 	[PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_disappear_chara")]
     NotifyDisappearChara = 0xD3A4, // 54180
+    CircleCreateResponse = 0xFFEB,
 }

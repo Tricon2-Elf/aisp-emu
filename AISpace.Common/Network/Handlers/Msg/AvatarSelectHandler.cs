@@ -14,11 +14,6 @@ public class AvatarSelectHandler : IPacketHandler
             return;
         var cha = connection.User.Characters.FirstOrDefault();
 
-        if (cha != null)
-        {
-            connection.CharacterId = (uint)cha.Id;
-        }
-
         var response = new AvatarSelectResponse(0);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
     }

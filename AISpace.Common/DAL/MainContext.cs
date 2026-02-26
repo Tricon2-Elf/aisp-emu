@@ -16,6 +16,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Item> Items { get; set; }
     public DbSet<CharacterInventory> CharacterInventories { get; set; }
     public DbSet<CharacterEquipment> CharacterEquipments { get; set; }
+    public DbSet<Circle> Circles { get; internal set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
@@ -82,6 +83,12 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.ExpiresAt).IsRequired();
 
             e.HasIndex(x => new { x.UserId, x.OTP }).IsUnique();
+        });
+
+        b.Entity<Circle>(e =>
+        {
+            e.ToTable("Circles");
+            e.HasKey(x => x.Id);
         });
     }
 }

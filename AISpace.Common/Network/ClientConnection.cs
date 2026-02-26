@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
 using AISpace.Common.Network.Crypto;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +34,12 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public bool IsAuthenticated => User != null;
     public User? User;
+    public float X;
+    public float Y;
+    public float Z;
+    public sbyte Rotation;
+    public MovementType CurrentAnimation;
+    public uint CharacterId => (uint)(User!.Characters.First().Id);
     public DateTimeOffset Connected { get; } = DateTimeOffset.UtcNow;
 
     public async Task SendRawAsync(byte[] data, CancellationToken ct = default) => await Stream.WriteAsync(data, ct);

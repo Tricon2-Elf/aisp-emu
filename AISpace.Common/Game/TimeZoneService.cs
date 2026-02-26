@@ -4,7 +4,7 @@ public static class TimeZoneService
 {
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-    public static (uint phase, float current, float max) GetServerTime()
+    public static (uint phase, uint current, uint max) GetServerTime()
     {
         const uint T_EARLY = 900;
         const uint T_MORN  = 1800;
@@ -17,21 +17,21 @@ public static class TimeZoneService
         uint cycleTime = (uint)(elapsed % TOTAL);
 
         if (cycleTime < T_EARLY) 
-            return (4, (float)cycleTime, (float)T_EARLY);
+            return (4, cycleTime, T_EARLY);
         
         cycleTime -= T_EARLY;
         if (cycleTime < T_MORN) 
-            return (0, (float)cycleTime, (float)T_MORN);
+            return (0, cycleTime, T_MORN);
 
         cycleTime -= T_MORN;
         if (cycleTime < T_DAY) 
-            return (1, (float)cycleTime, (float)T_DAY);
+            return (1, cycleTime, T_DAY);
 
         cycleTime -= T_DAY;
         if (cycleTime < T_EVE) 
-            return (2, (float)cycleTime, (float)T_EVE);
+            return (2, cycleTime, T_EVE);
 
         cycleTime -= T_EVE;
-        return (3, (float)cycleTime, (float)T_NIGHT);
+        return (3, cycleTime, T_NIGHT);
     }
 }

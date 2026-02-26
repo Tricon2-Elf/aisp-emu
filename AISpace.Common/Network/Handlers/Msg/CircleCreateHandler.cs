@@ -30,11 +30,11 @@ public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> lo
             CreatedAt = DateTime.UtcNow,
         };
 
-        db.Circles.Add(circle);
-        await db.SaveChangesAsync(ct);
+        //db.Circles.Add(circle);
+        //await db.SaveChangesAsync(ct);
 
-        character.CircleId = circle.Id;
-        await db.SaveChangesAsync(ct);
+        //character.CircleId = circle.Id;
+        //await db.SaveChangesAsync(ct);
 
         var membersList = new List<CircleMemberData>();
         var notifyPacket = new CircleNotifyMember((uint)circle.Id, membersList);

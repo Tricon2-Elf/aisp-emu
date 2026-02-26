@@ -28,7 +28,6 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, SharedState
         connection.User = session.User;
         var chara = connection.User.Characters.First();
         uint charId = (uint)chara.Id;
-        connection.CharacterId = charId;
 
         uint mapId = chara.CurrentMapId;
         var spawn = MapRegistry.GetSpawn(mapId);
