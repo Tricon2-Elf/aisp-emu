@@ -11,6 +11,7 @@ public class Map
     public float SpawnX { get; set; }
     public float SpawnY { get; set; }
     public float SpawnZ { get; set; }
+
     /// <summary>Spawn rotation (yaw). Stored as int for DB; use as sbyte in game.</summary>
     public int SpawnRotation { get; set; }
 }
