@@ -406,6 +406,9 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
     MapLinkNotifyData = 0x5755, // 22357
 
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_select_map")]
+    NotifySelectMap = 0x68A5, // 26789
+
     [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
     MascotGetCountRequest = 0x0CBC, // 3260
 
