@@ -15,6 +15,8 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
+        var request = ChannelSelectRequest.FromBytes(payload.Span);
+        logger.LogInformation("ChannelSelectRequest from user {UserId}: ChannelID {ChannelId}", connection.User?.Id ?? 0, request.ChannelID);
         string myIp = "127.0.0.1";
         ushort areaPort = 50054;
         uint mapID = 10990100;
