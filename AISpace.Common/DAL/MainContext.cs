@@ -17,6 +17,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<CharacterInventory> CharacterInventories { get; set; }
     public DbSet<CharacterEquipment> CharacterEquipments { get; set; }
     public DbSet<Circle> Circles { get; internal set; }
+    public DbSet<Map> Maps { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
@@ -89,6 +90,13 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Circles");
             e.HasKey(x => x.Id);
+        });
+
+        b.Entity<Map>(e =>
+        {
+            e.ToTable("Maps");
+            e.HasKey(x => x.MapId);
+            e.Property(x => x.Name).HasMaxLength(128).IsRequired();
         });
     }
 }
