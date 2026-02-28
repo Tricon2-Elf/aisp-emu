@@ -32,6 +32,7 @@ internal class Program
         builder.Services.AddScoped<IWorldRepository, WorldRepository>();
         builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
+        builder.Services.AddScoped<IMapRepository, MapRepository>();
 
         builder.Services.AddSingleton<SharedState>();
         // Add all IPacketHandler classsess
@@ -53,6 +54,15 @@ internal class Program
         builder.Services.AddHostedService<AreaServer>();
 
         var host = builder.Build();
+
+        // Ensure database and Maps table exist, then seed maps if empty
+        using (var scope = host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MainContext>();
+            await db.Database.EnsureCreatedAsync();
+            await MapRepository.SeedMapsIfEmptyAsync(db);
+        }
+
         await host.RunAsync();
     }
 }
