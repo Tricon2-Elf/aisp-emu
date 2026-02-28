@@ -490,13 +490,14 @@
 - **Direction:** ClientToServer
 - **Packet ID (hex):** 0x30C8
 - **Packet ID (int):** 12488
-- **Packet Size:** 0
+- **Packet Size:** 8
 - **Description:** Request map link data.
 
 **Layout:**
 
 ```
-    (empty)
+    UInt {MapId}
+    UInt {ChannelId}
 ```
 
 ### recv_get_maplink_data_r (MapLinkGetDataResponse)
@@ -513,6 +514,47 @@
 ```
     UInt {Result}
 ```
+
+### recv_notify_maplink_data (MapLinkNotifyData)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x5755
+- **Packet ID (int):** 22357
+- **Packet Size:** 25 (4 + 21)
+- **Description:** Server pushes a maplink to the client (result + position, yaw, half-extents).
+
+**Layout (decompiled ReadMapLinKData order, 21 bytes after Result):**
+
+```
+    UInt {Result}           // 4 bytes
+    Float {PositionX}       // float_0
+    Float {PositionY}       // float_4
+    Float {PositionZ}       // float_8
+    Byte {Yaw}              // 1 byte
+    Float {HalfExtent1}     // float_10 — length of the maplink
+    Float {HalfExtent2}     // float_14 — other extent (purpose unclear)
+```
+
+Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfExtent1 is the maplink length; HalfExtent2 purpose is unclear from the decompiled callback.
+
+**How the client knows where a maplink goes:** The maplink packet does **not** contain a destination map ID. The client gets destinations from **recv_notify_select_map** (see below). The client matches maplinks to destinations by **index**: the first maplink corresponds to the first entry in the select_map list, the second to the second, etc. So to tell the client where each maplink goes: send **recv_notify_select_map** with one entry per maplink, in the same order as the maplinks you sent. When the player enters a maplink trigger, the client uses the matching select_map entry (map ID, server info, etc.) to perform the map change (e.g. send_enter_map or channel select).
+
+### recv_notify_select_map (NotifySelectMap)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x68A5
+- **Packet ID (int):** 26789
+- **Description:** Sends a list of map entries the client can use for map links / channel select. Order must match the order of maplinks sent via recv_notify_maplink_data so that maplink index N uses the Nth entry in this list as its destination.
+
+**Layout (decompiled):**
+
+- `sub_796C10(this, 15)` — minimum payload size 15 bytes.
+- `ReadUint32` → **Count** (1–4).
+- For each of Count entries, `sub_7987D0` reads one **select_map_t** from the packet: **109 bytes** per entry (4-byte map id, 97 bytes, then two 4-byte fields). The in-memory struct is 28 DWORDs (112 bytes); the packet representation is 109 bytes.
+
+**Usage:** Send this after (or with) maplink data so the client knows which map each maplink leads to. Count and order must match your maplinks.
 
 ### send_get_mascot_count (MascotGetCountRequest)
 

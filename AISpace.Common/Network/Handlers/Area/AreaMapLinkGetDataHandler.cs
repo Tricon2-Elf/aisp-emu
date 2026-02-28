@@ -17,7 +17,7 @@ public class AreaMapLinkGetDataHandler(ILogger<AreaMapLinkGetDataHandler> logger
         logger.LogCritical("MapLinkGetDataRequest received from user {UserId} on map {MapId} with channel {ChannelId}", connection.User.Id, request.MapId, request.ChannelId);
         var response = new MapLinkGetDataResponse(1);
         await connection.SendAsync(ResponseType, response.ToBytes(), ct);
-        var maplinkAtPlayer = new MapLinkData(connection.X, connection.Y, connection.Z - 1000f, 0, 1000f, 0);
+        var maplinkAtPlayer = new MapLinkData(connection.X, connection.Y, connection.Z - 1000f, 0, 1000f, 10f);
         await connection.SendAsync(PacketType.MapLinkNotifyData, new MapLinkNotifyData(0, maplinkAtPlayer).ToBytes(), ct);
         // Tell client where this maplink goes (same order as maplinks)
         await connection.SendAsync(PacketType.NotifySelectMap, new NotifySelectMapData(10990110u).ToBytes(), ct);
