@@ -1,12 +1,12 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
-using AISpace.Common.Network;
 using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Network.Packets.Common;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, SharedState state) : IPacketHandler
+public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
 {
     private const float SpawnSpread = 50.0f;
 
@@ -30,15 +30,15 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, SharedState
         uint charId = (uint)chara.Id;
 
         uint mapId = chara.CurrentMapId;
-        var spawn = MapRegistry.GetSpawn(mapId);
+        var map = await mapRepo.GetByMapIdAsync(mapId, ct);
 
         float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
         float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
 
-        connection.X = spawn.X + offsetX;
-        connection.Y = spawn.Y;
-        connection.Z = spawn.Z + offsetZ;
-        connection.Rotation = spawn.Rot;
+        connection.X = (map?.SpawnX ?? 0f) + offsetX;
+        connection.Y = map?.SpawnY ?? 0.1f;
+        connection.Z = (map?.SpawnZ ?? 0f) + offsetZ;
+        connection.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
 
         state.RegisterClient("Area", connection);
 

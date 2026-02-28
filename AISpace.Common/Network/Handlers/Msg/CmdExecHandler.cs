@@ -1,4 +1,5 @@
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Area;
 using AISpace.Common.Network.Packets.Msg;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers.Msg;
 
-public class CmdExecHandler(SharedState state, ILogger<CmdExecHandler> logger) : IPacketHandler
+public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<CmdExecHandler> logger) : IPacketHandler
 {
     private const float SpawnSpread = 50.0f;
 
@@ -42,15 +43,15 @@ public class CmdExecHandler(SharedState state, ILogger<CmdExecHandler> logger) :
                 var chara = areaClient.User.Characters.First();
                 uint mapId = chara.CurrentMapId;
 
-                var spawn = MapRegistry.GetSpawn(mapId);
+                var map = await mapRepo.GetByMapIdAsync(mapId, ct);
 
                 float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
                 float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
 
-                areaClient.X = spawn.X + offsetX;
-                areaClient.Y = spawn.Y;
-                areaClient.Z = spawn.Z + offsetZ;
-                areaClient.Rotation = spawn.Rot;
+                areaClient.X = (map?.SpawnX ?? 0f) + offsetX;
+                areaClient.Y = map?.SpawnY ?? 0.1f;
+                areaClient.Z = (map?.SpawnZ ?? 0f) + offsetZ;
+                areaClient.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
                 areaClient.CurrentAnimation = MovementType.Stopped;
 
                 var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
