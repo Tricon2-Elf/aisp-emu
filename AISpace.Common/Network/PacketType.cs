@@ -469,6 +469,12 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
     NpcNotifyData = 0xCD67, // 52583
 
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_event_access_npc")]
+    EventAccessNpcRequest = 0x0D29, // 3369
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_access_npc_r")]
+    EventAccessNpcResponse = 0x3300, // 13056
+
     [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
     Ping = 0xC202, // 49666
 
