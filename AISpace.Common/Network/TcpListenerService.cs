@@ -14,7 +14,7 @@ public record MsgChannel(Channel<Packet> Channel);
 
 public record AreaChannel(Channel<Packet> Channel);
 
-public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Packet> channel, string Name, int port, ILoggerFactory loggerFactory) : BackgroundService
+public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Packet> channel, string Name, int port, ILoggerFactory loggerFactory, SharedState state) : BackgroundService
 {
     private readonly TcpListener _tcpListener = new(System.Net.IPAddress.Parse("0.0.0.0"), port);
     private readonly CancellationTokenSource _cts = new();
@@ -73,6 +73,9 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
 
         try
         {
+            using var stream = context.Stream;
+            var buffer = new byte[4096];
+
             while (!_cts.Token.IsCancellationRequested)
             {
                 int read = await stream.ReadAsync(buffer.AsMemory(0, 1), _cts.Token);
@@ -98,6 +101,11 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
         catch (Exception ex)
         {
             logger.LogError("Client {Id} error: {Message}", context.Id, ex.Message);
+        }
+        finally
+        {
+            _clients.TryRemove(context.Id, out _);
+            state.UnregisterClient(Name, context.Id);
         }
 
         logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
@@ -215,6 +223,11 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
         catch (Exception ex)
         {
             logger.LogError("Err {ex}", ex);
+        }
+        finally
+        {
+            _clients.TryRemove(context.Id, out _);
+            state.UnregisterClient(Name, context.Id);
         }
     }
 
