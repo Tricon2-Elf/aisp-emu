@@ -76,7 +76,7 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public async Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default)
     {
-        if (type != PacketType.Ping)
+        if (type != PacketType.Ping && type != PacketType.TimeZoneGetResponse)
             logger.LogInformation("Sending: {type}, {len}", type, payload.Length);
         try
         {
