@@ -10,14 +10,13 @@ public class CharaData(uint slotId, uint modelId, string name)
 
     public void AddEquip(uint id, uint socket)
     {
-        Equips.Add(new ItemSlotInfo(id, (uint)Equips.Count));
+        Equips.Add(new ItemSlotInfo(id, socket));
     }
 
     public byte[] ToBytes()
     {
-        uint y = 0;
         while (Equips.Count < 30)
-            AddEquip(0, y++);
+            AddEquip(0, 0);
 
         var writer = new Network.PacketWriter();
         writer.Write(slotId); // m_SlotId (4)
