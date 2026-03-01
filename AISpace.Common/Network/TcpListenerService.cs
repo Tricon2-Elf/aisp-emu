@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading.Channels;
+using AISpace.Common.Game;
 using AISpace.Common.Network.Crypto;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ public record AreaChannel(Channel<Packet> Channel);
 
 public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Packet> channel, string Name, int port, ILoggerFactory loggerFactory, SharedState state) : BackgroundService
 {
+    private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
     private readonly TcpListener _tcpListener = new(System.Net.IPAddress.Parse("0.0.0.0"), port);
     private readonly CancellationTokenSource _cts = new();
 
@@ -68,9 +70,6 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
     private async Task HandleClientAsync(ClientConnection context)
     {
         logger.LogInformation("{name} Handling new Unencrypted client {Id}", Name, context.Id);
-        using var stream = context.Stream;
-        var buffer = new byte[4096];
-
         try
         {
             using var stream = context.Stream;
@@ -93,7 +92,7 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
                 int payloadLength = packetLength - 2;
                 byte[] payload = new byte[payloadLength];
                 await ReadExactAsync(stream, payload, _cts.Token);
-                if (type != PacketType.Ping)
+                if (!SuppressedReceiveLogs.Contains(type))
                     logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, BitConverter.ToString(payload));
                 channel.Writer.TryWrite(new Packet(context, type, payload, typeShort));
             }
@@ -198,7 +197,7 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
                             var singleType = (PacketType)singleTypeRaw;
                             int singleBodyLen = msgSize - 2;
                             ReadOnlySpan<byte> singlePayload = singleBodyLen > 0 ? cipher.AsSpan(2, singleBodyLen) : [];
-                            if (singleType != PacketType.Ping)
+                            if (!SuppressedReceiveLogs.Contains(singleType))
                                 logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", singleType, singlePayload.Length, BitConverter.ToString(singlePayload.ToArray()));
                             channel.Writer.TryWrite(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw));
                         }
@@ -212,7 +211,7 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
                     var type = (PacketType)typeRaw;
                     int bodyLen = payloadLen - 2;
                     ReadOnlySpan<byte> payload = bodyLen > 0 ? cipher.AsSpan(payloadStart + 2, bodyLen) : [];
-                    if (type != PacketType.Ping)
+                    if (!SuppressedReceiveLogs.Contains(type))
                         logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, BitConverter.ToString(payload.ToArray()));
                     channel.Writer.TryWrite(new Packet(context, type, payload.ToArray(), typeRaw));
 
