@@ -33,6 +33,7 @@ internal class Program
         builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
+        builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
 
         builder.Services.AddSingleton<SharedState>();
         // Add all IPacketHandler classsess
@@ -61,6 +62,7 @@ internal class Program
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             await db.Database.EnsureCreatedAsync();
             await MapRepository.SeedMapsIfEmptyAsync(db);
+            await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
         }
 
         await host.RunAsync();
