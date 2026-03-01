@@ -409,6 +409,9 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_select_map")]
     NotifySelectMap = 0x68A5, // 26789
 
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_areamap_select_exec")]
+    EventAreaMapSelectExec = 0x14B3, // 5299
+
     [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
     MascotGetCountRequest = 0x0CBC, // 3260
 
@@ -522,6 +525,18 @@ public enum PacketType : ushort
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_update_option_r")]
     UpdateOptionResponse = 0xB314, // 45844
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_map")]
+    NotifyChangeMap = 0xB315, // 45845
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_map_failed")]
+    NotifyChangeMapFailed = 0x59A5, // observed near recv_notify_change_map_failed handler
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_select_init_island_start")]
+    SelectInitIslandStart = 0x3E25, // 15909
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_select_init_island_end")]
+    SelectInitIslandEndRequest = 0xDDB3, // -8781 (signed short in decompiled send)
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_trashbox_open")]
     TrashboxOpenRequest = 0xF41F, // 62495
