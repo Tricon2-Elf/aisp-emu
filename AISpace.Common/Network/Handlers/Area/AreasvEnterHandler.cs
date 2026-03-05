@@ -32,6 +32,11 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         uint mapId = chara.CurrentMapId;
         var map = await mapRepo.GetByMapIdAsync(mapId, ct);
 
+        if (map is null)
+        {
+            logger.LogWarning("Map not found for MapId={MapId} (character may spawn at default position). Ensure Maps table is seeded on VPS (e.g. volume for main.db or run migration/seed).", mapId);
+        }
+
         float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
         float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
 
@@ -47,7 +52,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         _ = Task.Run(
             async () =>
             {
-                await Task.Delay(1000, ct);
+                //await Task.Delay(1000, ct);
 
                 var cha = connection.User.Characters.First();
                 var myPos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
