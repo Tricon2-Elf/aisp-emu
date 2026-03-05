@@ -9,7 +9,7 @@ public class AuthServer(ILogger<AuthServer> logger, MainContext db, IUserReposit
     protected override void Initialize()
     {
         if (Db.Worlds.Any() == false)
-            WorldRepo.AddAsync("default", "Localhost World", "127.0.0.1", 50052);
+            WorldRepo.AddAsync("default", "Localhost World", "aisp.moe", 50052);
         if (Db.Users.Any() == false)
             UserRepo.AddAsync("testuser", "password");
     }

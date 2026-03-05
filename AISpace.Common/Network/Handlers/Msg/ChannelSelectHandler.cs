@@ -17,7 +17,7 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
     {
         var request = ChannelSelectRequest.FromBytes(payload.Span);
         logger.LogInformation("ChannelSelectRequest from user {UserId}: ChannelID {ChannelId}", connection.User?.Id ?? 0, request.ChannelID);
-        string myIp = "127.0.0.1";
+        string myIp = "aisp.moe";
         ushort areaPort = 50054;
         uint mapID = 10990100;
         using (var scope = scopeFactory.CreateScope())

@@ -11,7 +11,7 @@ public class ChannelListGetHandler : IPacketHandler
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        string myIp = "127.0.0.1";
+        string myIp = "aisp.moe";
         ushort areaPort = 50054;
 
         var serverInfo = new ServerInfo(myIp, areaPort);
