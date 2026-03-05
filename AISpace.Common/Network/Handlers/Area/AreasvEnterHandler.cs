@@ -40,10 +40,14 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
         float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
 
-        connection.X = (map?.SpawnX ?? 0f) + offsetX;
-        connection.Y = map?.SpawnY ?? 0.1f;
-        connection.Z = (map?.SpawnZ ?? 0f) + offsetZ;
-        connection.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+        float SpawnX = -9100f;
+        float SpawnY = 2f;
+        float SpawnZ = -18000f;
+        float SpawnRotation = 90;
+        connection.X = (SpawnX) + offsetX;
+        connection.Y = SpawnY;
+        connection.Z = (SpawnZ) + offsetZ;
+        connection.Rotation = (sbyte)(SpawnRotation);
 
         state.RegisterClient("Area", connection);
 
