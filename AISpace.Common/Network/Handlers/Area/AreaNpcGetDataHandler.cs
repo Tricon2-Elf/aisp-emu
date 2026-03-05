@@ -51,7 +51,7 @@ public class AreaNpcGetDataHandler : IPacketHandler
             }
 
             var npcPacket = new NpcNotifyData(0, NpcObjectIdBase, npcChara).ToBytes();
-            await connection.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
+            //await connection.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
         }
     }
 }
