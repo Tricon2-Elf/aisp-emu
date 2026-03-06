@@ -44,7 +44,18 @@ public abstract class DomainServerBase<T> : BackgroundService
     {
         await foreach (var packet in Channel.ReadAllAsync(ct))
         {
-            await Dispatcher.DispatchAsync(ActiveDomain, packet.Type, packet.Data, packet.Client, ct);
+            try
+            {
+                await Dispatcher.DispatchAsync(ActiveDomain, packet.Type, packet.Data, packet.Client, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Packet dispatch failed (domain={Domain}, type={Type}): {Message}", ActiveDomain, packet.Type, ex.Message);
+            }
         }
     }
 
@@ -53,7 +64,18 @@ public abstract class DomainServerBase<T> : BackgroundService
         var timer = new PeriodicTimer(TickRate);
         while (await timer.WaitForNextTickAsync(ct))
         {
-            OnTick(ct);
+            try
+            {
+                OnTick(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Game tick failed (domain={Domain}): {Message}", ActiveDomain, ex.Message);
+            }
         }
     }
 

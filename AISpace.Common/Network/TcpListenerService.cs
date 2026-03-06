@@ -40,20 +40,37 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
 
         while (!_cts.Token.IsCancellationRequested)
         {
-            var client = await _tcpListener.AcceptTcpClientAsync(_cts.Token);
-            var context = new ClientConnection(Guid.NewGuid(), client.Client.RemoteEndPoint!, client.GetStream(), loggerFactory.CreateLogger<ClientConnection>());
-            _clients[context.Id] = context;
-            // Crappy encryption auto detection
-            byte first = await PeekByteAsync(client.Client, ct);
-            logger.LogInformation("First Byte! {b}", first);
-            if (first != 0)
+            try
             {
-                _ = HandleCryptoClientAsync(context);
+                var client = await _tcpListener.AcceptTcpClientAsync(_cts.Token);
+                var context = new ClientConnection(Guid.NewGuid(), client.Client.RemoteEndPoint!, client.GetStream(), loggerFactory.CreateLogger<ClientConnection>());
+                _clients[context.Id] = context;
+                // Crappy encryption auto detection
+                byte first = await PeekByteAsync(client.Client, _cts.Token);
+                logger.LogInformation("First Byte! {b}", first);
+                if (first != 0)
+                {
+                    _ = HandleCryptoClientAsync(context);
+                }
+                else
+                {
+                    context.encrypted = false;
+                    _ = HandleClientAsync(context);
+                }
             }
-            else
+            catch (OperationCanceledException)
             {
-                context.encrypted = false;
-                _ = HandleClientAsync(context);
+                break;
+            }
+            catch (ObjectDisposedException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                if (_cts.Token.IsCancellationRequested)
+                    break;
+                logger.LogError(ex, "Accept/peek failed on {Name}, continuing: {Message}", Name, ex.Message);
             }
         }
     }
