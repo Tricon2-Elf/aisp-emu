@@ -35,6 +35,7 @@ internal class Program
         //Repo
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IWorldRepository, WorldRepository>();
+        builder.Services.AddScoped<IChannelRepository, ChannelRepository>();
         builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
@@ -70,6 +71,7 @@ internal class Program
             await MapRepository.SeedMapsIfEmptyAsync(db);
             await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
             await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride);
+            await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: 50054);
         }
 
         await host.RunAsync();

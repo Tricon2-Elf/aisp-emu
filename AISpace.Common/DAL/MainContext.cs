@@ -112,5 +112,13 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.SortOrder,
             });
         });
+
+        b.Entity<GameChannel>(e =>
+        {
+            e.ToTable("Channels");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.IP).HasMaxLength(256).IsRequired();
+            e.Property(x => x.MaxUsers).HasDefaultValue(1000u);
+        });
     }
 }
