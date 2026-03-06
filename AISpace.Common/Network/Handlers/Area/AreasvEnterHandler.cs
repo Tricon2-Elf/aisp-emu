@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
+public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, ICharacterRepository characterRepo, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
 {
     private const float SpawnSpread = 50.0f;
 
@@ -26,7 +26,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         }
 
         connection.User = session.User;
-        var chara = connection.User.Characters.First();
+        var chara = await characterRepo.GetByIdAsync(connection.User.Characters.First().Id, ct);
         uint charId = (uint)chara.Id;
 
         uint mapId = chara.CurrentMapId;
