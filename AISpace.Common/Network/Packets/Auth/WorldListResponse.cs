@@ -1,4 +1,4 @@
-﻿namespace AISpace.Common.Network.Packets.Auth;
+namespace AISpace.Common.Network.Packets.Auth;
 
 public class WorldListResponse(uint Result, List<DAL.Entities.World> Worlds) : IPacket<WorldListResponse>
 {
@@ -20,8 +20,8 @@ public class WorldListResponse(uint Result, List<DAL.Entities.World> Worlds) : I
             writer.Write((uint)world.Id);
             writer.WriteFixedAsciiString(world.Name, MaxNameLen);
             writer.WriteFixedAsciiString(world.Description, MaxDescLen);
+            writer.Write((uint)0); // WorldInfo.dword_364
         }
-        writer.Write((uint)0); //Padding?
         return writer.ToBytes();
     }
 }
