@@ -99,7 +99,8 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
         }
         catch (Exception ex)
         {
-            logger.LogError("Client {Id} error: {Message}", context.Id, ex.Message);
+            if (!IsExpectedDisconnect(ex))
+                logger.LogError("Client {Id} error: {Message}", context.Id, ex.Message);
         }
         finally
         {
@@ -221,13 +222,26 @@ public class TcpListenerService(ILogger<TcpListenerService> logger, Channel<Pack
         }
         catch (Exception ex)
         {
-            logger.LogError("Err {ex}", ex);
+            if (!IsExpectedDisconnect(ex))
+                logger.LogError("Err {ex}", ex);
         }
         finally
         {
             _clients.TryRemove(context.Id, out _);
             state.UnregisterClient(Name, context.Id);
+            logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
         }
+    }
+
+    private static bool IsExpectedDisconnect(Exception ex)
+    {
+        if (ex is IOException io && io.Message is "Disconnected" or "The client closed the connection.")
+            return true;
+        if (ex is ObjectDisposedException)
+            return true;
+        if (ex is SocketException se && (se.SocketErrorCode is SocketError.ConnectionReset or SocketError.Shutdown or SocketError.ConnectionAborted))
+            return true;
+        return false;
     }
 
     private static async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
