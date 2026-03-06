@@ -1,10 +1,11 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Area;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreaMapDataEnterEndHandler(SharedState state) : IPacketHandler
+public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEnterEndHandler> logger) : IPacketHandler
 {
     public PacketType RequestType => PacketType.MapDataEnterEndRequest;
     public PacketType ResponseType => PacketType.MapDataEnterEndResponse;
@@ -21,14 +22,14 @@ public class AreaMapDataEnterEndHandler(SharedState state) : IPacketHandler
         var myPos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
 
         var spawnMePacket = new AvatarNotifyData(0, new AvatarData((uint)myChar.Id, CreateCData(myChar, myPos))).ToBytes();
-
+        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", connection.Id, myChar.Id);
         foreach (var other in state.AreaClients.Values)
         {
             if (other.Id == connection.Id)
                 continue;
 
             await other.SendAsync(PacketType.AvatarNotifyData, spawnMePacket, ct);
-
+            logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for othercharacter {CharacterId}", other.Id, myChar.Id);
             var otherChar = other.User?.Characters.FirstOrDefault();
             if (otherChar != null)
             {

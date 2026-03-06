@@ -33,6 +33,7 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
         string resolvedIp = serverOptions.Value.ResolveAddress(channel.IP);
         var serverInfo = new ServerInfo(resolvedIp, channel.Port);
         uint mapId = channel.MapId;
+        logger.LogInformation("ChannelSelect: sending Area server {ResolvedIp}:{Port} (MapId={MapId})", resolvedIp, channel.Port, mapId);
 
         using (var scope = scopeFactory.CreateScope())
         {

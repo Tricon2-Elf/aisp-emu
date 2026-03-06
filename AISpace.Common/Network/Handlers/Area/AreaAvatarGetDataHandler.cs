@@ -1,10 +1,10 @@
-using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Area;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Network.Handlers;
 
-public class AreaAvatarGetDataHandler : IPacketHandler
+public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) : IPacketHandler
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyData;
@@ -34,6 +34,7 @@ public class AreaAvatarGetDataHandler : IPacketHandler
         }
 
         var avatarData = new AvatarData((uint)cha.Id, cd);
+        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", connection.Id, cha.Id);
         await connection.SendAsync(ResponseType, new AvatarNotifyData(0, avatarData).ToBytes(), ct);
     }
 }

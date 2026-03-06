@@ -52,7 +52,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         _ = Task.Run(
             async () =>
             {
-                //await Task.Delay(1000, ct);
+                await Task.Delay(1000, ct);
 
                 var cha = connection.User.Characters.First();
                 var myPos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
