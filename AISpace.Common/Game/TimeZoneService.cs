@@ -1,37 +1,36 @@
 namespace AISpace.Common.Game;
 
+public enum DayPhase : uint
+{
+    Morning = 0,
+    Day = 1,
+    Evening = 2,
+    Night = 3,
+    EarlyMorning = 4,
+}
+
+public readonly record struct ServerTime(DayPhase Phase, uint Current, uint Max);
+
 public static class TimeZoneService
 {
-    private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    private static readonly long ServerStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-    public static (uint phase, uint current, uint max) GetServerTime()
+    private static readonly (DayPhase Phase, int Duration)[] Phases = [(DayPhase.EarlyMorning, 900), (DayPhase.Morning, 1800), (DayPhase.Day, 3600), (DayPhase.Evening, 900), (DayPhase.Night, 1800)];
+
+    private static readonly int CycleDuration = Phases.Sum(p => p.Duration);
+
+    public static ServerTime GetServerTime()
     {
-        const uint T_EARLY = 900;
-        const uint T_MORN = 1800;
-        const uint T_DAY = 3600;
-        const uint T_EVE = 900;
-        const uint T_NIGHT = 1800;
-        const uint TOTAL = 9000;
+        long elapsed = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - ServerStartTime;
+        var cycleTime = elapsed % CycleDuration;
 
-        long elapsed = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - _serverStartTime;
-        uint cycleTime = (uint)(elapsed % TOTAL);
+        foreach (var (phase, duration) in Phases)
+        {
+            if (cycleTime < duration)
+                return new ServerTime(phase, (uint)cycleTime, (uint)duration);
+            cycleTime -= duration;
+        }
 
-        if (cycleTime < T_EARLY)
-            return (4, cycleTime, T_EARLY);
-
-        cycleTime -= T_EARLY;
-        if (cycleTime < T_MORN)
-            return (0, cycleTime, T_MORN);
-
-        cycleTime -= T_MORN;
-        if (cycleTime < T_DAY)
-            return (1, cycleTime, T_DAY);
-
-        cycleTime -= T_DAY;
-        if (cycleTime < T_EVE)
-            return (2, cycleTime, T_EVE);
-
-        cycleTime -= T_EVE;
-        return (3, cycleTime, T_NIGHT);
+        return default;
     }
 }

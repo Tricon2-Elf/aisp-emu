@@ -12,7 +12,7 @@ public class AreaTimeZoneGetHandler : IPacketHandler
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
         var t = TimeZoneService.GetServerTime();
-        var resp = new TimeZoneGetResponse(0, t.phase, t.current, t.max, 1);
+        var resp = new TimeZoneGetResponse(0, (uint)t.Phase, t.Current, t.Max, 1);
         await connection.SendAsync(ResponseType, resp.ToBytes(), ct);
     }
 }
