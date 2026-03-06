@@ -33,13 +33,7 @@ public class MapLink
         if (string.IsNullOrWhiteSpace(DestinationMapIds))
             return [];
 
-        var parsed = DestinationMapIds
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(raw => uint.TryParse(raw, out var mapId) ? mapId : 0u)
-            .Where(mapId => mapId != 0)
-            .Distinct()
-            .Take(4)
-            .ToList();
+        var parsed = DestinationMapIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(raw => uint.TryParse(raw, out var mapId) ? mapId : 0u).Where(mapId => mapId != 0).Distinct().Take(4).ToList();
 
         return parsed;
     }

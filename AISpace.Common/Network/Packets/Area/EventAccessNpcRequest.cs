@@ -15,7 +15,7 @@ public class EventAccessNpcRequest : IPacket<EventAccessNpcRequest>
             NpcId = reader.ReadUInt(),
             AvatarX = reader.ReadFloat(),
             AvatarY = reader.ReadFloat(),
-            AvatarZ = reader.ReadFloat()
+            AvatarZ = reader.ReadFloat(),
         };
     }
 

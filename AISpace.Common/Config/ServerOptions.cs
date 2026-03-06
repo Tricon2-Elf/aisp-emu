@@ -13,8 +13,10 @@ public class ServerOptions
     /// <summary>Returns the address to use for clients: if IPOverride is set and address is localhost/127.0.0.1, returns IPOverride; otherwise returns address.</summary>
     public string ResolveAddress(string address)
     {
-        if (string.IsNullOrEmpty(IPOverride)) return address;
-        if (address == "localhost" || address == "127.0.0.1") return IPOverride;
+        if (string.IsNullOrEmpty(IPOverride))
+            return address;
+        if (address == "localhost" || address == "127.0.0.1")
+            return IPOverride;
         return address;
     }
 }

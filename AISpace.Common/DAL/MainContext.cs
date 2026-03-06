@@ -105,7 +105,12 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("MapLinks");
             e.HasKey(x => x.Id);
             e.Property(x => x.DestinationMapIds).HasMaxLength(256).IsRequired();
-            e.HasIndex(x => new { x.SourceMapId, x.ChannelId, x.SortOrder });
+            e.HasIndex(x => new
+            {
+                x.SourceMapId,
+                x.ChannelId,
+                x.SortOrder,
+            });
         });
     }
 }

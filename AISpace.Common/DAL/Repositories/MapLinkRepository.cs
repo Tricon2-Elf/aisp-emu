@@ -17,12 +17,7 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
         long mapId = sourceMapId;
         long channel = channelId;
 
-        return await _db.MapLinks
-            .AsNoTracking()
-            .Where(x => x.IsEnabled && x.SourceMapId == mapId && (x.ChannelId == channel || x.ChannelId == 0))
-            .OrderBy(x => x.SortOrder)
-            .ThenBy(x => x.Id)
-            .ToListAsync(ct);
+        return await _db.MapLinks.AsNoTracking().Where(x => x.IsEnabled && x.SourceMapId == mapId && (x.ChannelId == channel || x.ChannelId == 0)).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).ToListAsync(ct);
     }
 
     /// <summary>Seeds map-link entries if the MapLinks table is empty.</summary>
