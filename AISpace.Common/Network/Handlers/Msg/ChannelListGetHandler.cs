@@ -1,9 +1,11 @@
+using AISpace.Common.Config;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Msg;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Network.Handlers.Msg;
 
-public class ChannelListGetHandler : IPacketHandler
+public class ChannelListGetHandler(IOptions<ServerOptions> serverOptions) : IPacketHandler
 {
     public PacketType RequestType => PacketType.ChannelListGetRequest;
     public PacketType ResponseType => PacketType.ChannelListGetResponse;
@@ -11,7 +13,7 @@ public class ChannelListGetHandler : IPacketHandler
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
-        string myIp = "aisp.moe";
+        string myIp = serverOptions.Value.ResolveAddress("localhost");
         ushort areaPort = 50054;
 
         var serverInfo = new ServerInfo(myIp, areaPort);

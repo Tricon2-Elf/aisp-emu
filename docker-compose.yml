@@ -7,3 +7,5 @@ services:
       - "50050:50050"   # Auth
       - "50052:50052"   # Msg
       - "50054:50054"   # Area
+    environment:
+      - IP_OVERRIDE=host.docker.internal

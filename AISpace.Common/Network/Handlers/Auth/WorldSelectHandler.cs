@@ -1,20 +1,22 @@
+using AISpace.Common.Config;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Network.Crypto;
 using AISpace.Common.Network.Packets.Auth;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Network.Handlers.Auth;
 
-public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionRepository sessionRepo, ILogger<WorldSelectHandler> logger) : IPacketHandler
+public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionRepository sessionRepo, ILogger<WorldSelectHandler> logger, IOptions<ServerOptions> serverOptions) : IPacketHandler
 {
-    public PacketType RequestType => PacketType.Auth_WorldSelectRequest;
-    public PacketType ResponseType => PacketType.Auth_WorldSelectResponse;
-    public MessageDomain Domain => MessageDomain.Auth;
-
     private readonly IWorldRepository _worldRepository = worldRepo;
     private readonly IUserSessionRepository _sessionRepo = sessionRepo;
     private readonly ILogger<WorldSelectHandler> _logger = logger;
+
+    public PacketType RequestType => PacketType.Auth_WorldSelectRequest;
+    public PacketType ResponseType => PacketType.Auth_WorldSelectResponse;
+    public MessageDomain Domain => MessageDomain.Auth;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
     {
@@ -32,7 +34,8 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
         //Need to insert the otp into UserSessions
         await _sessionRepo.CreateAsync(clientUser.Id, otp, TimeSpan.FromHours(1), ct);
         _logger.LogInformation("World Selected: {ID}", selectedWorldID);
-        var WorldSelectResp = new WorldSelectResponse(0, world.Address, world.Port, otp);
+        var resolvedAddress = serverOptions.Value.ResolveAddress(world.Address);
+        var WorldSelectResp = new WorldSelectResponse(0, resolvedAddress, world.Port, otp);
         await connection.SendAsync(PacketType.Auth_WorldSelectResponse, WorldSelectResp, ct);
     }
 }

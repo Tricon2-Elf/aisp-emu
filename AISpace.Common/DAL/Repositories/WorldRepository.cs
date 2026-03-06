@@ -1,4 +1,4 @@
-﻿using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.DAL.Repositories;
@@ -44,5 +44,24 @@ public class WorldRepository(MainContext db) : IWorldRepository
     public async Task<World?> GetByNameAsync(string name)
     {
         return await _db.Worlds.FirstOrDefaultAsync(w => w.Name == name);
+    }
+
+    /// <summary>Seeds world data if the Worlds table is empty. Call on startup after EnsureCreated.</summary>
+    /// <param name="ipOverride">When set (e.g. IP_OVERRIDE in Docker), used as the world address instead of "localhost".</param>
+    public static async Task SeedWorldsIfEmptyAsync(MainContext db, string? ipOverride = null, CancellationToken ct = default)
+    {
+        if (await db.Worlds.AnyAsync(ct))
+            return;
+        string address = !string.IsNullOrWhiteSpace(ipOverride) ? ipOverride : "localhost";
+        db.Worlds.Add(
+            new World
+            {
+                Name = "default",
+                Description = "Main World",
+                Address = address,
+                Port = 50052,
+            }
+        );
+        await db.SaveChangesAsync(ct);
     }
 }

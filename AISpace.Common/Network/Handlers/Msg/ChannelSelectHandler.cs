@@ -1,13 +1,15 @@
+using AISpace.Common.Config;
 using AISpace.Common.DAL;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets.Msg;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Network.Handlers.Msg;
 
-public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IServiceScopeFactory scopeFactory) : IPacketHandler
+public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IServiceScopeFactory scopeFactory, IOptions<ServerOptions> serverOptions) : IPacketHandler
 {
     public PacketType RequestType => PacketType.ChannelSelectRequest;
     public PacketType ResponseType => PacketType.ChannelSelectResponse;
@@ -17,7 +19,7 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
     {
         var request = ChannelSelectRequest.FromBytes(payload.Span);
         logger.LogInformation("ChannelSelectRequest from user {UserId}: ChannelID {ChannelId}", connection.User?.Id ?? 0, request.ChannelID);
-        string myIp = "aisp.moe";
+        string myIp = serverOptions.Value.ResolveAddress("localhost");
         ushort areaPort = 50054;
         uint mapID = 10990100;
         using (var scope = scopeFactory.CreateScope())

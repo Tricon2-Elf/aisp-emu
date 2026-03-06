@@ -5,6 +5,7 @@ global using AISpace.Common.DAL.Repositories;
 global using AISpace.Common.Network;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Options;
 using System.Text;
 using AISpace.Common.Game;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,10 @@ internal class Program
     static async Task Main(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
+        // IP override: set Server__IPOverride (e.g. Server__IPOverride=host.docker.internal) or IP_OVERRIDE env to replace localhost addresses in Docker.
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IP_OVERRIDE")))
+            builder.Configuration["Server:IPOverride"] = Environment.GetEnvironmentVariable("IP_OVERRIDE");
+
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         builder.Logging.ClearProviders();
         builder.Logging.SetMinimumLevel(LogLevel.Information);
@@ -60,9 +65,11 @@ internal class Program
         using (var scope = host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
+            var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
             await db.Database.EnsureCreatedAsync();
             await MapRepository.SeedMapsIfEmptyAsync(db);
             await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
+            await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride);
         }
 
         await host.RunAsync();
