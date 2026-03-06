@@ -22,7 +22,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
-        options.UseSqlite("Data Source=main.db");
+        options.UseSqlite("Data Source=main.db", b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
     }
 
     protected override void OnModelCreating(ModelBuilder b)
