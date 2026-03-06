@@ -119,6 +119,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.IP).HasMaxLength(256).IsRequired();
             e.Property(x => x.MaxUsers).HasDefaultValue(1000u);
+            e.Property(x => x.MapId).HasDefaultValue(10990100u);
         });
     }
 }

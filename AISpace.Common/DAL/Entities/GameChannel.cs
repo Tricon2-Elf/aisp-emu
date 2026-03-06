@@ -8,4 +8,5 @@ public class GameChannel
     public string IP { get; set; } = string.Empty;
     public uint CurrentUsers { get; set; }
     public uint MaxUsers { get; set; } = 1000;
+    public uint MapId { get; set; }
 }
