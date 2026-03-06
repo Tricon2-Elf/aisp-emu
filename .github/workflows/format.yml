@@ -24,4 +24,4 @@ jobs:
         run: dotnet tool install -g csharpier
 
       - name: Check format
-        run: csharpier . --check
+        run: csharpier check .
