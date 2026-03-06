@@ -22,7 +22,7 @@ jobs:
       - name: Deploy on VPS
         run: |
           ssh -p "${{ secrets.VPS_PORT || 22 }}" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" << 'EOF'
-            cd /opt/aispace-server
+            cd /opt/aisp-emu
             docker compose pull
             docker compose up -d
             docker image prune -f
