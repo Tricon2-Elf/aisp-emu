@@ -1,25 +1,29 @@
+using AISpace.Common.Game;
 using AISpace.Network;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common;
 
 public class PacketDispatcher
 {
-    private readonly Dictionary<(MessageDomain, PacketType), IPacketHandler> _handlers;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<PacketDispatcher> _logger;
 
-    public PacketDispatcher(IEnumerable<IPacketHandler> allHandlers, ILogger<PacketDispatcher> logger)
+    public PacketDispatcher(IServiceScopeFactory scopeFactory, ILogger<PacketDispatcher> logger)
     {
+        _scopeFactory = scopeFactory;
         _logger = logger;
-        _handlers = [];
-        foreach (var handler in allHandlers)
-            _handlers[(handler.Domain, handler.RequestType)] = handler;
     }
 
-    public async Task DispatchAsync(MessageDomain domain, PacketType type, byte[] payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task DispatchAsync(MessageDomain domain, PacketType type, byte[] payload, IPlayerSession session, CancellationToken ct = default)
     {
-        if (_handlers.TryGetValue((domain, type), out var handler))
+        using var scope = _scopeFactory.CreateScope();
+        var handlers = scope.ServiceProvider.GetServices<IPacketHandler>();
+        var handler = handlers.FirstOrDefault(h => h.Domain == domain && h.RequestType == type);
+        if (handler != null)
         {
-            await handler.HandleAsync(payload, connection, ct);
+            await handler.HandleAsync(payload, session, ct);
         }
         else
         {

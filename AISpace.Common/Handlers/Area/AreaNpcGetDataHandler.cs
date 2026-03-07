@@ -1,5 +1,7 @@
-using AISpace.Common.Network.Packets;
+using AISpace.Network.Packets.Area;
 using AISpace.Network;
+using AISpace.Network.Data;
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -20,19 +22,19 @@ public class AreaNpcGetDataHandler : IPacketHandler
     /// <summary>When true, send NpcNotifyData after NpcGetDataResponse. Packet layout matches client ReadNpcData (result, CharaData, 1 byte).</summary>
     private const bool SendNpcNotifyData = true;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var response = new NpcGetDataResponse();
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
         if (SendNpcNotifyData)
         {
             // Spawn one or more NPCs for this player: same position as avatar spawn flow.
             // NPC appears a few units in front of the player.
-            float nx = connection.X + 200f;
-            float nz = connection.Z + 200f;
-            var pos = new MovementData(nx, connection.Y, nz, connection.Rotation, MovementType.Stopped);
-            var sourceChar = connection.User?.Characters.FirstOrDefault();
+            float nx = session.X + 200f;
+            float nz = session.Z + 200f;
+            var pos = new MovementData(nx, session.Y, nz, session.Rotation, MovementType.Stopped);
+            var sourceChar = session.User?.Characters.FirstOrDefault();
             uint modelId = sourceChar?.ModelId ?? DefaultNpcModelId;
 
             var npcChara = new CharaData(NpcObjectIdBase, modelId, "NPC") { moveData = pos };
@@ -48,7 +50,7 @@ public class AreaNpcGetDataHandler : IPacketHandler
             }
 
             var npcPacket = new NpcNotifyData(0, NpcObjectIdBase, npcChara).ToBytes();
-            //await connection.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
+            //await session.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
         }
     }
 }

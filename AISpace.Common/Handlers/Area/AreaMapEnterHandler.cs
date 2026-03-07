@@ -1,5 +1,7 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -9,11 +11,11 @@ public class AreaMapEnterHandler(ILogger<AreaMapEnterHandler> logger) : IPacketH
     public PacketType ResponseType => PacketType.MapEnterResponse;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = AreaMapEnterRequest.FromBytes(payload.Span);
-        logger.LogInformation("MapEnterRequest from user {UserId}: requested MapID {MapId}", connection.User.Id, request.MapID);
+        logger.LogInformation("MapEnterRequest from user {UserId}: requested MapID {MapId}", session.User.Id, request.MapID);
         var response = new AreaMapEnterResponse(0);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

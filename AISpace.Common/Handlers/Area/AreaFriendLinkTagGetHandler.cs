@@ -1,5 +1,7 @@
 using AISpace.Network;
 
+using AISpace.Common.Game;
+
 namespace AISpace.Common.Handlers.Area;
 
 public class AreaFriendLinkTagGetHandler : IPacketHandler
@@ -8,7 +10,7 @@ public class AreaFriendLinkTagGetHandler : IPacketHandler
     public PacketType ResponseType => (PacketType)0x239E; // recv_get_friend_link_tag_r
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var reader = new PacketReader(payload.Span);
         uint targetObjId = reader.ReadUInt();
@@ -22,6 +24,6 @@ public class AreaFriendLinkTagGetHandler : IPacketHandler
         writer.Write((uint)0); // questionnaire_slot
 
         // Total 24 bytes (6 fields by 4 bytes)
-        await connection.SendAsync(ResponseType, writer.ToBytes(), ct);
+        await session.SendAsync(ResponseType, writer.ToBytes(), ct);
     }
 }

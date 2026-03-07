@@ -1,5 +1,14 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
+using AISpace.Common.Game;
+using AISpace.Common.DAL;
+using AISpace.Network.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using AISpace.Common.Config;
+using AISpace.Common.DAL.Repositories;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -9,17 +18,17 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
     public PacketType ResponseType => PacketType.ChannelSelectResponse;
     public MessageDomain Domain => MessageDomain.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = ChannelSelectRequest.FromBytes(payload.Span);
-        logger.LogInformation("ChannelSelectRequest from user {UserId}: ChannelID {ChannelId}", connection.User?.Id ?? 0, request.ChannelID);
+        logger.LogInformation("ChannelSelectRequest from user {UserId}: ChannelID {ChannelId}", session.User?.Id ?? 0, request.ChannelID);
 
         var channel = await channelRepo.GetByChannelNumAsync((int)request.ChannelID, ct);
         if (channel == null)
         {
             logger.LogWarning("Channel not found: ChannelNum {ChannelId}", request.ChannelID);
             var failResponse = new ChannelSelectResponse(1, new ServerInfo("0.0.0.0", 0), 0, 0);
-            await connection.SendAsync(ResponseType, failResponse.ToBytes(), ct);
+            await session.SendAsync(ResponseType, failResponse.ToBytes(), ct);
             return;
         }
 
@@ -31,9 +40,9 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
-            if (connection.User != null)
+            if (session.User != null)
             {
-                var character = await db.Characters.FirstOrDefaultAsync(c => c.UserId == connection.User.Id, ct);
+                var character = await db.Characters.FirstOrDefaultAsync(c => c.UserId == session.User.Id, ct);
                 if (character != null)
                 {
                     character.CurrentMapId = mapId;
@@ -43,6 +52,6 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
         }
 
         var response = new ChannelSelectResponse(0, serverInfo, mapId, mapId);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

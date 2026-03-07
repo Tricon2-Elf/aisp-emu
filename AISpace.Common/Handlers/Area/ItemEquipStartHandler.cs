@@ -1,5 +1,7 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -13,15 +15,15 @@ public class ItemEquipStartHandler(ILogger<ItemEquipStartHandler> logger) : IPac
 
     private readonly ILogger<ItemEquipStartHandler> _logger = logger;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = ItemEquipStartRequest.FromBytes(payload.Span);
-        _logger.LogInformation("Client {Id} requested ItemEquipStart for ObjId: {ObjId}", connection.Id, request.ObjId);
+        _logger.LogInformation("Client {Id} requested ItemEquipStart for ObjId: {ObjId}", session.ConnectionId, request.ObjId);
 
         var response = new ItemEquipStartResponse(1);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
         var forceStarted = new ItemEquipForceStarted(request.ObjId);
-        await connection.SendAsync(PacketType.ItemEquipForceStarted, forceStarted.ToBytes(), ct);
+        await session.SendAsync(PacketType.ItemEquipForceStarted, forceStarted.ToBytes(), ct);
     }
 }

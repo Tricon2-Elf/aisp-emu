@@ -1,5 +1,9 @@
-using AISpace.Common.Network.Packets.Auth;
+using AISpace.Network.Packets.Auth;
 using AISpace.Network;
+using AISpace.Network.Data;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Auth;
 
@@ -12,14 +16,15 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
     private readonly IWorldRepository _worldRepository = repo;
     private readonly ILogger<WorldListHandler> _logger = logger;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         try
         {
             var worlds = await _worldRepository.GetAllAsync();
-            var worldListResponse = new WorldListResponse(0, worlds);
+            var worldDataList = worlds.Select(w => new WorldData { Id = w.Id, Name = w.Name, Description = w.Description, Address = w.Address, Port = w.Port }).ToList();
+            var worldListResponse = new WorldListResponse(0, worldDataList);
 
-            await connection.SendAsync(PacketType.Auth_WorldListResponse, worldListResponse.ToBytes(), ct);
+            await session.SendAsync(PacketType.Auth_WorldListResponse, worldListResponse.ToBytes(), ct);
         }
         catch (Exception ex)
         {

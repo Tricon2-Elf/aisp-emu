@@ -1,5 +1,7 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -9,9 +11,9 @@ public class CircleChatOutHandler(ILogger<CircleChatOutHandler> logger) : Packet
     public override PacketType ResponseType => PacketType.CircleChatInResponse; // Often the same response (just Result)
     public override MessageDomain Domain => MessageDomain.Msg;
 
-    public override async Task<CircleChatInResponse?> HandleAsync(CircleChatOutRequest request, ClientConnection connection, CancellationToken ct = default)
+    public override async Task<CircleChatInResponse?> HandleAsync(CircleChatOutRequest request, IPlayerSession session, CancellationToken ct = default)
     {
-        logger.LogInformation($"Player {connection.CharacterId} leaving circle chat");
+        logger.LogInformation($"Player {session.CharacterId} leaving circle chat");
         // Exit logic
         return new CircleChatInResponse(0);
     }

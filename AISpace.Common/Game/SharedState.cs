@@ -1,30 +1,35 @@
 using System.Collections.Concurrent;
-using AISpace.Network;
 
 namespace AISpace.Common.Game;
 
 public class SharedState
 {
-    public ConcurrentDictionary<Guid, ClientConnection> AuthClients = new();
-    public ConcurrentDictionary<Guid, ClientConnection> MsgClients = new();
-    public ConcurrentDictionary<Guid, ClientConnection> AreaClients = new();
+    private readonly ConcurrentDictionary<Guid, IPlayerSession> _sessionByConnectionId = new();
+
+    public ConcurrentDictionary<Guid, IPlayerSession> AuthClients = new();
+    public ConcurrentDictionary<Guid, IPlayerSession> MsgClients = new();
+    public ConcurrentDictionary<Guid, IPlayerSession> AreaClients = new();
     public ConcurrentQueue<(string id, string message)> newMessages = new();
     public readonly long StartTimeUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-    public void RegisterClient(string serverName, ClientConnection client)
+    /// <summary>Gets or creates a session for the given connection id. Factory is invoked only when a new session is needed.</summary>
+    public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) =>
+        _sessionByConnectionId.GetOrAdd(connectionId, _ => createSession());
+
+    public void RegisterClient(string serverName, IPlayerSession session)
     {
         if (serverName == "Area")
         {
-            var ghost = AreaClients.Values.FirstOrDefault(c => c.CharacterId == client.CharacterId);
-            if (ghost != null && ghost.Id != client.Id)
+            var ghost = AreaClients.Values.FirstOrDefault(s => s.CharacterId == session.CharacterId);
+            if (ghost != null && ghost.ConnectionId != session.ConnectionId)
             {
-                AreaClients.TryRemove(ghost.Id, out _);
+                AreaClients.TryRemove(ghost.ConnectionId, out _);
             }
-            AreaClients[client.Id] = client;
+            AreaClients[session.ConnectionId] = session;
         }
         else if (serverName == "Msg")
         {
-            MsgClients[client.Id] = client;
+            MsgClients[session.ConnectionId] = session;
         }
     }
 
@@ -33,5 +38,9 @@ public class SharedState
         AuthClients.TryRemove(clientId, out _);
         MsgClients.TryRemove(clientId, out _);
         AreaClients.TryRemove(clientId, out _);
+        _sessionByConnectionId.TryRemove(clientId, out _);
     }
+
+    public IPlayerSession? GetAreaSessionByCharacterId(uint characterId) =>
+        AreaClients.Values.FirstOrDefault(s => s.CharacterId == characterId);
 }

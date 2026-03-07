@@ -1,6 +1,12 @@
-using AISpace.Common.Network.Packets.Area;
+using AISpace.Common.Game;
+using AISpace.Common.Handlers.Area;
+using AISpace.Network.Packets.Area;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Msg;
+using AISpace.Common.DAL.Repositories;
+using Microsoft.Extensions.Logging;
+using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -12,18 +18,18 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
     public PacketType ResponseType => PacketType.CmdExecResponse;
     public MessageDomain Domain => MessageDomain.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = CmdExecRequest.FromBytes(payload.Span);
 
         var response = new CmdExecResponse(request.MessageId, 0);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
         string cmd = request.Command.ToLower();
 
         if (cmd == "pos" || cmd == "coords")
         {
-            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == connection.CharacterId);
+            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == session.CharacterId);
             if (areaClient != null)
             {
                 logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {areaClient.CharacterId}\n" + $"  X: {areaClient.X}f\n" + $"  Y: {areaClient.Y}f\n" + $"  Z: {areaClient.Z}f\n" + $"  Rotation: {areaClient.Rotation}\n" + "==========================================");
@@ -33,7 +39,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
 
         if (cmd == "escape" || cmd == "reset")
         {
-            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == connection.CharacterId);
+            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == session.CharacterId);
 
             if (areaClient != null && areaClient.User != null && areaClient.User.Characters.Count > 0)
             {
@@ -49,7 +55,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
                 areaClient.Y = map?.SpawnY ?? 0.1f;
                 areaClient.Z = (map?.SpawnZ ?? 0f) + offsetZ;
                 areaClient.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
-                areaClient.CurrentAnimation = MovementType.Stopped;
+                areaClient.MovementTypeId = (int)MovementType.Stopped;
 
                 var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
 
@@ -61,7 +67,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
 
                 foreach (var other in state.AreaClients.Values)
                 {
-                    if (other.Id == areaClient.Id)
+                    if (other.ConnectionId == areaClient.ConnectionId)
                         continue;
 
                     await other.SendAsync(PacketType.NotifyDisappearChara, disappearPacket, ct);

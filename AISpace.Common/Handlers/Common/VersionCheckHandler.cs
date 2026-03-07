@@ -1,6 +1,7 @@
-using AISpace.Common.Network.Packets.Common;
-using AISpace.Network;
 using AISpace.Network.Packets.Common;
+using AISpace.Network;
+
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Handlers.Common;
 
@@ -10,11 +11,11 @@ public abstract class VersionCheckHandlerBase : IPacketHandler
     public PacketType ResponseType => PacketType.VersionCheckResponse;
     public abstract MessageDomain Domain { get; }
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var req = VersionCheckRequest.FromBytes(payload.Span);
         var resp = new VersionCheckResponse(0, req.Major, req.Minor, req.Version);
-        await connection.SendAsync(ResponseType, resp.ToBytes(), ct);
+        await session.SendAsync(ResponseType, resp.ToBytes(), ct);
     }
 }
 

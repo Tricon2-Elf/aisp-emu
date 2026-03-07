@@ -1,5 +1,7 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Common;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Common;
 
@@ -9,11 +11,11 @@ public abstract class PingHandlerBase(ILogger logger) : IPacketHandler
     public PacketType ResponseType => PacketType.Ping;
     public abstract MessageDomain Domain { get; }
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        logger.LogTrace("Ping from {ConnectionId}", connection.Id);
+        logger.LogTrace("Ping from {ConnectionId}", session.ConnectionId);
         var ping = PingRequest.FromBytes(payload.Span);
-        await connection.SendAsync(PacketType.Ping, ping.ToBytes(), ct);
+        await session.SendAsync(PacketType.Ping, ping.ToBytes(), ct);
     }
 }
 

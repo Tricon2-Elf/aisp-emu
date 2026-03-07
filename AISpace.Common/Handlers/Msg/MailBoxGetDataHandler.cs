@@ -1,5 +1,7 @@
 using AISpace.Network;
 
+using AISpace.Common.Game;
+
 namespace AISpace.Common.Handlers.Msg;
 
 public class MailBoxGetDataHandler : IPacketHandler
@@ -10,11 +12,11 @@ public class MailBoxGetDataHandler : IPacketHandler
 
     public MessageDomain Domain => MessageDomain.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         PacketWriter writer = new();
         writer.Write((uint)0); // Result
         writer.Write((uint)0); // mail
-        await connection.SendAsync(ResponseType, writer.ToBytes(), ct);
+        await session.SendAsync(ResponseType, writer.ToBytes(), ct);
     }
 }

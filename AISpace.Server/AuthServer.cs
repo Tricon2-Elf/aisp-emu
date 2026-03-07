@@ -3,7 +3,7 @@ using AISpace.Common.Game;
 
 namespace AISpace.Server;
 
-public class AuthServer(ILogger<AuthServer> logger, MainContext db, IUserRepository userRepo, AuthChannel channel, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state) : DomainServerBase<AuthServer>(logger, db, userRepo, channel.Channel, worldRepo, dispatcher, state)
+public class AuthServer(ILogger<AuthServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state) : DomainServerBase<AuthServer>(logger, db, userRepo, port, "Auth", loggerFactory, worldRepo, dispatcher, state)
 {
     protected override MessageDomain ActiveDomain => MessageDomain.Auth;
 

@@ -1,5 +1,8 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Auth;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Auth;
 
@@ -11,7 +14,7 @@ public class AuthenticateHandler(IUserRepository userRepo, ILogger<AuthenticateH
     public override PacketType ResponseType => PacketType.AuthenticateResponse;
     public override MessageDomain Domain => MessageDomain.Auth;
 
-    public override async Task<AuthenticateResponse?> HandleAsync(AuthenticateRequest request, ClientConnection connection, CancellationToken ct = default)
+    public override async Task<AuthenticateResponse?> HandleAsync(AuthenticateRequest request, IPlayerSession session, CancellationToken ct = default)
     {
         _logger.LogInformation($"Auth request: {request.Username}");
 
@@ -30,7 +33,7 @@ public class AuthenticateHandler(IUserRepository userRepo, ILogger<AuthenticateH
             {
                 _logger.LogWarning($"Auth failed: Wrong password for user '{request.Username}'");
                 var failResp = new AuthenticateFailureResponse(AuthResponseResult.InvalidCredentials);
-                await connection.SendAsync(PacketType.AuthenticateFailureResponse, failResp.ToBytes(), ct);
+                await session.SendAsync(PacketType.AuthenticateFailureResponse, failResp.ToBytes(), ct);
                 return null;
             }
         }
@@ -39,7 +42,8 @@ public class AuthenticateHandler(IUserRepository userRepo, ILogger<AuthenticateH
             return null;
 
         _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
-        connection.User = user;
+        session.User = user;
+        session.UserId = user.Id;
         return new AuthenticateResponse((uint)user.Id);
     }
 }

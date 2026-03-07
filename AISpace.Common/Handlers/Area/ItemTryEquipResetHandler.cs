@@ -1,6 +1,7 @@
-using AISpace.Common.Network.Packets.Area;
-using AISpace.Network;
 using AISpace.Network.Packets.Area;
+using AISpace.Network;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -12,15 +13,15 @@ public class ItemTryEquipResetHandler(ILogger<ItemTryEquipResetHandler> logger) 
     public PacketType ResponseType => PacketType.ItemTryEquipResetResponse;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = ItemTryEquipResetRequest.FromBytes(payload.Span);
-        _logger.LogInformation("Client {Id} requested ItemTryEquipReset for ObjId: {ObjId}", connection.Id, request.ObjId);
+        _logger.LogInformation("Client {Id} requested ItemTryEquipReset for ObjId: {ObjId}", session.ConnectionId, request.ObjId);
 
         var response = new ItemTryEquipResetResponse(0);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
         var equipEnded = new ItemEquipEnded(request.ObjId);
-        await connection.SendAsync(PacketType.ItemEquipEnded, equipEnded.ToBytes(), ct);
+        await session.SendAsync(PacketType.ItemEquipEnded, equipEnded.ToBytes(), ct);
     }
 }

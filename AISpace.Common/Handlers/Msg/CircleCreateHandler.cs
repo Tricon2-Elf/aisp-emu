@@ -1,5 +1,11 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
+using AISpace.Common.DAL;
+using AISpace.Common.DAL.Entities;
+using AISpace.Network.Data;
+using AISpace.Common.Game;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -9,11 +15,11 @@ public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> lo
     public override PacketType ResponseType => PacketType.CircleCreateResponse;
     public override MessageDomain Domain => MessageDomain.Msg;
 
-    public override async Task<CircleCreateResponse?> HandleAsync(CircleCreateRequest request, ClientConnection connection, CancellationToken ct = default)
+    public override async Task<CircleCreateResponse?> HandleAsync(CircleCreateRequest request, IPlayerSession session, CancellationToken ct = default)
     {
-        if (connection.User == null)
+        if (session.User == null)
             return new CircleCreateResponse(1, null);
-        var character = await db.Characters.FirstOrDefaultAsync(c => c.Id == connection.CharacterId, ct);
+        var character = await db.Characters.FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
         if (character == null)
             return new CircleCreateResponse(1, null);
         if (character.CircleId != null)
@@ -34,7 +40,7 @@ public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> lo
 
         var membersList = new List<CircleMemberData>();
         var notifyPacket = new CircleNotifyMember((uint)circle.Id, membersList);
-        await connection.SendAsync(PacketType.CircleNotifyMember, notifyPacket.ToBytes(), ct);
+        await session.SendAsync(PacketType.CircleNotifyMember, notifyPacket.ToBytes(), ct);
 
         var cData = new CircleData((uint)circle.Id, circle.Name, (uint)character.Id);
         return new CircleCreateResponse(0, cData);

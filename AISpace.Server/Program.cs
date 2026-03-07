@@ -48,18 +48,35 @@ internal class Program
 
         builder.Services.AddSingleton<PacketDispatcher>();
 
-        builder.Services.AddSingleton<AuthChannel>(_ => new(Channel.CreateUnbounded<Packet>()));
-        builder.Services.AddSingleton<IHostedService>(sp => new TcpListenerService(sp.GetRequiredService<ILogger<TcpListenerService>>(), sp.GetRequiredService<AuthChannel>().Channel, "Auth", 50050, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<SharedState>()));
-        builder.Services.AddHostedService<AuthServer>();
+        builder.Services.AddHostedService(sp => new AuthServer(
+            sp.GetRequiredService<ILogger<AuthServer>>(),
+            sp.GetRequiredService<MainContext>(),
+            sp.GetRequiredService<IUserRepository>(),
+            50050,
+            sp.GetRequiredService<ILoggerFactory>(),
+            sp.GetRequiredService<IWorldRepository>(),
+            sp.GetRequiredService<PacketDispatcher>(),
+            sp.GetRequiredService<SharedState>()));
 
-        builder.Services.AddSingleton<MsgChannel>(_ => new(Channel.CreateUnbounded<Packet>()));
-        builder.Services.AddSingleton<IHostedService>(sp => new TcpListenerService(sp.GetRequiredService<ILogger<TcpListenerService>>(), sp.GetRequiredService<MsgChannel>().Channel, "Msg", 50052, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<SharedState>()));
+        builder.Services.AddHostedService(sp => new MsgServer(
+            sp.GetRequiredService<ILogger<MsgServer>>(),
+            sp.GetRequiredService<MainContext>(),
+            sp.GetRequiredService<IUserRepository>(),
+            50052,
+            sp.GetRequiredService<ILoggerFactory>(),
+            sp.GetRequiredService<IWorldRepository>(),
+            sp.GetRequiredService<PacketDispatcher>(),
+            sp.GetRequiredService<SharedState>()));
 
-        builder.Services.AddHostedService<MsgServer>();
-
-        builder.Services.AddSingleton<AreaChannel>(_ => new(Channel.CreateUnbounded<Packet>()));
-        builder.Services.AddSingleton<IHostedService>(sp => new TcpListenerService(sp.GetRequiredService<ILogger<TcpListenerService>>(), sp.GetRequiredService<AreaChannel>().Channel, "Area", 50054, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<SharedState>()));
-        builder.Services.AddHostedService<AreaServer>();
+        builder.Services.AddHostedService(sp => new AreaServer(
+            sp.GetRequiredService<ILogger<AreaServer>>(),
+            sp.GetRequiredService<MainContext>(),
+            sp.GetRequiredService<IUserRepository>(),
+            50054,
+            sp.GetRequiredService<ILoggerFactory>(),
+            sp.GetRequiredService<IWorldRepository>(),
+            sp.GetRequiredService<PacketDispatcher>(),
+            sp.GetRequiredService<SharedState>()));
 
         var host = builder.Build();
 

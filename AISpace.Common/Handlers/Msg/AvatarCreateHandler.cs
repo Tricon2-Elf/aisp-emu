@@ -1,5 +1,9 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -11,14 +15,14 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
 
     private readonly ILogger<AvatarCreateHandler> _logger = logger;
 
-    public override async Task<AvatarCreateResponse?> HandleAsync(AvatarCreateRequest request, ClientConnection connection, CancellationToken ct = default)
+    public override async Task<AvatarCreateResponse?> HandleAsync(AvatarCreateRequest request, IPlayerSession session, CancellationToken ct = default)
     {
         _logger.LogInformation("createRequest: {request}", request.ToString());
 
-        if (!connection.IsAuthenticated || connection.User == null)
+        if (!session.IsAuthenticated || session.User == null)
             return null;
 
-        Character newChar = await charRepo.CreateAsync(request.AvatarName, connection.User.Id, request.modelId, request.visual.BloodType, request.visual.Birthdate, (int)request.visual.Gender, request.visual.Face, request.visual.Hairstyle, ct);
+        Character newChar = await charRepo.CreateAsync(request.AvatarName, session.User.Id, request.modelId, request.visual.BloodType, request.visual.Birthdate, (int)request.visual.Gender, request.visual.Face, request.visual.Hairstyle, ct);
 
         if ((int)request.visual.Gender == 1)
         {

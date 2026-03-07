@@ -1,4 +1,7 @@
 using AISpace.Network;
+using AISpace.Common.DAL;
+using AISpace.Common.Game;
+using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -8,7 +11,7 @@ public class AreaMyProfileAvatarEditHandler(MainContext db) : IPacketHandler
     public PacketType ResponseType => PacketType.MyProfileAvatarEditResponse;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var reader = new PacketReader(payload.Span);
         reader.ReadBytes(12);
@@ -23,7 +26,7 @@ public class AreaMyProfileAvatarEditHandler(MainContext db) : IPacketHandler
 
         var desc = reader.ReadFixedString(901, "Shift_JIS");
 
-        var cha = await db.Characters.FirstOrDefaultAsync(c => c.Id == connection.CharacterId, ct);
+        var cha = await db.Characters.FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
         if (cha != null)
         {
             cha.Like1 = l1;
@@ -38,6 +41,6 @@ public class AreaMyProfileAvatarEditHandler(MainContext db) : IPacketHandler
 
         var writer = new PacketWriter();
         writer.Write((uint)0);
-        await connection.SendAsync(ResponseType, writer.ToBytes(), ct);
+        await session.SendAsync(ResponseType, writer.ToBytes(), ct);
     }
 }

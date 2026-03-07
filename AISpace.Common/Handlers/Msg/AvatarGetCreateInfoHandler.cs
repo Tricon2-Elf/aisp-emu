@@ -1,6 +1,8 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
 
+using AISpace.Common.Game;
+
 namespace AISpace.Common.Handlers.Msg;
 
 public class AvatarGetCreateInfoHandler : IPacketHandler
@@ -11,9 +13,9 @@ public class AvatarGetCreateInfoHandler : IPacketHandler
 
     public MessageDomain Domain => MessageDomain.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         AvatarGetCreateInfoResponse resp = new();
-        await connection.SendAsync(ResponseType, resp);
+        await session.SendAsync(ResponseType, resp.ToBytes(), ct);
     }
 }

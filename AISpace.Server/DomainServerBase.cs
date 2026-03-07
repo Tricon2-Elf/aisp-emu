@@ -14,16 +14,24 @@ public abstract class DomainServerBase<T> : BackgroundService
     protected readonly IUserRepository UserRepo;
     protected readonly IWorldRepository WorldRepo;
     protected readonly ChannelReader<Packet> Channel;
+    protected readonly Channel<Packet> _channel;
+    protected readonly int _port;
+    protected readonly string _serverName;
+    protected readonly ILoggerFactory _loggerFactory;
     protected readonly TimeSpan TickRate = TimeSpan.FromMilliseconds(1000.0 / 60.0);
 
     protected abstract MessageDomain ActiveDomain { get; }
 
-    protected DomainServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, ChannelReader<Packet> channel, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state)
+    protected DomainServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state)
     {
         Logger = logger;
         Db = db;
         UserRepo = userRepo;
-        Channel = channel;
+        _channel = System.Threading.Channels.Channel.CreateUnbounded<Packet>();
+        Channel = _channel.Reader;
+        _port = port;
+        _serverName = serverName;
+        _loggerFactory = loggerFactory;
         WorldRepo = worldRepo;
         Dispatcher = dispatcher;
         State = state;
@@ -36,9 +44,11 @@ public abstract class DomainServerBase<T> : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         Logger.LogInformation("Starting {domain} server", ActiveDomain);
+        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(_serverName, id));
         var packetLoop = RunPacketLoop(ct);
+        var acceptLoop = listener.RunAsync(ct);
         var gameLoop = RunGameLoop(ct);
-        await Task.WhenAll(packetLoop, gameLoop);
+        await Task.WhenAll(packetLoop, acceptLoop, gameLoop);
     }
 
     private async Task RunPacketLoop(CancellationToken ct)
@@ -47,7 +57,8 @@ public abstract class DomainServerBase<T> : BackgroundService
         {
             try
             {
-                await Dispatcher.DispatchAsync(ActiveDomain, packet.Type, packet.Data, packet.Client, ct);
+                var session = State.GetOrAddSession(packet.Client.Id, () => new PlayerSession(packet.Client.Id, packet.Client));
+                await Dispatcher.DispatchAsync(ActiveDomain, packet.Type, packet.Data, session, ct);
             }
             catch (OperationCanceledException)
             {

@@ -1,5 +1,7 @@
-using AISpace.Common.Network.Packets.Area;
+using AISpace.Network.Packets.Area;
 using AISpace.Network;
+
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -9,7 +11,7 @@ public class AreaEmotionGetObtainedListHandler : IPacketHandler
     public PacketType ResponseType => PacketType.EmotionGetObtainedListResponse;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var ids = new List<uint>();
 
@@ -26,6 +28,6 @@ public class AreaEmotionGetObtainedListHandler : IPacketHandler
         }
 
         var response = new EmotionGetObtainedListResponse(0, ids);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

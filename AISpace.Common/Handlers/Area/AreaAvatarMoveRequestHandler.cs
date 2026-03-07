@@ -1,5 +1,7 @@
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
+using AISpace.Network.Data;
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -9,7 +11,7 @@ public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
     public PacketType ResponseType => PacketType.AvatarNotifyMove;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var avatarMove = AvatarMove.FromBytes(payload.Span);
         if (avatarMove.Moves.Length == 0)
@@ -28,17 +30,17 @@ public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
 
         lastMovement.Animation = (MovementType)maxAnimation;
 
-        connection.X = lastMovement.X;
-        connection.Y = lastMovement.Y;
-        connection.Z = lastMovement.Z;
-        connection.Rotation = lastMovement.Rotation;
-        connection.CurrentAnimation = lastMovement.Animation;
+        session.X = lastMovement.X;
+        session.Y = lastMovement.Y;
+        session.Z = lastMovement.Z;
+        session.Rotation = lastMovement.Rotation;
+        session.MovementTypeId = (int)lastMovement.Animation;
 
-        var notify = new AvatarNotifyMove(1, connection.CharacterId, lastMovement).ToBytes();
+        var notify = new AvatarNotifyMove(1, session.CharacterId, lastMovement).ToBytes();
 
         foreach (var other in state.AreaClients.Values)
         {
-            if (other.Id == connection.Id)
+            if (other.ConnectionId == session.ConnectionId)
                 continue;
             _ = other.SendAsync(ResponseType, notify, ct);
         }

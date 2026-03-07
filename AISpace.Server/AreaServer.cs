@@ -1,11 +1,12 @@
 using AISpace.Common;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
-using AISpace.Common.Network.Packets;
+using AISpace.Network;
+using AISpace.Network.Packets.Area;
 
 namespace AISpace.Server;
 
-public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, AreaChannel channel, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state) : DomainServerBase<AreaServer>(logger, db, userRepo, channel.Channel, worldRepo, dispatcher, state)
+public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state) : DomainServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state)
 {
     protected override MessageDomain ActiveDomain => MessageDomain.Area;
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -41,7 +42,7 @@ public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserReposit
             var timePacket = new TimeZoneGetResponse(0, (uint)t.Phase, t.Current, t.Max, 0);
             byte[] data = timePacket.ToBytes();
 
-            foreach (var client in state.AreaClients.Values)
+            foreach (var client in State.AreaClients.Values)
             {
                 if (client.IsAuthenticated)
                     _ = client.SendAsync(PacketType.TimeZoneGetResponse, data);

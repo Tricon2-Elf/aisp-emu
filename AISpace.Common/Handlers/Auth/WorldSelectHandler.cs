@@ -1,7 +1,12 @@
-using AISpace.Common.Network.Packets.Auth;
+using AISpace.Network.Packets.Auth;
 using AISpace.Network;
 using AISpace.Network.Crypto;
-using AISpace.Network.Packets.Auth;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.DAL.Entities;
+using AISpace.Common.Config;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Auth;
 
@@ -15,24 +20,34 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
     public PacketType ResponseType => PacketType.Auth_WorldSelectResponse;
     public MessageDomain Domain => MessageDomain.Auth;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var WorldSelectReq = WorldSelectRequest.FromBytes(payload.Span);
         var selectedWorldID = (int)WorldSelectReq.WorldID;
+
+        if (!session.IsAuthenticated)
+        {
+            _logger.LogWarning("WorldSelectRequest rejected: session not authenticated (client may have sent WorldSelect before Authenticate). Sending error response.");
+            var errResp = new WorldSelectResponse(1, "", 0, "");
+            await session.SendAsync(PacketType.Auth_WorldSelectResponse, errResp.ToBytes(), ct);
+            return;
+        }
+
         var world = await _worldRepository.GetByIdAsync(selectedWorldID);
-        if (world == null) //TODO: Should send a Logout notification?
+        if (world == null)
+        {
+            _logger.LogWarning("WorldSelectRequest: world {WorldId} not found. Sending error response.", selectedWorldID);
+            var errResp = new WorldSelectResponse(1, "", 0, "");
+            await session.SendAsync(PacketType.Auth_WorldSelectResponse, errResp.ToBytes(), ct);
             return;
-        if (!connection.IsAuthenticated) //TODO: Should send a Logout notification?
-            return;
+        }
 
-        User clientUser = connection.User!;
-
+        User clientUser = session.User!;
         string otp = CryptoUtils.GenerateOTP();
-        //Need to insert the otp into UserSessions
         await _sessionRepo.CreateAsync(clientUser.Id, otp, TimeSpan.FromHours(1), ct);
         _logger.LogInformation("World Selected: {ID}", selectedWorldID);
         var resolvedAddress = serverOptions.Value.ResolveAddress(world.Address);
         var WorldSelectResp = new WorldSelectResponse(0, resolvedAddress, world.Port, otp);
-        await connection.SendAsync(PacketType.Auth_WorldSelectResponse, WorldSelectResp, ct);
+        await session.SendAsync(PacketType.Auth_WorldSelectResponse, WorldSelectResp.ToBytes(), ct);
     }
 }

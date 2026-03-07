@@ -1,5 +1,9 @@
-using AISpace.Common.Network.Packets.Area;
+using AISpace.Network.Packets.Area;
 using AISpace.Network;
+using AISpace.Network.Data;
+using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -9,31 +13,31 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
     public PacketType ResponseType => PacketType.MapDataEnterEndResponse;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        await connection.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
+        await session.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
 
-        if (connection.User == null)
+        if (session.User == null)
             return;
 
-        var myChar = connection.User.Characters.First();
-        var myPos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
+        var myChar = session.User.Characters.First();
+        var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
         var spawnMePacket = new AvatarNotifyData(0, new AvatarData((uint)myChar.Id, CreateCData(myChar, myPos))).ToBytes();
-        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", connection.Id, myChar.Id);
+        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, myChar.Id);
         foreach (var other in state.AreaClients.Values)
         {
-            if (other.Id == connection.Id)
+            if (other.ConnectionId == session.ConnectionId)
                 continue;
 
             await other.SendAsync(PacketType.AvatarNotifyData, spawnMePacket, ct);
-            logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for othercharacter {CharacterId}", other.Id, myChar.Id);
+            logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for othercharacter {CharacterId}", other.ConnectionId, myChar.Id);
             var otherChar = other.User?.Characters.FirstOrDefault();
             if (otherChar != null)
             {
                 var otherPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
                 var spawnOtherForMe = new AvatarNotifyData(0, new AvatarData((uint)otherChar.Id, CreateCData(otherChar, otherPos))).ToBytes();
-                await connection.SendAsync(PacketType.AvatarNotifyData, spawnOtherForMe, ct);
+                await session.SendAsync(PacketType.AvatarNotifyData, spawnOtherForMe, ct);
             }
         }
     }

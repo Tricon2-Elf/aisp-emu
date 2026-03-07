@@ -1,5 +1,7 @@
 using AISpace.Network;
 
+using AISpace.Common.Game;
+
 namespace AISpace.Common.Handlers.Area;
 
 public class AreaRoboVoiceTypeUpdateHandler : IPacketHandler
@@ -8,7 +10,7 @@ public class AreaRoboVoiceTypeUpdateHandler : IPacketHandler
     public PacketType ResponseType => PacketType.RoboVoiceTypeUpdateResponse;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var reader = new PacketReader(payload.Span);
         byte voiceType = reader.ReadByte();
@@ -18,6 +20,6 @@ public class AreaRoboVoiceTypeUpdateHandler : IPacketHandler
         writer.Write((uint)0); // Success
         writer.Write(voiceType); // Voice type
 
-        await connection.SendAsync(ResponseType, writer.ToBytes(), ct);
+        await session.SendAsync(ResponseType, writer.ToBytes(), ct);
     }
 }

@@ -1,5 +1,8 @@
-using AISpace.Common.Network.Packets.Area;
+using AISpace.Network.Packets.Area;
 using AISpace.Network;
+using AISpace.Network.Data;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -9,13 +12,13 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) 
     public PacketType ResponseType => PacketType.AvatarNotifyData;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        if (!connection.IsAuthenticated || connection.User == null)
+        if (!session.IsAuthenticated || session.User == null)
             return;
 
-        var cha = connection.User.Characters.First();
-        var pos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, connection.CurrentAnimation);
+        var cha = session.User.Characters.First();
+        var pos = new MovementData(session.X, session.Y, session.Z, session.Rotation, (MovementType)session.MovementTypeId);
 
         var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name) { moveData = pos };
         cd.Visual.VisualId = (uint)cha.Id;
@@ -33,7 +36,7 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) 
         }
 
         var avatarData = new AvatarData((uint)cha.Id, cd);
-        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", connection.Id, cha.Id);
-        await connection.SendAsync(ResponseType, new AvatarNotifyData(0, avatarData).ToBytes(), ct);
+        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, cha.Id);
+        await session.SendAsync(ResponseType, new AvatarNotifyData(0, avatarData).ToBytes(), ct);
     }
 }

@@ -1,6 +1,9 @@
-using AISpace.Common.Network.Packets.Msg;
-using AISpace.Network;
 using AISpace.Network.Packets.Msg;
+using AISpace.Network;
+using AISpace.Network.Data;
+using AISpace.Common.DAL;
+using AISpace.Common.Game;
+using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -10,14 +13,14 @@ public class CircleGetDataHandler(MainContext db) : IPacketHandler
     public PacketType ResponseType => PacketType.CircleGetDataResponse;
     public MessageDomain Domain => MessageDomain.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var list = new List<CircleData>();
 
-        if (connection.User != null)
+        if (session.User != null)
         {
             // Reload the character
-            var cha = await db.Characters.Include(c => c.Circle).FirstOrDefaultAsync(c => c.Id == connection.CharacterId, ct);
+            var cha = await db.Characters.Include(c => c.Circle).FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
 
             if (cha != null && cha.Circle != null)
             {
@@ -40,12 +43,12 @@ public class CircleGetDataHandler(MainContext db) : IPacketHandler
                 };
 
                 var notify = new CircleNotifyMember(myCircleId, membersList);
-                await connection.SendAsync(PacketType.CircleNotifyMember, notify.ToBytes(), ct);
+                await session.SendAsync(PacketType.CircleNotifyMember, notify.ToBytes(), ct);
             }
         }
 
         // 3. Send the final response
         var response = new CircleGetDataResponse(0, list);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

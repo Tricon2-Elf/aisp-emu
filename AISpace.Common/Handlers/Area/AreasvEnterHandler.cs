@@ -1,7 +1,10 @@
-using AISpace.Common.Network.Packets.Area;
-using AISpace.Common.Network.Packets.Common;
-using AISpace.Network;
+using AISpace.Common.Game;
 using AISpace.Network.Packets.Area;
+using AISpace.Network.Packets.Common;
+using AISpace.Network;
+using AISpace.Common.DAL.Repositories;
+using Microsoft.Extensions.Logging;
+using AISpace.Network.Data;
 
 namespace AISpace.Common.Handlers.Area;
 
@@ -13,24 +16,24 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
     public PacketType ResponseType => PacketType.AreasvEnterResponse;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var loginReq = AreasvEnterRequest.FromBytes(payload.Span);
-        var session = await _sessionRepo.GetValidSessionAsync(loginReq.OTP, ct);
+        var userSession = await _sessionRepo.GetValidSessionAsync(loginReq.OTP, ct);
 
-        if (session is null || session.UserId != loginReq.UserID)
+        if (userSession is null || userSession.UserId != loginReq.UserID)
         {
-            await connection.SendAsync(ResponseType, new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(), ct);
+            await session.SendAsync(ResponseType, new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(), ct);
             return;
         }
 
-        connection.User = session.User;
-        var chara = await characterRepo.GetByIdAsync(connection.User.Characters.First().Id, ct);
+        session.User = userSession.User;
+        var chara = await characterRepo.GetByIdAsync(session.User.Characters.First().Id, ct);
 
         if (chara is null)
         {
-            logger.LogWarning("Character not found for UserId={UserId}, sending logout", connection.User.Id);
-            await connection.SendAsync(PacketType.LogoutNotify, [], ct);
+            logger.LogWarning("Character not found for UserId={UserId}, sending logout", session.User.Id);
+            await session.SendAsync(PacketType.LogoutNotify, [], ct);
             return;
         }
 
@@ -47,28 +50,30 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
         float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
 
-        connection.X = (map?.SpawnX ?? 0f) + offsetX;
-        connection.Y = map?.SpawnY ?? 0.1f;
-        connection.Z = (map?.SpawnZ ?? 0f) + offsetZ;
-        connection.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+        session.X = (map?.SpawnX ?? 0f) + offsetX;
+        session.Y = map?.SpawnY ?? 0.1f;
+        session.Z = (map?.SpawnZ ?? 0f) + offsetZ;
+        session.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+        session.CharacterId = charId;
+        session.MapId = mapId;
 
-        state.RegisterClient("Area", connection);
+        state.RegisterClient("Area", session);
 
-        await connection.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
+        await session.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
 
         _ = Task.Run(
             async () =>
             {
                 await Task.Delay(1000, ct);
 
-                var cha = connection.User.Characters.First();
-                var myPos = new MovementData(connection.X, connection.Y, connection.Z, connection.Rotation, MovementType.Stopped);
+                var cha = session.User!.Characters.First();
+                var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
-                await connection.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
+                await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
 
                 foreach (var other in state.AreaClients.Values)
                 {
-                    if (other.Id == connection.Id)
+                    if (other.ConnectionId == session.ConnectionId)
                         continue;
 
                     await other.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 1, myPos), ct);
@@ -77,7 +82,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
                     if (oCha != null)
                     {
                         var oPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
-                        await connection.SendAsync(PacketType.AvatarNotifyData, CreateNotify(oCha, other.CharacterId, 1, oPos), ct);
+                        await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(oCha, other.CharacterId, 1, oPos), ct);
                     }
                 }
             },

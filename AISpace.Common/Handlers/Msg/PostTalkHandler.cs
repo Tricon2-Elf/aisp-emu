@@ -1,6 +1,7 @@
-using AISpace.Common.Network.Packets.Msg;
-using AISpace.Network;
 using AISpace.Network.Packets.Msg;
+using AISpace.Network;
+
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -10,19 +11,19 @@ public class PostTalkHandler(SharedState state) : IPacketHandler
     public PacketType ResponseType => PacketType.PostTalkResponse;
     public MessageDomain Domain => MessageDomain.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var chatRequest = PostTalkRequest.FromBytes(payload.Span);
 
         var response = new PostTalkResponse(chatRequest.MessageID, 0);
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        var forwardPacket = new TalkForwardNotify(connection.CharacterId, chatRequest.DistID, chatRequest.Message, chatRequest.BalloonID);
+        var forwardPacket = new TalkForwardNotify(session.CharacterId, chatRequest.DistID, chatRequest.Message, chatRequest.BalloonID);
         byte[] broadcastData = forwardPacket.ToBytes();
 
         foreach (var client in state.MsgClients.Values)
         {
-            if (client.IsAuthenticated && client.Id != connection.Id)
+            if (client.IsAuthenticated && client.ConnectionId != session.ConnectionId)
             {
                 await client.SendAsync(PacketType.TalkForwardNotify, broadcastData, ct);
             }

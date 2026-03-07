@@ -1,8 +1,8 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Common;
 
-internal class LogoutResponse : IPacket<LogoutResponse>
+public class LogoutResponse : IPacket<LogoutResponse>
 {
     public static LogoutResponse FromBytes(ReadOnlySpan<byte> data)
     {

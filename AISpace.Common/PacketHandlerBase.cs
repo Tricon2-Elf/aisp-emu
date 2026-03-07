@@ -1,3 +1,4 @@
+using AISpace.Common.Game;
 using AISpace.Network;
 
 namespace AISpace.Common;
@@ -14,7 +15,7 @@ public interface IPacketHandler
     PacketType RequestType { get; }
     PacketType ResponseType { get; }
     MessageDomain Domain { get; }
-    Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default);
+    Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default);
 }
 
 public abstract class PacketHandlerBase<TRequest, TResponse> : IPacketHandler
@@ -25,13 +26,13 @@ public abstract class PacketHandlerBase<TRequest, TResponse> : IPacketHandler
     public abstract PacketType ResponseType { get; }
     public abstract MessageDomain Domain { get; }
 
-    public abstract Task<TResponse?> HandleAsync(TRequest request, ClientConnection connection, CancellationToken ct = default);
+    public abstract Task<TResponse?> HandleAsync(TRequest request, IPlayerSession session, CancellationToken ct = default);
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = TRequest.FromBytes(payload.Span);
-        var response = await HandleAsync(request, connection, ct);
+        var response = await HandleAsync(request, session, ct);
         if (response != null)
-            await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+            await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

@@ -1,5 +1,7 @@
-using AISpace.Common.Network.Packets.Msg;
+using AISpace.Network.Packets.Msg;
 using AISpace.Network;
+
+using AISpace.Common.Game;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -9,9 +11,9 @@ public class ItemGetBaseListHandler : IPacketHandler
     public PacketType ResponseType => PacketType.ItemGetBaseListResponse;
     public MessageDomain Domain => MessageDomain.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var response = new ItemGetBaseListResponse();
-        await connection.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

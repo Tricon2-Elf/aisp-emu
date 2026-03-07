@@ -1,5 +1,7 @@
 using AISpace.Network;
 
+using AISpace.Common.Game;
+
 namespace AISpace.Common.Handlers.Area;
 
 public class AreaAvatarProfileGetDataHandler(SharedState state) : IPacketHandler
@@ -8,7 +10,7 @@ public class AreaAvatarProfileGetDataHandler(SharedState state) : IPacketHandler
     public PacketType ResponseType => (PacketType)0xB670;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var reader = new PacketReader(payload.Span);
         uint targetObjId = reader.ReadUInt();
@@ -39,6 +41,6 @@ public class AreaAvatarProfileGetDataHandler(SharedState state) : IPacketHandler
             writer.Write(new byte[1272]);
         }
 
-        await connection.SendAsync(ResponseType, writer.ToBytes(), ct);
+        await session.SendAsync(ResponseType, writer.ToBytes(), ct);
     }
 }

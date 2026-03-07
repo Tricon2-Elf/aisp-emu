@@ -1,5 +1,7 @@
 using AISpace.Network;
 
+using AISpace.Common.Game;
+
 namespace AISpace.Common.Handlers.Area;
 
 public class AreaMyProfileCloseHandler : IPacketHandler
@@ -8,7 +10,7 @@ public class AreaMyProfileCloseHandler : IPacketHandler
     public PacketType ResponseType => (PacketType)0;
     public MessageDomain Domain => MessageDomain.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         await Task.CompletedTask;
     }

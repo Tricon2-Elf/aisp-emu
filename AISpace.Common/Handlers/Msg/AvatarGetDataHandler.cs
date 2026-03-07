@@ -1,5 +1,9 @@
-using AISpace.Common.Network.Packets.Msg;
+using AISpace.Network.Packets.Msg;
 using AISpace.Network;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
+using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
@@ -14,16 +18,16 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
     ILogger<AvatarGetDataHandler> _logger = logger;
     ICharacterRepository _charRepo = charRepo;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        if (!connection.IsAuthenticated)
+        if (!session.IsAuthenticated)
             return;
 
-        _logger.LogWarning("Client: {ClientId} requested AvatarGetData ", connection.Id);
+        _logger.LogWarning("Client: {ClientId} requested AvatarGetData ", session.ConnectionId);
 
-        if (connection.User!.Characters.Count != 0)
+        if (session.User!.Characters.Count != 0)
         {
-            Character cha = connection.User!.Characters.First();
+            Character cha = session.User!.Characters.First();
 
             var dataResponse = new AvatarDataResponse((uint)cha.Id, cha.Name, cha.ModelId, 0, 0);
             dataResponse.Visual.VisualId = (uint)cha.Id;
@@ -39,9 +43,9 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
                 var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == slot);
                 dataResponse.AddEquip(eq != null ? (uint)eq.ItemId : 0, slot);
             }
-            await connection.SendAsync(ResponseType, dataResponse.ToBytes(), ct);
+            await session.SendAsync(ResponseType, dataResponse.ToBytes(), ct);
         }
         var avatarGetDataResp = new AvatarGetDataResponse(0);
-        await connection.SendAsync(PacketType.AvatarGetDataResponse, avatarGetDataResp.ToBytes(), ct);
+        await session.SendAsync(PacketType.AvatarGetDataResponse, avatarGetDataResp.ToBytes(), ct);
     }
 }
