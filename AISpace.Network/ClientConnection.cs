@@ -6,14 +6,6 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public enum ClientState
-{
-    Init = 1,
-    ConnectedToAuth = 2,
-    ConnectedToMsg = 3,
-    ConnectedToArea = 4,
-}
-
 public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, ILogger<ClientConnection> logger)
 {
     const int MaxChunkSize = 1392;

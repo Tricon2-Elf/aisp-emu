@@ -91,16 +91,16 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                         break;
 
                     byte codecType = cipher[offset];
-                    int headerType = (codecType >> 4) & 0xF;
+                    var headerType = (VceCodecHeaderType)((codecType >> 4) & 0xF);
                     int headerParam = codecType & 0xF;
-                    if (headerType != 0)
+                    if (headerType != VceCodecHeaderType.PacketData)
                     {
-                        if ((headerType == 1 || headerType == 2) && msgSize - offset >= 9)
+                        if ((headerType == VceCodecHeaderType.Ping || headerType == VceCodecHeaderType.Pong) && msgSize - offset >= 9)
                         {
                             offset += 9;
                             continue;
                         }
-                        if (headerType == 3 && msgSize - offset >= 5)
+                        if (headerType == VceCodecHeaderType.Terminated && msgSize - offset >= 5)
                         {
                             offset += 5;
                             continue;
