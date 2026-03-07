@@ -5,8 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common;
 
-public class PacketDispatcher(IServiceScopeFactory scopeFactory, ILogger<PacketDispatcher> logger)
+public class PacketDispatcher(IServiceScopeFactory scopeFactory, ILogger<PacketDispatcher> logger, ILoggerFactory loggerFactory)
 {
+    private readonly ILogger _missingPacketsLogger = loggerFactory.CreateLogger("AISpace.MissingPackets");
+
     public async Task DispatchAsync(MessageDomain domain, PacketType type, byte[] payload, IPlayerSession session, CancellationToken ct = default)
     {
         using var scope = scopeFactory.CreateScope();
@@ -18,7 +20,9 @@ public class PacketDispatcher(IServiceScopeFactory scopeFactory, ILogger<PacketD
         }
         else
         {
-            logger.LogWarning("No handler for {Domain}:{PacketType} (payload length: {Length}). Raw data: {Hex}", domain, type, payload.Length, BitConverter.ToString(payload));
+            var message = "No handler for {Domain}:{PacketType} (payload length: {Length}). Raw data: {Hex}";
+            logger.LogWarning(message, domain, type, payload.Length, BitConverter.ToString(payload));
+            _missingPacketsLogger.LogWarning(message, domain, type, payload.Length, BitConverter.ToString(payload));
         }
     }
 }
