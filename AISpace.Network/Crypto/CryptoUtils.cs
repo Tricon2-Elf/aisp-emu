@@ -23,7 +23,7 @@ public class CryptoUtils
         byte[] le = x.ToByteArray(isUnsigned: true, isBigEndian: false);
 
         var result = new byte[size];
-        le.CopyTo(result);
+        Array.Copy(le, result, Math.Min(le.Length, size));
         return result;
     }
 
