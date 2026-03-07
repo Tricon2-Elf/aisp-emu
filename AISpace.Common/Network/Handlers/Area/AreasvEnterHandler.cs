@@ -27,6 +27,14 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
 
         connection.User = session.User;
         var chara = await characterRepo.GetByIdAsync(connection.User.Characters.First().Id, ct);
+
+        if (chara is null)
+        {
+            logger.LogWarning("Character not found for UserId={UserId}, sending logout", connection.User.Id);
+            await connection.SendAsync(PacketType.LogoutNotify, [], ct);
+            return;
+        }
+
         uint charId = (uint)chara.Id;
 
         uint mapId = chara.CurrentMapId;
