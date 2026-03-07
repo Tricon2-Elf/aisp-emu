@@ -1,4 +1,5 @@
 using AISpace.Network.Data;
+
 namespace AISpace.Network.Packets.Msg;
 
 public class AvatarDataResponse(uint avatarId, string name, uint modelId, uint islandId, uint slotId) : IPacket<AvatarDataResponse>

@@ -48,35 +48,11 @@ internal class Program
 
         builder.Services.AddSingleton<PacketDispatcher>();
 
-        builder.Services.AddHostedService(sp => new AuthServer(
-            sp.GetRequiredService<ILogger<AuthServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50050,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>()));
+        builder.Services.AddHostedService(sp => new AuthServer(sp.GetRequiredService<ILogger<AuthServer>>(), sp.GetRequiredService<MainContext>(), sp.GetRequiredService<IUserRepository>(), 50050, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<IWorldRepository>(), sp.GetRequiredService<PacketDispatcher>(), sp.GetRequiredService<SharedState>()));
 
-        builder.Services.AddHostedService(sp => new MsgServer(
-            sp.GetRequiredService<ILogger<MsgServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50052,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>()));
+        builder.Services.AddHostedService(sp => new MsgServer(sp.GetRequiredService<ILogger<MsgServer>>(), sp.GetRequiredService<MainContext>(), sp.GetRequiredService<IUserRepository>(), 50052, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<IWorldRepository>(), sp.GetRequiredService<PacketDispatcher>(), sp.GetRequiredService<SharedState>()));
 
-        builder.Services.AddHostedService(sp => new AreaServer(
-            sp.GetRequiredService<ILogger<AreaServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50054,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>()));
+        builder.Services.AddHostedService(sp => new AreaServer(sp.GetRequiredService<ILogger<AreaServer>>(), sp.GetRequiredService<MainContext>(), sp.GetRequiredService<IUserRepository>(), 50054, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<IWorldRepository>(), sp.GetRequiredService<PacketDispatcher>(), sp.GetRequiredService<SharedState>()));
 
         var host = builder.Build();
 

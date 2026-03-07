@@ -1,6 +1,6 @@
+using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Common;
-using AISpace.Common.Game;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Common;

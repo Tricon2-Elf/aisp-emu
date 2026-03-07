@@ -1,7 +1,6 @@
-using AISpace.Network.Packets.Msg;
-using AISpace.Network;
-
 using AISpace.Common.Game;
+using AISpace.Network;
+using AISpace.Network.Packets.Msg;
 
 namespace AISpace.Common.Handlers.Msg;
 

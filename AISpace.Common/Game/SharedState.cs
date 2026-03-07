@@ -13,8 +13,7 @@ public class SharedState
     public readonly long StartTimeUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
     /// <summary>Gets or creates a session for the given connection id. Factory is invoked only when a new session is needed.</summary>
-    public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) =>
-        _sessionByConnectionId.GetOrAdd(connectionId, _ => createSession());
+    public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) => _sessionByConnectionId.GetOrAdd(connectionId, _ => createSession());
 
     public void RegisterClient(string serverName, IPlayerSession session)
     {
@@ -41,6 +40,5 @@ public class SharedState
         _sessionByConnectionId.TryRemove(clientId, out _);
     }
 
-    public IPlayerSession? GetAreaSessionByCharacterId(uint characterId) =>
-        AreaClients.Values.FirstOrDefault(s => s.CharacterId == characterId);
+    public IPlayerSession? GetAreaSessionByCharacterId(uint characterId) => AreaClients.Values.FirstOrDefault(s => s.CharacterId == characterId);
 }

@@ -1,10 +1,10 @@
-using AISpace.Network.Packets.Auth;
+using AISpace.Common.Config;
+using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Crypto;
-using AISpace.Common.DAL.Repositories;
-using AISpace.Common.DAL.Entities;
-using AISpace.Common.Config;
-using AISpace.Common.Game;
+using AISpace.Network.Packets.Auth;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

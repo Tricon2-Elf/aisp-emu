@@ -1,4 +1,5 @@
 ﻿using AISpace.Network.Data;
+
 namespace AISpace.Network.Packets.Msg;
 
 public class AvatarGetCreateInfoResponse : IPacket<AvatarGetCreateInfoResponse>

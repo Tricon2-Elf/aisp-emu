@@ -1,7 +1,7 @@
-using AISpace.Network.Packets.Area;
+using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
-using AISpace.Common.Game;
+using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 

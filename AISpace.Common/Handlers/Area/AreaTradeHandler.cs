@@ -1,5 +1,5 @@
-using AISpace.Network;
 using AISpace.Common.Game;
+using AISpace.Network;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
