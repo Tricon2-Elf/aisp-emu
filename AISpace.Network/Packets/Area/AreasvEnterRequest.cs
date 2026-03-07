@@ -1,0 +1,21 @@
+﻿using AISpace.Network;
+
+namespace AISpace.Network.Packets.Area;
+
+public class AreasvEnterRequest : IPacket<AreasvEnterRequest>
+{
+    public required uint UserID;
+    public required string OTP;
+
+    public static AreasvEnterRequest FromBytes(ReadOnlySpan<byte> data)
+    {
+        PacketReader reader = new(data);
+        AreasvEnterRequest req = new() { UserID = reader.ReadUInt(), OTP = reader.ReadFixedString(20, "ASCII") };
+        return req;
+    }
+
+    public byte[] ToBytes()
+    {
+        throw new NotImplementedException();
+    }
+}

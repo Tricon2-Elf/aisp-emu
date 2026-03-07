@@ -1,5 +1,5 @@
 ﻿using AISpace.Common.DAL.Entities;
-using AISpace.Common.Game;
+using AISpace.Network.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

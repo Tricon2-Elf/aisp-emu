@@ -1,4 +1,4 @@
-using AISpace.Common.Game;
+using AISpace.Network.Data;
 
 namespace AISpace.Common.DAL.Entities;
 

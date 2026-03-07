@@ -1,0 +1,20 @@
+using AISpace.Network;
+
+namespace AISpace.Common.Handlers.Msg;
+
+public class MailBoxGetDataHandler : IPacketHandler
+{
+    public PacketType RequestType => PacketType.MailBoxGetDataRequest;
+
+    public PacketType ResponseType => PacketType.MailBoxGetDataResponse;
+
+    public MessageDomain Domain => MessageDomain.Msg;
+
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, ClientConnection connection, CancellationToken ct = default)
+    {
+        PacketWriter writer = new();
+        writer.Write((uint)0); // Result
+        writer.Write((uint)0); // mail
+        await connection.SendAsync(ResponseType, writer.ToBytes(), ct);
+    }
+}

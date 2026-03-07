@@ -1,3 +1,4 @@
+using AISpace.Common;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Common.Network.Packets;

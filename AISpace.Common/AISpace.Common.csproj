@@ -10,8 +10,12 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.3" />
-    <PackageReference Include="NLog" Version="6.1.0" />
+    <PackageReference Include="NLog" Version="6.1.1" />
     <PackageReference Include="Scrutor" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AISpace.Network\AISpace.Network.csproj" />
   </ItemGroup>
 
   <ItemGroup>

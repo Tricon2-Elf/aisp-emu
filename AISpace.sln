@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.1.11312.151 d18.0
+VisualStudioVersion = 18.1.11312.151
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AISpace.Server", "AISpace.Server\AISpace.Server.csproj", "{10003C6F-A332-4009-8F35-30E158206F12}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AISpace.Common", "AISpace.Common\AISpace.Common.csproj", "{F7B40D2D-5567-43A7-92D2-AF7675885B26}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AISpace.Network", "AISpace.Network\AISpace.Network.csproj", "{BCFDE31E-A7E3-45DC-9EAC-7200B3F07BA2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,7 +23,11 @@ Global
 		{F7B40D2D-5567-43A7-92D2-AF7675885B26}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7B40D2D-5567-43A7-92D2-AF7675885B26}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7B40D2D-5567-43A7-92D2-AF7675885B26}.Release|Any CPU.Build.0 = Release|Any CPU
-			EndGlobalSection
+		{BCFDE31E-A7E3-45DC-9EAC-7200B3F07BA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCFDE31E-A7E3-45DC-9EAC-7200B3F07BA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCFDE31E-A7E3-45DC-9EAC-7200B3F07BA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCFDE31E-A7E3-45DC-9EAC-7200B3F07BA2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection

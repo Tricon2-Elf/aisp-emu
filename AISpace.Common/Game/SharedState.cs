@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using AISpace.Common.Network;
+using AISpace.Network;
 
 namespace AISpace.Common.Game;
 
