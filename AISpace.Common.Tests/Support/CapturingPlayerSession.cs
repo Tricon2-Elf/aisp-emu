@@ -1,0 +1,32 @@
+using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
+using AISpace.Network;
+
+namespace AISpace.Common.Tests.Support;
+
+internal sealed class CapturingPlayerSession : IPlayerSession
+{
+    public CapturingPlayerSession(Guid? connectionId = null) => ConnectionId = connectionId ?? Guid.NewGuid();
+
+    public Guid ConnectionId { get; }
+    public int UserId { get; set; }
+    public uint CharacterId { get; set; }
+    public Character? Character { get; set; }
+    public User? User { get; set; }
+    public uint MapId { get; set; }
+    public int ChannelId { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
+    public float Z { get; set; }
+    public sbyte Rotation { get; set; }
+    public int MovementTypeId { get; set; }
+    public bool IsAuthenticated => User != null;
+
+    public List<(PacketType Type, byte[] Payload)> Sent { get; } = new();
+
+    public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default)
+    {
+        Sent.Add((type, payload));
+        return Task.CompletedTask;
+    }
+}

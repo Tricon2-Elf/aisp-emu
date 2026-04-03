@@ -20,9 +20,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Map> Maps { get; set; }
     public DbSet<MapLink> MapLinks { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        options.UseSqlite("Data Source=main.db", b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+        if (!optionsBuilder.IsConfigured)
+            optionsBuilder.UseSqlite("Data Source=main.db", b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
     }
 
     protected override void OnModelCreating(ModelBuilder b)
