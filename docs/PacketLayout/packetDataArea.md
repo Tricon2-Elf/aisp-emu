@@ -460,13 +460,14 @@
 - **Direction:** ClientToServer
 - **Packet ID (hex):** 0x2810
 - **Packet ID (int):** 10256
-- **Packet Size:** 0
-- **Description:** Request to enter map.
+- **Packet Size:** 8
+- **Description:** Request to enter a destination map/channel selected from a map link.
 
 **Layout:**
 
 ```
-    (empty)
+    UInt {MapId}
+    UInt {ChannelId}
 ```
 
 ### recv_enter_map_r (MapEnterResponse)

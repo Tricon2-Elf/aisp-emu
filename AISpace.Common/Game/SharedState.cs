@@ -40,5 +40,36 @@ public class SharedState
         _sessionByConnectionId.TryRemove(clientId, out _);
     }
 
-    public IPlayerSession? GetAreaSessionByCharacterId(uint characterId) => AreaClients.Values.FirstOrDefault(s => s.CharacterId == characterId);
+    public IReadOnlyList<IPlayerSession> GetAreaSessions(uint mapId, int channelId)
+    {
+        return AreaClients.Values.Where(session => IsInArea(session, mapId, channelId)).ToList();
+    }
+
+    public IReadOnlyList<IPlayerSession> GetAreaPeers(IPlayerSession session, bool includeSelf = false)
+    {
+        var peers = GetAreaSessions(session.MapId, session.ChannelId);
+
+        return includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId).ToList();
+    }
+
+    public IPlayerSession? GetAreaSessionByCharacterId(uint characterId, uint? mapId = null, int? channelId = null)
+    {
+        IEnumerable<IPlayerSession> candidates = AreaClients.Values.Where(session => session.CharacterId == characterId);
+
+        if (mapId.HasValue)
+            candidates = candidates.Where(session => IsInArea(session, mapId.Value, channelId ?? 0));
+
+        return candidates.FirstOrDefault();
+    }
+
+    private static bool IsInArea(IPlayerSession session, uint mapId, int channelId)
+    {
+        if (session.MapId != mapId)
+            return false;
+
+        if (channelId == 0 || session.ChannelId == 0)
+            return true;
+
+        return session.ChannelId == channelId;
+    }
 }

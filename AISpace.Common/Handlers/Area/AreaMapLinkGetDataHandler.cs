@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapLinkGetDataHandler(ILogger<AreaMapLinkGetDataHandler> logger) : IPacketHandler
+public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, ILogger<AreaMapLinkGetDataHandler> logger) : IPacketHandler
 {
     public PacketType RequestType => PacketType.MapLinkGetDataRequest;
 
@@ -16,12 +17,32 @@ public class AreaMapLinkGetDataHandler(ILogger<AreaMapLinkGetDataHandler> logger
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = MapLinkGetDataRequest.FromBytes(payload.Span);
-        logger.LogCritical("MapLinkGetDataRequest received from user {UserId} on map {MapId} with channel {ChannelId}", session.User!.Id, request.MapId, request.ChannelId);
+        session.MapId = request.MapId;
+        session.ChannelId = (int)request.ChannelId;
+
+        logger.LogInformation("MapLinkGetDataRequest received from user {UserId} on map {MapId} with channel {ChannelId}", session.User?.Id ?? session.UserId, request.MapId, request.ChannelId);
         var response = new MapLinkGetDataResponse(0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
-        var maplinkAtPlayer = new MapLinkData(session.X, session.Y, session.Z, 0, 1000f, 1000f);
-        //await session.SendAsync(PacketType.MapLinkNotifyData, new MapLinkNotifyData(0, maplinkAtPlayer).ToBytes(), ct);
-        // Tell client where this maplink goes (same order as maplinks)
-        //await session.SendAsync(PacketType.NotifySelectMap, new NotifySelectMapData(10990110u).ToBytes(), ct);
+
+        var links = await mapLinkRepository.GetBySourceMapAsync(request.MapId, request.ChannelId, ct);
+        var destinationMapIds = new List<uint>(links.Count);
+
+        foreach (var link in links)
+        {
+            var destinations = link.ParseDestinationMapIds();
+            if (destinations.Count != 1)
+            {
+                logger.LogWarning("Skipping MapLink {MapLinkId} on map {MapId}: direct maplink flow requires exactly one destination, found {DestinationCount}", link.Id, request.MapId, destinations.Count);
+                continue;
+            }
+
+            destinationMapIds.Add(destinations[0]);
+
+            var mapLinkData = new MapLinkData(link.PositionX, link.PositionY, link.PositionZ, link.Yaw, link.Length, link.Depth);
+            await session.SendAsync(PacketType.MapLinkNotifyData, new MapLinkNotifyData(0, mapLinkData).ToBytes(), ct);
+        }
+
+        if (destinationMapIds.Count > 0)
+            await session.SendAsync(PacketType.NotifySelectMap, new NotifySelectMapData(destinationMapIds).ToBytes(), ct);
     }
 }

@@ -18,11 +18,11 @@ public class AreaEmotionCharaHandler(SharedState state) : IPacketHandler
         var response = new EmotionCharaResponse(session.CharacterId, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        // 2. Broadcast to all players (including oneself) for sound and animation
+        // 2. Broadcast to peers on the same map/channel (including oneself) for sound and animation
         var notify = new NotifyEmotionChara(session.CharacterId, request.EmotionId);
         byte[] data = notify.ToBytes();
 
-        foreach (var other in state.AreaClients.Values)
+        foreach (var other in state.GetAreaPeers(session, includeSelf: true))
         {
             await other.SendAsync(PacketType.NotifyEmotionChara, data, ct);
         }

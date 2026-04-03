@@ -36,7 +36,7 @@ public ref struct PacketReader(ReadOnlySpan<byte> buffer)
 
     public string ReadFixedString(int length, string encoderName = "UTF8")
     {
-        var encoder = Encoding.GetEncoding(encoderName);
+        var encoder = PacketEncoding.GetEncoding(encoderName);
         var span = ReadSpan(length);
 
         // Trim at first null if present
@@ -49,7 +49,7 @@ public ref struct PacketReader(ReadOnlySpan<byte> buffer)
 
     public string ReadString(string encoderName = "ASCII")
     {
-        var encoder = Encoding.GetEncoding(encoderName);
+        var encoder = PacketEncoding.GetEncoding(encoderName);
         var remaining = _buffer[_offset..];
         int nullIndex = remaining.IndexOf((byte)0x00);
 

@@ -48,4 +48,36 @@ public class AdditionalPacketParserTests
         Assert.Equal(mapId, p.MapId);
         Assert.Equal(channelId, p.ChannelId);
     }
+
+    [Theory]
+    [InlineData(10990110u, 1u)]
+    [InlineData(0u, 0u)]
+    public void MapEnterRequest_FromBytes(uint mapId, uint channelId)
+    {
+        var w = new PacketWriter();
+        w.Write(mapId);
+        w.Write(channelId);
+        var p = AreaMapEnterRequest.FromBytes(w.ToBytes());
+        Assert.Equal(mapId, p.MapID);
+        Assert.Equal(channelId, p.ChannelId);
+    }
+
+    [Fact]
+    public void NotifySelectMapData_ToBytes_WritesOrderedMapIdsWithExpectedStride()
+    {
+        var packet = new NotifySelectMapData(new uint[] { 10990110, 10990200, 10990210 });
+
+        var bytes = packet.ToBytes();
+        var reader = new PacketReader(bytes);
+
+        Assert.Equal(3u, reader.ReadUInt());
+
+        Assert.Equal(10990110u, reader.ReadUInt());
+        reader.ReadBytes(105);
+        Assert.Equal(10990200u, reader.ReadUInt());
+        reader.ReadBytes(105);
+        Assert.Equal(10990210u, reader.ReadUInt());
+        reader.ReadBytes(105);
+        Assert.Equal(4 + (109 * 3), bytes.Length);
+    }
 }

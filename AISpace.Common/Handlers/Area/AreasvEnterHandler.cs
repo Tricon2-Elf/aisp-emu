@@ -54,6 +54,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.Y = map?.SpawnY ?? 0.1f;
         session.Z = (map?.SpawnZ ?? 0f) + offsetZ;
         session.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+        session.Character = chara;
         session.CharacterId = charId;
         session.MapId = mapId;
 
@@ -66,19 +67,16 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
             {
                 await Task.Delay(1000, ct);
 
-                var cha = session.User!.Characters.First();
+                var cha = session.Character ?? session.User!.Characters.First();
                 var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
                 await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
 
-                foreach (var other in state.AreaClients.Values)
+                foreach (var other in state.GetAreaPeers(session))
                 {
-                    if (other.ConnectionId == session.ConnectionId)
-                        continue;
-
                     await other.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 1, myPos), ct);
 
-                    var oCha = other.User?.Characters.FirstOrDefault();
+                    var oCha = other.Character ?? other.User?.Characters.FirstOrDefault();
                     if (oCha != null)
                     {
                         var oPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);

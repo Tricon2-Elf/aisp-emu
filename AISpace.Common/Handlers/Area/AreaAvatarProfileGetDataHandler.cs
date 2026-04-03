@@ -14,8 +14,8 @@ public class AreaAvatarProfileGetDataHandler(SharedState state) : IPacketHandler
         var reader = new PacketReader(payload.Span);
         uint targetObjId = reader.ReadUInt();
 
-        var target = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == targetObjId);
-        var cha = target?.User?.Characters.FirstOrDefault();
+        var target = state.GetAreaSessionByCharacterId(targetObjId, session.MapId, session.ChannelId);
+        var cha = target?.Character ?? target?.User?.Characters.FirstOrDefault();
 
         var writer = new PacketWriter();
         writer.Write((uint)0); // Result

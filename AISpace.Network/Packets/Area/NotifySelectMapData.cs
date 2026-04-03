@@ -30,11 +30,11 @@ public class NotifySelectMapData : IOutgoingPacket
         const int SelectMapEntrySizeInPacket = 109;
         var writer = new PacketWriter();
         writer.Write((uint)MapIds.Count);
+        Span<byte> padding = stackalloc byte[SelectMapEntrySizeInPacket - 4];
+        padding.Clear();
         foreach (var mapId in MapIds)
         {
             writer.Write(mapId);
-            Span<byte> padding = stackalloc byte[SelectMapEntrySizeInPacket - 4];
-            padding.Clear();
             writer.Write(padding);
         }
         return writer.ToBytes();

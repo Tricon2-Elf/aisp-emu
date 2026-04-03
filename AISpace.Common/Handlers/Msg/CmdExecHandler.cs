@@ -28,7 +28,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
 
         if (cmd == "pos" || cmd == "coords")
         {
-            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == session.CharacterId);
+            var areaClient = state.GetAreaSessionByCharacterId(session.CharacterId);
             if (areaClient != null)
             {
                 logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {areaClient.CharacterId}\n" + $"  X: {areaClient.X}f\n" + $"  Y: {areaClient.Y}f\n" + $"  Z: {areaClient.Z}f\n" + $"  Rotation: {areaClient.Rotation}\n" + "==========================================");
@@ -38,11 +38,11 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
 
         if (cmd == "escape" || cmd == "reset")
         {
-            var areaClient = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == session.CharacterId);
+            var areaClient = state.GetAreaSessionByCharacterId(session.CharacterId);
 
             if (areaClient != null && areaClient.User != null && areaClient.User.Characters.Count > 0)
             {
-                var chara = areaClient.User.Characters.First();
+                var chara = areaClient.Character ?? areaClient.User.Characters.First();
                 uint mapId = chara.CurrentMapId;
 
                 var map = await mapRepo.GetByMapIdAsync(mapId, ct);
@@ -64,11 +64,8 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
                 var disappearPacket = new NotifyDisappearChara(areaClient.CharacterId).ToBytes();
                 var appearPacket = CreateTeleportNotify(chara, areaClient.CharacterId, newPos);
 
-                foreach (var other in state.AreaClients.Values)
+                foreach (var other in state.GetAreaPeers(areaClient))
                 {
-                    if (other.ConnectionId == areaClient.ConnectionId)
-                        continue;
-
                     await other.SendAsync(PacketType.NotifyDisappearChara, disappearPacket, ct);
                     await other.SendAsync(PacketType.AvatarNotifyData, appearPacket, ct);
                 }

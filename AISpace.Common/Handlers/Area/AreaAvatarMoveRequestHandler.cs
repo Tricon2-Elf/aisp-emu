@@ -38,10 +38,8 @@ public class AreaAvatarMoveRequestHandler(SharedState state) : IPacketHandler
 
         var notify = new AvatarNotifyMove(1, session.CharacterId, lastMovement).ToBytes();
 
-        foreach (var other in state.AreaClients.Values)
+        foreach (var other in state.GetAreaPeers(session))
         {
-            if (other.ConnectionId == session.ConnectionId)
-                continue;
             _ = other.SendAsync(ResponseType, notify, ct);
         }
     }
