@@ -16,8 +16,8 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
     private readonly IUserSessionRepository _sessionRepo = sessionRepo;
     private readonly ILogger<WorldSelectHandler> _logger = logger;
 
-    public PacketType RequestType => PacketType.Auth_WorldSelectRequest;
-    public PacketType ResponseType => PacketType.Auth_WorldSelectResponse;
+    public PacketType RequestType => PacketType.WorldSelectRequest;
+    public PacketType ResponseType => PacketType.WorldSelectResponse;
     public MessageDomain Domain => MessageDomain.Auth;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
@@ -29,7 +29,7 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
         {
             _logger.LogWarning("WorldSelectRequest rejected: session not authenticated (client may have sent WorldSelect before Authenticate). Sending error response.");
             var errResp = new WorldSelectResponse(1, "", 0, "");
-            await session.SendAsync(PacketType.Auth_WorldSelectResponse, errResp.ToBytes(), ct);
+            await session.SendAsync(PacketType.WorldSelectResponse, errResp.ToBytes(), ct);
             return;
         }
 
@@ -38,7 +38,7 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
         {
             _logger.LogWarning("WorldSelectRequest: world {WorldId} not found. Sending error response.", selectedWorldID);
             var errResp = new WorldSelectResponse(1, "", 0, "");
-            await session.SendAsync(PacketType.Auth_WorldSelectResponse, errResp.ToBytes(), ct);
+            await session.SendAsync(PacketType.WorldSelectResponse, errResp.ToBytes(), ct);
             return;
         }
 
@@ -48,6 +48,6 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
         _logger.LogInformation("World Selected: {ID}", selectedWorldID);
         var resolvedAddress = serverOptions.Value.ResolveAddress(world.Address);
         var WorldSelectResp = new WorldSelectResponse(0, resolvedAddress, world.Port, otp);
-        await session.SendAsync(PacketType.Auth_WorldSelectResponse, WorldSelectResp.ToBytes(), ct);
+        await session.SendAsync(PacketType.WorldSelectResponse, WorldSelectResp.ToBytes(), ct);
     }
 }

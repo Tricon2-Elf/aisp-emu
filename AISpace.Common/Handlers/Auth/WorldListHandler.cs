@@ -9,8 +9,8 @@ namespace AISpace.Common.Handlers.Auth;
 
 public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> logger) : IPacketHandler
 {
-    public PacketType RequestType => PacketType.Auth_WorldListRequest;
-    public PacketType ResponseType => PacketType.Auth_WorldListResponse;
+    public PacketType RequestType => PacketType.WorldListRequest;
+    public PacketType ResponseType => PacketType.WorldListResponse;
     public MessageDomain Domain => MessageDomain.Auth;
 
     private readonly IWorldRepository _worldRepository = repo;
@@ -33,7 +33,7 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
                 .ToList();
             var worldListResponse = new WorldListResponse(0, worldDataList);
 
-            await session.SendAsync(PacketType.Auth_WorldListResponse, worldListResponse.ToBytes(), ct);
+            await session.SendAsync(PacketType.WorldListResponse, worldListResponse.ToBytes(), ct);
         }
         catch (Exception ex)
         {
