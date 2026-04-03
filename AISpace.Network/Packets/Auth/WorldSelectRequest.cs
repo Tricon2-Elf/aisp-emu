@@ -1,6 +1,8 @@
-﻿namespace AISpace.Network.Packets.Auth;
+namespace AISpace.Network.Packets.Auth;
 
-public class WorldSelectRequest(uint SelectedID) : IPacket<WorldSelectRequest>
+using AISpace.Network;
+
+public class WorldSelectRequest(uint SelectedID) : IIncomingPacket<WorldSelectRequest>
 {
     public uint WorldID = SelectedID;
 
@@ -10,10 +12,5 @@ public class WorldSelectRequest(uint SelectedID) : IPacket<WorldSelectRequest>
 
         uint SelectedID = reader.ReadUInt();
         return new WorldSelectRequest(SelectedID);
-    }
-
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
     }
 }

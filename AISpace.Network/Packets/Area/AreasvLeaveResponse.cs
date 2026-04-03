@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class AreasvLeaveResponse(uint Result = 0) : IPacket<AreasvLeaveResponse>
+public class AreasvLeaveResponse(uint Result = 0) : IOutgoingPacket
 {
-    public static AreasvLeaveResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

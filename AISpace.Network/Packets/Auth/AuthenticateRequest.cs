@@ -1,8 +1,8 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Auth;
 
-public class AuthenticateRequest(string username, string password) : IPacket<AuthenticateRequest>
+public class AuthenticateRequest(string username, string password) : IIncomingPacket<AuthenticateRequest>
 {
     public string Username = username;
     public string Password = password;
@@ -15,6 +15,4 @@ public class AuthenticateRequest(string username, string password) : IPacket<Aut
         string password = reader.ReadString();
         return new AuthenticateRequest(username, password);
     }
-
-    public byte[] ToBytes() => throw new NotImplementedException();
 }

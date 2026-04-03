@@ -1,11 +1,9 @@
-﻿using AISpace.Network.Data;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class EnqueteGetResponse(uint result, List<EnqueteData> Questions) : IPacket<EnqueteGetResponse>
+public class EnqueteGetResponse(uint result, List<EnqueteData> Questions) : IOutgoingPacket
 {
-    public static EnqueteGetResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

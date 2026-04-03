@@ -2,7 +2,7 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public class AvatarMove(MovementData[] Moves) : IPacket<AvatarMove>
+public class AvatarMove(MovementData[] Moves) : IIncomingPacket<AvatarMove>
 {
     public MovementData[] Moves = Moves;
 
@@ -20,6 +20,4 @@ public class AvatarMove(MovementData[] Moves) : IPacket<AvatarMove>
         }
         return new AvatarMove(movement);
     }
-
-    public byte[] ToBytes() => throw new NotImplementedException();
 }

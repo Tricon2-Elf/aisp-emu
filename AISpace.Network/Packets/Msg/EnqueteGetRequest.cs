@@ -1,15 +1,10 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class EnqueteGetRequest : IPacket<EnqueteGetRequest>
+public class EnqueteGetRequest : IIncomingPacket<EnqueteGetRequest>
 {
     public static EnqueteGetRequest FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
-    public byte[] ToBytes()
     {
         throw new NotImplementedException();
     }

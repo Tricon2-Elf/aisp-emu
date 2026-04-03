@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Common;
 
-public class VersionCheckResponse(uint Result, uint Major, uint Minor, uint Ver) : IPacket<VersionCheckResponse>
+public class VersionCheckResponse(uint Result, uint Major, uint Minor, uint Ver) : IOutgoingPacket
 {
-    public static VersionCheckResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

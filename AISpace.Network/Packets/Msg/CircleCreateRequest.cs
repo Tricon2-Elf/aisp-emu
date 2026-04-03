@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleCreateRequest(string name, uint unk) : IPacket<CircleCreateRequest>
+public class CircleCreateRequest(string name, uint unk) : IIncomingPacket<CircleCreateRequest>
 {
     public string Name = name;
     public uint Unk = unk; // Usually 0
@@ -16,6 +16,4 @@ public class CircleCreateRequest(string name, uint unk) : IPacket<CircleCreateRe
         uint unk = reader.ReadUInt();
         return new CircleCreateRequest(name, unk);
     }
-
-    public byte[] ToBytes() => throw new NotImplementedException();
 }

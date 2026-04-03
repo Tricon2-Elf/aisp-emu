@@ -1,16 +1,11 @@
 using AISpace.Network;
 using AISpace.Network.Data;
 
-public class NpcNotifyData(uint result, uint npcObjectId, CharaData charaData) : IPacket<NpcNotifyData>
+public class NpcNotifyData(uint result, uint npcObjectId, CharaData charaData) : IOutgoingPacket
 {
     private const int EntityPrefixSize = 366;
     private const int Sub798D80Size = 175;
     private const int Sub798B10Size = 25;
-
-    public static NpcNotifyData FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 
     public byte[] ToBytes()
     {

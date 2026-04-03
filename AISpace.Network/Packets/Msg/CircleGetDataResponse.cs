@@ -2,10 +2,8 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleGetDataResponse(uint result, List<CircleData> circles) : IPacket<CircleGetDataResponse>
+public class CircleGetDataResponse(uint result, List<CircleData> circles) : IOutgoingPacket
 {
-    public static CircleGetDataResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

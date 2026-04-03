@@ -2,7 +2,7 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class ChannelSelectMyRoomResponse(uint result, ServerInfo serverInfo, uint mapId, uint mapSerialId) : IPacket<ChannelSelectMyRoomResponse>
+public class ChannelSelectMyRoomResponse(uint result, ServerInfo serverInfo, uint mapId, uint mapSerialId) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
@@ -23,6 +23,4 @@ public class ChannelSelectMyRoomResponse(uint result, ServerInfo serverInfo, uin
 
         return writer.ToBytes();
     }
-
-    public static ChannelSelectMyRoomResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

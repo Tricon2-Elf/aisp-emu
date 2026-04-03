@@ -1,8 +1,8 @@
-﻿using AISpace.Network.Data;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class ChannelSelectResponse(uint result, ServerInfo serverInfo, uint mapId, uint mapSerialId) : IPacket<ChannelSelectResponse>
+public class ChannelSelectResponse(uint result, ServerInfo serverInfo, uint mapId, uint mapSerialId) : IOutgoingPacket
 {
     public uint Result = result;
     public ServerInfo ServerInfo = serverInfo;
@@ -18,6 +18,4 @@ public class ChannelSelectResponse(uint result, ServerInfo serverInfo, uint mapI
         writer.Write(MapSerialID);
         return writer.ToBytes();
     }
-
-    public static ChannelSelectResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

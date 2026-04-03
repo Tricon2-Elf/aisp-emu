@@ -2,10 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class AreaMapEnterResponse(uint Result) : IPacket<AreaMapEnterResponse>
+public class AreaMapEnterResponse(uint Result) : IOutgoingPacket
 {
-    public static AreaMapEnterResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

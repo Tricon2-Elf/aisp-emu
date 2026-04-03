@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarDestroyResponse(uint result) : IPacket<AvatarDestroyResponse>
+public class AvatarDestroyResponse(uint result) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
@@ -10,6 +10,4 @@ public class AvatarDestroyResponse(uint result) : IPacket<AvatarDestroyResponse>
         writer.Write(result); // 0
         return writer.ToBytes();
     }
-
-    public static AvatarDestroyResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

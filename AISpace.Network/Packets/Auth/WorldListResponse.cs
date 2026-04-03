@@ -2,15 +2,10 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Auth;
 
-public class WorldListResponse(uint Result, List<WorldData> Worlds) : IPacket<WorldListResponse>
+public class WorldListResponse(uint Result, List<WorldData> Worlds) : IOutgoingPacket
 {
     readonly int MaxNameLen = 97;
     readonly int MaxDescLen = 766;
-
-    public static WorldListResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 
     public byte[] ToBytes()
     {

@@ -1,16 +1,11 @@
-﻿using AISpace.Network.Data;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class ChannelListGetResponse(uint result, List<ChannelInfo> channels) : IPacket<ChannelListGetResponse>
+public class ChannelListGetResponse(uint result, List<ChannelInfo> channels) : IOutgoingPacket
 {
     public uint Result = result;
     public List<ChannelInfo> Channels = channels;
-
-    public static ChannelListGetResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 
     public byte[] ToBytes()
     {

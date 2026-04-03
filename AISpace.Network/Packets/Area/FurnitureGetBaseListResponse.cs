@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class FurnitureGetBaseListResponse : IPacket<FurnitureGetBaseListResponse>
+public class FurnitureGetBaseListResponse : IOutgoingPacket
 {
-    public static FurnitureGetBaseListResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

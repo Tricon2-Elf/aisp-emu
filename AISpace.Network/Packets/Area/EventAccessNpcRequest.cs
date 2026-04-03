@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class EventAccessNpcRequest : IPacket<EventAccessNpcRequest>
+public class EventAccessNpcRequest : IIncomingPacket<EventAccessNpcRequest>
 {
     public uint NpcId { get; set; }
     public float AvatarX { get; set; }
@@ -19,15 +19,5 @@ public class EventAccessNpcRequest : IPacket<EventAccessNpcRequest>
             AvatarY = reader.ReadFloat(),
             AvatarZ = reader.ReadFloat(),
         };
-    }
-
-    public byte[] ToBytes()
-    {
-        var writer = new PacketWriter();
-        writer.Write(NpcId);
-        writer.Write(AvatarX);
-        writer.Write(AvatarY);
-        writer.Write(AvatarZ);
-        return writer.ToBytes();
     }
 }

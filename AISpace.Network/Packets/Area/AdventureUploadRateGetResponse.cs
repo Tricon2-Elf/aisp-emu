@@ -2,10 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class AdventureUploadRateGetResponse(uint Result = 1) : IPacket<AdventureUploadRateGetResponse>
+public class AdventureUploadRateGetResponse(uint Result = 1) : IOutgoingPacket
 {
-    public static AdventureUploadRateGetResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

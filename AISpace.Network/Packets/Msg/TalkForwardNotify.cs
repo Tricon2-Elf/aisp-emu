@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class TalkForwardNotify(uint fromId, uint distId, string message, uint balloonId) : IPacket<TalkForwardNotify>
+public class TalkForwardNotify(uint fromId, uint distId, string message, uint balloonId) : IOutgoingPacket
 {
     public uint FromId = fromId;
     public uint DistId = distId;
@@ -18,6 +18,4 @@ public class TalkForwardNotify(uint fromId, uint distId, string message, uint ba
         writer.Write(BalloonId);
         return writer.ToBytes();
     }
-
-    public static TalkForwardNotify FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class NotifyMyRoomFurnitureList : IPacket<NotifyMyRoomFurnitureList>
+public class NotifyMyRoomFurnitureList : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
@@ -11,6 +11,4 @@ public class NotifyMyRoomFurnitureList : IPacket<NotifyMyRoomFurnitureList>
         writer.Write((uint)0);
         return writer.ToBytes();
     }
-
-    public static NotifyMyRoomFurnitureList FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

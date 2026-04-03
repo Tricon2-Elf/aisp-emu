@@ -1,6 +1,8 @@
-﻿namespace AISpace.Network.Packets.Common
+namespace AISpace.Network.Packets.Common
 {
-    public class VersionCheckRequest(uint Major, uint Minor, uint Version) : IPacket<VersionCheckRequest>
+    using AISpace.Network;
+
+    public class VersionCheckRequest(uint Major, uint Minor, uint Version) : IIncomingPacket<VersionCheckRequest>
     {
         public uint Major = Major;
         public uint Minor = Minor;
@@ -13,11 +15,6 @@
             uint minor = reader.ReadUInt();
             uint version = reader.ReadUInt();
             return new VersionCheckRequest(major, minor, version);
-        }
-
-        public byte[] ToBytes()
-        {
-            throw new NotImplementedException();
         }
     }
 }

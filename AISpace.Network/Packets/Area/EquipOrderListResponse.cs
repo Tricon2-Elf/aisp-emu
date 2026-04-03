@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class EquipOrderListResponse : IPacket<EquipOrderListResponse>
+public class EquipOrderListResponse : IOutgoingPacket
 {
-    public static EquipOrderListResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

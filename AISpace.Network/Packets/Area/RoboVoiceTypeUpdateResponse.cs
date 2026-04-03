@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class RoboVoiceTypeUpdateResponse : IPacket<RoboVoiceTypeUpdateResponse>
+public class RoboVoiceTypeUpdateResponse : IOutgoingPacket
 {
-    public static RoboVoiceTypeUpdateResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarSelectResponse(uint result) : IPacket<AvatarSelectResponse>
+public class AvatarSelectResponse(uint result) : IOutgoingPacket
 {
-    public static AvatarSelectResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

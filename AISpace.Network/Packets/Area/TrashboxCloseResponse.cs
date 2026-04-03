@@ -2,14 +2,9 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class TrashboxCloseResponse(uint result) : IPacket<TrashboxCloseResponse>
+public class TrashboxCloseResponse(uint result) : IOutgoingPacket
 {
     public uint Result = result;
-
-    public static TrashboxCloseResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 
     public byte[] ToBytes()
     {

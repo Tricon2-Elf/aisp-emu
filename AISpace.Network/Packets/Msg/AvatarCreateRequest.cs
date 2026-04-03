@@ -1,8 +1,8 @@
-﻿using AISpace.Network.Data;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarCreateRequest : IPacket<AvatarCreateRequest>
+public class AvatarCreateRequest : IIncomingPacket<AvatarCreateRequest>
 {
     public string AvatarName { get; set; } = string.Empty;
     public uint modelId;
@@ -21,11 +21,6 @@ public class AvatarCreateRequest : IPacket<AvatarCreateRequest>
         };
 
         return createRequest;
-    }
-
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
     }
 
     public override string ToString()

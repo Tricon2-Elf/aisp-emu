@@ -1,15 +1,10 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class NiconiCommonsBaseListRequest : IPacket<NiconiCommonsBaseListRequest>
+public class NiconiCommonsBaseListRequest : IIncomingPacket<NiconiCommonsBaseListRequest>
 {
     public static NiconiCommonsBaseListRequest FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
-    public byte[] ToBytes()
     {
         throw new NotImplementedException();
     }

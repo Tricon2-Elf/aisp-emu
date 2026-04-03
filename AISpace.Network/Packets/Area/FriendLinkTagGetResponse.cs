@@ -1,12 +1,7 @@
-﻿namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Packets.Area;
 
-public class FriendLinkTagGetResponse : IPacket<FriendLinkTagGetResponse>
+public class FriendLinkTagGetResponse : IOutgoingPacket
 {
-    public static FriendLinkTagGetResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         PacketWriter writer = new();

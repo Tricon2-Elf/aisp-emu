@@ -2,7 +2,7 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public class GetMyAvatarMyprofileDataResponse(ProfileData pData) : IPacket<GetMyAvatarMyprofileDataResponse>
+public class GetMyAvatarMyprofileDataResponse(ProfileData pData) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
@@ -22,6 +22,4 @@ public class GetMyAvatarMyprofileDataResponse(ProfileData pData) : IPacket<GetMy
 
         return writer.ToBytes();
     }
-
-    public static GetMyAvatarMyprofileDataResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

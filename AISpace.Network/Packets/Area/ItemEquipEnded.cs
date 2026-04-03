@@ -2,20 +2,13 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class ItemEquipEnded : IPacket<ItemEquipEnded>
+public class ItemEquipEnded : IOutgoingPacket
 {
     public uint ObjId { get; set; }
 
     public ItemEquipEnded(uint objId)
     {
         ObjId = objId;
-    }
-
-    public static ItemEquipEnded FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        var objId = reader.ReadUInt();
-        return new ItemEquipEnded(objId);
     }
 
     public byte[] ToBytes()

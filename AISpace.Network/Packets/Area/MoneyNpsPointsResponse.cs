@@ -2,16 +2,11 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class MoneyNpsPointsResponse(uint result, ulong total, ulong limit) : IPacket<MoneyNpsPointsResponse>
+public class MoneyNpsPointsResponse(uint result, ulong total, ulong limit) : IOutgoingPacket
 {
     public uint Result = result;
     public ulong Total = total;
     public ulong Limit = limit;
-
-    public static MoneyNpsPointsResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 
     public byte[] ToBytes()
     {

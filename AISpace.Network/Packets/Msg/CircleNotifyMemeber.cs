@@ -29,10 +29,8 @@ public class CircleMemberData
     }
 }
 
-public class CircleNotifyMember(uint circleId, List<CircleMemberData> members) : IPacket<CircleNotifyMember>
+public class CircleNotifyMember(uint circleId, List<CircleMemberData> members) : IOutgoingPacket
 {
-    public static CircleNotifyMember FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

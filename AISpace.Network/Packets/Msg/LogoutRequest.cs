@@ -1,15 +1,10 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class LogoutRequest : IPacket<LogoutRequest>
+public class LogoutRequest : IIncomingPacket<LogoutRequest>
 {
     public static LogoutRequest FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
-    public byte[] ToBytes()
     {
         throw new NotImplementedException();
     }

@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class ItemTryEquipResetRequest(uint objId) : IPacket<ItemTryEquipResetRequest>
+public class ItemTryEquipResetRequest(uint objId) : IIncomingPacket<ItemTryEquipResetRequest>
 {
     public uint ObjId = objId;
 
@@ -11,12 +11,5 @@ public class ItemTryEquipResetRequest(uint objId) : IPacket<ItemTryEquipResetReq
         var reader = new PacketReader(data);
         var objId = reader.ReadUInt();
         return new ItemTryEquipResetRequest(objId);
-    }
-
-    public byte[] ToBytes()
-    {
-        var writer = new PacketWriter();
-        writer.Write(ObjId);
-        return writer.ToBytes();
     }
 }

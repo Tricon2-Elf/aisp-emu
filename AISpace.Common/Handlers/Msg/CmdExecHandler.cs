@@ -1,6 +1,5 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
-using AISpace.Common.Handlers.Area;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
@@ -24,8 +23,8 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
 
         var response = new CmdExecResponse(request.MessageId, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
-
-        string cmd = request.Command.ToLower();
+        string cmd = request.Command.Trim().ToLower();
+        logger.LogInformation("CmdExecHandler: {cmd} {args}", cmd, string.Join(", ", request.Arguments));
 
         if (cmd == "pos" || cmd == "coords")
         {

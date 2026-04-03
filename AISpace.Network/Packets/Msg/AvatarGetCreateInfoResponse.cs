@@ -1,8 +1,8 @@
-﻿using AISpace.Network.Data;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarGetCreateInfoResponse : IPacket<AvatarGetCreateInfoResponse>
+public class AvatarGetCreateInfoResponse : IOutgoingPacket
 {
     private readonly List<uint> DefaultMaleBuilds = [1001021, 1001011, 1001031];
     private readonly List<byte> DefaultMaleFaces = [0, 1, 2, 3];
@@ -15,8 +15,6 @@ public class AvatarGetCreateInfoResponse : IPacket<AvatarGetCreateInfoResponse>
     private readonly List<uint> DefaultFemaleHairStyles = [10930010, 10930020, 10930040];
     private readonly List<byte> DefaultFemaleHairColours = [0, 4, 1, 2, 3];
     private readonly List<ItemSlotInfo> DefaultFemaleEquipment = [];
-
-    public static AvatarGetCreateInfoResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 
     public byte[] ToBytes()
     {

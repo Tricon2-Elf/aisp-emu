@@ -2,13 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Common;
 
-public class LogoutResponse : IPacket<LogoutResponse>
+public class LogoutResponse : IOutgoingPacket
 {
-    public static LogoutResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

@@ -7,7 +7,7 @@ namespace AISpace.Network.Packets.Area;
 /// Order of entries must match the order of maplinks sent via MapLinkNotifyData.
 /// Payload: UInt Count (1-4) + Count × select_map_t (109 bytes each in packet; first 4 bytes = MapId).
 /// </summary>
-public class NotifySelectMapData : IPacket<NotifySelectMapData>
+public class NotifySelectMapData : IOutgoingPacket
 {
     /// <summary>Map IDs to which maplinks lead, in the same order as the maplinks.</summary>
     public IReadOnlyList<uint> MapIds { get; set; } = [];
@@ -23,8 +23,6 @@ public class NotifySelectMapData : IPacket<NotifySelectMapData>
     {
         MapIds = mapIds.ToList();
     }
-
-    public static NotifySelectMapData FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException("Server does not receive this packet");
 
     public byte[] ToBytes()
     {

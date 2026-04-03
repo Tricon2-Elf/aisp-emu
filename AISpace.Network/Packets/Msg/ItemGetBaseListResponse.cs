@@ -1,8 +1,8 @@
-﻿using AISpace.Network.Data;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class ItemGetBaseListResponse : IPacket<ItemGetBaseListResponse>
+public class ItemGetBaseListResponse : IOutgoingPacket
 {
     uint result = 0;
     readonly List<ItemData> Items = [];
@@ -66,8 +66,6 @@ public class ItemGetBaseListResponse : IPacket<ItemGetBaseListResponse>
             }
         }
     }
-
-    public static ItemGetBaseListResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 
     public byte[] ToBytes()
     {

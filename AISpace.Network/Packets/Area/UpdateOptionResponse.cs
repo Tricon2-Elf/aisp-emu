@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class UpdateOptionResponse : IPacket<UpdateOptionResponse>
+public class UpdateOptionResponse : IOutgoingPacket
 {
-    public static UpdateOptionResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

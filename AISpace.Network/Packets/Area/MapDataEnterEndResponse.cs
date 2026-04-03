@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class MapDataEnterEndResponse : IPacket<MapDataEnterEndResponse>
+public class MapDataEnterEndResponse : IOutgoingPacket
 {
-    public static MapDataEnterEndResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

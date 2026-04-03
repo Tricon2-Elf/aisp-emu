@@ -100,6 +100,5 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
         return buffer;
     }
 
-    public async Task SendAsync<T>(PacketType type, IPacket<T> packet, CancellationToken ct = default)
-        where T : IPacket<T> => await SendAsync(type, packet.ToBytes(), ct);
+    public async Task SendAsync(PacketType type, IOutgoingPacket packet, CancellationToken ct = default) => await SendAsync(type, packet.ToBytes(), ct);
 }

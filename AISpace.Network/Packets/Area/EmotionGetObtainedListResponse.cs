@@ -1,11 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class EmotionGetObtainedListResponse(uint Result, List<uint> Ids) : IPacket<EmotionGetObtainedListResponse>
+public class EmotionGetObtainedListResponse(uint Result, List<uint> Ids) : IOutgoingPacket
 {
-    public static EmotionGetObtainedListResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

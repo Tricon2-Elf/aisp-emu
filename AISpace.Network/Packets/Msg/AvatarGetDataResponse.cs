@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarGetDataResponse(uint result) : IPacket<AvatarGetDataResponse>
+public class AvatarGetDataResponse(uint result) : IOutgoingPacket
 {
-    public static AvatarGetDataResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

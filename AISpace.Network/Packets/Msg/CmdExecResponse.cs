@@ -2,15 +2,10 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CmdExecResponse(uint messageId, uint result) : IPacket<CmdExecResponse>
+public class CmdExecResponse(uint messageId, uint result) : IOutgoingPacket
 {
     public uint MessageId = messageId;
     public uint Result = result;
-
-    public static CmdExecResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 
     public byte[] ToBytes()
     {

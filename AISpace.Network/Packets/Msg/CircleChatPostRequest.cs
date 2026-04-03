@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleChatPostRequest : IPacket<CircleChatPostRequest>
+public class CircleChatPostRequest : IIncomingPacket<CircleChatPostRequest>
 {
     public uint CircleId;
     public string Message = string.Empty;
@@ -18,6 +18,4 @@ public class CircleChatPostRequest : IPacket<CircleChatPostRequest>
             BalloonId = reader.ReadUInt(),
         };
     }
-
-    public byte[] ToBytes() => throw new NotImplementedException();
 }

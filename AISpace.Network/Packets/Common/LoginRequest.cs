@@ -1,6 +1,8 @@
-﻿namespace AISpace.Network.Packets.Common;
+namespace AISpace.Network.Packets.Common;
 
-public class LoginRequest(uint Userid, ReadOnlySpan<byte> Otp) : IPacket<LoginRequest>
+using AISpace.Network;
+
+public class LoginRequest(uint Userid, ReadOnlySpan<byte> Otp) : IIncomingPacket<LoginRequest>
 {
     public uint _userId = Userid;
     public byte[] _otp = Otp.ToArray();
@@ -12,10 +14,5 @@ public class LoginRequest(uint Userid, ReadOnlySpan<byte> Otp) : IPacket<LoginRe
         uint userid = reader.ReadUInt();
         ReadOnlySpan<byte> otp = reader.ReadBytes(20);
         return new LoginRequest(userid, otp);
-    }
-
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
     }
 }

@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class NotifyChangeMyRoom(string ip, ushort port, uint mapId, uint mapSerialId) : IPacket<NotifyChangeMyRoom>
+public class NotifyChangeMyRoom(string ip, ushort port, uint mapId, uint mapSerialId) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
@@ -24,6 +24,4 @@ public class NotifyChangeMyRoom(string ip, ushort port, uint mapId, uint mapSeri
         writer.Write((byte)1);
         return writer.ToBytes();
     }
-
-    public static NotifyChangeMyRoom FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

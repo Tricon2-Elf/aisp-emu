@@ -2,13 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class MascotGetCountResponse : IPacket<MascotGetCountResponse>
+public class MascotGetCountResponse : IOutgoingPacket
 {
-    public static MascotGetCountResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

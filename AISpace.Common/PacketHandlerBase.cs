@@ -19,8 +19,8 @@ public interface IPacketHandler
 }
 
 public abstract class PacketHandlerBase<TRequest, TResponse> : IPacketHandler
-    where TRequest : IPacket<TRequest>
-    where TResponse : IPacket<TResponse>
+    where TRequest : IIncomingPacket<TRequest>
+    where TResponse : IOutgoingPacket
 {
     public abstract PacketType RequestType { get; }
     public abstract PacketType ResponseType { get; }

@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CmdExecRequest(uint messageId, string command, uint argCount, List<string> arguments) : IPacket<CmdExecRequest>
+public class CmdExecRequest(uint messageId, string command, uint argCount, List<string> arguments) : IIncomingPacket<CmdExecRequest>
 {
     const int MaxArgs = 10;
     const int ArgLength = 384;
@@ -29,11 +29,6 @@ public class CmdExecRequest(uint messageId, string command, uint argCount, List<
         }
         uint argCount = reader.ReadUInt();
 
-        return new CmdExecRequest(msgId, cmd, argCount, args.Take((int)argCount).ToList());
-    }
-
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
+        return new CmdExecRequest(msgId, cmd.Trim(), argCount, args.Take((int)argCount).ToList());
     }
 }

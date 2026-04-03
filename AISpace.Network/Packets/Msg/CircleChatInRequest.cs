@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleChatInRequest : IPacket<CircleChatInRequest>
+public class CircleChatInRequest : IIncomingPacket<CircleChatInRequest>
 {
     public uint CircleId;
     public uint Unk;
@@ -12,6 +12,4 @@ public class CircleChatInRequest : IPacket<CircleChatInRequest>
         var reader = new PacketReader(data);
         return new CircleChatInRequest { CircleId = reader.ReadUInt(), Unk = reader.ReadUInt() };
     }
-
-    public byte[] ToBytes() => throw new NotImplementedException();
 }

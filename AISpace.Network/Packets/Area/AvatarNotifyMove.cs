@@ -1,14 +1,9 @@
-﻿using AISpace.Network.Data;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public class AvatarNotifyMove(uint Result, uint avatar_Id, MovementData moveData) : IPacket<AvatarNotifyMove>
+public class AvatarNotifyMove(uint Result, uint avatar_Id, MovementData moveData) : IOutgoingPacket
 {
-    public static AvatarNotifyMove FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

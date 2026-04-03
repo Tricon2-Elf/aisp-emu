@@ -1,8 +1,8 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class EnqueteAnswerRequest : IPacket<EnqueteAnswerRequest>
+public class EnqueteAnswerRequest : IIncomingPacket<EnqueteAnswerRequest>
 {
     List<uint> EnqueteIds = [];
     List<uint> AnswerIds = [];
@@ -20,10 +20,5 @@ public class EnqueteAnswerRequest : IPacket<EnqueteAnswerRequest>
         var AnswerRequest = new EnqueteAnswerRequest { EnqueteIds = QuestionIds, AnswerIds = answerIds };
 
         return AnswerRequest;
-    }
-
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
     }
 }

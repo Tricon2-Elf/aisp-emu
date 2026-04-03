@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleChatInResponse(uint result) : IPacket<CircleChatInResponse>
+public class CircleChatInResponse(uint result) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
@@ -10,6 +10,4 @@ public class CircleChatInResponse(uint result) : IPacket<CircleChatInResponse>
         writer.Write(result);
         return writer.ToBytes();
     }
-
-    public static CircleChatInResponse FromBytes(ReadOnlySpan<byte> data) => throw new NotImplementedException();
 }

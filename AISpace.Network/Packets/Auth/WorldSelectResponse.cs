@@ -1,18 +1,13 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Auth;
 
-public class WorldSelectResponse(uint result, string ipAddress, ushort port, string otp) : IPacket<WorldSelectResponse>
+public class WorldSelectResponse(uint result, string ipAddress, ushort port, string otp) : IOutgoingPacket
 {
     uint worldCount = 1;
     public string IpAddress = ipAddress;
     public ushort Port = port;
     public string OTP = otp;
-
-    public static WorldSelectResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
 
     public byte[] ToBytes()
     {

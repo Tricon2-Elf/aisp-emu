@@ -1,8 +1,8 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarSelectRequest(uint slotId) : IPacket<AvatarSelectRequest>
+public class AvatarSelectRequest(uint slotId) : IIncomingPacket<AvatarSelectRequest>
 {
     public uint SlotId = slotId;
 
@@ -11,10 +11,5 @@ public class AvatarSelectRequest(uint slotId) : IPacket<AvatarSelectRequest>
         var reader = new PacketReader(data);
         uint slotId = reader.ReadUInt();
         return new AvatarSelectRequest(slotId);
-    }
-
-    public byte[] ToBytes()
-    {
-        throw new NotImplementedException();
     }
 }

@@ -1,14 +1,9 @@
-﻿using AISpace.Network;
+using AISpace.Network;
 
 namespace AISpace.Network.Packets.Auth;
 
-public class AuthenticateResponse(uint id) : IPacket<AuthenticateResponse>
+public class AuthenticateResponse(uint id) : IOutgoingPacket
 {
-    public static AuthenticateResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
