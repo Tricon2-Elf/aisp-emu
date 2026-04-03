@@ -1,4 +1,4 @@
-name: Build
+name: Build and test
 
 on:
   push:
@@ -22,3 +22,6 @@ jobs:
 
       - name: Build
         run: dotnet build AISpace.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test AISpace.sln --configuration Release --no-build --verbosity normal
