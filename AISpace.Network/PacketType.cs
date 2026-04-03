@@ -79,7 +79,7 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_enquete_answer_r")]
     EnqueteAnswerResponse = 0x615A,
 
-    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "send_login")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_login")]
     LoginRequest = 0x34EF,
 
     [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_login_r")]
@@ -91,7 +91,7 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_logout_r")]
     LogoutResponse = 0xB7B9,
 
-    [PacketMetadata(ServerType.Auth, PacketDirection.ClientToServer, "recv_notify_logout")]
+    [PacketMetadata(ServerType.Auth, PacketDirection.ServerToClient, "recv_notify_logout")]
     LogoutNotify = 0x2D66,
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_adventure_upload_rate")]
@@ -112,199 +112,199 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_ai_upload_rate_r")]
     AiUploadRateGetResponse = 0xB2BC,
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_enter_areasv")]
     AreasvEnterRequest = 0x4646, // 17990
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_enter_areasv_r")]
     AreasvEnterResponse = 0x0149, // 329
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_leave_areasv")]
     AreasvLeaveRequest = 0xF7B9, // 63417
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_leave_areasv_r")]
     AreasvLeaveResponse = 0xE31D, // 58141
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_get_avatar_create_info")]
     AvatarGetCreateInfoRequest = 0x04F6, // 1270
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_get_avatar_create_info_r")]
     AvatarGetCreateInfoResponse = 0xA5AD, // 42413
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_get_avatar_data")]
     AvatarGetDataRequest = 0xAD9E, // 44446
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_get_avatar_data_r")]
     AvatarGetDataResponse = 0xB055, // 45141
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_avatar_data")]
     AvatarNotifyData = 0x7D78, // 32120
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_move_chara")]
     AvatarNotifyMove = 0xAADB,
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_select_avatar")]
     AvatarSelectRequest = 0x113D, // 4413
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_select_avatar_r")]
     AvatarSelectResponse = 0x2C5F, // 11359
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_get_channellist")]
     ChannelListGetRequest = 0x0300, // 768
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_get_channellist_r")]
     ChannelListGetResponse = 0xF27F, // 62079
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_select_channel")]
     ChannelSelectRequest = 0xFFE1, // 65505
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_select_channel_r")]
     ChannelSelectResponse = 0xFFEA, // 65514
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_change_core_authority")]
     CircleChangeCoreAuthorityRequest = 0x05ED, // 1517
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_change_core_authority_r")]
     CircleChangeCoreAuthorityResponse = 0xC097, // 49303
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_chat_in")]
     CircleChatInRequest = 0x9514, // 38164
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_chat_in_r")]
     CircleChatInResponse = 0x81C6, // 33222
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_chat_out")]
     CircleChatOutRequest = 0x05E5, // 1509
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_chat_post")]
     CircleChatPostRequest = 0x3D7F, // 15743
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_chat_post_r")]
     CircleChatPostResponse = 0xA9C1, // 43457
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_create_new_circle")]
     CircleCreateRequest = 0x1048, // 4168
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_get_circle_data")]
     CircleGetDataRequest = 0xDB5F, // 56159
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_get_circle_data_r")]
     CircleGetDataResponse = 0x90AD, // 37037
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_leader_change_r")]
     CircleLeaderChangeResponse = 0xBB59, // 47961
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_mark_change")]
     CircleMarkChangeRequest = 0xD895, // 55445
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_mark_change_r")]
     CircleMarkChangeResponse = 0xD0EF, // 53487
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_request_join_answer")]
     CircleMemberJoinAnswerRequest = 0x1B70, // 7024
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_request_join_member_cancel")]
     CircleMemberJoinMemberCancelRequest = 0x83C1, // 33729
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_request_join_member")]
     CircleMemberJoinMemberRequest = 0xAB2D, // 43821
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_circle_request_join_member_r")]
     CircleMemberJoinMemberResponse = 0xDC3A, // 56378
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_member_kick")]
     CircleMemberKickRequest = 0xBF32, // 48946
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_circle_message_change")]
     CircleMessageChangeRequest = 0x2D2B, // 11563
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_notify_circle_chat_out")]
     CircleNotiftyChatOut = 0xBBC4, // 48068
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_notify_circle_chat_in")]
     CircleNotifyChatIn = 0xCBFA, // 52218
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_notify_circle_request_join")]
     CircleNotifyJoinRequest = 0x9888, // 39048
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_notify_circle_request_join_result")]
     CircleNotifyJoinRequestResult = 0x8FED, // 36845
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_notify_circle_member")]
     CircleNotifyMember = 0xBF0E, // 48910
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_resign_circle")]
     CircleResignRequest = 0x7382, // 29570
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_emotion_base_list")]
     EmotionGetBaseListRequest = 0x7FCD, // 32717
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_emotion_base_list_r")]
     EmotionGetBaseListResponse = 0x28E3, // 10467
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_obtained_emotion_list")]
     EmotionGetObtainedListRequest = 0xFD42, // 64834
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_obtained_emotion_list_r")]
     EmotionGetObtainedListResponse = 0xC3D7, // 50135
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_emotion_chara")]
     EmotionCharaRequest = 0xCB64, // 52068
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_emotion_chara_r")]
     EmotionCharaResponse = 0x1CC7, // 7367
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_emotion_chara")]
     NotifyEmotionChara = 0x67B5, // 26549
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_equip_order_list")]
     EquipOrderListRequest = 0xF74C, // 63308
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_equip_order_list_r")]
     EquipOrderListResponse = 0x2DAE, // 11694
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_my_avatar_myprofile_data")]
     GetMyAvatarMyprofileDataRequest = 0x3915, // 14613
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_my_avatar_myprofile_data_r")]
     GetMyAvatarMyprofileDataResponse = 0xDDEE, // 56814
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_friend_list_data")]
     FriendGetListDataRequest = 0x805F, // 32863
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_friend_list_data_r")]
     FriendGetListDataResponse = 0x2411, // 9233
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_free_friend_link_tag")]
     FriendLinkTagGetFreeRequest = 0xC88F, // 51343
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_friend_link_tag_data")]
     FriendLinkTagGetRequest = 0x0F97, // 3991
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_friend_link_tag_data_r")]
     FriendLinkTagGetResponse = 0x239E, // 9118
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_furniture_base_list")]
     FurnitureGetBaseListRequest = 0x2FDA, // 12250
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_furniture_base_list_r")]
     FurnitureGetBaseListResponse = 0xA0D1, // 41169
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_heroine_ticket_get_base")]
     HeroineGetTicketBaseRequest = 0x25CE, // 9678
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_heroine_ticket_get_base_r")]
     HeroineGetTicketBaseResponse = 0x16E6, // 5862
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_get_item_base_list")]
     ItemGetBaseListRequest = 0xC8EA, // 51434
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_get_item_base_list_r")]
     ItemGetBaseListResponse = 0xC7A9, // 51113
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_item_list")]
     ItemGetListRequest = 0x2A9A, // 10906
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_item_list_r")]
     ItemGetListResponse = 0xA522, // 42274
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_item_create")]
@@ -355,55 +355,55 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_ended")]
     ItemEquipEnded = 0xB4A8, // 46248
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_get_mail_box_data")]
     MailBoxGetDataRequest = 0x8D92, // 36242
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_get_mail_box_data_r")]
     MailBoxGetDataResponse = 0x147A, // 5242
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_delete_mail")]
     MailDeleteRequest = 0xF96D, // 63853
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_delete_mail_r")]
     MailDeleteResponse = 0xE501, // 58625
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_open_mail")]
     MailOpenRequest = 0x1292, // 4754
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_open_mail_r")]
     MailOpenResponse = 0xDF76, // 57206
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_post_mail")]
     MailPostRequest = 0x34BC, // 13500
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_cancel_protect_mail")]
     MailProtectCancelRequest = 0xFEAD, // 65197
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ClientToServer, "send_protect_mail")]
     MailProtectRequest = 0x024C, // 588
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_protect_mail_r")]
     MailProtectResponse = 0xC3E4, // 50148
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_enter_map_data_request_end")]
     MapDataEnterEndRequest = 0x04B4, // 1204
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_enter_map_data_request_end_r")]
     MapDataEnterEndResponse = 0xBE02, // 48642
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_enter_map")]
     MapEnterRequest = 0x2810, // 10256
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_enter_map_r")]
     MapEnterResponse = 0x1DCD, // 7629
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_maplink_data")]
     MapLinkGetDataRequest = 0x30C8, // 12488
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_maplink_data_r")]
     MapLinkGetDataResponse = 0x6C4E, // 27726
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_maplink_data")]
     MapLinkNotifyData = 0x5755, // 22357
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_select_map")]
@@ -412,28 +412,28 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_areamap_select_exec")]
     EventAreaMapSelectExec = 0x14B3, // 5299
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_mascot_count")]
     MascotGetCountRequest = 0x0CBC, // 3260
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_mascot_count_r")]
     MascotGetCountResponse = 0x7790, // 30608
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_mission_data")]
     MissionDataRequest = 0x7D29, // 32041
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_mission_data_r")]
     MissionDataResponse = 0x47F9, // 18425
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_money_data")]
     MoneyDataGetRequest = 0x61E7, // 25063
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_money_data_r")]
     MoneyDataGetResponse = 0xDC19, // 56345
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_nps_point_get")]
     MoneyNpsPointsRequest = 0xBF17, // 48919
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_nps_point_get_r")]
     MoneyNpsPointsResponse = 0x3CF5, // 15605
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_money_updated_nicopoint")]
@@ -442,31 +442,31 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_money_updated_aipoint")]
     MoneyUpdatedAipoint = 0xE101, // CProtoArea_client::recv_money_updated_aipoint
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_myroom_furniture")]
     MyRoomGetFurnitureRequest = 0xE868, // 59496
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_myroom_furniture_r")]
     MyRoomGetFurnitureResponse = 0x943D, // 37949
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_furniture")]
     MyRoomNotifyFurniture = 0xA64A, // 42570
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_niconi_commons_base_list")]
     NiconiCommonsBaseListRequest = 0x97B7, // 38839
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_niconi_commons_base_list_r")]
     NiconiCommonsBaseListResponse = 0xE60C, // 58892
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_move_avatar")]
     AvatarMoveRequest = 0x9483, // 38019
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_npc_data")]
     NpcGetDataRequest = 0x461B, // 17947
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_npc_data_r")]
     NpcGetDataResponse = 0x4403, // 17411
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_npc_data")]
     NpcNotifyData = 0xCD67, // 52583
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_event_access_npc")]
@@ -493,16 +493,16 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_cmd_exec_r")]
     CmdExecResponse = 0x6F32, // 28466 – acknowledgment for CmdExecRequest
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_robo_list")]
     RoboGetListRequest = 0x44CE, // 17614
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_robo_list_r")]
     RoboGetListResponse = 0xF606, // 62982
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_obtained_skill_list")]
     RoboGetObtainedSkillListRequest = 0xDCBF, // 56511
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_obtained_skill_list_r")]
     RoboGetObtainedSkillListResponse = 0x1159, // 4441
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_update_robo_voice_type")]
@@ -511,22 +511,22 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_update_robo_voice_type_r")]
     RoboVoiceTypeUpdateResponse = 0x8F10, // 36624
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_time_zone")]
     TimeZoneGetRequest = 0x5F53, // 24403
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_time_zone_r")]
     TimeZoneGetResponse = 0xCD38, // 52536
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_ucc_adv_figure_base_list")]
     UccAdvFigureBaseListRequest = 0x86DD, // 34525
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_ucc_adv_figure_base_list_r")]
     UccAdvFigureBaseListResponse = 0x878A, // 34698
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_ucc_voice_base_list")]
     UccVoiceBaseListRequest = 0x1149, // 4425
 
-    [PacketMetadata(ServerType.Unknown, PacketDirection.Unknown, "")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_get_ucc_voice_base_list_r")]
     UccVoiceBaseListResponse = 0xBB8F, // 48015
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_update_option")]
@@ -565,10 +565,10 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_trashbox_discard_item_r")]
     TrashboxDiscardItemResponse = 0xBBEB, // 48107
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_edit_myprofile")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_edit_avatar_myprofile")]
     MyProfileAvatarEditRequest = 0xA063,
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_edit_myprofile_r")]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_edit_avatar_myprofile_r")]
     MyProfileAvatarEditResponse = 0x873B,
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_close_myprofile")]
@@ -609,5 +609,7 @@ public enum PacketType : ushort
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_disappear_chara")]
     NotifyDisappearChara = 0xD3A4, // 54180
+
+    [PacketMetadata(ServerType.Msg, PacketDirection.ServerToClient, "recv_create_new_circle_r")]
     CircleCreateResponse = 0xFFEB,
 }
