@@ -366,4 +366,5 @@ FodyWeavers.xsd
 *.db-wal
 aisp-decompiled.c
 .cursor
+.vscode/
 docs
