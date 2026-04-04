@@ -2,15 +2,17 @@ using AISpace.Common.Config;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
+using AISpace.Common.Handlers.Area;
 using AISpace.Network;
 using AISpace.Network.Data;
+using AISpace.Network.Packets.Area;
 using AISpace.Network.Packets.Msg;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo, ILogger<GetChannelListMapHandler> logger) : IPacketHandler
+public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo, SharedState state, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<GetChannelListMapHandler> logger) : IPacketHandler
 {
     public PacketType RequestType => PacketType.GetChannelListMapRequest;
     public PacketType ResponseType => PacketType.GetChannelListMapResponse;
@@ -50,6 +52,7 @@ public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, ICh
         var channels = matchingChannels.Select(channel => ToChannelInfo(channel, serverOptions.Value)).ToList();
 
         await session.SendAsync(ResponseType, new GetChannelListMapResponse(0, channels).ToBytes(), ct);
+        await TryCompletePendingAreaMapSelectionAsync(request, session, matchingChannels, ct);
     }
 
     private static ChannelInfo ToChannelInfo(GameChannel channel, ServerOptions serverOptions)
@@ -57,5 +60,37 @@ public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, ICh
         var maxUsers = channel.MaxUsers != 0 ? channel.MaxUsers : 1000u;
         var currentUsers = channel.CurrentUsers > maxUsers ? maxUsers : channel.CurrentUsers;
         return new ChannelInfo((uint)channel.ChannelNum, currentUsers, maxUsers, new ServerInfo(serverOptions.ResolveAddress(channel.IP), channel.Port));
+    }
+
+    private async Task TryCompletePendingAreaMapSelectionAsync(GetChannelListMapRequest request, IPlayerSession session, IReadOnlyList<GameChannel> matchingChannels, CancellationToken ct)
+    {
+        if (matchingChannels.Count != 1)
+            return;
+
+        var userId = session.User?.Id ?? session.UserId;
+        if (userId == 0)
+            return;
+
+        var areaSession = state.GetAreaSessionByUserId(userId);
+        var pendingSelection = areaSession?.PendingAreaMapSelection;
+        if (areaSession == null || pendingSelection == null)
+            return;
+
+        var channelId = (uint)matchingChannels[0].ChannelNum;
+        if (!pendingSelection.Destinations.Any(destination => destination.MapId == request.MapId && destination.ChannelId == channelId))
+            return;
+
+        logger.LogInformation("Applying selector auto-selection compatibility path for user {UserId}: map {MapId}, channel {ChannelId}", userId, request.MapId, channelId);
+
+        await directMapLinkTransitionService.HandleAreaMapSelectionReplyAsync(
+            new EventAreaMapSelectExecRRequest
+            {
+                Result = 0,
+                MapId = request.MapId,
+                ChannelId = channelId,
+            },
+            areaSession,
+            ct
+        );
     }
 }

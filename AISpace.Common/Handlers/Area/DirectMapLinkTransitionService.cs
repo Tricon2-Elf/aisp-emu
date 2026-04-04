@@ -67,6 +67,12 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
     {
         if (session.PendingAreaMapSelection == null)
         {
+            if (session.IsMapTransitionPending)
+            {
+                logger.LogInformation("Ignoring area-map selection reply from user {UserId}: a map transition is already pending on map {MapId}, channel {ChannelId}", session.User?.Id ?? session.UserId, session.MapId, session.ChannelId);
+                return true;
+            }
+
             logger.LogWarning("Rejecting area-map selection reply from user {UserId}: no selector is pending on map {MapId}, channel {ChannelId}", session.User?.Id ?? session.UserId, session.MapId, session.ChannelId);
             await session.SendAsync(PacketType.EventAreaMapSelectCloseNotify, new EventAreaMapSelectCloseNotify(SelectorFailure).ToBytes(), ct);
             return true;

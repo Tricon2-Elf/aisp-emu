@@ -67,6 +67,16 @@ public class SharedState
         return candidates.FirstOrDefault();
     }
 
+    public IPlayerSession? GetAreaSessionByUserId(int userId, uint? mapId = null, int? channelId = null)
+    {
+        IEnumerable<IPlayerSession> candidates = AreaClients.Values.Where(session => (session.User?.Id ?? session.UserId) == userId);
+
+        if (mapId.HasValue)
+            candidates = candidates.Where(session => IsInArea(session, mapId.Value, channelId ?? 0));
+
+        return candidates.FirstOrDefault();
+    }
+
     private static bool IsInArea(IPlayerSession session, uint mapId, int channelId)
     {
         if (session.MapId != mapId)
