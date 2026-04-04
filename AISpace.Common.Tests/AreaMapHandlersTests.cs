@@ -519,6 +519,88 @@ public class AreaMapHandlersTests
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
             Assert.Equal(0u, selector.IsRegisteredIsland);
+
+            Assert.NotNull(session.PendingAreaMapSelection);
+            Assert.Equal(2, session.PendingAreaMapSelection!.Destinations.Count);
+            Assert.Equal(1u, session.PendingAreaMapSelection.IslandId);
+            Assert.True(session.PendingAreaMapSelection.AwaitingIslandBootstrapAck);
+            Assert.True(session.PendingAreaMapSelection.SelectorOpened);
+            Assert.Equal(10990100u, session.MapId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SelectInitIslandEndHandler_OpensPendingSelector_AfterIslandBootstrapAck()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                db.Maps.AddRange(
+                    new Map
+                    {
+                        MapId = 10990110,
+                        Name = "Destination One",
+                        SpawnX = -11000f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -19200f,
+                        SpawnRotation = 0,
+                    },
+                    new Map
+                    {
+                        MapId = 10990200,
+                        Name = "Destination Two",
+                        SpawnX = -9600f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -8400f,
+                        SpawnRotation = 45,
+                    }
+                );
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var session = new CapturingPlayerSession
+            {
+                UserId = 2,
+                MapId = 10990100,
+                ChannelId = 1,
+                PendingAreaMapSelection = new PendingAreaMapSelection
+                {
+                    LinkId = 16,
+                    SourceMapId = 10990100,
+                    ChannelId = 1,
+                    IslandId = 1,
+                    IsRegisteredIsland = 0,
+                    Destinations = [new AreaMapSelectionDestination(10990110, 1), new AreaMapSelectionDestination(10990200, 1)],
+                },
+            };
+
+            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaSelectInitIslandEndHandler>.Instance);
+
+            await handler.HandleAsync(new SelectInitIslandEndRequest { IslandId = 1 }.ToBytes(), session, TestContext.Current.CancellationToken);
+
+            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type));
+
+            var selector = EventAreaMapSelectExecNotify.FromBytes(session.Sent[0].Payload);
+            Assert.Equal([10990110u, 10990200u], selector.MapIds);
+            Assert.Equal(1u, selector.IslandId);
+            Assert.Equal(0u, selector.IsRegisteredIsland);
             Assert.Collection(
                 selector.Entries,
                 entry =>
@@ -543,26 +625,13 @@ public class AreaMapHandlersTests
                 }
             );
             Assert.NotNull(session.PendingAreaMapSelection);
-            Assert.Equal(2, session.PendingAreaMapSelection!.Destinations.Count);
-            Assert.Equal(1u, session.PendingAreaMapSelection.IslandId);
-            Assert.Equal(10990100u, session.MapId);
+            Assert.False(session.PendingAreaMapSelection!.AwaitingIslandBootstrapAck);
+            Assert.True(session.PendingAreaMapSelection.SelectorOpened);
         }
         finally
         {
             await connection.DisposeAsync();
         }
-    }
-
-    [Fact]
-    public async Task SelectInitIslandEndHandler_ParsesIslandAck_WithoutSendingResponse()
-    {
-        var session = new CapturingPlayerSession { UserId = 2 };
-
-        var handler = new AreaSelectInitIslandEndHandler(NullLogger<AreaSelectInitIslandEndHandler>.Instance);
-
-        await handler.HandleAsync(new SelectInitIslandEndRequest { IslandId = 2 }.ToBytes(), session, TestContext.Current.CancellationToken);
-
-        Assert.Empty(session.Sent);
     }
 
     [Fact]
@@ -1005,32 +1074,13 @@ public class AreaMapHandlersTests
             var selector = EventAreaMapSelectExecNotify.FromBytes(mover.Sent[1].Payload);
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
-            Assert.Collection(
-                selector.Entries,
-                entry =>
-                {
-                    Assert.Equal(10990110u, entry.MapId);
-                    Assert.Equal(1u, entry.ChannelId);
-                    Assert.Equal(10990110u, entry.RouteMapId);
-                    Assert.Equal(10990110u, entry.MapSerialId);
-                    Assert.Equal(-11000f, entry.PositionX);
-                    Assert.Equal(0.1f, entry.PositionY);
-                    Assert.Equal(-19200f, entry.PositionZ);
-                },
-                entry =>
-                {
-                    Assert.Equal(10990200u, entry.MapId);
-                    Assert.Equal(1u, entry.ChannelId);
-                    Assert.Equal(10990200u, entry.RouteMapId);
-                    Assert.Equal(10990200u, entry.MapSerialId);
-                    Assert.Equal(-9600f, entry.PositionX);
-                    Assert.Equal(0.1f, entry.PositionY);
-                    Assert.Equal(-8400f, entry.PositionZ);
-                }
-            );
+            Assert.Equal(0u, selector.IsRegisteredIsland);
+
             Assert.NotNull(mover.PendingAreaMapSelection);
             Assert.Equal(2, mover.PendingAreaMapSelection!.Destinations.Count);
             Assert.Equal(1u, mover.PendingAreaMapSelection.IslandId);
+            Assert.True(mover.PendingAreaMapSelection.AwaitingIslandBootstrapAck);
+            Assert.True(mover.PendingAreaMapSelection.SelectorOpened);
             Assert.True(mover.HasMovedSinceMapLoad);
             Assert.False(mover.IsMapTransitionPending);
             Assert.Empty(peer.Sent);

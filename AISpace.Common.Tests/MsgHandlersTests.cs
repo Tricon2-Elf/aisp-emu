@@ -60,7 +60,7 @@ public class MsgHandlersTests
             Assert.Equal(0u, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
             Assert.Equal(2u, reader.ReadUInt());
-            Assert.Equal(4u, reader.ReadUInt());
+            Assert.Equal(4f, reader.ReadFloat());
             Assert.Equal(1000u, reader.ReadUInt());
             Assert.Equal((ushort)50055, reader.ReadUShort());
             Assert.Equal("localhost", reader.ReadFixedString(65, "ASCII"));
@@ -115,7 +115,7 @@ public class MsgHandlersTests
             Assert.Equal(0u, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
-            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0f, reader.ReadFloat());
             Assert.Equal(1000u, reader.ReadUInt());
             Assert.Equal((ushort)50054, reader.ReadUShort());
             Assert.Equal("localhost", reader.ReadFixedString(65, "ASCII"));
@@ -170,7 +170,7 @@ public class MsgHandlersTests
             Assert.Equal(0u, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
-            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0f, reader.ReadFloat());
             Assert.Equal(1000u, reader.ReadUInt());
             Assert.Equal((ushort)50054, reader.ReadUShort());
             Assert.Equal("localhost", reader.ReadFixedString(65, "ASCII"));

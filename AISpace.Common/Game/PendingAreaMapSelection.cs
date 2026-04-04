@@ -10,4 +10,6 @@ public sealed class PendingAreaMapSelection
     public uint IslandId { get; init; }
     public uint IsRegisteredIsland { get; init; }
     public IReadOnlyList<AreaMapSelectionDestination> Destinations { get; init; } = [];
+    public bool AwaitingIslandBootstrapAck { get; set; } = true;
+    public bool SelectorOpened { get; set; }
 }

@@ -54,6 +54,8 @@ public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, ICh
 
     private static ChannelInfo ToChannelInfo(GameChannel channel, ServerOptions serverOptions)
     {
-        return new ChannelInfo((uint)channel.ChannelNum, channel.CurrentUsers, channel.MaxUsers, new ServerInfo(serverOptions.ResolveAddress(channel.IP), channel.Port));
+        var maxUsers = channel.MaxUsers != 0 ? channel.MaxUsers : 1000u;
+        var currentUsers = channel.CurrentUsers > maxUsers ? maxUsers : channel.CurrentUsers;
+        return new ChannelInfo((uint)channel.ChannelNum, currentUsers, maxUsers, new ServerInfo(serverOptions.ResolveAddress(channel.IP), channel.Port));
     }
 }

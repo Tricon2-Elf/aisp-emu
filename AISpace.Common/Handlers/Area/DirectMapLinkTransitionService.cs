@@ -127,6 +127,62 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return true;
     }
 
+    public async Task<bool> OpenPendingAreaMapSelectionAsync(IPlayerSession session, uint selectedIslandId, CancellationToken ct = default)
+    {
+        var selection = session.PendingAreaMapSelection;
+        if (selection == null)
+        {
+            logger.LogWarning("Ignoring SelectInitIslandEndRequest from user {UserId}: no selector is pending on map {MapId}, channel {ChannelId}", session.User?.Id ?? session.UserId, session.MapId, session.ChannelId);
+            return false;
+        }
+
+        if (!selection.AwaitingIslandBootstrapAck || selection.SelectorOpened)
+        {
+            logger.LogInformation("Ignoring duplicate SelectInitIslandEndRequest from user {UserId} for MapLink {MapLinkId}", session.User?.Id ?? session.UserId, selection.LinkId);
+            return true;
+        }
+
+        var allowedIslandIds = selection.Destinations.Select(destination => ResolveIslandId(destination.MapId)).Append(selection.IslandId).Distinct().ToList();
+        var resolvedIslandId = allowedIslandIds.Contains(selectedIslandId) ? selectedIslandId : selection.IslandId;
+        if (resolvedIslandId != selectedIslandId)
+        {
+            logger.LogWarning("SelectInitIslandEndRequest from user {UserId} acknowledged unknown island {RequestedIslandId} for MapLink {MapLinkId}; falling back to island {IslandId}", session.User?.Id ?? session.UserId, selectedIslandId, selection.LinkId, resolvedIslandId);
+        }
+
+        if (selection.SelectorOpened)
+        {
+            selection.AwaitingIslandBootstrapAck = false;
+            logger.LogInformation("Acknowledged island bootstrap for user {UserId}: selector MapLink {MapLinkId} was already open on island {IslandId}", session.User?.Id ?? session.UserId, selection.LinkId, resolvedIslandId);
+            return true;
+        }
+
+        var selectorEntries = await CreateSelectorEntriesAsync(selection, ct);
+        if (selectorEntries.Count == 0)
+        {
+            logger.LogWarning("Aborting selector MapLink {MapLinkId} for user {UserId}: no valid selector entries could be built after island bootstrap", selection.LinkId, session.User?.Id ?? session.UserId);
+            session.PendingAreaMapSelection = null;
+            return false;
+        }
+
+        selection.AwaitingIslandBootstrapAck = false;
+        selection.SelectorOpened = true;
+
+        logger.LogInformation("Opening area-map selector for user {UserId}: MapLink {MapLinkId} with {DestinationCount} destination(s) on island {IslandId}", session.User?.Id ?? session.UserId, selection.LinkId, selectorEntries.Count, resolvedIslandId);
+
+        await session.SendAsync(
+            PacketType.EventAreaMapSelectExec,
+            new EventAreaMapSelectExecNotify
+            {
+                Entries = selectorEntries,
+                IslandId = resolvedIslandId,
+                IsRegisteredIsland = selection.IsRegisteredIsland,
+            }.ToBytes(),
+            ct
+        );
+
+        return true;
+    }
+
     public async Task CompleteMapTransitionAsync(IPlayerSession session, DAL.Entities.Character character, uint destinationMapId, uint destinationChannelId, DAL.Entities.Map destinationMap, NotifyChangeMap? notifyChangeMap, bool sendMapEnterResponse, CancellationToken ct = default)
     {
         if (notifyChangeMap != null)
@@ -289,6 +345,33 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
             resolvedLink.UsedFallback ? " using fallback resolution" : string.Empty
         );
 
+        var selectorEntries = await CreateSelectorEntriesAsync(selection, ct);
+        if (selectorEntries.Count == 0)
+        {
+            logger.LogWarning("Aborting selector MapLink {MapLinkId} for user {UserId}: no valid selector entries could be built", selection.LinkId, session.User?.Id ?? session.UserId);
+            session.PendingAreaMapSelection = null;
+            return false;
+        }
+
+        selection.SelectorOpened = true;
+
+        await session.SendAsync(PacketType.SelectInitIslandStart, (await CreateSelectInitIslandStartAsync(selection, ct)).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.EventAreaMapSelectExec,
+            new EventAreaMapSelectExecNotify
+            {
+                Entries = selectorEntries,
+                IslandId = selection.IslandId,
+                IsRegisteredIsland = selection.IsRegisteredIsland,
+            }.ToBytes(),
+            ct
+        );
+
+        return true;
+    }
+
+    private async Task<List<NotifySelectMapEntry>> CreateSelectorEntriesAsync(PendingAreaMapSelection selection, CancellationToken ct)
+    {
         var selectorEntries = new List<NotifySelectMapEntry>(selection.Destinations.Count);
         foreach (var destination in selection.Destinations)
         {
@@ -303,28 +386,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
             selectorEntries.Add(CreateSelectMapEntry(destination.ChannelId, destination.MapId, destinationMap, areaServerInfo));
         }
 
-        if (selectorEntries.Count == 0)
-        {
-            logger.LogWarning("Aborting selector MapLink {MapLinkId} for user {UserId}: no valid selector entries could be built", selection.LinkId, session.User?.Id ?? session.UserId);
-
-            session.PendingAreaMapSelection = null;
-            return false;
-        }
-
-        await session.SendAsync(PacketType.SelectInitIslandStart, (await CreateSelectInitIslandStartAsync(selection, ct)).ToBytes(), ct);
-
-        await session.SendAsync(
-            PacketType.EventAreaMapSelectExec,
-            new EventAreaMapSelectExecNotify
-            {
-                Entries = selectorEntries,
-                IslandId = selection.IslandId,
-                IsRegisteredIsland = selection.IsRegisteredIsland,
-            }.ToBytes(),
-            ct
-        );
-
-        return true;
+        return selectorEntries;
     }
 
     private async Task<SelectInitIslandStartNotify> CreateSelectInitIslandStartAsync(PendingAreaMapSelection selection, CancellationToken ct)
