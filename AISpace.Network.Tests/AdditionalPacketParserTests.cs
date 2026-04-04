@@ -63,6 +63,18 @@ public class AdditionalPacketParserTests
         Assert.Equal(channelId, p.ChannelId);
     }
 
+    [Theory]
+    [InlineData(10990200u)]
+    [InlineData(10990100u)]
+    [InlineData(0u)]
+    public void GetChannelListMapRequest_FromBytes(uint mapId)
+    {
+        var w = new PacketWriter();
+        w.Write(mapId);
+        var p = GetChannelListMapRequest.FromBytes(w.ToBytes());
+        Assert.Equal(mapId, p.MapId);
+    }
+
     [Fact]
     public void NotifySelectMapData_ToBytes_WritesDirectRoutingEntries()
     {
@@ -178,9 +190,9 @@ public class AdditionalPacketParserTests
             PositionZ = -19200f,
             Rotation = -12,
             Animation = (byte)MovementType.Stopped,
-            Flag = 2,
+            Flag = 0,
             AreaServerInfo = new ServerInfo("localhost", 50054),
-            FadeFlag = 1,
+            FadeFlag = 0,
         };
 
         var bytes = packet.ToBytes();
@@ -196,9 +208,174 @@ public class AdditionalPacketParserTests
         Assert.Equal(-19200f, parsed.PositionZ);
         Assert.Equal((sbyte)-12, parsed.Rotation);
         Assert.Equal((byte)MovementType.Stopped, parsed.Animation);
-        Assert.Equal((byte)2, parsed.Flag);
+        Assert.Equal((byte)0, parsed.Flag);
         Assert.Equal((ushort)50054, parsed.AreaServerInfo.Port);
         Assert.Equal("localhost", parsed.AreaServerInfo.IP);
-        Assert.Equal((byte)1, parsed.FadeFlag);
+        Assert.Equal((byte)0, parsed.FadeFlag);
+    }
+
+    [Fact]
+    public void EventAreaMapSelectExecNotify_ToBytes_WritesSelectionEntriesAndFlags()
+    {
+        var packet = new EventAreaMapSelectExecNotify
+        {
+            Entries =
+            [
+                new NotifySelectMapEntry
+                {
+                    MapId = 10990110,
+                    AreaServerInfo = new ServerInfo("localhost", 50054),
+                    ChannelId = 1,
+                    RouteMapId = 10990110,
+                    MapSerialId = 10990110,
+                    PositionX = -11000f,
+                    PositionY = 0.1f,
+                    PositionZ = -19200f,
+                    Yaw = 0,
+                    Animation = 0,
+                },
+                new NotifySelectMapEntry
+                {
+                    MapId = 10990200,
+                    AreaServerInfo = new ServerInfo("localhost", 50054),
+                    ChannelId = 1,
+                    RouteMapId = 10990200,
+                    MapSerialId = 10990200,
+                    PositionX = -9600f,
+                    PositionY = 0.1f,
+                    PositionZ = -8400f,
+                    Yaw = 45,
+                    Animation = 0,
+                },
+                new NotifySelectMapEntry
+                {
+                    MapId = 10990210,
+                    AreaServerInfo = new ServerInfo("localhost", 50054),
+                    ChannelId = 1,
+                    RouteMapId = 10990210,
+                    MapSerialId = 10990210,
+                    PositionX = -9600f,
+                    PositionY = 0.1f,
+                    PositionZ = -8800f,
+                    Yaw = 90,
+                    Animation = 0,
+                },
+            ],
+            IslandId = 1u,
+            IsRegisteredIsland = 0,
+        };
+
+        var parsed = EventAreaMapSelectExecNotify.FromBytes(packet.ToBytes());
+
+        Assert.Equal([10990110u, 10990200u, 10990210u], parsed.MapIds);
+        Assert.Equal(1u, parsed.IslandId);
+        Assert.Equal(0u, parsed.IsRegisteredIsland);
+        Assert.Collection(
+            parsed.Entries,
+            entry =>
+            {
+                Assert.Equal(10990110u, entry.MapId);
+                Assert.Equal((ushort)50054, entry.AreaServerInfo.Port);
+                Assert.Equal("localhost", entry.AreaServerInfo.IP);
+                Assert.Equal(1u, entry.ChannelId);
+                Assert.Equal(10990110u, entry.RouteMapId);
+                Assert.Equal(10990110u, entry.MapSerialId);
+            },
+            entry =>
+            {
+                Assert.Equal(10990200u, entry.MapId);
+                Assert.Equal((ushort)50054, entry.AreaServerInfo.Port);
+                Assert.Equal("localhost", entry.AreaServerInfo.IP);
+                Assert.Equal(1u, entry.ChannelId);
+                Assert.Equal(10990200u, entry.RouteMapId);
+                Assert.Equal(10990200u, entry.MapSerialId);
+            },
+            entry =>
+            {
+                Assert.Equal(10990210u, entry.MapId);
+                Assert.Equal((ushort)50054, entry.AreaServerInfo.Port);
+                Assert.Equal("localhost", entry.AreaServerInfo.IP);
+                Assert.Equal(1u, entry.ChannelId);
+                Assert.Equal(10990210u, entry.RouteMapId);
+                Assert.Equal(10990210u, entry.MapSerialId);
+            }
+        );
+        Assert.Equal(4 + (NotifySelectMapEntry.PacketSize * 3) + 8, packet.ToBytes().Length);
+    }
+
+    [Fact]
+    public void EventAreaMapSelectExecRRequest_FromBytes_ReadsResultMapAndChannel()
+    {
+        var packet = new EventAreaMapSelectExecRRequest
+        {
+            Result = 0,
+            MapId = 10990200,
+            ChannelId = 1,
+        };
+
+        var parsed = EventAreaMapSelectExecRRequest.FromBytes(packet.ToBytes());
+
+        Assert.Equal(0u, parsed.Result);
+        Assert.Equal(10990200u, parsed.MapId);
+        Assert.Equal(1u, parsed.ChannelId);
+    }
+
+    [Fact]
+    public void EventAreaMapSelectCloseNotify_ToBytes_WritesResult()
+    {
+        var parsed = EventAreaMapSelectCloseNotify.FromBytes(new EventAreaMapSelectCloseNotify(1).ToBytes());
+        Assert.Equal(1u, parsed.Result);
+    }
+
+    [Fact]
+    public void SelectInitIslandStartNotify_ToBytes_WritesIslandBootstrapEntries()
+    {
+        var packet = new SelectInitIslandStartNotify
+        {
+            Islands =
+            [
+                new SelectInitIslandEntry
+                {
+                    IslandId = 1,
+                    Title = "Akihabara Island 1",
+                    Description = "Akihabara 2",
+                },
+                new SelectInitIslandEntry
+                {
+                    IslandId = 2,
+                    Title = "Akihabara Island 2",
+                    Description = "Akihabara 3\nAkihabara 4",
+                },
+            ],
+        };
+
+        var parsed = SelectInitIslandStartNotify.FromBytes(packet.ToBytes());
+
+        Assert.Collection(
+            parsed.Islands,
+            island =>
+            {
+                Assert.Equal(1u, island.IslandId);
+                Assert.Equal("Akihabara Island 1", island.Title);
+                Assert.Equal("Akihabara 2", island.Description);
+            },
+            island =>
+            {
+                Assert.Equal(2u, island.IslandId);
+                Assert.Equal("Akihabara Island 2", island.Title);
+                Assert.Equal("Akihabara 3\nAkihabara 4", island.Description);
+            }
+        );
+        Assert.Equal(4 + (SelectInitIslandEntry.PacketSize * 2), packet.ToBytes().Length);
+    }
+
+    [Fact]
+    public void SelectInitIslandEndRequest_FromBytes_ReadsIslandId()
+    {
+        var packet = new SelectInitIslandEndRequest { IslandId = 3 };
+
+        var parsed = SelectInitIslandEndRequest.FromBytes(packet.ToBytes());
+
+        Assert.Equal(3u, parsed.IslandId);
     }
 }

@@ -464,7 +464,7 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_select_map", ImplementationState.Implemented)]
     NotifySelectMap = 0x68A5,
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_areamap_select_exec", ImplementationState.NotImplemented)]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_areamap_select_exec", ImplementationState.Implemented)]
     EventAreaMapSelectExec = 0x14B3,
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_get_mascot_count", ImplementationState.Implemented)]
@@ -860,7 +860,7 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_emotion_obtain", ImplementationState.NotImplemented)]
     EmotionObtainNotify = 0xD683,
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_areamap_select_close", ImplementationState.NotImplemented)]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_areamap_select_close", ImplementationState.Implemented)]
     EventAreaMapSelectCloseNotify = 0xD48C,
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_event_bbs_select_exec", ImplementationState.NotImplemented)]
@@ -1639,6 +1639,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_event_fade_in_r", ImplementationState.NotImplemented)]
     EventFadeInRRequest = 0xA3B5,
+
+    [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_event_areamap_select_exec_r", ImplementationState.Implemented)]
+    EventAreaMapSelectExecRRequest = 0xD8FD,
 
     [PacketMetadata(ServerType.Area, PacketDirection.ClientToServer, "send_event_select_exec_r", ImplementationState.NotImplemented)]
     EventSelectExecRRequest = 0x701D,

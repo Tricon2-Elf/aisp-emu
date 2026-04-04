@@ -40,9 +40,19 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
         foreach (var link in links)
         {
             var destinations = link.ParseDestinationMapIds();
-            if (destinations.Count != 1)
+            if (destinations.Count == 0)
             {
-                logger.LogWarning("Skipping MapLink {MapLinkId} on map {MapId}: direct maplink flow requires exactly one destination, found {DestinationCount}", link.Id, request.MapId, destinations.Count);
+                logger.LogWarning("Skipping MapLink {MapLinkId} on map {MapId}: no valid destinations were configured", link.Id, request.MapId);
+                continue;
+            }
+
+            var lane = MapLinkGeometry.GetTriggerLane(link);
+            var mapLinkData = new MapLinkData(link.PositionX, link.PositionY, link.PositionZ, link.Yaw, link.Length, link.Depth);
+            await session.SendAsync(PacketType.MapLinkNotifyData, new MapLinkNotifyData(0, mapLinkData).ToBytes(), ct);
+
+            if (link.Behavior == DAL.Entities.MapLinkBehavior.ForceSelection || destinations.Count != 1)
+            {
+                logger.LogInformation("Sending selector MapLink {MapLinkId} on map {SourceMapId} with {DestinationCount} destination(s); trigger lane ({StartX}, {StartZ}) -> ({EndX}, {EndZ})", link.Id, request.MapId, destinations.Count, lane.StartX, lane.StartZ, lane.EndX, lane.EndZ);
                 continue;
             }
 
@@ -72,8 +82,6 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
                 }
             );
 
-            var lane = MapLinkGeometry.GetTriggerLane(link);
-
             logger.LogInformation(
                 "Sending direct MapLink {MapLinkId} on map {SourceMapId} to destination map {DestinationMapId} via {Ip}:{Port} (channel {ChannelId}) at spawn ({SpawnX}, {SpawnY}, {SpawnZ}) yaw {Yaw}; trigger lane ({StartX}, {StartZ}) -> ({EndX}, {EndZ})",
                 link.Id,
@@ -91,9 +99,6 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
                 lane.EndX,
                 lane.EndZ
             );
-
-            var mapLinkData = new MapLinkData(link.PositionX, link.PositionY, link.PositionZ, link.Yaw, link.Length, link.Depth);
-            await session.SendAsync(PacketType.MapLinkNotifyData, new MapLinkNotifyData(0, mapLinkData).ToBytes(), ct);
         }
 
         if (selectEntries.Count > 0)

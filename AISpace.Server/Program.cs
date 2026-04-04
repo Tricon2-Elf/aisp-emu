@@ -65,6 +65,7 @@ internal class Program
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
             await db.Database.EnsureCreatedAsync();
             await MapRepository.SeedMapsIfEmptyAsync(db);
+            await MapRepository.EnsureSeedMapsPresentAsync(db);
             await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
             await MapLinkRepository.NormalizeSeedMapLinksAsync(db);
             await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride);

@@ -31,6 +31,7 @@ public class PlayerSession : IPlayerSession
     public bool HasMovedSinceMapLoad { get; set; }
     public bool IsMapTransitionPending { get; set; }
     public bool NeedsPostLoadSelfAvatarNotify { get; set; }
+    public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     public bool IsAuthenticated => User != null;
 
     public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) => ClientConnection.SendAsync(type, payload, ct);

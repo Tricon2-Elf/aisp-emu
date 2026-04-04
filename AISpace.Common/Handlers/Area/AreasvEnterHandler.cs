@@ -75,6 +75,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.HasMovedSinceMapLoad = false;
         session.IsMapTransitionPending = false;
         session.NeedsPostLoadSelfAvatarNotify = true;
+        session.PendingAreaMapSelection = null;
         session.Character = chara;
         session.CharacterId = charId;
         session.MapId = mapId;
