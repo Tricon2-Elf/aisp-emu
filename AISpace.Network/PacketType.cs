@@ -590,10 +590,10 @@ public enum PacketType : ushort
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_update_option_r", ImplementationState.Implemented)]
     UpdateOptionResponse = 0xB314,
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_map", ImplementationState.NotImplemented)]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_map", ImplementationState.Implemented)]
     NotifyChangeMap = 0xB315,
 
-    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_map_failed", ImplementationState.NotImplemented)]
+    [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_map_failed", ImplementationState.Implemented)]
     NotifyChangeMapFailed = 0x59A5,
 
     [PacketMetadata(ServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_myroom", ImplementationState.Implemented)]

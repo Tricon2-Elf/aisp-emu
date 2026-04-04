@@ -461,7 +461,7 @@
 - **Packet ID (hex):** 0x2810
 - **Packet ID (int):** 10256
 - **Packet Size:** 8
-- **Description:** Request to enter a destination map/channel selected from a map link.
+- **Description:** Client trigger packet sent after entering a maplink volume. The decompiled client sends the **current** source map/channel here; the server is expected to resolve the touched maplink and then push `recv_notify_change_map` with the actual destination route.
 
 **Layout:**
 
@@ -469,6 +469,8 @@
     UInt {MapId}
     UInt {ChannelId}
 ```
+
+**Decompiled behavior note:** `sub_790530` calls `CProtoArea_client::send_enter_map(GetMapId(), sub_6D76D0())`, so this packet is not the destination handoff by itself.
 
 ### recv_enter_map_r (MapEnterResponse)
 
@@ -554,8 +556,65 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - `sub_796C10(this, 15)` — minimum payload size 15 bytes.
 - `ReadUint32` → **Count** (1–4).
 - For each of Count entries, `sub_7987D0` reads one **select_map_t** from the packet: **109 bytes** per entry (4-byte map id, 97 bytes, then two 4-byte fields). The in-memory struct is 28 DWORDs (112 bytes); the packet representation is 109 bytes.
+- Current emulation uses the following decompiled-backed direct-travel shape for each entry:
+  - `UInt {MapId}`
+  - `UShort {AreaServerPort}`
+  - `Ascii[65] {AreaServerIp}` (fixed 65-byte field, no extra terminator byte)
+  - `UInt {ChannelId}`
+  - `UInt {RouteMapId}` (currently same value as `MapId`)
+  - `UInt {MapSerialId}` (currently same value as `MapId`)
+  - `UInt {RouteState}` (currently `0`)
+  - `Float {SpawnX}`
+  - `Float {SpawnY}`
+  - `Float {SpawnZ}`
+  - `Byte {Yaw}`
+  - `Byte {Animation}` (currently `0`)
+  - `UInt {Unknown1}` (currently `0`)
+  - `UInt {Unknown2}` (currently `0`)
 
 **Usage:** Send this after (or with) maplink data so the client knows which map each maplink leads to. Count and order must match your maplinks.
+
+### recv_notify_change_map (NotifyChangeMap)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xB315
+- **Packet ID (int):** 45845
+- **Packet Size:** 99
+- **Description:** Server-driven area transition packet. After the client triggers `send_enter_map`, the server resolves the touched link and sends this route payload with the real destination map, spawn point, server info, and fade flag.
+
+**Layout (decompiled-backed):**
+
+```
+    UInt  {ChannelId}
+    UInt  {MapId}
+    UInt  {MapSerialId}
+    UInt  {RouteState}
+    Float {SpawnX}
+    Float {SpawnY}
+    Float {SpawnZ}
+    SByte {Rotation}
+    Byte  {Animation}
+    Byte  {Flag}
+    UShort {AreaServerPort}
+    Ascii[65] {AreaServerIp}
+    Byte  {FadeFlag}
+```
+
+### recv_notify_change_map_failed (NotifyChangeMapFailed)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x59A5
+- **Packet ID (int):** 22949
+- **Packet Size:** 4
+- **Description:** Map change failure result.
+
+**Layout:**
+
+```
+    UInt {Result}
+```
 
 ### send_get_mascot_count (MascotGetCountRequest)
 

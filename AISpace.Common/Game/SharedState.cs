@@ -5,6 +5,7 @@ namespace AISpace.Common.Game;
 public class SharedState
 {
     private readonly ConcurrentDictionary<Guid, IPlayerSession> _sessionByConnectionId = new();
+    private readonly ConcurrentDictionary<int, PendingAreaTransition> _pendingAreaTransitionsByUserId = new();
 
     public ConcurrentDictionary<Guid, IPlayerSession> AuthClients = new();
     public ConcurrentDictionary<Guid, IPlayerSession> MsgClients = new();
@@ -40,6 +41,10 @@ public class SharedState
         _sessionByConnectionId.TryRemove(clientId, out _);
     }
 
+    public void SetPendingAreaTransition(PendingAreaTransition transition) => _pendingAreaTransitionsByUserId[transition.UserId] = transition;
+
+    public bool TryTakePendingAreaTransition(int userId, out PendingAreaTransition transition) => _pendingAreaTransitionsByUserId.TryRemove(userId, out transition);
+
     public IReadOnlyList<IPlayerSession> GetAreaSessions(uint mapId, int channelId)
     {
         return AreaClients.Values.Where(session => IsInArea(session, mapId, channelId)).ToList();
@@ -72,4 +77,6 @@ public class SharedState
 
         return session.ChannelId == channelId;
     }
+
+    public readonly record struct PendingAreaTransition(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, sbyte Rotation);
 }

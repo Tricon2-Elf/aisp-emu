@@ -40,6 +40,10 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         uint charId = (uint)chara.Id;
 
         uint mapId = chara.CurrentMapId;
+        var hasPendingTransition = state.TryTakePendingAreaTransition(session.User.Id, out var pendingTransition);
+        if (hasPendingTransition)
+            mapId = pendingTransition.MapId;
+
         var map = await mapRepo.GetByMapIdAsync(mapId, ct);
 
         if (map is null)
@@ -47,13 +51,30 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
             logger.LogWarning("Map not found for MapId={MapId} (character may spawn at default position). Ensure Maps table is seeded on VPS (e.g. volume for main.db or run migration/seed).", mapId);
         }
 
-        float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
-        float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
+        if (hasPendingTransition)
+        {
+            logger.LogInformation("Applying pending area transition for user {UserId}: map {MapId}, channel {ChannelId}, spawn ({X}, {Y}, {Z}), rotation {Rotation}", session.User.Id, pendingTransition.MapId, pendingTransition.ChannelId, pendingTransition.X, pendingTransition.Y, pendingTransition.Z, pendingTransition.Rotation);
 
-        session.X = (map?.SpawnX ?? 0f) + offsetX;
-        session.Y = map?.SpawnY ?? 0.1f;
-        session.Z = (map?.SpawnZ ?? 0f) + offsetZ;
-        session.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+            session.X = pendingTransition.X;
+            session.Y = pendingTransition.Y;
+            session.Z = pendingTransition.Z;
+            session.Rotation = pendingTransition.Rotation;
+            session.ChannelId = pendingTransition.ChannelId;
+        }
+        else
+        {
+            float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
+            float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
+
+            session.X = (map?.SpawnX ?? 0f) + offsetX;
+            session.Y = map?.SpawnY ?? 0.1f;
+            session.Z = (map?.SpawnZ ?? 0f) + offsetZ;
+            session.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+        }
+
+        session.HasMovedSinceMapLoad = false;
+        session.IsMapTransitionPending = false;
+        session.NeedsPostLoadSelfAvatarNotify = true;
         session.Character = chara;
         session.CharacterId = charId;
         session.MapId = mapId;
@@ -65,12 +86,15 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         _ = Task.Run(
             async () =>
             {
-                await Task.Delay(1000, ct);
+                if (!hasPendingTransition)
+                    await Task.Delay(1000, ct);
 
                 var cha = session.Character ?? session.User!.Characters.First();
                 var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
                 await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
+                if (!hasPendingTransition)
+                    session.NeedsPostLoadSelfAvatarNotify = false;
 
                 foreach (var other in state.GetAreaPeers(session))
                 {

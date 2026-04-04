@@ -1,4 +1,5 @@
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using AISpace.Network.Packets.Common;
 using AISpace.Network.Packets.Msg;
@@ -63,21 +64,141 @@ public class AdditionalPacketParserTests
     }
 
     [Fact]
-    public void NotifySelectMapData_ToBytes_WritesOrderedMapIdsWithExpectedStride()
+    public void NotifySelectMapData_ToBytes_WritesDirectRoutingEntries()
     {
-        var packet = new NotifySelectMapData(new uint[] { 10990110, 10990200, 10990210 });
+        var packet = new NotifySelectMapData(
+            new[]
+            {
+                new NotifySelectMapEntry
+                {
+                    MapId = 10990110,
+                    AreaServerInfo = new ServerInfo("localhost", 50054),
+                    ChannelId = 1,
+                    RouteMapId = 10990110,
+                    MapSerialId = 10990110,
+                    RouteState = 0x12345678,
+                    PositionX = -11000f,
+                    PositionY = 0.1f,
+                    PositionZ = -19200f,
+                    Yaw = 90,
+                    Animation = 0,
+                    Unknown1 = 0x11111111,
+                    Unknown2 = 0x22222222,
+                },
+                new NotifySelectMapEntry
+                {
+                    MapId = 10990200,
+                    AreaServerInfo = new ServerInfo("192.168.0.10", 50055),
+                    ChannelId = 2,
+                    RouteMapId = 10990200,
+                    MapSerialId = 10990200,
+                    RouteState = 0,
+                    PositionX = 1f,
+                    PositionY = 2f,
+                    PositionZ = 3f,
+                    Yaw = 4,
+                    Animation = 5,
+                },
+                new NotifySelectMapEntry
+                {
+                    MapId = 10990210,
+                    AreaServerInfo = new ServerInfo("10.0.0.5", 50056),
+                    ChannelId = 3,
+                    RouteMapId = 10990210,
+                    MapSerialId = 10990210,
+                    PositionX = 9f,
+                    PositionY = 8f,
+                    PositionZ = 7f,
+                    Yaw = 6,
+                    Animation = 5,
+                },
+            }
+        );
 
         var bytes = packet.ToBytes();
         var reader = new PacketReader(bytes);
 
         Assert.Equal(3u, reader.ReadUInt());
 
-        Assert.Equal(10990110u, reader.ReadUInt());
-        reader.ReadBytes(105);
-        Assert.Equal(10990200u, reader.ReadUInt());
-        reader.ReadBytes(105);
-        Assert.Equal(10990210u, reader.ReadUInt());
-        reader.ReadBytes(105);
-        Assert.Equal(4 + (109 * 3), bytes.Length);
+        var first = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
+        Assert.Equal(10990110u, first.MapId);
+        Assert.Equal((ushort)50054, first.AreaServerInfo.Port);
+        Assert.Equal("localhost", first.AreaServerInfo.IP);
+        Assert.Equal(1u, first.ChannelId);
+        Assert.Equal(10990110u, first.RouteMapId);
+        Assert.Equal(10990110u, first.MapSerialId);
+        Assert.Equal(0x12345678u, first.RouteState);
+        Assert.Equal(-11000f, first.PositionX);
+        Assert.Equal(0.1f, first.PositionY);
+        Assert.Equal(-19200f, first.PositionZ);
+        Assert.Equal((byte)90, first.Yaw);
+        Assert.Equal((byte)0, first.Animation);
+        Assert.Equal(0x11111111u, first.Unknown1);
+        Assert.Equal(0x22222222u, first.Unknown2);
+
+        var second = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
+        Assert.Equal(10990200u, second.MapId);
+        Assert.Equal((ushort)50055, second.AreaServerInfo.Port);
+        Assert.Equal("192.168.0.10", second.AreaServerInfo.IP);
+        Assert.Equal(2u, second.ChannelId);
+        Assert.Equal(10990200u, second.RouteMapId);
+        Assert.Equal(10990200u, second.MapSerialId);
+        Assert.Equal(1f, second.PositionX);
+        Assert.Equal(2f, second.PositionY);
+        Assert.Equal(3f, second.PositionZ);
+        Assert.Equal((byte)4, second.Yaw);
+        Assert.Equal((byte)5, second.Animation);
+
+        var third = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
+        Assert.Equal(10990210u, third.MapId);
+        Assert.Equal((ushort)50056, third.AreaServerInfo.Port);
+        Assert.Equal("10.0.0.5", third.AreaServerInfo.IP);
+        Assert.Equal(3u, third.ChannelId);
+        Assert.Equal(10990210u, third.RouteMapId);
+        Assert.Equal(10990210u, third.MapSerialId);
+        Assert.Equal(9f, third.PositionX);
+        Assert.Equal(8f, third.PositionY);
+        Assert.Equal(7f, third.PositionZ);
+        Assert.Equal((byte)6, third.Yaw);
+        Assert.Equal((byte)5, third.Animation);
+        Assert.Equal(4 + (NotifySelectMapEntry.PacketSize * 3), bytes.Length);
+    }
+
+    [Fact]
+    public void NotifyChangeMap_ToBytes_WritesDirectRoutePayload()
+    {
+        var packet = new NotifyChangeMap
+        {
+            ChannelId = 1,
+            MapId = 10990110,
+            MapSerialId = 10990110,
+            RouteState = 0x12345678,
+            PositionX = -11000f,
+            PositionY = 0.1f,
+            PositionZ = -19200f,
+            Rotation = -12,
+            Animation = (byte)MovementType.Stopped,
+            Flag = 2,
+            AreaServerInfo = new ServerInfo("localhost", 50054),
+            FadeFlag = 1,
+        };
+
+        var bytes = packet.ToBytes();
+        var parsed = NotifyChangeMap.FromBytes(bytes);
+
+        Assert.Equal(NotifyChangeMap.PacketSize, bytes.Length);
+        Assert.Equal(1u, parsed.ChannelId);
+        Assert.Equal(10990110u, parsed.MapId);
+        Assert.Equal(10990110u, parsed.MapSerialId);
+        Assert.Equal(0x12345678u, parsed.RouteState);
+        Assert.Equal(-11000f, parsed.PositionX);
+        Assert.Equal(0.1f, parsed.PositionY);
+        Assert.Equal(-19200f, parsed.PositionZ);
+        Assert.Equal((sbyte)-12, parsed.Rotation);
+        Assert.Equal((byte)MovementType.Stopped, parsed.Animation);
+        Assert.Equal((byte)2, parsed.Flag);
+        Assert.Equal((ushort)50054, parsed.AreaServerInfo.Port);
+        Assert.Equal("localhost", parsed.AreaServerInfo.IP);
+        Assert.Equal((byte)1, parsed.FadeFlag);
     }
 }

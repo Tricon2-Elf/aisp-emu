@@ -17,6 +17,8 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) 
         if (!session.IsAuthenticated || session.User == null)
             return;
 
+        session.NeedsPostLoadSelfAvatarNotify = false;
+
         var cha = session.User.Characters.First();
         var pos = new MovementData(session.X, session.Y, session.Z, session.Rotation, (MovementType)session.MovementTypeId);
 

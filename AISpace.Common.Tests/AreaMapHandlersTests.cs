@@ -1,3 +1,4 @@
+using AISpace.Common.Config;
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
@@ -7,9 +8,11 @@ using AISpace.Common.Tests.Support;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
+using AISpace.Network.Packets.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Tests;
 
@@ -66,12 +69,54 @@ public class AreaMapHandlersTests
                         SortOrder = 30,
                     }
                 );
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                db.Maps.AddRange(
+                    new Map
+                    {
+                        MapId = 10990110,
+                        Name = "Destination One",
+                        SpawnX = -11000f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -19200f,
+                        SpawnRotation = 90,
+                    },
+                    new Map
+                    {
+                        MapId = 10990210,
+                        Name = "Destination Two",
+                        SpawnX = -9600f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -8400f,
+                        SpawnRotation = 45,
+                    }
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
             var session = CreateSession(CreateUserWithCharacter(1, 1001, "link-user", "Link Tester", 10990100), 10990100, 0);
             var logger = new ListLogger<AreaMapLinkGetDataHandler>();
-            var handler = new AreaMapLinkGetDataHandler(new MapLinkRepository(new MainContext(options)), logger);
+            var handler = new AreaMapLinkGetDataHandler(
+                new MapLinkRepository(new MainContext(options)),
+                new MapRepository(new MainContext(options)),
+                new ChannelRepository(new MainContext(options)),
+                Options.Create(
+                    new ServerOptions
+                    {
+                        NetworkOptions = new NetworkOptions(),
+                        DbOptions = new DbOptions(),
+                        IPOverride = "localhost",
+                    }
+                ),
+                logger
+            );
 
             await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
 
@@ -87,7 +132,39 @@ public class AreaMapHandlersTests
             Assert.Equal(60f, secondLink.Data.PositionZ);
             Assert.Equal((byte)25, secondLink.Data.Yaw);
 
-            Assert.Equal(new uint[] { 10990110, 10990210 }, ReadSelectMapIds(session.Sent[3].Payload));
+            Assert.Collection(
+                ReadSelectMapEntries(session.Sent[3].Payload),
+                entry =>
+                {
+                    Assert.Equal(10990110u, entry.MapId);
+                    Assert.Equal((ushort)50054, entry.AreaServerPort);
+                    Assert.Equal("localhost", entry.AreaServerIp);
+                    Assert.Equal(1u, entry.ChannelId);
+                    Assert.Equal(10990110u, entry.RouteMapId);
+                    Assert.Equal(10990110u, entry.MapSerialId);
+                    Assert.Equal(0u, entry.RouteState);
+                    Assert.Equal(-11000f, entry.PositionX);
+                    Assert.Equal(0.1f, entry.PositionY);
+                    Assert.Equal(-19200f, entry.PositionZ);
+                    Assert.Equal((byte)90, entry.Yaw);
+                    Assert.Equal((byte)0, entry.Animation);
+                },
+                entry =>
+                {
+                    Assert.Equal(10990210u, entry.MapId);
+                    Assert.Equal((ushort)50054, entry.AreaServerPort);
+                    Assert.Equal("localhost", entry.AreaServerIp);
+                    Assert.Equal(1u, entry.ChannelId);
+                    Assert.Equal(10990210u, entry.RouteMapId);
+                    Assert.Equal(10990210u, entry.MapSerialId);
+                    Assert.Equal(0u, entry.RouteState);
+                    Assert.Equal(-9600f, entry.PositionX);
+                    Assert.Equal(0.1f, entry.PositionY);
+                    Assert.Equal(-8400f, entry.PositionZ);
+                    Assert.Equal((byte)45, entry.Yaw);
+                    Assert.Equal((byte)0, entry.Animation);
+                }
+            );
             Assert.Equal(10990100u, session.MapId);
             Assert.Equal(1, session.ChannelId);
             Assert.Contains(logger.Entries, entry => entry.Level == LogLevel.Warning && entry.Message.Contains("Skipping MapLink"));
@@ -144,7 +221,7 @@ public class AreaMapHandlersTests
             state.RegisterClient("Area", differentChannelPeer);
             state.RegisterClient("Area", destinationPeer);
 
-            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreaMapEnterHandler>.Instance);
+            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildUIntPairPayload(10990110, 1), session, TestContext.Current.CancellationToken);
 
@@ -174,10 +251,181 @@ public class AreaMapHandlersTests
     }
 
     [Fact]
+    public async Task MapEnterHandler_CurrentMapRequest_ResolvesDirectMapLink_AndPushesNotifyChangeMap()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 7001, "travel-user", "Traveler", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Maps.AddRange(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Source",
+                        SpawnX = -9100f,
+                        SpawnY = 2f,
+                        SpawnZ = -18000f,
+                        SpawnRotation = 90,
+                    },
+                    new Map
+                    {
+                        MapId = 10990110,
+                        Name = "Destination",
+                        SpawnX = -11000f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -19200f,
+                        SpawnRotation = 0,
+                    }
+                );
+                db.MapLinks.Add(
+                    new MapLink
+                    {
+                        SourceMapId = 10990100,
+                        ChannelId = 1,
+                        PositionX = -9100f,
+                        PositionY = 2f,
+                        PositionZ = -18000f,
+                        Yaw = 0,
+                        Length = 1000f,
+                        Depth = 1000f,
+                        DestinationMapIds = "10990110",
+                        SortOrder = 10,
+                        IsEnabled = true,
+                    }
+                );
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var session = CreateSession(user, 10990100, 1, x: -9100f, y: 2f, z: -18000f, rotation: 0);
+            session.HasMovedSinceMapLoad = true;
+            var oldPeer = CreateSession(CreateUserWithCharacter(2, 7002, "old-peer", "Old Peer", 10990100), 10990100, 1);
+
+            state.RegisterClient("Area", session);
+            state.RegisterClient("Area", oldPeer);
+
+            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
+
+            await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
+
+            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.MapEnterResponse, packet.Type), packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+
+            var responseReader = new PacketReader(session.Sent[0].Payload);
+            Assert.Equal(0u, responseReader.ReadUInt());
+
+            var notify = NotifyChangeMap.FromBytes(session.Sent[1].Payload);
+            Assert.Equal(1u, notify.ChannelId);
+            Assert.Equal(10990110u, notify.MapId);
+            Assert.Equal(10990110u, notify.MapSerialId);
+            Assert.Equal(-11000f, notify.PositionX);
+            Assert.Equal(0.1f, notify.PositionY);
+            Assert.Equal(-19200f, notify.PositionZ);
+            Assert.Equal((sbyte)0, notify.Rotation);
+            Assert.Equal((byte)MovementType.Stopped, notify.Animation);
+            Assert.Equal((byte)2, notify.Flag);
+            Assert.Equal((ushort)50054, notify.AreaServerInfo.Port);
+            Assert.Equal("localhost", notify.AreaServerInfo.IP);
+            Assert.Equal((byte)2, notify.FadeFlag);
+
+            Assert.Equal(10990110u, session.MapId);
+            Assert.Equal(1, session.ChannelId);
+            Assert.Equal(-11000f, session.X);
+            Assert.Equal(0.1f, session.Y);
+            Assert.Equal(-19200f, session.Z);
+            Assert.Equal(10990110u, session.Character!.CurrentMapId);
+
+            Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task MapEnterHandler_CurrentMapRequest_WithoutMovement_IsNoOpAck()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 7101, "idle-user", "Idle Traveler", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Maps.Add(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Source",
+                        SpawnX = -9100f,
+                        SpawnY = 2f,
+                        SpawnZ = -18000f,
+                        SpawnRotation = 90,
+                    }
+                );
+                db.MapLinks.Add(
+                    new MapLink
+                    {
+                        SourceMapId = 10990100,
+                        ChannelId = 1,
+                        PositionX = -9100f,
+                        PositionY = 2f,
+                        PositionZ = -18000f,
+                        Yaw = 0,
+                        Length = 1000f,
+                        Depth = 1000f,
+                        DestinationMapIds = "10990110",
+                        SortOrder = 10,
+                        IsEnabled = true,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var session = CreateSession(user, 10990100, 1, x: -9055f, y: 2f, z: -17988f, rotation: 0);
+            session.HasMovedSinceMapLoad = false;
+
+            state.RegisterClient("Area", session);
+
+            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
+
+            await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
+
+            Assert.Single(session.Sent);
+            Assert.Equal(PacketType.MapEnterResponse, session.Sent[0].Type);
+            Assert.Equal(0u, new PacketReader(session.Sent[0].Payload).ReadUInt());
+            Assert.Equal(10990100u, session.MapId);
+            Assert.False(session.HasMovedSinceMapLoad);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task MapDataEnterEndHandler_SpawnsOnlyPeersInDestinationArea()
     {
         var state = new SharedState();
         var session = CreateSession(CreateUserWithCharacter(1, 3001, "spawn-user", "Spawn User", 10990110), 10990110, 1, x: 1f, y: 2f, z: 3f);
+        session.NeedsPostLoadSelfAvatarNotify = false;
         var destinationPeer = CreateSession(CreateUserWithCharacter(2, 3002, "spawn-peer", "Spawn Peer", 10990110), 10990110, 1, x: 4f, y: 5f, z: 6f);
         var oldPeer = CreateSession(CreateUserWithCharacter(3, 3003, "old-peer", "Old Peer", 10990100), 10990100, 1);
         var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 3004, "other-channel", "Other Channel", 10990110), 10990110, 2);
@@ -191,34 +439,222 @@ public class AreaMapHandlersTests
 
         await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
 
-        Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type), packet => Assert.Equal(PacketType.AvatarNotifyData, packet.Type));
+        Assert.Collection(
+            session.Sent,
+            packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type),
+            packet =>
+            {
+                Assert.Equal(PacketType.AvatarNotifyData, packet.Type);
+                Assert.Equal(1u, new PacketReader(packet.Payload).ReadUInt());
+            }
+        );
         Assert.Collection(destinationPeer.Sent, packet => Assert.Equal(PacketType.AvatarNotifyData, packet.Type));
         Assert.Empty(oldPeer.Sent);
         Assert.Empty(differentChannelPeer.Sent);
     }
 
     [Fact]
-    public async Task AvatarMoveHandler_BroadcastsOnlyWithinSameMapAndChannel()
+    public async Task MapDataEnterEndHandler_SendsSelfAvatarNotify_EvenWithoutVisiblePeers()
     {
         var state = new SharedState();
-        var mover = CreateSession(CreateUserWithCharacter(1, 4001, "move-user", "Mover", 10990100), 10990100, 1);
-        var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 4002, "same-peer", "Same Peer", 10990100), 10990100, 1);
-        var differentMapPeer = CreateSession(CreateUserWithCharacter(3, 4003, "other-map", "Other Map", 10990110), 10990110, 1);
-        var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 4004, "other-channel", "Other Channel", 10990100), 10990100, 2);
+        var session = CreateSession(CreateUserWithCharacter(1, 3051, "solo-user", "Solo User", 10990110), 10990110, 1, x: 11f, y: 12f, z: 13f);
+        session.NeedsPostLoadSelfAvatarNotify = true;
 
-        state.RegisterClient("Area", mover);
-        state.RegisterClient("Area", sameAreaPeer);
-        state.RegisterClient("Area", differentMapPeer);
-        state.RegisterClient("Area", differentChannelPeer);
+        state.RegisterClient("Area", session);
 
-        var handler = new AreaAvatarMoveRequestHandler(state);
-        var move = new MovementData(9f, 8f, 7f, 6, MovementType.Running);
+        var handler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance);
 
-        await handler.HandleAsync(move.ToBytes(), mover, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
 
-        Assert.Collection(sameAreaPeer.Sent, packet => Assert.Equal(PacketType.AvatarNotifyMove, packet.Type));
-        Assert.Empty(differentMapPeer.Sent);
-        Assert.Empty(differentChannelPeer.Sent);
+        Assert.Collection(
+            session.Sent,
+            packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type),
+            packet =>
+            {
+                Assert.Equal(PacketType.AvatarNotifyData, packet.Type);
+                Assert.Equal(0u, new PacketReader(packet.Payload).ReadUInt());
+            }
+        );
+    }
+
+    [Fact]
+    public async Task AreasvEnterHandler_UsesPendingTransitionSpawn_WithoutRandomSpread()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            const string otp = "transition-otp-1234";
+            var user = CreateUserWithCharacter(1, 3061, "transition-user", "Transition User", 10990110);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.UserSessions.Add(
+                    new UserSession
+                    {
+                        UserId = user.Id,
+                        OTP = otp,
+                        ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                    }
+                );
+                db.Maps.Add(
+                    new Map
+                    {
+                        MapId = 10990110,
+                        Name = "Destination",
+                        SpawnX = -11000f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -19200f,
+                        SpawnRotation = 0,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            state.SetPendingAreaTransition(new SharedState.PendingAreaTransition(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
+
+            var session = new CapturingPlayerSession();
+            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), new TestMainContextFactory(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
+
+            await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
+
+            Assert.Equal(10990110u, session.MapId);
+            Assert.Equal(1, session.ChannelId);
+            Assert.Equal(-11000f, session.X);
+            Assert.Equal(0.1f, session.Y);
+            Assert.Equal(-19200f, session.Z);
+            Assert.Equal((sbyte)0, session.Rotation);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.AreasvEnterResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AvatarMoveHandler_BroadcastsOnlyWithinSameMapAndChannel()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var state = new SharedState();
+            var mover = CreateSession(CreateUserWithCharacter(1, 4001, "move-user", "Mover", 10990100), 10990100, 1);
+            var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 4002, "same-peer", "Same Peer", 10990100), 10990100, 1);
+            var differentMapPeer = CreateSession(CreateUserWithCharacter(3, 4003, "other-map", "Other Map", 10990110), 10990110, 1);
+            var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 4004, "other-channel", "Other Channel", 10990100), 10990100, 2);
+
+            state.RegisterClient("Area", mover);
+            state.RegisterClient("Area", sameAreaPeer);
+            state.RegisterClient("Area", differentMapPeer);
+            state.RegisterClient("Area", differentChannelPeer);
+
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
+            var move = new MovementData(9f, 8f, 7f, 6, MovementType.Running);
+
+            await handler.HandleAsync(move.ToBytes(), mover, TestContext.Current.CancellationToken);
+
+            Assert.Collection(sameAreaPeer.Sent, packet => Assert.Equal(PacketType.AvatarNotifyMove, packet.Type));
+            Assert.Empty(differentMapPeer.Sent);
+            Assert.Empty(differentChannelPeer.Sent);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AvatarMoveHandler_CrossingDirectMapLink_PushesNotifyChangeMap_WhenClientDoesNotSendMapEnter()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 4101, "move-link-user", "Mover", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Maps.AddRange(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Source",
+                        SpawnX = -9100f,
+                        SpawnY = 2f,
+                        SpawnZ = -18000f,
+                        SpawnRotation = 90,
+                    },
+                    new Map
+                    {
+                        MapId = 10990110,
+                        Name = "Destination",
+                        SpawnX = -11000f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -19200f,
+                        SpawnRotation = 0,
+                    }
+                );
+                db.MapLinks.Add(
+                    new MapLink
+                    {
+                        SourceMapId = 10990100,
+                        ChannelId = 1,
+                        PositionX = -9800f,
+                        PositionY = 2f,
+                        PositionZ = -18000f,
+                        Yaw = 0,
+                        Length = 300f,
+                        Depth = 0f,
+                        DestinationMapIds = "10990110",
+                        SortOrder = 10,
+                        IsEnabled = true,
+                    }
+                );
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var mover = CreateSession(user, 10990100, 1, x: -10450f, y: 2f, z: -18000f, rotation: 0);
+            var oldPeer = CreateSession(CreateUserWithCharacter(2, 4102, "old-peer", "Old Peer", 10990100), 10990100, 1);
+            var differentChannelPeer = CreateSession(CreateUserWithCharacter(3, 4103, "other-channel", "Other Channel", 10990100), 10990100, 2);
+
+            state.RegisterClient("Area", mover);
+            state.RegisterClient("Area", oldPeer);
+            state.RegisterClient("Area", differentChannelPeer);
+
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
+
+            await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
+
+            Assert.Collection(mover.Sent, packet => Assert.Equal(PacketType.MapEnterResponse, packet.Type), packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+            Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
+            Assert.Empty(differentChannelPeer.Sent);
+            Assert.Equal(10990110u, mover.MapId);
+            Assert.Equal(-11000f, mover.X);
+            Assert.Equal(0.1f, mover.Y);
+            Assert.Equal(-19200f, mover.Z);
+            Assert.Equal(10990110u, mover.Character!.CurrentMapId);
+            Assert.False(mover.HasMovedSinceMapLoad);
+            Assert.True(mover.IsMapTransitionPending);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     [Fact]
@@ -332,6 +768,14 @@ public class AreaMapHandlersTests
         return writer.ToBytes();
     }
 
+    private static byte[] BuildAreasvEnterPayload(uint userId, string otp)
+    {
+        var writer = new PacketWriter();
+        writer.Write(userId);
+        writer.WriteFixedString(otp, 20, "ASCII");
+        return writer.ToBytes();
+    }
+
     private static byte[] BuildUIntPayload(uint value)
     {
         var writer = new PacketWriter();
@@ -339,20 +783,38 @@ public class AreaMapHandlersTests
         return writer.ToBytes();
     }
 
-    private static IReadOnlyList<uint> ReadSelectMapIds(byte[] payload)
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(DbContextOptions<MainContext> options, SharedState state)
     {
-        const int SelectMapPaddingSize = 105;
+        return new DirectMapLinkTransitionService(
+            new MapRepository(new MainContext(options)),
+            new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+            new MapLinkRepository(new MainContext(options)),
+            new ChannelRepository(new MainContext(options)),
+            Options.Create(
+                new ServerOptions
+                {
+                    NetworkOptions = new NetworkOptions(),
+                    DbOptions = new DbOptions(),
+                    IPOverride = "localhost",
+                }
+            ),
+            state,
+            NullLogger<DirectMapLinkTransitionService>.Instance
+        );
+    }
 
+    private static IReadOnlyList<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, byte Yaw, byte Animation)> ReadSelectMapEntries(byte[] payload)
+    {
         var reader = new PacketReader(payload);
         var count = reader.ReadUInt();
-        var mapIds = new List<uint>((int)count);
+        var entries = new List<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, byte Yaw, byte Animation)>((int)count);
         for (var index = 0; index < count; index++)
         {
-            mapIds.Add(reader.ReadUInt());
-            reader.ReadBytes(SelectMapPaddingSize);
+            var entry = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
+            entries.Add((entry.MapId, entry.AreaServerInfo.Port, entry.AreaServerInfo.IP, entry.ChannelId, entry.RouteMapId, entry.MapSerialId, entry.RouteState, entry.PositionX, entry.PositionY, entry.PositionZ, entry.Yaw, entry.Animation));
         }
 
-        return mapIds;
+        return entries;
     }
 
     private sealed class ListLogger<T> : ILogger<T>

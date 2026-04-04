@@ -15,6 +15,7 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
+        session.IsMapTransitionPending = false;
         await session.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
 
         if (session.User == null)
@@ -26,11 +27,17 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
 
         var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
-        var spawnMePacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 1, myPos);
-        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, myChar.Id);
+        var spawnMeForPeersPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 1, myPos);
+        if (session.NeedsPostLoadSelfAvatarNotify)
+        {
+            logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, myChar.Id);
+            var spawnMeForSelfPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 0, myPos);
+            await session.SendAsync(PacketType.AvatarNotifyData, spawnMeForSelfPacket, ct);
+            session.NeedsPostLoadSelfAvatarNotify = false;
+        }
         foreach (var other in state.GetAreaPeers(session))
         {
-            await other.SendAsync(PacketType.AvatarNotifyData, spawnMePacket, ct);
+            await other.SendAsync(PacketType.AvatarNotifyData, spawnMeForPeersPacket, ct);
             logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for othercharacter {CharacterId}", other.ConnectionId, myChar.Id);
             var otherChar = other.Character ?? other.User?.Characters.FirstOrDefault();
             if (otherChar != null)
