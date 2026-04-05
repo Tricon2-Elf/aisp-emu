@@ -53,7 +53,7 @@ public class PacketWriter
 
     public void Write(string value, string encoderName = "ASCII")
     {
-        var encoder = Encoding.GetEncoding(encoderName);
+        var encoder = PacketEncoding.GetEncoding(encoderName);
         var size = encoder.GetByteCount(value);
         Span<byte> buffer = stackalloc byte[size + 1];
         encoder.GetBytes(value, buffer);
@@ -63,7 +63,7 @@ public class PacketWriter
 
     public void WriteFixedString(string value, int length, string encoderName = "Shift_JIS")
     {
-        var encoder = Encoding.GetEncoding(encoderName);
+        var encoder = PacketEncoding.GetEncoding(encoderName);
         var size = encoder.GetByteCount(value);
         Span<byte> buffer = stackalloc byte[length];
         buffer.Clear();

@@ -2,20 +2,11 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class ItemTryEquipped(uint objId, uint serialId, uint socketBit) : IPacket<ItemTryEquipped>
+public class ItemTryEquipped(uint objId, uint serialId, uint socketBit) : IOutgoingPacket
 {
     public uint ObjId = objId;
     public uint SerialId = serialId;
     public uint SocketBit = socketBit;
-
-    public static ItemTryEquipped FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        var objId = reader.ReadUInt();
-        var serialId = reader.ReadUInt();
-        var socketBit = reader.ReadUInt();
-        return new ItemTryEquipped(objId, serialId, socketBit);
-    }
 
     public byte[] ToBytes()
     {

@@ -14,12 +14,14 @@ public class AuthPingHandlerTests
     {
         var handler = new AuthPingHandler(NullLogger<AuthPingHandler>.Instance);
         var session = new CapturingPlayerSession();
-        var ping = new PingRequest(0x11223344);
+        var w = new PacketWriter();
+        w.Write(0x11223344u);
+        var payload = w.ToBytes();
 
-        await handler.HandleAsync(ping.ToBytes(), session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.Ping, session.Sent[0].Type);
-        Assert.Equal(ping.ToBytes(), session.Sent[0].Payload);
+        Assert.Equal(payload, session.Sent[0].Payload);
     }
 }

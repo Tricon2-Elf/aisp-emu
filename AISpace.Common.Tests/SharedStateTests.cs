@@ -61,6 +61,10 @@ public class SharedStateTests
         public float Z { get; set; }
         public sbyte Rotation { get; set; }
         public int MovementTypeId { get; set; }
+        public bool HasMovedSinceMapLoad { get; set; }
+        public bool IsMapTransitionPending { get; set; }
+        public bool NeedsPostLoadSelfAvatarNotify { get; set; }
+        public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
         public bool IsAuthenticated => User != null;
 
         public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) => Task.CompletedTask;

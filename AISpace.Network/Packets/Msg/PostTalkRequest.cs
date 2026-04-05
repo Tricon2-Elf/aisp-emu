@@ -2,7 +2,7 @@
 
 namespace AISpace.Network.Packets.Msg;
 
-public class PostTalkRequest(uint messageID, uint distID, string message, uint balloonID) : IPacket<PostTalkRequest>
+public class PostTalkRequest(uint messageID, uint distID, string message, uint balloonID) : IIncomingPacket<PostTalkRequest>
 {
     public uint MessageID = messageID;
     public uint DistID = distID;
@@ -17,15 +17,5 @@ public class PostTalkRequest(uint messageID, uint distID, string message, uint b
         string msg = reader.ReadString("Shift_JIS");
         uint balloonId = reader.ReadUInt();
         return new PostTalkRequest(msgId, distId, msg, balloonId);
-    }
-
-    public byte[] ToBytes()
-    {
-        var writer = new PacketWriter();
-        writer.Write(MessageID);
-        writer.Write(DistID);
-        writer.Write(Message, "Shift_JIS");
-        writer.Write(BalloonID);
-        return writer.ToBytes();
     }
 }

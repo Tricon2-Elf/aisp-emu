@@ -37,6 +37,9 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
         uint mapId = channel.MapId;
         logger.LogInformation("ChannelSelect: sending Area server {ResolvedIp}:{Port} (MapId={MapId})", resolvedIp, channel.Port, mapId);
 
+        session.ChannelId = channel.ChannelNum;
+        session.MapId = mapId;
+
         using (var scope = scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();

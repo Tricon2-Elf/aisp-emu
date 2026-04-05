@@ -110,4 +110,43 @@ public class RepositoryIntegrationTests
             await connection.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task MapRepository_EnsureSeedMapsPresent_AddsMissingCanonicalMaps_ToExistingDatabase()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                db.Maps.Add(
+                    new AISpace.Common.DAL.Entities.Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = -9100f,
+                        SpawnY = 2f,
+                        SpawnZ = -18000f,
+                        SpawnRotation = 90,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using (var db = new MainContext(options))
+            {
+                await MapRepository.EnsureSeedMapsPresentAsync(db, TestContext.Current.CancellationToken);
+            }
+
+            await using (var verifyDb = new MainContext(options))
+            {
+                Assert.NotNull(await verifyDb.Maps.FirstOrDefaultAsync(map => map.MapId == 10990200, TestContext.Current.CancellationToken));
+                Assert.NotNull(await verifyDb.Maps.FirstOrDefaultAsync(map => map.MapId == 10990210, TestContext.Current.CancellationToken));
+            }
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
 }

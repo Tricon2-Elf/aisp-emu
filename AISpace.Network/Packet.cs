@@ -11,7 +11,4 @@ public interface IIncomingPacket<TSelf>
     static abstract TSelf FromBytes(ReadOnlySpan<byte> data);
 }
 
-public interface IPacket<TSelf> : IOutgoingPacket, IIncomingPacket<TSelf>
-    where TSelf : IPacket<TSelf> { }
-
 public record Packet(ClientConnection Client, PacketType Type, byte[] Data, ushort RawType);

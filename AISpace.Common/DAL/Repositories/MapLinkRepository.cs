@@ -20,6 +20,31 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
         return await _db.MapLinks.AsNoTracking().Where(x => x.IsEnabled && x.SourceMapId == mapId && (x.ChannelId == channel || x.ChannelId == 0)).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).ToListAsync(ct);
     }
 
+    /// <summary>
+    /// Corrects the original sample Akihabara direct link so it no longer overlaps the default spawn point.
+    /// Applies only to the legacy seeded row shape and leaves user-authored links untouched.
+    /// </summary>
+    public static async Task NormalizeSeedMapLinksAsync(MainContext db, CancellationToken ct = default)
+    {
+        var candidate = await db.MapLinks.FirstOrDefaultAsync(x => x.SourceMapId == 10990100 && x.ChannelId == 0 && x.SortOrder == 10 && x.DestinationMapIds == "10990110", ct);
+
+        if (candidate == null)
+            return;
+
+        var isLegacyLayout = candidate.PositionY == 2.0f && candidate.PositionZ == -18000f && candidate.Yaw == 0 && (candidate.PositionX == -9100f || candidate.PositionX == -9800f);
+
+        if (!isLegacyLayout)
+            return;
+
+        candidate.PositionX = -9800f;
+        candidate.PositionY = 2.0f;
+        candidate.PositionZ = -18000f;
+        candidate.Length = 300f;
+        candidate.Depth = 0f;
+
+        await db.SaveChangesAsync(ct);
+    }
+
     /// <summary>Seeds map-link entries if the MapLinks table is empty.</summary>
     public static async Task SeedMapLinksIfEmptyAsync(MainContext db, CancellationToken ct = default)
     {
@@ -33,12 +58,12 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
             {
                 SourceMapId = 10990100,
                 ChannelId = 0,
-                PositionX = -9100f,
+                PositionX = -8677f,
                 PositionY = 2.0f,
-                PositionZ = -18000f,
+                PositionZ = -19312f,
                 Yaw = 0,
-                Length = 1000f,
-                Depth = 1000f,
+                Length = 300f,
+                Depth = 100f,
                 DestinationMapIds = "10990110",
                 Behavior = MapLinkBehavior.AutoEnterIfSingle,
                 SortOrder = 10,
@@ -49,12 +74,12 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
             {
                 SourceMapId = 10990100,
                 ChannelId = 0,
-                PositionX = -9600f,
+                PositionX = -10701f,
                 PositionY = 0.1f,
-                PositionZ = -8400f,
+                PositionZ = -19313f,
                 Yaw = 0,
-                Length = 1000f,
-                Depth = 1000f,
+                Length = 100f,
+                Depth = 10f,
                 DestinationMapIds = "10990110,10990200,10990210",
                 Behavior = MapLinkBehavior.ForceSelection,
                 SortOrder = 20,

@@ -2,16 +2,10 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class EmotionCharaResponse(uint objId, uint result) : IPacket<EmotionCharaResponse>
+public class EmotionCharaResponse(uint objId, uint result) : IOutgoingPacket
 {
     public uint ObjId { get; set; } = objId;
     public uint Result { get; set; } = result;
-
-    public static EmotionCharaResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        return new EmotionCharaResponse(reader.ReadUInt(), reader.ReadUInt());
-    }
 
     public byte[] ToBytes()
     {

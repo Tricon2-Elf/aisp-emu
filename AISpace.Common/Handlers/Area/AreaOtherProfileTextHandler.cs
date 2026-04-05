@@ -15,8 +15,8 @@ public class AreaOtherProfileTextHandler(SharedState state) : IPacketHandler
         uint targetObjId = reader.ReadUInt();
 
         // Find the character whose profile we are viewing
-        var target = state.AreaClients.Values.FirstOrDefault(c => c.CharacterId == targetObjId);
-        var cha = target?.User?.Characters.FirstOrDefault();
+        var target = state.GetAreaSessionByCharacterId(targetObjId, session.MapId, session.ChannelId);
+        var cha = target?.Character ?? target?.User?.Characters.FirstOrDefault();
 
         var writer = new PacketWriter();
         writer.Write((uint)0); // Result

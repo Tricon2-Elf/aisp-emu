@@ -9,6 +9,7 @@ global using Microsoft.Extensions.Options;
 using System.Text;
 using AISpace.Common;
 using AISpace.Common.Game;
+using AISpace.Common.Handlers.Area;
 using Microsoft.Extensions.DependencyInjection;
 using NLog.Extensions.Logging;
 
@@ -41,6 +42,7 @@ internal class Program
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
+        builder.Services.AddScoped<DirectMapLinkTransitionService>();
 
         builder.Services.AddSingleton<SharedState>();
         // Add all IPacketHandler classsess
@@ -63,7 +65,9 @@ internal class Program
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
             await db.Database.EnsureCreatedAsync();
             await MapRepository.SeedMapsIfEmptyAsync(db);
+            await MapRepository.EnsureSeedMapsPresentAsync(db);
             await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
+            await MapLinkRepository.NormalizeSeedMapLinksAsync(db);
             await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride);
             await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: 50054);
         }

@@ -21,6 +21,10 @@ public interface IPlayerSession
     float Z { get; set; }
     sbyte Rotation { get; set; }
     int MovementTypeId { get; set; }
+    bool HasMovedSinceMapLoad { get; set; }
+    bool IsMapTransitionPending { get; set; }
+    bool NeedsPostLoadSelfAvatarNotify { get; set; }
+    PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     bool IsAuthenticated { get; }
 
     Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default);

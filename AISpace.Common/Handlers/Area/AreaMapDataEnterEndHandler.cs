@@ -15,49 +15,37 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
+        session.IsMapTransitionPending = false;
         await session.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
 
         if (session.User == null)
             return;
 
-        var myChar = session.User.Characters.First();
+        var myChar = session.Character ?? session.User.Characters.FirstOrDefault();
+        if (myChar == null)
+            return;
+
         var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
-        var spawnMePacket = new AvatarNotifyData(0, new AvatarData((uint)myChar.Id, CreateCData(myChar, myPos))).ToBytes();
-        logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, myChar.Id);
-        foreach (var other in state.AreaClients.Values)
+        var spawnMeForPeersPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 1, myPos);
+        if (session.NeedsPostLoadSelfAvatarNotify)
         {
-            if (other.ConnectionId == session.ConnectionId)
-                continue;
-
-            await other.SendAsync(PacketType.AvatarNotifyData, spawnMePacket, ct);
+            logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, myChar.Id);
+            var spawnMeForSelfPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 0, myPos);
+            await session.SendAsync(PacketType.AvatarNotifyData, spawnMeForSelfPacket, ct);
+            session.NeedsPostLoadSelfAvatarNotify = false;
+        }
+        foreach (var other in state.GetAreaPeers(session))
+        {
+            await other.SendAsync(PacketType.AvatarNotifyData, spawnMeForPeersPacket, ct);
             logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for othercharacter {CharacterId}", other.ConnectionId, myChar.Id);
-            var otherChar = other.User?.Characters.FirstOrDefault();
+            var otherChar = other.Character ?? other.User?.Characters.FirstOrDefault();
             if (otherChar != null)
             {
                 var otherPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
-                var spawnOtherForMe = new AvatarNotifyData(0, new AvatarData((uint)otherChar.Id, CreateCData(otherChar, otherPos))).ToBytes();
+                var spawnOtherForMe = AreasvEnterHandler.CreateNotify(otherChar, other.CharacterId, 1, otherPos);
                 await session.SendAsync(PacketType.AvatarNotifyData, spawnOtherForMe, ct);
             }
         }
-    }
-
-    private static CharaData CreateCData(Character cha, MovementData pos)
-    {
-        var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name) { moveData = pos };
-        cd.Visual.VisualId = (uint)cha.Id;
-        cd.Visual.BloodType = cha.BloodType;
-        cd.Visual.Month = (byte)cha.Birthdate.Month;
-        cd.Visual.Day = (byte)cha.Birthdate.Day;
-        cd.Visual.Gender = (uint)cha.Gender;
-        cd.Visual.Face = (byte)cha.FaceType;
-        cd.Visual.Hairstyle = cha.Hairstyle;
-
-        for (byte s = 0; s < 30; s++)
-        {
-            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
-            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
-        }
-        return cd;
     }
 }
