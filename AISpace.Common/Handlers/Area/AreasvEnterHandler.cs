@@ -94,8 +94,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
                 var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
                 await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
-                if (!hasPendingTransition)
-                    session.NeedsPostLoadSelfAvatarNotify = false;
+                session.NeedsPostLoadSelfAvatarNotify = false;
 
                 foreach (var other in state.GetAreaPeers(session))
                 {
