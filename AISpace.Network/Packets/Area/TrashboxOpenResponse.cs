@@ -2,20 +2,9 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class TrashboxOpenResponse : IPacket<TrashboxOpenResponse>
+public class TrashboxOpenResponse(uint result) : IOutgoingPacket
 {
-    public uint Result { get; set; }
-
-    public TrashboxOpenResponse(uint result)
-    {
-        Result = result;
-    }
-
-    public static TrashboxOpenResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        return new TrashboxOpenResponse(reader.ReadUInt());
-    }
+    public uint Result { get; set; } = result;
 
     public byte[] ToBytes()
     {

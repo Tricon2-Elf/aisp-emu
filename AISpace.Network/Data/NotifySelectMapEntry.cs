@@ -1,6 +1,6 @@
-using AISpace.Network.Data;
+using AISpace.Network;
 
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Data;
 
 /// <summary>
 /// One select_map_t entry for recv_notify_select_map.

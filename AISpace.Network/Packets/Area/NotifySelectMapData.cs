@@ -1,4 +1,4 @@
-using AISpace.Network;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
@@ -20,7 +20,7 @@ public class NotifySelectMapData : IOutgoingPacket
 
     public NotifySelectMapData(IEnumerable<NotifySelectMapEntry> entries)
     {
-        Entries = entries.ToList();
+        Entries = [.. entries];
     }
 
     public byte[] ToBytes()

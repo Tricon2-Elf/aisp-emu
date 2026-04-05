@@ -15,7 +15,9 @@ public abstract class PingHandlerBase(ILogger logger) : IPacketHandler
     {
         logger.LogTrace("Ping from {ConnectionId}", session.ConnectionId);
         var ping = PingRequest.FromBytes(payload.Span);
-        await session.SendAsync(PacketType.Ping, ping.ToBytes(), ct);
+        var writer = new PacketWriter();
+        writer.Write(ping.Time);
+        await session.SendAsync(PacketType.Ping, writer.ToBytes(), ct);
     }
 }
 

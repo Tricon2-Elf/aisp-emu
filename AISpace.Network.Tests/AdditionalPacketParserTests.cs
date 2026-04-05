@@ -210,7 +210,7 @@ public class AdditionalPacketParserTests
         };
 
         var bytes = packet.ToBytes();
-        var parsed = NotifyChangeMap.FromBytes(bytes);
+        var parsed = OutgoingPacketTestParsers.ParseNotifyChangeMap(bytes);
 
         Assert.Equal(NotifyChangeMap.PacketSize, bytes.Length);
         Assert.Equal(1u, parsed.ChannelId);
@@ -279,7 +279,7 @@ public class AdditionalPacketParserTests
             IsRegisteredIsland = 0,
         };
 
-        var parsed = EventAreaMapSelectExecNotify.FromBytes(packet.ToBytes());
+        var parsed = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(packet.ToBytes());
 
         Assert.Equal([10990110u, 10990200u, 10990210u], parsed.MapIds);
         Assert.Equal(1u, parsed.IslandId);
@@ -327,7 +327,7 @@ public class AdditionalPacketParserTests
             ChannelId = 1,
         };
 
-        var parsed = EventAreaMapSelectExecRRequest.FromBytes(packet.ToBytes());
+        var parsed = EventAreaMapSelectExecRRequest.FromBytes(OutgoingPacketTestParsers.EventAreaMapSelectExecRRequestToBytes(packet));
 
         Assert.Equal(0u, parsed.Result);
         Assert.Equal(10990200u, parsed.MapId);
@@ -337,7 +337,7 @@ public class AdditionalPacketParserTests
     [Fact]
     public void EventAreaMapSelectCloseNotify_ToBytes_WritesResult()
     {
-        var parsed = EventAreaMapSelectCloseNotify.FromBytes(new EventAreaMapSelectCloseNotify(1).ToBytes());
+        var parsed = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(new EventAreaMapSelectCloseNotify(1).ToBytes());
         Assert.Equal(1u, parsed.Result);
     }
 
@@ -363,7 +363,7 @@ public class AdditionalPacketParserTests
             ],
         };
 
-        var parsed = SelectInitIslandStartNotify.FromBytes(packet.ToBytes());
+        var parsed = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(packet.ToBytes());
 
         Assert.Collection(
             parsed.Islands,
@@ -388,7 +388,7 @@ public class AdditionalPacketParserTests
     {
         var packet = new SelectInitIslandEndRequest { IslandId = 3 };
 
-        var parsed = SelectInitIslandEndRequest.FromBytes(packet.ToBytes());
+        var parsed = SelectInitIslandEndRequest.FromBytes(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(packet));
 
         Assert.Equal(3u, parsed.IslandId);
     }

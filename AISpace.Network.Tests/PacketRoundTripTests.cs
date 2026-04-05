@@ -12,8 +12,14 @@ public class PacketRoundTripTests
     public void PingRequest_RoundTrip()
     {
         var original = new PingRequest(0xDEADBEEF);
-        var round = PingRequest.FromBytes(original.ToBytes());
-        Assert.Equal(original.ToBytes(), round.ToBytes());
+        var w = new PacketWriter();
+        w.Write(original.Time);
+        var bytes = w.ToBytes();
+        var round = PingRequest.FromBytes(bytes);
+        Assert.Equal(original.Time, round.Time);
+        var w2 = new PacketWriter();
+        w2.Write(round.Time);
+        Assert.Equal(bytes, w2.ToBytes());
     }
 
     [Fact]

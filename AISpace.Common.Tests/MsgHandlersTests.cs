@@ -326,10 +326,10 @@ public class MsgHandlersTests
             Assert.Collection(msgSession.Sent, packet => Assert.Equal(PacketType.GetChannelListMapResponse, packet.Type));
             Assert.Collection(areaSession.Sent, packet => Assert.Equal(PacketType.EventAreaMapSelectCloseNotify, packet.Type), packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
 
-            var close = EventAreaMapSelectCloseNotify.FromBytes(areaSession.Sent[0].Payload);
+            var close = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(areaSession.Sent[0].Payload);
             Assert.Equal(0u, close.Result);
 
-            var notify = NotifyChangeMap.FromBytes(areaSession.Sent[1].Payload);
+            var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(areaSession.Sent[1].Payload);
             Assert.Equal(10990200u, notify.MapId);
             Assert.Equal(1u, notify.ChannelId);
 

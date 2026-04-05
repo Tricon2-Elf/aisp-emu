@@ -5,7 +5,7 @@ namespace AISpace.Network.Packets.Area;
 /// <summary>
 /// Server-to-client maplink notify (recv_notify_maplink_data). Body: UInt Result (4) + MapLinkData (21) = 25 bytes.
 /// </summary>
-public class MapLinkNotifyData : IPacket<MapLinkNotifyData>
+public class MapLinkNotifyData : IOutgoingPacket
 {
     public uint Result { get; set; }
     public MapLinkData Data { get; set; } = new();
@@ -22,22 +22,6 @@ public class MapLinkNotifyData : IPacket<MapLinkNotifyData>
     {
         Result = result;
         Data = new MapLinkData(posX, posY, posZ, yaw, length, halfExtent2);
-    }
-
-    public static MapLinkNotifyData FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        var result = reader.ReadUInt();
-        var mapLinkData = new MapLinkData
-        {
-            PositionX = reader.ReadFloat(),
-            PositionY = reader.ReadFloat(),
-            PositionZ = reader.ReadFloat(),
-            Yaw = reader.ReadByte(),
-            Length = reader.ReadFloat(),
-            Depth = reader.ReadFloat(),
-        };
-        return new MapLinkNotifyData(result, mapLinkData);
     }
 
     public byte[] ToBytes()

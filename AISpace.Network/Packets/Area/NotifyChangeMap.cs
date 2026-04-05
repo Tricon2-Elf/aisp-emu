@@ -54,38 +54,4 @@ public sealed class NotifyChangeMap : IOutgoingPacket
         writer.Write(FadeFlag);
         return writer.ToBytes();
     }
-
-    public static NotifyChangeMap FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        var channelId = reader.ReadUInt();
-        var mapId = reader.ReadUInt();
-        var mapSerialId = reader.ReadUInt();
-        var routeState = reader.ReadUInt();
-        var positionX = reader.ReadFloat();
-        var positionY = reader.ReadFloat();
-        var positionZ = reader.ReadFloat();
-        var rotation = reader.ReadSByte();
-        var animation = reader.ReadByte();
-        var flag = reader.ReadByte();
-        var port = reader.ReadUShort();
-        var ip = reader.ReadFixedString(65, "ASCII");
-        var fadeFlag = reader.ReadByte();
-
-        return new NotifyChangeMap
-        {
-            ChannelId = channelId,
-            MapId = mapId,
-            MapSerialId = mapSerialId,
-            RouteState = routeState,
-            PositionX = positionX,
-            PositionY = positionY,
-            PositionZ = positionZ,
-            Rotation = rotation,
-            Animation = animation,
-            Flag = flag,
-            AreaServerInfo = new ServerInfo(ip, port),
-            FadeFlag = fadeFlag,
-        };
-    }
 }

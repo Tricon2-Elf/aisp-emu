@@ -2,16 +2,9 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class ItemTryEquipResetResponse(uint result) : IPacket<ItemTryEquipResetResponse>
+public class ItemTryEquipResetResponse(uint result) : IOutgoingPacket
 {
     public uint Result = result;
-
-    public static ItemTryEquipResetResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        var result = reader.ReadUInt();
-        return new ItemTryEquipResetResponse(result);
-    }
 
     public byte[] ToBytes()
     {

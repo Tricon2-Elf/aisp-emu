@@ -1,4 +1,6 @@
-namespace AISpace.Network.Packets.Area;
+using AISpace.Network;
+
+namespace AISpace.Network.Data;
 
 /// <summary>
 /// One island_t entry for recv_select_init_island_start.

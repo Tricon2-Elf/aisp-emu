@@ -122,17 +122,17 @@ public class AreaMapHandlersTests
 
             Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.MapLinkGetDataResponse, packet.Type), packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type), packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type), packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type), packet => Assert.Equal(PacketType.NotifySelectMap, packet.Type));
 
-            var firstLink = MapLinkNotifyData.FromBytes(session.Sent[1].Payload);
+            var firstLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[1].Payload);
             Assert.Equal(10f, firstLink.Data.PositionX);
             Assert.Equal(20f, firstLink.Data.PositionZ);
             Assert.Equal((byte)5, firstLink.Data.Yaw);
 
-            var selectorLink = MapLinkNotifyData.FromBytes(session.Sent[2].Payload);
+            var selectorLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[2].Payload);
             Assert.Equal(30f, selectorLink.Data.PositionX);
             Assert.Equal(40f, selectorLink.Data.PositionZ);
             Assert.Equal((byte)15, selectorLink.Data.Yaw);
 
-            var thirdLink = MapLinkNotifyData.FromBytes(session.Sent[3].Payload);
+            var thirdLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[3].Payload);
             Assert.Equal(50f, thirdLink.Data.PositionX);
             Assert.Equal(60f, thirdLink.Data.PositionZ);
             Assert.Equal((byte)25, thirdLink.Data.Yaw);
@@ -332,7 +332,7 @@ public class AreaMapHandlersTests
             var responseReader = new PacketReader(session.Sent[0].Payload);
             Assert.Equal(0u, responseReader.ReadUInt());
 
-            var notify = NotifyChangeMap.FromBytes(session.Sent[1].Payload);
+            var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(session.Sent[1].Payload);
             Assert.Equal(1u, notify.ChannelId);
             Assert.Equal(10990110u, notify.MapId);
             Assert.Equal(10990110u, notify.MapSerialId);
@@ -498,7 +498,7 @@ public class AreaMapHandlersTests
 
             Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.MapEnterResponse, packet.Type), packet => Assert.Equal(PacketType.SelectInitIslandStart, packet.Type), packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type));
 
-            var islandStart = SelectInitIslandStartNotify.FromBytes(session.Sent[1].Payload);
+            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(session.Sent[1].Payload);
             Assert.Collection(
                 islandStart.Islands,
                 island =>
@@ -515,7 +515,7 @@ public class AreaMapHandlersTests
                 }
             );
 
-            var selector = EventAreaMapSelectExecNotify.FromBytes(session.Sent[2].Payload);
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(session.Sent[2].Payload);
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
             Assert.Equal(0u, selector.IsRegisteredIsland);
@@ -593,11 +593,11 @@ public class AreaMapHandlersTests
 
             var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaSelectInitIslandEndHandler>.Instance);
 
-            await handler.HandleAsync(new SelectInitIslandEndRequest { IslandId = 1 }.ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 1 }), session, TestContext.Current.CancellationToken);
 
             Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type));
 
-            var selector = EventAreaMapSelectExecNotify.FromBytes(session.Sent[0].Payload);
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(session.Sent[0].Payload);
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
             Assert.Equal(0u, selector.IsRegisteredIsland);
@@ -706,22 +706,24 @@ public class AreaMapHandlersTests
             var handler = new AreaEventAreaMapSelectExecRHandler(CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaEventAreaMapSelectExecRHandler>.Instance);
 
             await handler.HandleAsync(
-                new EventAreaMapSelectExecRRequest
-                {
-                    Result = 0,
-                    MapId = 10990200,
-                    ChannelId = 1,
-                }.ToBytes(),
+                OutgoingPacketTestParsers.EventAreaMapSelectExecRRequestToBytes(
+                    new EventAreaMapSelectExecRRequest
+                    {
+                        Result = 0,
+                        MapId = 10990200,
+                        ChannelId = 1,
+                    }
+                ),
                 session,
                 TestContext.Current.CancellationToken
             );
 
             Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.EventAreaMapSelectCloseNotify, packet.Type), packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
 
-            var close = EventAreaMapSelectCloseNotify.FromBytes(session.Sent[0].Payload);
+            var close = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(session.Sent[0].Payload);
             Assert.Equal(0u, close.Result);
 
-            var notify = NotifyChangeMap.FromBytes(session.Sent[1].Payload);
+            var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(session.Sent[1].Payload);
             Assert.Equal(10990200u, notify.MapId);
             Assert.Equal(1u, notify.ChannelId);
             Assert.Equal((byte)0, notify.Flag);
@@ -1054,7 +1056,7 @@ public class AreaMapHandlersTests
 
             Assert.Collection(mover.Sent, packet => Assert.Equal(PacketType.SelectInitIslandStart, packet.Type), packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type));
 
-            var islandStart = SelectInitIslandStartNotify.FromBytes(mover.Sent[0].Payload);
+            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(mover.Sent[0].Payload);
             Assert.Collection(
                 islandStart.Islands,
                 island =>
@@ -1071,7 +1073,7 @@ public class AreaMapHandlersTests
                 }
             );
 
-            var selector = EventAreaMapSelectExecNotify.FromBytes(mover.Sent[1].Payload);
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(mover.Sent[1].Payload);
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
             Assert.Equal(0u, selector.IsRegisteredIsland);
@@ -1164,7 +1166,7 @@ public class AreaMapHandlersTests
 
             Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.MapEnterResponse, packet.Type), packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
 
-            var notify = NotifyChangeMap.FromBytes(session.Sent[1].Payload);
+            var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(session.Sent[1].Payload);
             Assert.Equal(10990110u, notify.MapId);
             Assert.Equal(1u, notify.ChannelId);
             Assert.Equal(10990110u, session.MapId);

@@ -1,4 +1,5 @@
 using AISpace.Network;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
@@ -23,24 +24,5 @@ public sealed class EventAreaMapSelectExecNotify : IOutgoingPacket
         writer.Write(IslandId);
         writer.Write(IsRegisteredIsland);
         return writer.ToBytes();
-    }
-
-    public static EventAreaMapSelectExecNotify FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        var count = reader.ReadUInt();
-        if (count > 4)
-            throw new InvalidDataException($"Area map selection count {count} exceeds client maximum of 4.");
-
-        var entries = new List<NotifySelectMapEntry>((int)count);
-        for (var index = 0; index < count; index++)
-            entries.Add(NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize)));
-
-        return new EventAreaMapSelectExecNotify
-        {
-            Entries = entries,
-            IslandId = reader.ReadUInt(),
-            IsRegisteredIsland = reader.ReadUInt(),
-        };
     }
 }

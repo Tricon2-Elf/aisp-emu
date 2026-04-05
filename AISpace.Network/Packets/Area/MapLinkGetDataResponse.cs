@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class MapLinkGetDataResponse : IPacket<MapLinkGetDataResponse>
+public class MapLinkGetDataResponse : IOutgoingPacket
 {
     public uint Result { get; set; }
 
@@ -11,12 +11,6 @@ public class MapLinkGetDataResponse : IPacket<MapLinkGetDataResponse>
     public MapLinkGetDataResponse(uint result)
     {
         Result = result;
-    }
-
-    public static MapLinkGetDataResponse FromBytes(ReadOnlySpan<byte> data)
-    {
-        var reader = new PacketReader(data);
-        return new MapLinkGetDataResponse(reader.ReadUInt());
     }
 
     public byte[] ToBytes()
