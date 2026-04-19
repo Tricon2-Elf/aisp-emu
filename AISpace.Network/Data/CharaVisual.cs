@@ -1,6 +1,4 @@
-﻿using AISpace.Network;
-
-namespace AISpace.Network.Data;
+﻿namespace AISpace.Network.Data;
 
 public enum BloodType : uint
 {

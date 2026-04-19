@@ -1,5 +1,3 @@
-using AISpace.Network;
-
 namespace AISpace.Network.Data;
 
 public class AvatarData(uint AvatarId, CharaData chara)

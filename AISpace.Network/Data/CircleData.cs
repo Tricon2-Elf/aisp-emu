@@ -1,6 +1,3 @@
-using System.Text;
-using AISpace.Network;
-
 namespace AISpace.Network.Data;
 
 public class CircleData(uint id, string name, uint leaderId)
@@ -12,15 +9,11 @@ public class CircleData(uint id, string name, uint leaderId)
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        var enc = Encoding.GetEncoding("Shift_JIS");
 
         writer.Write(Id);
         writer.Write((uint)1); // Status
 
-        byte[] nameBytes = enc.GetBytes(Name);
-        byte[] finalName = new byte[46];
-        Array.Copy(nameBytes, finalName, Math.Min(nameBytes.Length, 45));
-        writer.Write(finalName);
+        writer.WriteFixedString(Name, 46, "Shift_JIS");
 
         writer.Write(LeaderId);
 

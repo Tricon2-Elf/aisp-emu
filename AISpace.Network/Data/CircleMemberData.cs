@@ -1,6 +1,3 @@
-using System.Text;
-using AISpace.Network;
-
 namespace AISpace.Network.Data;
 
 public class CircleMemberData
@@ -15,11 +12,7 @@ public class CircleMemberData
 
         writer.Write(AvatarId);
 
-        byte[] nameBytes = Encoding.GetEncoding("Shift_JIS").GetBytes(Name);
-        byte[] finalName = new byte[37];
-        Array.Copy(nameBytes, finalName, Math.Min(nameBytes.Length, 36));
-        writer.Write(finalName);
-
+        writer.WriteFixedString(Name, 37, "Shift_JIS");
         writer.Write(Role);
 
         return writer.ToBytes();
