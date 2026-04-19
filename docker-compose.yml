@@ -10,3 +10,27 @@ services:
       - "50054:50054"   # Area
     environment:
       - IP_OVERRIDE=host.docker.internal
+    restart: unless-stopped
+    healthcheck:
+      # /healthz returns 503 if any domain server (auth/msg/area) is not healthy.
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      # Picked up by the autoheal sidecar below to restart this container if it goes unhealthy.
+      - autoheal=true
+
+  # Watches all containers labelled `autoheal=true` and restarts any that report
+  # an "unhealthy" status from their HEALTHCHECK. Compose itself does not restart
+  # containers on healthcheck failure, so this sidecar provides that behavior.
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=10
+      - AUTOHEAL_START_PERIOD=30
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
