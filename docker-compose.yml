@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: AISpace.Server/Dockerfile
     ports:
+      - "8080:8080"     # HTTP health ( /health, /healthz )
       - "50050:50050"   # Auth
       - "50052:50052"   # Msg
       - "50054:50054"   # Area

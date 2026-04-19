@@ -2,7 +2,7 @@
 # Alpine = smaller image; uses musl. No ICU/tzdata by default (add if you need globalization).
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/runtime:10.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
 WORKDIR /app
 
 # Build stage

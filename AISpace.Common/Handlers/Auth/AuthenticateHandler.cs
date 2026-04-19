@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Auth;
 
-public class AuthenticateHandler(IUserRepository userRepo, ILogger<AuthenticateHandler> logger) : PacketHandlerBase<AuthenticateRequest, AuthenticateResponse>
+public class AuthenticateHandler(IUserRepository userRepo, SharedState state, ILogger<AuthenticateHandler> logger) : PacketHandlerBase<AuthenticateRequest, AuthenticateResponse>
 {
     private readonly ILogger<AuthenticateHandler> _logger = logger;
 
@@ -44,6 +44,7 @@ public class AuthenticateHandler(IUserRepository userRepo, ILogger<AuthenticateH
         _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
         session.User = user;
         session.UserId = user.Id;
+        state.RegisterClient("Auth", session);
         return new AuthenticateResponse((uint)user.Id);
     }
 }

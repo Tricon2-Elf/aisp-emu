@@ -31,6 +31,10 @@ public class SharedState
         {
             MsgClients[session.ConnectionId] = session;
         }
+        else if (serverName == "Auth")
+        {
+            AuthClients[session.ConnectionId] = session;
+        }
     }
 
     public void UnregisterClient(string serverName, Guid clientId)

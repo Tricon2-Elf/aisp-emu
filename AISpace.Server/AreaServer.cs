@@ -6,7 +6,8 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Server;
 
-public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state) : DomainServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state)
+public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, DomainServerHealthRegistry healthRegistry)
+    : DomainServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state, healthRegistry, DomainServerHealthRegistry.Keys.AreaServer)
 {
     protected override MessageDomain ActiveDomain => MessageDomain.Area;
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
 using AISpace.Common.Handlers.Auth;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
@@ -23,7 +24,8 @@ public class AuthenticateHandlerTests
         userRepo.SetupSequence(r => r.GetByUsernameAsync("newbie")).ReturnsAsync((User?)null).ReturnsAsync(created);
         userRepo.Setup(r => r.AddAsync("newbie", "pw")).Returns(Task.CompletedTask);
 
-        var handler = new AuthenticateHandler(userRepo.Object, NullLogger<AuthenticateHandler>.Instance);
+        var state = new SharedState();
+        var handler = new AuthenticateHandler(userRepo.Object, state, NullLogger<AuthenticateHandler>.Instance);
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
         var w = new PacketWriter();
@@ -35,6 +37,7 @@ public class AuthenticateHandlerTests
         Assert.Equal(7, session.UserId);
         Assert.NotNull(session.User);
         Assert.Equal("newbie", session.User!.Username);
+        Assert.True(state.AuthClients.ContainsKey(session.ConnectionId));
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
         Assert.Equal(7u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
@@ -49,7 +52,7 @@ public class AuthenticateHandlerTests
         var userRepo = new Mock<AISpace.Common.DAL.Repositories.IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("bob")).ReturnsAsync(user);
 
-        var handler = new AuthenticateHandler(userRepo.Object, NullLogger<AuthenticateHandler>.Instance);
+        var handler = new AuthenticateHandler(userRepo.Object, new SharedState(), NullLogger<AuthenticateHandler>.Instance);
         var session = new CapturingPlayerSession();
         var req = new AuthenticateRequest("bob", "wrong");
 
@@ -71,7 +74,8 @@ public class AuthenticateHandlerTests
         var userRepo = new Mock<AISpace.Common.DAL.Repositories.IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("alice")).ReturnsAsync(user);
 
-        var handler = new AuthenticateHandler(userRepo.Object, NullLogger<AuthenticateHandler>.Instance);
+        var state = new SharedState();
+        var handler = new AuthenticateHandler(userRepo.Object, state, NullLogger<AuthenticateHandler>.Instance);
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
         var w = new PacketWriter();
@@ -81,6 +85,7 @@ public class AuthenticateHandlerTests
         await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
         Assert.Equal(3, session.UserId);
+        Assert.True(state.AuthClients.ContainsKey(session.ConnectionId));
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
         Assert.Equal(3u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));

@@ -10,6 +10,8 @@ using System.Text;
 using AISpace.Common;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NLog.Extensions.Logging;
 
@@ -19,7 +21,7 @@ internal class Program
 {
     static async Task Main(string[] args)
     {
-        var builder = Host.CreateApplicationBuilder(args);
+        var builder = WebApplication.CreateBuilder(args);
         // IP override: set Server__IPOverride (e.g. Server__IPOverride=host.docker.internal) or IP_OVERRIDE env to replace localhost addresses in Docker.
         if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IP_OVERRIDE")))
             builder.Configuration["Server:IPOverride"] = Environment.GetEnvironmentVariable("IP_OVERRIDE");
@@ -49,17 +51,60 @@ internal class Program
         builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().WithScopedLifetime());
 
         builder.Services.AddSingleton<PacketDispatcher>();
+        builder.Services.AddSingleton<DomainServerHealthRegistry>();
+        builder.Services.AddHealthChecks();
 
-        builder.Services.AddHostedService(sp => new AuthServer(sp.GetRequiredService<ILogger<AuthServer>>(), sp.GetRequiredService<MainContext>(), sp.GetRequiredService<IUserRepository>(), 50050, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<IWorldRepository>(), sp.GetRequiredService<PacketDispatcher>(), sp.GetRequiredService<SharedState>()));
+        builder.Services.AddHostedService(sp => new AuthServer(
+            sp.GetRequiredService<ILogger<AuthServer>>(),
+            sp.GetRequiredService<MainContext>(),
+            sp.GetRequiredService<IUserRepository>(),
+            50050,
+            sp.GetRequiredService<ILoggerFactory>(),
+            sp.GetRequiredService<IWorldRepository>(),
+            sp.GetRequiredService<PacketDispatcher>(),
+            sp.GetRequiredService<SharedState>(),
+            sp.GetRequiredService<DomainServerHealthRegistry>()
+        ));
 
-        builder.Services.AddHostedService(sp => new MsgServer(sp.GetRequiredService<ILogger<MsgServer>>(), sp.GetRequiredService<MainContext>(), sp.GetRequiredService<IUserRepository>(), 50052, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<IWorldRepository>(), sp.GetRequiredService<PacketDispatcher>(), sp.GetRequiredService<SharedState>()));
+        builder.Services.AddHostedService(sp => new MsgServer(
+            sp.GetRequiredService<ILogger<MsgServer>>(),
+            sp.GetRequiredService<MainContext>(),
+            sp.GetRequiredService<IUserRepository>(),
+            50052,
+            sp.GetRequiredService<ILoggerFactory>(),
+            sp.GetRequiredService<IWorldRepository>(),
+            sp.GetRequiredService<PacketDispatcher>(),
+            sp.GetRequiredService<SharedState>(),
+            sp.GetRequiredService<DomainServerHealthRegistry>()
+        ));
 
-        builder.Services.AddHostedService(sp => new AreaServer(sp.GetRequiredService<ILogger<AreaServer>>(), sp.GetRequiredService<MainContext>(), sp.GetRequiredService<IUserRepository>(), 50054, sp.GetRequiredService<ILoggerFactory>(), sp.GetRequiredService<IWorldRepository>(), sp.GetRequiredService<PacketDispatcher>(), sp.GetRequiredService<SharedState>()));
+        builder.Services.AddHostedService(sp => new AreaServer(
+            sp.GetRequiredService<ILogger<AreaServer>>(),
+            sp.GetRequiredService<MainContext>(),
+            sp.GetRequiredService<IUserRepository>(),
+            50054,
+            sp.GetRequiredService<ILoggerFactory>(),
+            sp.GetRequiredService<IWorldRepository>(),
+            sp.GetRequiredService<PacketDispatcher>(),
+            sp.GetRequiredService<SharedState>(),
+            sp.GetRequiredService<DomainServerHealthRegistry>()
+        ));
 
-        var host = builder.Build();
+        var app = builder.Build();
+
+        app.MapHealthChecks("/health");
+        app.MapGet(
+            "/healthz",
+            (DomainServerHealthRegistry registry, SharedState state) =>
+            {
+                var servers = registry.GetSnapshot(state);
+                var allHealthy = servers.Values.All(s => s.State == "healthy");
+                return Results.Json(new { status = allHealthy ? "Healthy" : "Unhealthy", servers }, statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
+            }
+        );
 
         // Ensure database and Maps table exist, then seed maps if empty
-        using (var scope = host.Services.CreateScope())
+        using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
@@ -72,6 +117,6 @@ internal class Program
             await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: 50054);
         }
 
-        await host.RunAsync();
+        await app.RunAsync();
     }
 }

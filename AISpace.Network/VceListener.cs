@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect)
+public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
     private TcpListener? _tcpListener;
@@ -19,6 +19,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
     {
         _tcpListener = new TcpListener(System.Net.IPAddress.Parse("0.0.0.0"), port);
         _tcpListener.Start();
+        onListeningStarted?.Invoke(name, port);
         logger.LogInformation("Server {Name} started on {LocalEP}", name, _tcpListener.LocalEndpoint);
 
         try

@@ -3,7 +3,8 @@ using AISpace.Common.Game;
 
 namespace AISpace.Server;
 
-public class MsgServer(ILogger<MsgServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state) : DomainServerBase<MsgServer>(logger, db, userRepo, port, "Msg", loggerFactory, worldRepo, dispatcher, state)
+public class MsgServer(ILogger<MsgServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, DomainServerHealthRegistry healthRegistry)
+    : DomainServerBase<MsgServer>(logger, db, userRepo, port, "Msg", loggerFactory, worldRepo, dispatcher, state, healthRegistry, DomainServerHealthRegistry.Keys.MsgServer)
 {
     protected override MessageDomain ActiveDomain => MessageDomain.Msg;
 
