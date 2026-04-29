@@ -12,6 +12,7 @@ using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NLog.Extensions.Logging;
 
@@ -110,7 +111,7 @@ internal class Program
         {
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
-            await db.Database.EnsureCreatedAsync();
+            await db.Database.MigrateAsync();
             await MapRepository.SeedMapsIfEmptyAsync(db);
             await MapRepository.EnsureSeedMapsPresentAsync(db);
             await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
