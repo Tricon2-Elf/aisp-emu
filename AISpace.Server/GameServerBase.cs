@@ -3,8 +3,8 @@ using AISpace.Common.Game;
 
 namespace AISpace.Server;
 
-public abstract class DomainServerBase<T> : BackgroundService
-    where T : DomainServerBase<T>
+public abstract class GameServerBase<T> : BackgroundService
+    where T : GameServerBase<T>
 {
     protected readonly ILogger<T> Logger;
 
@@ -20,12 +20,12 @@ public abstract class DomainServerBase<T> : BackgroundService
     protected readonly ILoggerFactory _loggerFactory;
     protected readonly TimeSpan TickRate = TimeSpan.FromMilliseconds(1000.0 / 60.0);
 
-    protected abstract MessageDomain ActiveDomain { get; }
+    protected abstract ServerType ActiveServerType { get; }
 
-    protected readonly DomainServerHealthRegistry HealthRegistry;
+    protected readonly GameServerHealthRegistry HealthRegistry;
     protected readonly string _healthKey;
 
-    protected DomainServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, DomainServerHealthRegistry healthRegistry, string healthKey)
+    protected GameServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, string healthKey)
     {
         Logger = logger;
         Db = db;
@@ -48,8 +48,8 @@ public abstract class DomainServerBase<T> : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        Logger.LogInformation("Starting {domain} server", ActiveDomain);
-        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(_serverName, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p));
+        Logger.LogInformation("Starting {ServerType} server", ActiveServerType);
+        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p));
         var packetLoop = RunPacketLoop(ct);
         var acceptLoop = listener.RunAsync(ct);
         var gameLoop = RunGameLoop(ct);
@@ -63,7 +63,7 @@ public abstract class DomainServerBase<T> : BackgroundService
             try
             {
                 var session = State.GetOrAddSession(packet.Client.Id, () => new PlayerSession(packet.Client.Id, packet.Client));
-                await Dispatcher.DispatchAsync(ActiveDomain, packet.Type, packet.Data, session, ct);
+                await Dispatcher.DispatchAsync(ActiveServerType, packet.Type, packet.Data, session, ct);
             }
             catch (OperationCanceledException)
             {
@@ -71,7 +71,7 @@ public abstract class DomainServerBase<T> : BackgroundService
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Packet dispatch failed (domain={Domain}, type={Type}): {Message}", ActiveDomain, packet.Type, ex.Message);
+                Logger.LogError(ex, "Packet dispatch failed (ServerType={ServerType}, type={Type}): {Message}", ActiveServerType, packet.Type, ex.Message);
             }
         }
     }
@@ -91,7 +91,7 @@ public abstract class DomainServerBase<T> : BackgroundService
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Game tick failed (domain={Domain}): {Message}", ActiveDomain, ex.Message);
+                Logger.LogError(ex, "Game tick failed (ServerType={ServerType}): {Message}", ActiveServerType, ex.Message);
             }
         }
     }

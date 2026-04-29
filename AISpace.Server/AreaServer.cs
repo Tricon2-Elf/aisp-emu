@@ -6,10 +6,10 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Server;
 
-public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, DomainServerHealthRegistry healthRegistry)
-    : DomainServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state, healthRegistry, DomainServerHealthRegistry.Keys.AreaServer)
+public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry)
+    : GameServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state, healthRegistry, GameServerHealthRegistry.Keys.AreaServer)
 {
-    protected override MessageDomain ActiveDomain => MessageDomain.Area;
+    protected override ServerType ActiveServerType => ServerType.Area;
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     private DateTime _nextTimeUpdate = DateTime.MinValue;
 
@@ -43,7 +43,7 @@ public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserReposit
             var timePacket = new TimeZoneGetResponse(0, (uint)t.Phase, t.Current, t.Max, 0);
             byte[] data = timePacket.ToBytes();
 
-            foreach (var client in State.AreaClients.Values)
+            foreach (var client in State.GetServerClients(ServerType.Area))
             {
                 if (client.IsAuthenticated)
                     _ = client.SendAsync(PacketType.TimeZoneGetResponse, data);

@@ -16,7 +16,7 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
 {
     public PacketType RequestType => PacketType.ChannelSelectRequest;
     public PacketType ResponseType => PacketType.ChannelSelectResponse;
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

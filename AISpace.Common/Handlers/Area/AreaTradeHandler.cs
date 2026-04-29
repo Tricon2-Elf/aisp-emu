@@ -8,7 +8,7 @@ public class AreaTradeHandler(ILogger<AreaTradeHandler> logger) : IPacketHandler
 {
     public PacketType RequestType => PacketType.TradeRequest;
     public PacketType ResponseType => (PacketType)0; // Пока без ответа
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

@@ -14,7 +14,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
 
     public PacketType RequestType => PacketType.AreasvEnterRequest;
     public PacketType ResponseType => PacketType.AreasvEnterResponse;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
@@ -80,7 +80,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.CharacterId = charId;
         session.MapId = mapId;
 
-        state.RegisterClient("Area", session);
+        state.RegisterClient(ServerType.Area, session);
 
         await session.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
 

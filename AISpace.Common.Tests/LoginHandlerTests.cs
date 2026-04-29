@@ -45,7 +45,7 @@ public class LoginHandlerTests
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.LoginResponse, session.Sent[0].Type);
         Assert.Equal((uint)AuthResponseResult.Success, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
-        Assert.True(state.MsgClients.ContainsKey(session.ConnectionId));
+        Assert.Contains(state.MsgClients, client => client.ConnectionId == session.ConnectionId);
     }
 
     [Fact]

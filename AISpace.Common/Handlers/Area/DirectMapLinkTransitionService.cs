@@ -217,13 +217,15 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         session.IsMapTransitionPending = notifyChangeMap != null;
         session.PendingAreaMapSelection = null;
 
+        state.RegisterClient(ServerType.Area, session);
+
         var userCharacter = session.User?.Characters.FirstOrDefault(candidate => candidate.Id == updatedCharacter.Id);
         if (userCharacter != null)
             userCharacter.CurrentMapId = destinationMapId;
 
         if (notifyChangeMap != null && session.User != null)
         {
-            state.SetPendingAreaTransition(new SharedState.PendingAreaTransition(session.User.Id, destinationMapId, (int)destinationChannelId, destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, (sbyte)destinationMap.SpawnRotation));
+            state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(session.User.Id, destinationMapId, (int)destinationChannelId, destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, (sbyte)destinationMap.SpawnRotation));
         }
 
         if (sendMapEnterResponse)

@@ -15,7 +15,7 @@ public class PacketDispatcherTests
     public async Task DispatchAsync_InvokesMatchingHandler()
     {
         var handlerMock = new Mock<IPacketHandler>();
-        handlerMock.Setup(h => h.Domain).Returns(MessageDomain.Auth);
+        handlerMock.Setup(h => h.ServerType).Returns(ServerType.Auth);
         handlerMock.Setup(h => h.RequestType).Returns(PacketType.AuthenticateRequest);
         handlerMock.Setup(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<IPlayerSession>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
 
@@ -29,7 +29,7 @@ public class PacketDispatcherTests
         var dispatcher = provider.GetRequiredService<PacketDispatcher>();
         var session = new CapturingPlayerSession();
 
-        await dispatcher.DispatchAsync(MessageDomain.Auth, PacketType.AuthenticateRequest, [], session, TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.AuthenticateRequest, [], session, TestContext.Current.CancellationToken);
 
         handlerMock.Verify(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), session, It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -38,7 +38,7 @@ public class PacketDispatcherTests
     public async Task DispatchAsync_DoesNotInvokeHandler_WhenRequestTypeMismatch()
     {
         var handlerMock = new Mock<IPacketHandler>();
-        handlerMock.Setup(h => h.Domain).Returns(MessageDomain.Auth);
+        handlerMock.Setup(h => h.ServerType).Returns(ServerType.Auth);
         handlerMock.Setup(h => h.RequestType).Returns(PacketType.Ping);
         handlerMock.Setup(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<IPlayerSession>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
 
@@ -51,7 +51,7 @@ public class PacketDispatcherTests
         await using var provider = services.BuildServiceProvider();
         var dispatcher = provider.GetRequiredService<PacketDispatcher>();
 
-        await dispatcher.DispatchAsync(MessageDomain.Auth, PacketType.AuthenticateRequest, [], new CapturingPlayerSession(), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.AuthenticateRequest, [], new CapturingPlayerSession(), TestContext.Current.CancellationToken);
 
         handlerMock.Verify(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<IPlayerSession>(), It.IsAny<CancellationToken>()), Times.Never);
     }

@@ -10,7 +10,7 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) 
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyData;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

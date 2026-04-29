@@ -309,7 +309,7 @@ public class MsgHandlersTests
                     SelectorOpened = true,
                 },
             };
-            state.RegisterClient("Area", areaSession);
+            state.RegisterClient(ServerType.Area, areaSession);
 
             var msgSession = new CapturingPlayerSession
             {

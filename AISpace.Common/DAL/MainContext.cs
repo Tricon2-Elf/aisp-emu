@@ -19,6 +19,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Circle> Circles { get; internal set; }
     public DbSet<Map> Maps { get; set; }
     public DbSet<MapLink> MapLinks { get; set; }
+    public DbSet<SessionPresence> SessionPresences { get; set; }
+    public DbSet<PendingMapTransfer> PendingMapTransfers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -121,6 +123,28 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.IP).HasMaxLength(256).IsRequired();
             e.Property(x => x.MaxUsers).HasDefaultValue(1000u);
             e.Property(x => x.MapId).HasDefaultValue(10990100u);
+        });
+
+        b.Entity<SessionPresence>(e =>
+        {
+            e.ToTable("SessionPresences");
+            e.HasKey(x => x.ConnectionId);
+            e.HasIndex(x => new { x.ServerType, x.UserId });
+            e.HasIndex(x => new { x.ServerType, x.CharacterId });
+            e.HasIndex(x => new
+            {
+                x.ServerType,
+                x.MapId,
+                x.ChannelId,
+            });
+            e.HasIndex(x => x.UpdatedAtUtc);
+        });
+
+        b.Entity<PendingMapTransfer>(e =>
+        {
+            e.ToTable("PendingMapTransfers");
+            e.HasKey(x => x.UserId);
+            e.HasIndex(x => x.ExpiresAtUtc);
         });
     }
 }

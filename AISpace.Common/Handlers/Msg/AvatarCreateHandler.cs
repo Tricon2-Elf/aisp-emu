@@ -11,7 +11,7 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
 {
     public override PacketType RequestType => PacketType.AvatarCreateRequest;
     public override PacketType ResponseType => PacketType.AvatarCreateResponse;
-    public override MessageDomain Domain => MessageDomain.Msg;
+    public override ServerType ServerType => ServerType.Msg;
 
     private readonly ILogger<AvatarCreateHandler> _logger = logger;
 

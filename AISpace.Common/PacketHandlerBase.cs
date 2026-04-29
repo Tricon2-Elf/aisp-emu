@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common;
 
-public enum MessageDomain
+public enum ServerType
 {
     Auth = 1,
     Area = 2,
@@ -14,7 +14,7 @@ public interface IPacketHandler
 {
     PacketType RequestType { get; }
     PacketType ResponseType { get; }
-    MessageDomain Domain { get; }
+    ServerType ServerType { get; }
     Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default);
 }
 
@@ -24,7 +24,7 @@ public abstract class PacketHandlerBase<TRequest, TResponse> : IPacketHandler
 {
     public abstract PacketType RequestType { get; }
     public abstract PacketType ResponseType { get; }
-    public abstract MessageDomain Domain { get; }
+    public abstract ServerType ServerType { get; }
 
     public abstract Task<TResponse?> HandleAsync(TRequest request, IPlayerSession session, CancellationToken ct = default);
 

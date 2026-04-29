@@ -10,7 +10,7 @@ public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> 
 {
     public PacketType RequestType => PacketType.AvatarDestroyRequest;
     public PacketType ResponseType => PacketType.AvatarDestroyResponse;
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

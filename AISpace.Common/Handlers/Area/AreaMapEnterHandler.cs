@@ -10,7 +10,7 @@ public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTran
 {
     public PacketType RequestType => PacketType.MapEnterRequest;
     public PacketType ResponseType => PacketType.MapEnterResponse;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

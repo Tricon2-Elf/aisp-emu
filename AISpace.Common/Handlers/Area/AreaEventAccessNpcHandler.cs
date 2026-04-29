@@ -9,7 +9,7 @@ public class AreaEventAccessNpcHandler(ILogger<AreaEventAccessNpcHandler> logger
 {
     public PacketType RequestType => PacketType.EventAccessNpcRequest;
     public PacketType ResponseType => PacketType.EventAccessNpcResponse;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

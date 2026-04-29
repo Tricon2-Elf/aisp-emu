@@ -12,7 +12,7 @@ public class ChannelListGetHandler(IOptions<ServerOptions> serverOptions, IChann
 {
     public PacketType RequestType => PacketType.ChannelListGetRequest;
     public PacketType ResponseType => PacketType.ChannelListGetResponse;
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

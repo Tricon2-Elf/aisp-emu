@@ -15,7 +15,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
 
     public PacketType RequestType => PacketType.CmdExecRequest;
     public PacketType ResponseType => PacketType.CmdExecResponse;
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

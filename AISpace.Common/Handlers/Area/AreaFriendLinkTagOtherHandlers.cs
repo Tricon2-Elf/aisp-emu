@@ -7,7 +7,7 @@ public class AreaFriendLinkTagOtherHandler : IPacketHandler
 {
     public PacketType RequestType => PacketType.FriendLinkTagGetOtherRequest;
     public PacketType ResponseType => (PacketType)0x239E; // FriendLinkTagGetResponse
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

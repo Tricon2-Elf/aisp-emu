@@ -15,7 +15,7 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
 
     public PacketType ResponseType => PacketType.MapLinkGetDataResponse;
 
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

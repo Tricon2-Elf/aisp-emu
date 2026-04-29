@@ -8,7 +8,7 @@ public class AvatarSelectHandler : IPacketHandler
 {
     public PacketType RequestType => PacketType.AvatarSelectRequest;
     public PacketType ResponseType => PacketType.AvatarSelectResponse;
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

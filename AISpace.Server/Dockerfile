@@ -33,7 +33,7 @@ COPY --from=publish /app/publish .
 
 EXPOSE 8080 50050 50052 50054
 
-# /healthz returns 200 only when every domain server is "healthy" (503 otherwise),
+# /healthz returns 200 only when every game server is "healthy" (503 otherwise),
 # so a non-zero exit from wget marks the container unhealthy.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:8080/healthz || exit 1

@@ -13,7 +13,7 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
 
     public PacketType ResponseType => PacketType.AvatarDataResponse;
 
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     ILogger<AvatarGetDataHandler> _logger = logger;
     ICharacterRepository _charRepo = charRepo;

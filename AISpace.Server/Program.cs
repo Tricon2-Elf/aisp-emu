@@ -44,14 +44,16 @@ internal class Program
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
+        builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
+        builder.Services.AddSingleton<IPendingMapTransferRepository, PendingMapTransferRepository>();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
 
-        builder.Services.AddSingleton<SharedState>();
+        builder.Services.AddSingleton<SharedState>(sp => new SharedState(new SessionStore(), new SessionClientRegistry(), new PendingTransitionStore(), sp.GetRequiredService<ISessionPresenceRepository>(), sp.GetRequiredService<IPendingMapTransferRepository>()));
         // Add all IPacketHandler classsess
         builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().WithScopedLifetime());
 
         builder.Services.AddSingleton<PacketDispatcher>();
-        builder.Services.AddSingleton<DomainServerHealthRegistry>();
+        builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
 
         builder.Services.AddHostedService(sp => new AuthServer(
@@ -63,7 +65,7 @@ internal class Program
             sp.GetRequiredService<IWorldRepository>(),
             sp.GetRequiredService<PacketDispatcher>(),
             sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<DomainServerHealthRegistry>()
+            sp.GetRequiredService<GameServerHealthRegistry>()
         ));
 
         builder.Services.AddHostedService(sp => new MsgServer(
@@ -75,7 +77,7 @@ internal class Program
             sp.GetRequiredService<IWorldRepository>(),
             sp.GetRequiredService<PacketDispatcher>(),
             sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<DomainServerHealthRegistry>()
+            sp.GetRequiredService<GameServerHealthRegistry>()
         ));
 
         builder.Services.AddHostedService(sp => new AreaServer(
@@ -87,7 +89,7 @@ internal class Program
             sp.GetRequiredService<IWorldRepository>(),
             sp.GetRequiredService<PacketDispatcher>(),
             sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<DomainServerHealthRegistry>()
+            sp.GetRequiredService<GameServerHealthRegistry>()
         ));
 
         var app = builder.Build();
@@ -95,7 +97,7 @@ internal class Program
         app.MapHealthChecks("/health");
         app.MapGet(
             "/healthz",
-            (DomainServerHealthRegistry registry, SharedState state) =>
+            (GameServerHealthRegistry registry, SharedState state) =>
             {
                 var servers = registry.GetSnapshot(state);
                 var allHealthy = servers.Values.All(s => s.State == "healthy");

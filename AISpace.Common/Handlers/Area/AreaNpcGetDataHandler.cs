@@ -11,7 +11,7 @@ public class AreaNpcGetDataHandler : IPacketHandler
 
     public PacketType ResponseType => PacketType.NpcGetDataResponse;
 
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     /// <summary>First NPC object ID to use when spawning NPCs (above typical character IDs to avoid clashes).</summary>
     private const uint NpcObjectIdBase = 0x50000001;

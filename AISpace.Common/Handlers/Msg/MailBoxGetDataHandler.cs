@@ -9,7 +9,7 @@ public class MailBoxGetDataHandler : IPacketHandler
 
     public PacketType ResponseType => PacketType.MailBoxGetDataResponse;
 
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

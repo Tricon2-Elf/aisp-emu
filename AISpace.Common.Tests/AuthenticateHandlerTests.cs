@@ -37,7 +37,7 @@ public class AuthenticateHandlerTests
         Assert.Equal(7, session.UserId);
         Assert.NotNull(session.User);
         Assert.Equal("newbie", session.User!.Username);
-        Assert.True(state.AuthClients.ContainsKey(session.ConnectionId));
+        Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
         Assert.Equal(7u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
@@ -85,7 +85,7 @@ public class AuthenticateHandlerTests
         await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
         Assert.Equal(3, session.UserId);
-        Assert.True(state.AuthClients.ContainsKey(session.ConnectionId));
+        Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
         Assert.Equal(3u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));

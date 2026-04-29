@@ -24,11 +24,11 @@ public class SharedStateTests
         var id2 = Guid.NewGuid();
         var s1 = new FakeSession(id1) { CharacterId = 99 };
         var s2 = new FakeSession(id2) { CharacterId = 99 };
-        state.RegisterClient("Area", s1);
-        Assert.True(state.AreaClients.ContainsKey(id1));
-        state.RegisterClient("Area", s2);
-        Assert.False(state.AreaClients.ContainsKey(id1));
-        Assert.True(state.AreaClients.ContainsKey(id2));
+        state.RegisterClient(ServerType.Area, s1);
+        Assert.Contains(state.AreaClients, client => client.ConnectionId == id1);
+        state.RegisterClient(ServerType.Area, s2);
+        Assert.DoesNotContain(state.AreaClients, client => client.ConnectionId == id1);
+        Assert.Contains(state.AreaClients, client => client.ConnectionId == id2);
     }
 
     [Fact]
@@ -37,14 +37,14 @@ public class SharedStateTests
         var state = new SharedState();
         var id = Guid.NewGuid();
         var s = new FakeSession(id);
-        state.AuthClients[id] = s;
-        state.MsgClients[id] = s;
-        state.AreaClients[id] = s;
+        state.RegisterClient(ServerType.Auth, s);
+        state.RegisterClient(ServerType.Msg, s);
+        state.RegisterClient(ServerType.Area, s);
         state.GetOrAddSession(id, () => s);
-        state.UnregisterClient("Auth", id);
-        Assert.False(state.AuthClients.ContainsKey(id));
-        Assert.False(state.MsgClients.ContainsKey(id));
-        Assert.False(state.AreaClients.ContainsKey(id));
+        state.UnregisterClient(ServerType.Auth, id);
+        Assert.DoesNotContain(state.AuthClients, client => client.ConnectionId == id);
+        Assert.DoesNotContain(state.MsgClients, client => client.ConnectionId == id);
+        Assert.DoesNotContain(state.AreaClients, client => client.ConnectionId == id);
     }
 
     private sealed class FakeSession(Guid connectionId) : IPlayerSession

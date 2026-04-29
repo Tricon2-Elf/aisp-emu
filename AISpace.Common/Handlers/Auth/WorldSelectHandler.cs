@@ -18,7 +18,7 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
 
     public PacketType RequestType => PacketType.WorldSelectRequest;
     public PacketType ResponseType => PacketType.WorldSelectResponse;
-    public MessageDomain Domain => MessageDomain.Auth;
+    public ServerType ServerType => ServerType.Auth;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

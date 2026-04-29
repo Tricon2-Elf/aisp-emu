@@ -7,7 +7,7 @@ public class AreaAvatarProfileGetDataHandler(SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.AvatarProfileGetDataRequest;
     public PacketType ResponseType => (PacketType)0xB670;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

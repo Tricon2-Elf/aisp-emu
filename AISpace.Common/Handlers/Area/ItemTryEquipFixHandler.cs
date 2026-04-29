@@ -11,7 +11,7 @@ public class ItemTryEquipFixHandler(ILogger<ItemTryEquipFixHandler> logger) : IP
 
     public PacketType RequestType => PacketType.ItemTryEquipFixRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipFixResponse;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

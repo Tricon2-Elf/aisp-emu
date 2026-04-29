@@ -16,7 +16,7 @@ public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, ICh
 {
     public PacketType RequestType => PacketType.GetChannelListMapRequest;
     public PacketType ResponseType => PacketType.GetChannelListMapResponse;
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

@@ -1,96 +1,160 @@
-using System.Collections.Concurrent;
+using AISpace.Common.DAL.Repositories;
 
 namespace AISpace.Common.Game;
 
 public class SharedState
 {
-    private readonly ConcurrentDictionary<Guid, IPlayerSession> _sessionByConnectionId = new();
-    private readonly ConcurrentDictionary<int, PendingAreaTransition> _pendingAreaTransitionsByUserId = new();
+    private readonly ISessionStore _sessionStore;
+    private readonly ISessionClientRegistry _sessionClientRegistry;
+    private readonly IAreaPresenceIndex _areaPresenceIndex;
+    private readonly IPendingTransitionStore _pendingTransitionStore;
+    private readonly ISessionPresenceRepository? _sessionPresenceRepository;
+    private readonly IPendingMapTransferRepository? _pendingMapTransferRepository;
 
-    public ConcurrentDictionary<Guid, IPlayerSession> AuthClients = new();
-    public ConcurrentDictionary<Guid, IPlayerSession> MsgClients = new();
-    public ConcurrentDictionary<Guid, IPlayerSession> AreaClients = new();
-    public ConcurrentQueue<(string id, string message)> newMessages = new();
+    private readonly Queue<(string id, string message)> _newMessages = new();
+    private readonly object _newMessagesLock = new();
+
+    public IReadOnlyCollection<IPlayerSession> AuthClients => GetServerClients(ServerType.Auth);
+    public IReadOnlyCollection<IPlayerSession> MsgClients => GetServerClients(ServerType.Msg);
+    public IReadOnlyCollection<IPlayerSession> AreaClients => GetServerClients(ServerType.Area);
+
     public readonly long StartTimeUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+    public SharedState()
+        : this(new SessionStore(), new SessionClientRegistry(), new PendingTransitionStore()) { }
+
+    internal SharedState(ISessionStore sessionStore, ISessionClientRegistry sessionClientRegistry, IPendingTransitionStore pendingTransitionStore)
+    {
+        _sessionStore = sessionStore;
+        _sessionClientRegistry = sessionClientRegistry;
+        _pendingTransitionStore = pendingTransitionStore;
+        _areaPresenceIndex = new AreaPresenceIndex(_sessionClientRegistry);
+    }
+
+    public SharedState(ISessionStore sessionStore, ISessionClientRegistry sessionClientRegistry, IPendingTransitionStore pendingTransitionStore, ISessionPresenceRepository sessionPresenceRepository, IPendingMapTransferRepository pendingMapTransferRepository)
+        : this(sessionStore, sessionClientRegistry, pendingTransitionStore)
+    {
+        _sessionPresenceRepository = sessionPresenceRepository;
+        _pendingMapTransferRepository = pendingMapTransferRepository;
+    }
+
     /// <summary>Gets or creates a session for the given connection id. Factory is invoked only when a new session is needed.</summary>
-    public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) => _sessionByConnectionId.GetOrAdd(connectionId, _ => createSession());
+    public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) => _sessionStore.GetOrAddSession(connectionId, createSession);
 
-    public void RegisterClient(string serverName, IPlayerSession session)
+    public void RegisterClient(ServerType serverType, IPlayerSession session)
     {
-        if (serverName == "Area")
+        if (_sessionPresenceRepository == null)
         {
-            var ghost = AreaClients.Values.FirstOrDefault(s => s.CharacterId == session.CharacterId);
-            if (ghost != null && ghost.ConnectionId != session.ConnectionId)
-            {
-                AreaClients.TryRemove(ghost.ConnectionId, out _);
-            }
-            AreaClients[session.ConnectionId] = session;
+            _sessionClientRegistry.Register(serverType, session);
+            return;
         }
-        else if (serverName == "Msg")
+
+        _sessionPresenceRepository.Upsert(serverType, session);
+    }
+
+    public void UnregisterClient(ServerType serverType, Guid clientId)
+    {
+        if (_sessionPresenceRepository == null)
+            _sessionClientRegistry.Unregister(clientId);
+        else
+            _sessionPresenceRepository.Remove(serverType, clientId);
+
+        _sessionStore.RemoveSession(clientId);
+    }
+
+    public void SetPendingAreaTransition(PendingMapTransfer transition)
+    {
+        if (_pendingMapTransferRepository == null)
+            _pendingTransitionStore.SetPendingAreaTransition(transition);
+        else
+            _pendingMapTransferRepository.Upsert(transition, TimeSpan.FromMinutes(5));
+    }
+
+    public bool TryTakePendingAreaTransition(int userId, out PendingMapTransfer transition)
+    {
+        if (_pendingMapTransferRepository == null)
+            return _pendingTransitionStore.TryTakePendingAreaTransition(userId, out transition);
+
+        return _pendingMapTransferRepository.TryTake(userId, out transition);
+    }
+
+    public void EnqueueMessage(string id, string message)
+    {
+        lock (_newMessagesLock)
         {
-            MsgClients[session.ConnectionId] = session;
-        }
-        else if (serverName == "Auth")
-        {
-            AuthClients[session.ConnectionId] = session;
+            _newMessages.Enqueue((id, message));
         }
     }
 
-    public void UnregisterClient(string serverName, Guid clientId)
+    public bool TryDequeueMessage(out (string id, string message) message)
     {
-        AuthClients.TryRemove(clientId, out _);
-        MsgClients.TryRemove(clientId, out _);
-        AreaClients.TryRemove(clientId, out _);
-        _sessionByConnectionId.TryRemove(clientId, out _);
+        lock (_newMessagesLock)
+        {
+            return _newMessages.TryDequeue(out message);
+        }
     }
 
-    public void SetPendingAreaTransition(PendingAreaTransition transition) => _pendingAreaTransitionsByUserId[transition.UserId] = transition;
+    public IReadOnlyList<IPlayerSession> GetServerClients(ServerType serverType)
+    {
+        if (_sessionPresenceRepository == null)
+            return _sessionClientRegistry.GetClients(serverType).ToList();
 
-    public bool TryTakePendingAreaTransition(int userId, out PendingAreaTransition transition) => _pendingAreaTransitionsByUserId.TryRemove(userId, out transition);
+        var presences = _sessionPresenceRepository.GetByServerType(serverType);
+        return ResolveConnectedSessions(presences.Select(presence => presence.ConnectionId));
+    }
 
     public IReadOnlyList<IPlayerSession> GetAreaSessions(uint mapId, int channelId)
     {
-        return AreaClients.Values.Where(session => IsInArea(session, mapId, channelId)).ToList();
+        if (_sessionPresenceRepository == null)
+            return _areaPresenceIndex.GetAreaSessions(mapId, channelId);
+
+        var presences = _sessionPresenceRepository.GetAreaSessions(mapId, channelId);
+        return ResolveConnectedSessions(presences.Select(presence => presence.ConnectionId));
     }
 
     public IReadOnlyList<IPlayerSession> GetAreaPeers(IPlayerSession session, bool includeSelf = false)
     {
         var peers = GetAreaSessions(session.MapId, session.ChannelId);
-
         return includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId).ToList();
     }
 
     public IPlayerSession? GetAreaSessionByCharacterId(uint characterId, uint? mapId = null, int? channelId = null)
     {
-        IEnumerable<IPlayerSession> candidates = AreaClients.Values.Where(session => session.CharacterId == characterId);
+        if (_sessionPresenceRepository == null)
+            return _areaPresenceIndex.GetAreaSessionByCharacterId(characterId, mapId, channelId);
 
-        if (mapId.HasValue)
-            candidates = candidates.Where(session => IsInArea(session, mapId.Value, channelId ?? 0));
+        var presence = _sessionPresenceRepository.GetAreaSessionByCharacterId(characterId, mapId, channelId);
+        if (presence == null)
+            return null;
 
-        return candidates.FirstOrDefault();
+        _sessionStore.TryGetSession(presence.ConnectionId, out var session);
+        return session;
     }
 
     public IPlayerSession? GetAreaSessionByUserId(int userId, uint? mapId = null, int? channelId = null)
     {
-        IEnumerable<IPlayerSession> candidates = AreaClients.Values.Where(session => (session.User?.Id ?? session.UserId) == userId);
+        if (_sessionPresenceRepository == null)
+            return _areaPresenceIndex.GetAreaSessionByUserId(userId, mapId, channelId);
 
-        if (mapId.HasValue)
-            candidates = candidates.Where(session => IsInArea(session, mapId.Value, channelId ?? 0));
+        var presence = _sessionPresenceRepository.GetAreaSessionByUserId(userId, mapId, channelId);
+        if (presence == null)
+            return null;
 
-        return candidates.FirstOrDefault();
+        _sessionStore.TryGetSession(presence.ConnectionId, out var session);
+        return session;
     }
 
-    private static bool IsInArea(IPlayerSession session, uint mapId, int channelId)
+    private IReadOnlyList<IPlayerSession> ResolveConnectedSessions(IEnumerable<Guid> connectionIds)
     {
-        if (session.MapId != mapId)
-            return false;
+        var sessions = new List<IPlayerSession>();
+        foreach (var connectionId in connectionIds)
+        {
+            if (_sessionStore.TryGetSession(connectionId, out var session) && session != null)
+                sessions.Add(session);
+        }
 
-        if (channelId == 0 || session.ChannelId == 0)
-            return true;
-
-        return session.ChannelId == channelId;
+        return sessions;
     }
 
-    public readonly record struct PendingAreaTransition(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, sbyte Rotation);
+    public readonly record struct PendingMapTransfer(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, sbyte Rotation);
 }

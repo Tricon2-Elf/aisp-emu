@@ -11,7 +11,7 @@ public class LoginHandler(IUserSessionRepository sessionRepo, SharedState state,
 {
     public override PacketType RequestType => PacketType.LoginRequest;
     public override PacketType ResponseType => PacketType.LoginResponse;
-    public override MessageDomain Domain => MessageDomain.Msg;
+    public override ServerType ServerType => ServerType.Msg;
 
     private readonly IUserSessionRepository _sessionRepo = sessionRepo;
     private readonly ILogger<LoginHandler> _logger = logger;
@@ -30,7 +30,7 @@ public class LoginHandler(IUserSessionRepository sessionRepo, SharedState state,
 
         session.User = userSession.User;
         session.UserId = userSession.User.Id;
-        state.RegisterClient("Msg", session);
+        state.RegisterClient(ServerType.Msg, session);
         _logger.LogInformation("Client: {ClientId} LoginRequest UserID: {UserID}, OTP: {OTP}, Name: {name}", session.ConnectionId, request._userId, otp, session.User!.Username);
         return new LoginResponse(AuthResponseResult.Success);
     }

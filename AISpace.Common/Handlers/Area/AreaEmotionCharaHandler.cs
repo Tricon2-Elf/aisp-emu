@@ -8,7 +8,7 @@ public class AreaEmotionCharaHandler(SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.EmotionCharaRequest;
     public PacketType ResponseType => PacketType.EmotionCharaResponse;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

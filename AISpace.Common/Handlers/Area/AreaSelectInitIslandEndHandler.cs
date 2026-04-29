@@ -9,7 +9,7 @@ public sealed class AreaSelectInitIslandEndHandler(DirectMapLinkTransitionServic
 {
     public PacketType RequestType => PacketType.SelectInitIslandEndRequest;
     public PacketType ResponseType => PacketType.SelectInitIslandStart;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

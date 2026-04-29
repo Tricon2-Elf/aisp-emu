@@ -7,7 +7,7 @@ public class ItemTryEquipReplaceHandler : IPacketHandler
 {
     public PacketType RequestType => PacketType.ItemTryEquipReplaceRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipped;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

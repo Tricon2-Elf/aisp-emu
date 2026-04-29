@@ -14,7 +14,7 @@ public class AreaMoneyNpsPointsHandler(IUserRepository userRepo, ILogger<AreaMon
 
     public PacketType RequestType => PacketType.MoneyNpsPointsRequest;
     public PacketType ResponseType => PacketType.MoneyNpsPointsResponse;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

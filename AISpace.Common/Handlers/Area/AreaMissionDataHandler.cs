@@ -10,7 +10,7 @@ public class AreaMissionDataHandler : IPacketHandler
 
     public PacketType ResponseType => PacketType.MissionDataResponse;
 
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

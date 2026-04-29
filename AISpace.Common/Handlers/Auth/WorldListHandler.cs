@@ -11,7 +11,7 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
 {
     public PacketType RequestType => PacketType.WorldListRequest;
     public PacketType ResponseType => PacketType.WorldListResponse;
-    public MessageDomain Domain => MessageDomain.Auth;
+    public ServerType ServerType => ServerType.Auth;
 
     private readonly IWorldRepository _worldRepository = repo;
     private readonly ILogger<WorldListHandler> _logger = logger;

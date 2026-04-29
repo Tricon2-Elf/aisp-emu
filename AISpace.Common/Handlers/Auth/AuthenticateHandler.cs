@@ -12,7 +12,7 @@ public class AuthenticateHandler(IUserRepository userRepo, SharedState state, IL
 
     public override PacketType RequestType => PacketType.AuthenticateRequest;
     public override PacketType ResponseType => PacketType.AuthenticateResponse;
-    public override MessageDomain Domain => MessageDomain.Auth;
+    public override ServerType ServerType => ServerType.Auth;
 
     public override async Task<AuthenticateResponse?> HandleAsync(AuthenticateRequest request, IPlayerSession session, CancellationToken ct = default)
     {
@@ -44,7 +44,7 @@ public class AuthenticateHandler(IUserRepository userRepo, SharedState state, IL
         _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
         session.User = user;
         session.UserId = user.Id;
-        state.RegisterClient("Auth", session);
+        state.RegisterClient(ServerType.Auth, session);
         return new AuthenticateResponse((uint)user.Id);
     }
 }

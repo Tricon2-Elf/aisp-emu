@@ -9,7 +9,7 @@ public abstract class PingHandlerBase(ILogger logger) : IPacketHandler
 {
     public PacketType RequestType => PacketType.Ping;
     public PacketType ResponseType => PacketType.Ping;
-    public abstract MessageDomain Domain { get; }
+    public abstract ServerType ServerType { get; }
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
@@ -23,15 +23,15 @@ public abstract class PingHandlerBase(ILogger logger) : IPacketHandler
 
 public class AuthPingHandler(ILogger<AuthPingHandler> logger) : PingHandlerBase(logger)
 {
-    public override MessageDomain Domain => MessageDomain.Auth;
+    public override ServerType ServerType => ServerType.Auth;
 }
 
 public class MsgPingHandler(ILogger<MsgPingHandler> logger) : PingHandlerBase(logger)
 {
-    public override MessageDomain Domain => MessageDomain.Msg;
+    public override ServerType ServerType => ServerType.Msg;
 }
 
 public class AreaPingHandler(ILogger<AreaPingHandler> logger) : PingHandlerBase(logger)
 {
-    public override MessageDomain Domain => MessageDomain.Area;
+    public override ServerType ServerType => ServerType.Area;
 }

@@ -1,9 +1,10 @@
 using System.Collections.Concurrent;
+using AISpace.Common;
 using AISpace.Common.Game;
 
 namespace AISpace.Server;
 
-public sealed class DomainServerHealthRegistry
+public sealed class GameServerHealthRegistry
 {
     public static class Keys
     {
@@ -14,7 +15,7 @@ public sealed class DomainServerHealthRegistry
 
     private readonly ConcurrentDictionary<string, ServerHealthInfo> _info = new();
 
-    public DomainServerHealthRegistry()
+    public GameServerHealthRegistry()
     {
         _info[Keys.AuthServer] = new ServerHealthInfo("AuthServer", 50050, "starting");
         _info[Keys.MsgServer] = new ServerHealthInfo("MsgServer", 50052, "starting");
@@ -42,16 +43,13 @@ public sealed class DomainServerHealthRegistry
     {
         var clients = key switch
         {
-            Keys.AuthServer => state.AuthClients,
-            Keys.MsgServer => state.MsgClients,
-            Keys.AreaServer => state.AreaClients,
-            _ => null,
+            Keys.AuthServer => state.GetServerClients(ServerType.Auth),
+            Keys.MsgServer => state.GetServerClients(ServerType.Msg),
+            Keys.AreaServer => state.GetServerClients(ServerType.Area),
+            _ => [],
         };
 
-        if (clients is null)
-            return Array.Empty<string>();
-
-        return clients.Values.Select(session => session.User?.Username).Where(name => !string.IsNullOrWhiteSpace(name)).Select(name => name!).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
+        return clients.Select(session => session.User?.Username).Where(name => !string.IsNullOrWhiteSpace(name)).Select(name => name!).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     private static string KeyToDisplayName(string key) =>

@@ -8,7 +8,7 @@ public class AreaTrashboxCloseHandler : IPacketHandler
 {
     public PacketType RequestType => PacketType.TrashboxCloseRequest;
     public PacketType ResponseType => PacketType.TrashboxCloseResponse;
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

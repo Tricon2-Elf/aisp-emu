@@ -11,7 +11,7 @@ public class ItemEquipStartHandler(ILogger<ItemEquipStartHandler> logger) : IPac
 
     public PacketType ResponseType => PacketType.ItemEquipStartResponse;
 
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     private readonly ILogger<ItemEquipStartHandler> _logger = logger;
 

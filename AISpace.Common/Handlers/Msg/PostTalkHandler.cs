@@ -8,7 +8,7 @@ public class PostTalkHandler(SharedState state) : IPacketHandler
 {
     public PacketType RequestType => PacketType.PostTalkRequest;
     public PacketType ResponseType => PacketType.PostTalkResponse;
-    public MessageDomain Domain => MessageDomain.Msg;
+    public ServerType ServerType => ServerType.Msg;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
@@ -20,7 +20,7 @@ public class PostTalkHandler(SharedState state) : IPacketHandler
         var forwardPacket = new TalkForwardNotify(session.CharacterId, chatRequest.DistID, chatRequest.Message, chatRequest.BalloonID);
         byte[] broadcastData = forwardPacket.ToBytes();
 
-        foreach (var client in state.MsgClients.Values)
+        foreach (var client in state.GetServerClients(ServerType.Msg))
         {
             if (client.IsAuthenticated && client.ConnectionId != session.ConnectionId)
             {

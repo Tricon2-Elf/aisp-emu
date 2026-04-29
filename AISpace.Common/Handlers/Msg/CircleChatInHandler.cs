@@ -9,7 +9,7 @@ public class CircleChatInHandler(ILogger<CircleChatInHandler> logger) : PacketHa
 {
     public override PacketType RequestType => PacketType.CircleChatInRequest;
     public override PacketType ResponseType => PacketType.CircleChatInResponse;
-    public override MessageDomain Domain => MessageDomain.Msg;
+    public override ServerType ServerType => ServerType.Msg;
 
     public override async Task<CircleChatInResponse?> HandleAsync(CircleChatInRequest request, IPlayerSession session, CancellationToken ct = default)
     {

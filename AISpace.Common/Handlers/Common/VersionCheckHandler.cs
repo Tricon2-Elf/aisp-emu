@@ -8,7 +8,7 @@ public abstract class VersionCheckHandlerBase : IPacketHandler
 {
     public PacketType RequestType => PacketType.VersionCheckRequest;
     public PacketType ResponseType => PacketType.VersionCheckResponse;
-    public abstract MessageDomain Domain { get; }
+    public abstract ServerType ServerType { get; }
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
@@ -20,15 +20,15 @@ public abstract class VersionCheckHandlerBase : IPacketHandler
 
 public class AuthVersionCheckHandler : VersionCheckHandlerBase
 {
-    public override MessageDomain Domain => MessageDomain.Auth;
+    public override ServerType ServerType => ServerType.Auth;
 }
 
 public class MsgVersionCheckHandler : VersionCheckHandlerBase
 {
-    public override MessageDomain Domain => MessageDomain.Msg;
+    public override ServerType ServerType => ServerType.Msg;
 }
 
 public class AreaVersionCheckHandler : VersionCheckHandlerBase
 {
-    public override MessageDomain Domain => MessageDomain.Area;
+    public override ServerType ServerType => ServerType.Area;
 }

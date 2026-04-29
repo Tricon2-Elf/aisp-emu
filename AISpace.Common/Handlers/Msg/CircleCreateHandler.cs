@@ -13,7 +13,7 @@ public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> lo
 {
     public override PacketType RequestType => PacketType.CircleCreateRequest;
     public override PacketType ResponseType => PacketType.CircleCreateResponse;
-    public override MessageDomain Domain => MessageDomain.Msg;
+    public override ServerType ServerType => ServerType.Msg;
 
     public override async Task<CircleCreateResponse?> HandleAsync(CircleCreateRequest request, IPlayerSession session, CancellationToken ct = default)
     {

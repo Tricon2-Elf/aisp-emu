@@ -7,7 +7,7 @@ public class AreaFriendLinkTagGetHandler : IPacketHandler
 {
     public PacketType RequestType => (PacketType)0x0F97; // Тот самый 3991
     public PacketType ResponseType => (PacketType)0x239E; // recv_get_friend_link_tag_r
-    public MessageDomain Domain => MessageDomain.Area;
+    public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {

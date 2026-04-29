@@ -221,10 +221,10 @@ public class AreaMapHandlersTests
             var differentChannelPeer = CreateSession(CreateUserWithCharacter(3, 2003, "other-channel", "Other Channel", 10990100), 10990100, 2);
             var destinationPeer = CreateSession(CreateUserWithCharacter(4, 2004, "dest-peer", "Dest Peer", 10990110), 10990110, 1);
 
-            state.RegisterClient("Area", session);
-            state.RegisterClient("Area", oldPeer);
-            state.RegisterClient("Area", differentChannelPeer);
-            state.RegisterClient("Area", destinationPeer);
+            state.RegisterClient(ServerType.Area, session);
+            state.RegisterClient(ServerType.Area, oldPeer);
+            state.RegisterClient(ServerType.Area, differentChannelPeer);
+            state.RegisterClient(ServerType.Area, destinationPeer);
 
             var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
 
@@ -320,8 +320,8 @@ public class AreaMapHandlersTests
             session.HasMovedSinceMapLoad = true;
             var oldPeer = CreateSession(CreateUserWithCharacter(2, 7002, "old-peer", "Old Peer", 10990100), 10990100, 1);
 
-            state.RegisterClient("Area", session);
-            state.RegisterClient("Area", oldPeer);
+            state.RegisterClient(ServerType.Area, session);
+            state.RegisterClient(ServerType.Area, oldPeer);
 
             var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
 
@@ -407,7 +407,7 @@ public class AreaMapHandlersTests
             var session = CreateSession(user, 10990100, 1, x: -9055f, y: 2f, z: -17988f, rotation: 0);
             session.HasMovedSinceMapLoad = false;
 
-            state.RegisterClient("Area", session);
+            state.RegisterClient(ServerType.Area, session);
 
             var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
 
@@ -490,7 +490,7 @@ public class AreaMapHandlersTests
             var session = CreateSession(user, 10990100, 1, x: -9800f, y: 2f, z: -18000f, rotation: 0);
             session.HasMovedSinceMapLoad = true;
 
-            state.RegisterClient("Area", session);
+            state.RegisterClient(ServerType.Area, session);
 
             var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
 
@@ -700,8 +700,8 @@ public class AreaMapHandlersTests
             };
 
             var oldPeer = CreateSession(CreateUserWithCharacter(2, 7302, "old-peer", "Old Peer", 10990100), 10990100, 1);
-            state.RegisterClient("Area", session);
-            state.RegisterClient("Area", oldPeer);
+            state.RegisterClient(ServerType.Area, session);
+            state.RegisterClient(ServerType.Area, oldPeer);
 
             var handler = new AreaEventAreaMapSelectExecRHandler(CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaEventAreaMapSelectExecRHandler>.Instance);
 
@@ -755,10 +755,10 @@ public class AreaMapHandlersTests
         var oldPeer = CreateSession(CreateUserWithCharacter(3, 3003, "old-peer", "Old Peer", 10990100), 10990100, 1);
         var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 3004, "other-channel", "Other Channel", 10990110), 10990110, 2);
 
-        state.RegisterClient("Area", session);
-        state.RegisterClient("Area", destinationPeer);
-        state.RegisterClient("Area", oldPeer);
-        state.RegisterClient("Area", differentChannelPeer);
+        state.RegisterClient(ServerType.Area, session);
+        state.RegisterClient(ServerType.Area, destinationPeer);
+        state.RegisterClient(ServerType.Area, oldPeer);
+        state.RegisterClient(ServerType.Area, differentChannelPeer);
 
         var handler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance);
 
@@ -785,7 +785,7 @@ public class AreaMapHandlersTests
         var session = CreateSession(CreateUserWithCharacter(1, 3051, "solo-user", "Solo User", 10990110), 10990110, 1, x: 11f, y: 12f, z: 13f);
         session.NeedsPostLoadSelfAvatarNotify = true;
 
-        state.RegisterClient("Area", session);
+        state.RegisterClient(ServerType.Area, session);
 
         var handler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance);
 
@@ -838,7 +838,7 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            state.SetPendingAreaTransition(new SharedState.PendingAreaTransition(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
+            state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
 
             var session = new CapturingPlayerSession();
             var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), new TestMainContextFactory(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
@@ -872,10 +872,10 @@ public class AreaMapHandlersTests
             var differentMapPeer = CreateSession(CreateUserWithCharacter(3, 4003, "other-map", "Other Map", 10990110), 10990110, 1);
             var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 4004, "other-channel", "Other Channel", 10990100), 10990100, 2);
 
-            state.RegisterClient("Area", mover);
-            state.RegisterClient("Area", sameAreaPeer);
-            state.RegisterClient("Area", differentMapPeer);
-            state.RegisterClient("Area", differentChannelPeer);
+            state.RegisterClient(ServerType.Area, mover);
+            state.RegisterClient(ServerType.Area, sameAreaPeer);
+            state.RegisterClient(ServerType.Area, differentMapPeer);
+            state.RegisterClient(ServerType.Area, differentChannelPeer);
 
             var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
             var move = new MovementData(9f, 8f, 7f, 6, MovementType.Running);
@@ -957,9 +957,9 @@ public class AreaMapHandlersTests
             var oldPeer = CreateSession(CreateUserWithCharacter(2, 4102, "old-peer", "Old Peer", 10990100), 10990100, 1);
             var differentChannelPeer = CreateSession(CreateUserWithCharacter(3, 4103, "other-channel", "Other Channel", 10990100), 10990100, 2);
 
-            state.RegisterClient("Area", mover);
-            state.RegisterClient("Area", oldPeer);
-            state.RegisterClient("Area", differentChannelPeer);
+            state.RegisterClient(ServerType.Area, mover);
+            state.RegisterClient(ServerType.Area, oldPeer);
+            state.RegisterClient(ServerType.Area, differentChannelPeer);
 
             var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
 
@@ -1047,8 +1047,8 @@ public class AreaMapHandlersTests
             var mover = CreateSession(user, 10990100, 1, x: -10450f, y: 2f, z: -18000f, rotation: 0);
             var peer = CreateSession(CreateUserWithCharacter(2, 4202, "selector-peer", "Selector Peer", 10990100), 10990100, 1);
 
-            state.RegisterClient("Area", mover);
-            state.RegisterClient("Area", peer);
+            state.RegisterClient(ServerType.Area, mover);
+            state.RegisterClient(ServerType.Area, peer);
 
             var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
 
@@ -1158,7 +1158,7 @@ public class AreaMapHandlersTests
             var session = CreateSession(user, 10990100, 1, x: -9800f, y: 2f, z: -18000f, rotation: 0);
             session.HasMovedSinceMapLoad = true;
 
-            state.RegisterClient("Area", session);
+            state.RegisterClient(ServerType.Area, session);
 
             var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
 
@@ -1234,8 +1234,8 @@ public class AreaMapHandlersTests
             var mover = CreateSession(user, 10990100, 1, x: -9100f, y: 2f, z: -18780f, rotation: 0);
             var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 4252, "same-peer", "Same Peer", 10990100), 10990100, 1);
 
-            state.RegisterClient("Area", mover);
-            state.RegisterClient("Area", sameAreaPeer);
+            state.RegisterClient(ServerType.Area, mover);
+            state.RegisterClient(ServerType.Area, sameAreaPeer);
 
             var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
 
@@ -1266,10 +1266,10 @@ public class AreaMapHandlersTests
         var differentMapPeer = CreateSession(CreateUserWithCharacter(3, 5003, "other-map", "Other Map", 10990110), 10990110, 1);
         var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 5004, "other-channel", "Other Channel", 10990100), 10990100, 2);
 
-        state.RegisterClient("Area", sender);
-        state.RegisterClient("Area", sameAreaPeer);
-        state.RegisterClient("Area", differentMapPeer);
-        state.RegisterClient("Area", differentChannelPeer);
+        state.RegisterClient(ServerType.Area, sender);
+        state.RegisterClient(ServerType.Area, sameAreaPeer);
+        state.RegisterClient(ServerType.Area, differentMapPeer);
+        state.RegisterClient(ServerType.Area, differentChannelPeer);
 
         var handler = new AreaEmotionCharaHandler(state);
 
@@ -1289,9 +1289,9 @@ public class AreaMapHandlersTests
         var visibleTarget = CreateSession(CreateUserWithCharacter(2, 6002, "visible-target", "Visible", 10990100, like1: "Apples"), 10990100, 1);
         var hiddenTarget = CreateSession(CreateUserWithCharacter(3, 6003, "hidden-target", "Hidden", 10990100, like1: "Secret"), 10990100, 2);
 
-        state.RegisterClient("Area", requester);
-        state.RegisterClient("Area", visibleTarget);
-        state.RegisterClient("Area", hiddenTarget);
+        state.RegisterClient(ServerType.Area, requester);
+        state.RegisterClient(ServerType.Area, visibleTarget);
+        state.RegisterClient(ServerType.Area, hiddenTarget);
 
         var handler = new AreaAvatarProfileGetDataHandler(state);
 
