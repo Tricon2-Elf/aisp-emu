@@ -46,3 +46,9 @@ Community contributions are welcome. Please ensure changes respect the education
 ## Disclaimer
 
 This emulator is an unofficial, community effort provided for educational and preservation purposes. It is not affiliated with the original AISp@ce developers or publishers.
+
+## AI-Assisted Development
+
+This project makes use of AI-assisted development tools to help accelerate certain tasks. This choice is driven by limited development time and other constraints that make traditional pacing difficult. AI assistance allows the project to maintain momentum despite these challenges.
+
+**All AI-assisted code is reviewed, tested, and verified before being committed and all responsibility of said code is owned by the author and not the LLM** No code reaches the repository without human oversight. The use of AI is strictly assistive — it does not replace manual code review, testing, or architectural decision-making.
