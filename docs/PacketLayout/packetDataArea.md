@@ -1,7 +1,6 @@
+# Area Server
 
-## Area Server
-
-### Ping (PingRequest / PingResponse)
+## Ping (PingRequest / PingResponse)
 
 - **Server:** Area (also Auth, Msg)
 - **Direction:** ClientToServer / ServerToClient (same packet type both ways)
@@ -12,11 +11,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Time}
 ```
 
-### send_enter_areasv (AreasvEnterRequest)
+## send_enter_areasv (AreasvEnterRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -27,12 +26,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {UserID}
     FixedString(20, ASCII) {OTP}
 ```
 
-### recv_enter_areasv_r (AreasvEnterResponse)
+## recv_enter_areasv_r (AreasvEnterResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -43,12 +42,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {ObjID}
 ```
 
-### send_leave_areasv (AreasvLeaveRequest)
+## send_leave_areasv (AreasvLeaveRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -59,11 +58,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_leave_areasv_r (AreasvLeaveResponse)
+## recv_leave_areasv_r (AreasvLeaveResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -74,11 +73,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_move_avatar (AvatarMoveRequest)
+## send_move_avatar (AvatarMoveRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -89,11 +88,11 @@
 
 **Layout:**
 
-```
+```text
     2 × (Float {X}, Float {Y}, Float {Z}, SByte {Rotation}, Byte {Animation})  // MovementData, 14 bytes each
 ```
 
-### recv_notify_move_chara (AvatarNotifyMove)
+## recv_notify_move_chara (AvatarNotifyMove)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -104,13 +103,13 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {AvatarId}
     Float {X}, Float {Y}, Float {Z}, SByte {Rotation}, Byte {Animation}  // MovementData
 ```
 
-### send_get_ai_upload_rate (AiUploadRateGetRequest)
+## send_get_ai_upload_rate (AiUploadRateGetRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -121,11 +120,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_ai_upload_rate_r (AiUploadRateGetResponse)
+## recv_get_ai_upload_rate_r (AiUploadRateGetResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -136,11 +135,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_ai_download_list (AiDownloadListGetRequest)
+## send_get_ai_download_list (AiDownloadListGetRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -151,11 +150,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_ai_download_list_r (AiDownloadListGetResponse)
+## recv_get_ai_download_list_r (AiDownloadListGetResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -166,12 +165,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {Downs}
 ```
 
-### send_get_emotion_base_list (EmotionGetBaseListRequest)
+## send_get_emotion_base_list (EmotionGetBaseListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -182,11 +181,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_emotion_base_list_r (EmotionGetBaseListResponse)
+## recv_get_emotion_base_list_r (EmotionGetBaseListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -197,12 +196,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {ArrayLength}  // 0 in current impl
 ```
 
-### send_get_obtained_emotion_list (EmotionGetObtainedListRequest)
+## send_get_obtained_emotion_list (EmotionGetObtainedListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -213,11 +212,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_obtained_emotion_list_r (EmotionGetObtainedListResponse)
+## recv_get_obtained_emotion_list_r (EmotionGetObtainedListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -228,12 +227,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {EmotionIds}  // count or placeholder, 0 in current impl
 ```
 
-### send_get_equip_order_list (EquipOrderListRequest)
+## send_get_equip_order_list (EquipOrderListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -244,11 +243,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_equip_order_list_r (EquipOrderListResponse)
+## recv_get_equip_order_list_r (EquipOrderListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -259,13 +258,13 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {CharaOrder}
     UInt {JobOrder}
 ```
 
-### send_get_friend_list_data (FriendGetListDataRequest)
+## send_get_friend_list_data (FriendGetListDataRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -276,11 +275,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_friend_list_data_r (FriendGetListDataResponse)
+## recv_get_friend_list_data_r (FriendGetListDataResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -291,14 +290,14 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {FriendData}
     UInt {AlreadyIn}
     UInt {Comment}
 ```
 
-### send_get_friend_link_tag_data (FriendLinkTagGetRequest)
+## send_get_friend_link_tag_data (FriendLinkTagGetRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -309,11 +308,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_friend_link_tag_data_r (FriendLinkTagGetResponse)
+## recv_get_friend_link_tag_data_r (FriendLinkTagGetResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -324,7 +323,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {AvatarId}
     UInt {TagData}
@@ -333,7 +332,7 @@
     UInt {QuestionnaireSlot}
 ```
 
-### send_get_furniture_base_list (FurnitureGetBaseListRequest)
+## send_get_furniture_base_list (FurnitureGetBaseListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -344,11 +343,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_furniture_base_list_r (FurnitureGetBaseListResponse)
+## recv_get_furniture_base_list_r (FurnitureGetBaseListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -359,12 +358,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {Count}
 ```
 
-### send_heroine_ticket_get_base (HeroineGetTicketBaseRequest)
+## send_heroine_ticket_get_base (HeroineGetTicketBaseRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -375,11 +374,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_heroine_ticket_get_base_r (HeroineGetTicketBaseResponse)
+## recv_heroine_ticket_get_base_r (HeroineGetTicketBaseResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -390,11 +389,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {HeroineTickets}
 ```
 
-### send_get_item_list (ItemGetListRequest)
+## send_get_item_list (ItemGetListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -405,11 +404,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_item_list_r (ItemGetListResponse)
+## recv_get_item_list_r (ItemGetListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -420,11 +419,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_enter_map_data_request_end (MapDataEnterEndRequest)
+## send_enter_map_data_request_end (MapDataEnterEndRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -435,11 +434,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_enter_map_data_request_end_r (MapDataEnterEndResponse)
+## recv_enter_map_data_request_end_r (MapDataEnterEndResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -450,11 +449,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_enter_map (MapEnterRequest)
+## send_enter_map (MapEnterRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -465,14 +464,14 @@
 
 **Layout:**
 
-```
+```text
     UInt {MapId}
     UInt {ChannelId}
 ```
 
 **Decompiled behavior note:** `sub_790530` calls `CProtoArea_client::send_enter_map(GetMapId(), sub_6D76D0())`, so this packet is not the destination handoff by itself.
 
-### recv_enter_map_r (MapEnterResponse)
+## recv_enter_map_r (MapEnterResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -483,11 +482,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_maplink_data (MapLinkGetDataRequest)
+## send_get_maplink_data (MapLinkGetDataRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -498,12 +497,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {MapId}
     UInt {ChannelId}
 ```
 
-### recv_get_maplink_data_r (MapLinkGetDataResponse)
+## recv_get_maplink_data_r (MapLinkGetDataResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -514,11 +513,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### recv_notify_maplink_data (MapLinkNotifyData)
+## recv_notify_maplink_data (MapLinkNotifyData)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -529,7 +528,7 @@
 
 **Layout (decompiled ReadMapLinKData order, 21 bytes after Result):**
 
-```
+```text
     UInt {Result}           // 4 bytes
     Float {PositionX}       // float_0
     Float {PositionY}       // float_4
@@ -543,7 +542,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **How the client knows where a maplink goes:** The maplink packet does **not** contain a destination map ID. The client gets destinations from **recv_notify_select_map** (see below). The client matches maplinks to destinations by **index**: the first maplink corresponds to the first entry in the select_map list, the second to the second, etc. So to tell the client where each maplink goes: send **recv_notify_select_map** with one entry per maplink, in the same order as the maplinks you sent. When the player enters a maplink trigger, the client uses the matching select_map entry (map ID, server info, etc.) to perform the map change (e.g. send_enter_map or channel select).
 
-### recv_notify_select_map (NotifySelectMap)
+## recv_notify_select_map (NotifySelectMap)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -574,7 +573,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Usage:** Send this after (or with) maplink data so the client knows which map each maplink leads to. Count and order must match your maplinks.
 
-### recv_notify_change_map (NotifyChangeMap)
+## recv_notify_change_map (NotifyChangeMap)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -585,7 +584,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout (decompiled-backed):**
 
-```
+```text
     UInt  {ChannelId}
     UInt  {MapId}
     UInt  {MapSerialId}
@@ -601,7 +600,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
     Byte  {FadeFlag}
 ```
 
-### recv_notify_change_map_failed (NotifyChangeMapFailed)
+## recv_notify_change_map_failed (NotifyChangeMapFailed)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -612,11 +611,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_mascot_count (MascotGetCountRequest)
+## send_get_mascot_count (MascotGetCountRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -627,11 +626,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_mascot_count_r (MascotGetCountResponse)
+## recv_get_mascot_count_r (MascotGetCountResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -642,14 +641,14 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {Count}
     UInt {SerialId}
     UInt {Name}
 ```
 
-### send_get_money_data (MoneyDataGetRequest)
+## send_get_money_data (MoneyDataGetRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -660,11 +659,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_money_data_r (MoneyDataGetResponse)
+## recv_get_money_data_r (MoneyDataGetResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -675,11 +674,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_mission_data (MissionDataRequest)
+## send_get_mission_data (MissionDataRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -690,11 +689,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_mission_data_r (MissionDataResponse)
+## recv_get_mission_data_r (MissionDataResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -705,11 +704,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_myroom_furniture (MyRoomGetFurnitureRequest)
+## send_get_myroom_furniture (MyRoomGetFurnitureRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -720,11 +719,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_myroom_furniture_r (MyRoomGetFurnitureResponse)
+## recv_get_myroom_furniture_r (MyRoomGetFurnitureResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -735,11 +734,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_niconi_commons_base_list (NiconiCommonsBaseListRequest)
+## send_get_niconi_commons_base_list (NiconiCommonsBaseListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -750,11 +749,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_niconi_commons_base_list_r (NiconiCommonsBaseListResponse)
+## recv_get_niconi_commons_base_list_r (NiconiCommonsBaseListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -765,12 +764,12 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {CommonsBase}
 ```
 
-### send_get_monster_data (NpcGetDataRequest)
+## send_get_monster_data (NpcGetDataRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -781,11 +780,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_monster_data_r (NpcGetDataResponse)
+## recv_get_monster_data_r (NpcGetDataResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -796,11 +795,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_robo_list (RoboGetListRequest)
+## send_get_robo_list (RoboGetListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -811,11 +810,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_robo_list_r (RoboGetListResponse)
+## recv_get_robo_list_r (RoboGetListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -826,12 +825,12 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {RoboCount}
 ```
 
-### send_robo_voice_type_update (RoboVoiceTypeUpdateRequest)
+## send_robo_voice_type_update (RoboVoiceTypeUpdateRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -842,11 +841,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_robo_voice_type_update_r (RoboVoiceTypeUpdateResponse)
+## recv_robo_voice_type_update_r (RoboVoiceTypeUpdateResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -857,12 +856,12 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     Byte {VoiceType}
 ```
 
-### send_get_timezone (TimeZoneGetRequest)
+## send_get_timezone (TimeZoneGetRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -873,11 +872,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_timezone_r (TimeZoneGetResponse)
+## recv_get_timezone_r (TimeZoneGetResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -888,7 +887,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {Timezone}
     UInt {Time}
@@ -896,7 +895,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
     Byte {Flag}
 ```
 
-### send_get_ucc_adv_figure_base_list (UccAdvFigureBaseListRequest)
+## send_get_ucc_adv_figure_base_list (UccAdvFigureBaseListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -907,11 +906,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_ucc_adv_figure_base_list_r (UccAdvFigureBaseListResponse)
+## recv_get_ucc_adv_figure_base_list_r (UccAdvFigureBaseListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -922,12 +921,12 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {AdvFigures}
 ```
 
-### send_get_ucc_voice_base_list (UccVoiceBaseListRequest)
+## send_get_ucc_voice_base_list (UccVoiceBaseListRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -938,11 +937,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_ucc_voice_base_list_r (UccVoiceBaseListResponse)
+## recv_get_ucc_voice_base_list_r (UccVoiceBaseListResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -953,12 +952,12 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {VoiceData}
 ```
 
-### send_update_option (UpdateOptionRequest)
+## send_update_option (UpdateOptionRequest)
 
 - **Server:** Area
 - **Direction:** ClientToServer
@@ -969,11 +968,11 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_update_option_r (UpdateOptionResponse)
+## recv_update_option_r (UpdateOptionResponse)
 
 - **Server:** Area
 - **Direction:** ServerToClient
@@ -984,7 +983,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 **Layout:**
 
-```
+```text
     UInt {Result}  // 1 = success in current impl
 ```
 

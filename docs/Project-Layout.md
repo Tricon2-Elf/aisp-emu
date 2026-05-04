@@ -4,7 +4,7 @@ This document explains the structure of the AISpace repository, how the runtime 
 
 ## Repository map
 
-```
+```text
 aisp-emu/
 ├── AISpace.sln                          # Solution file
 ├── docker-compose.yml                   # Container orchestration
@@ -33,7 +33,7 @@ aisp-emu/
 The executable project. Runs all three game domains as `BackgroundService` instances in a single process.
 
 | File | Role |
-|---|---|
+| --- | --- |
 | `Program.cs` | Host builder, DI registration, DB migration, domain startup |
 | `GameServerBase.cs` | Abstract base: owns the TCP listener, packet dispatch loop, 60 Hz tick |
 | `AuthServer.cs` | Auth domain (port 50050): login, world selection |
@@ -48,7 +48,7 @@ The executable project. Runs all three game domains as `BackgroundService` insta
 All game logic, persistence, and packet handling.
 
 | Path | Contents |
-|---|---|
+| --- | --- |
 | `PacketDispatcher.cs` | Routes incoming packets to handlers via DI-resolved `IPacketHandler` |
 | `PacketHandlerBase.cs` | Generic request/response handler base class |
 | `PasswordHasher.cs` | Password hashing utilities |
@@ -69,7 +69,7 @@ All game logic, persistence, and packet handling.
 Wire-format definitions with zero dependency on game logic.
 
 | Path | Contents |
-|---|---|
+| --- | --- |
 | `Packet.cs` | `IOutgoingPacket`, `IIncomingPacket`, `Packet` record |
 | `PacketType.cs` | Master enum (~600 entries with `[PacketMetadata]` attributes) |
 | `PacketReader.cs` / `PacketWriter.cs` | Binary serialization helpers |
@@ -101,7 +101,7 @@ Wire-format definitions with zero dependency on game logic.
 
 ### Packet flow
 
-```
+```text
 Client TCP socket
   → VceListener (raw bytes → Camellia-128 decrypt → Packet)
   → Channel<Packet> (System.Threading.Channels)
@@ -113,7 +113,7 @@ Client TCP socket
 ### Domain responsibilities
 
 | Domain | Port | Responsibility |
-|---|---|---|
+| --- | --- | --- |
 | Auth | 50050 | Authentication, version check, world list/selection |
 | Msg | 50052 | Avatar CRUD/select, channel list/select, circles, chat, mail, enquete |
 | Area | 50054 | In-world gameplay: maps, movement, items, equipment, NPCs, emotions, missions, trading, UCC |

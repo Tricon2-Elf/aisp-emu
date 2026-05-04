@@ -1,6 +1,6 @@
 # Client Messages
 
-## Data Types:
+## Data Types
 
 All multi-byte numeric types are **little-endian**.
 
@@ -22,7 +22,6 @@ All multi-byte numeric types are **little-endian**.
   - Default encoding: Shift_JIS
   - Writer: `WriteFixedString(value, length)`; default encoding Shift_JIS; padded with zeros  
   - Document as `FString(n)` or `FString(n, encoding)` e.g. `FString(32, Shift_JIS)`
-
 
 ## Encrypted wire and multi-packet layout (VCE codec)
 
@@ -66,7 +65,6 @@ So `data_start = 2 + (codec & 0xF)` (codec byte + length bytes). The server pars
 
 If the decrypted block does not look like a valid codec (e.g. first message is a legacy single packet with no codec byte), the server treats the **entire** block as one packet: **UShort {PacketType}** then body. So unencrypted-style `[type 2][body]` is supported inside an encrypted block when no codec prefix is used.
 
-
 ### PacketTemplate
 
 - **Server:** Auth | Msg | Area
@@ -78,7 +76,7 @@ If the decrypted block does not look like a valid codec (e.g. first message is a
 
 **Layout:**
 
-```
+```text
     {PacketID}
     {Result}
     CString(ASCII) {username}

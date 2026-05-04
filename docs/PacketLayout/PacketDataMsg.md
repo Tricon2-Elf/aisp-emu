@@ -1,8 +1,6 @@
+# Msg Server
 
-
-## Msg Server
-
-### send_login (LoginRequest)
+## send_login (LoginRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -13,12 +11,12 @@
 
 **Layout:**
 
-```
+```text
     UInt {UserId}
     Bytes(20) {OTP}
 ```
 
-### recv_login_r (LoginResponse)
+## recv_login_r (LoginResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -29,11 +27,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}  // AuthResponseResult: 0=Success, ...
 ```
 
-### send_logout (LogoutRequest)
+## send_logout (LogoutRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -44,11 +42,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_logout_r (LogoutResponse)
+## recv_logout_r (LogoutResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -59,11 +57,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}  // 0
 ```
 
-### send_avatar_create (AvatarCreateRequest)
+## send_avatar_create (AvatarCreateRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -74,14 +72,14 @@
 
 **Layout:**
 
-```
+```text
     CString(ASCII) {AvatarName}
     UInt {ModelId}
     Bytes(19) {Visual}  // CharaVisual: UInt BloodType, Byte Month, Byte Day, UInt Gender, UInt CharacterID, Byte Face, UInt Hairstyle
     UInt {SlotId}
 ```
 
-### recv_avatar_create_r (AvatarCreateResponse)
+## recv_avatar_create_r (AvatarCreateResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -92,11 +90,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### recv_avatar_data (AvatarDataResponse)
+## recv_avatar_data (AvatarDataResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -107,7 +105,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     CString(ASCII) {Name}
     UInt {ModelId}
@@ -117,7 +115,7 @@
     30 × (UInt {EquipId}, UInt {Socket})  // ItemSlotInfo
 ```
 
-### send_get_enquete (EnqueteGetRequest)
+## send_get_enquete (EnqueteGetRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -128,11 +126,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_enquete_r (EnqueteGetResponse)
+## recv_get_enquete_r (EnqueteGetResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -143,7 +141,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {QuestionCount}
     foreach question:
@@ -152,7 +150,7 @@
         10 × FixedString(61, Shift_JIS) {Answer}
 ```
 
-### send_enquete_answer (EnqueteAnswerRequest)
+## send_enquete_answer (EnqueteAnswerRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -163,14 +161,14 @@
 
 **Layout:**
 
-```
+```text
     UInt {QuestionCount}
     QuestionCount × UInt {QuestionId}
     UInt {AnswerCount}
     AnswerCount × UInt {AnswerId}
 ```
 
-### recv_enquete_answer_r (EnqueteAnswerResponse)
+## recv_enquete_answer_r (EnqueteAnswerResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -181,11 +179,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_select_avatar (AvatarSelectRequest)
+## send_select_avatar (AvatarSelectRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -196,11 +194,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {SlotId}
 ```
 
-### recv_select_avatar_r (AvatarSelectResponse)
+## recv_select_avatar_r (AvatarSelectResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -211,11 +209,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_get_channellist (ChannelListGetRequest)
+## send_get_channellist (ChannelListGetRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -226,11 +224,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_channellist_r (ChannelListGetResponse)
+## recv_get_channellist_r (ChannelListGetResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -241,7 +239,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {ChannelCount}
     foreach channel:
@@ -252,7 +250,7 @@
         FixedString(65, ASCII) {IP}
 ```
 
-### send_select_channel (ChannelSelectRequest)
+## send_select_channel (ChannelSelectRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -263,11 +261,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {ChannelID}
 ```
 
-### recv_select_channel_r (ChannelSelectResponse)
+## recv_select_channel_r (ChannelSelectResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -278,7 +276,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UShort {Port}
     FixedString(65, ASCII) {IP}
@@ -286,7 +284,7 @@
     UInt {MapSerialID}
 ```
 
-### recv_get_avatar_create_info_r (AvatarGetCreateInfoResponse)
+## recv_get_avatar_create_info_r (AvatarGetCreateInfoResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -297,7 +295,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {MaleBuildCount}; MaleBuildCount × UInt
     UInt {MaleFaceCount}; MaleFaceCount × Byte
     UInt {MaleHairStyleCount}; MaleHairStyleCount × UInt
@@ -306,7 +304,7 @@
     (same for Female)
 ```
 
-### recv_get_avatar_data_r (AvatarGetDataResponse)
+## recv_get_avatar_data_r (AvatarGetDataResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -317,11 +315,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
 ```
 
-### send_talk_post (PostTalkRequest)
+## send_talk_post (PostTalkRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -332,14 +330,14 @@
 
 **Layout:**
 
-```
+```text
     UInt {MessageID}
     UInt {DistID}
     CString(ASCII) {Message}
     UInt {BalloonID}
 ```
 
-### send_get_item_base_list (ItemGetBaseListRequest)
+## send_get_item_base_list (ItemGetBaseListRequest)
 
 - **Server:** Msg
 - **Direction:** ClientToServer
@@ -350,11 +348,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_get_item_base_list_r (ItemGetBaseListResponse)
+## recv_get_item_base_list_r (ItemGetBaseListResponse)
 
 - **Server:** Msg
 - **Direction:** ServerToClient
@@ -365,7 +363,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {ItemCount}
     foreach item:
@@ -376,5 +374,3 @@
         FixedString(193, Shift_JIS) {LimitDesc}
         UInt {Flags}, UShort {_0x0448}, UInt {_0x044c}, UInt {_0x0450}, UInt {EmotionId}, UInt {_0x0458}
 ```
-
----

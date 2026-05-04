@@ -1,6 +1,6 @@
-## Auth Server
+# Auth Server
 
-### recv_authenticate_r (AuthenticateResponse)
+## recv_authenticate_r (AuthenticateResponse)
 
 - **Server:** Auth
 - **Direction:** ServerToClient
@@ -11,11 +11,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {UserId}
 ```
 
-### recv_authenticate_r_failure (AuthenticateFailureResponse)
+## recv_authenticate_r_failure (AuthenticateFailureResponse)
 
 - **Server:** Auth
 - **Direction:** ServerToClient
@@ -26,11 +26,11 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}  // AuthResponseResult: 0=Success, 1=Failure, 2=InvalidCredentials, 3=AccountBanned, ...
 ```
 
-### recv_check_version_r (VersionCheckResponse)
+## recv_check_version_r (VersionCheckResponse)
 
 - **Server:** Auth
 - **Direction:** ServerToClient
@@ -41,14 +41,14 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {Major}
     UInt {Minor}
     UInt {Ver}
 ```
 
-### recv_get_worldlist_r (WorldListResponse)
+## recv_get_worldlist_r (WorldListResponse)
 
 - **Server:** Auth
 - **Direction:** ServerToClient
@@ -59,7 +59,7 @@
 
 **Layout:**
 
-```
+```text
     Int {Result}
     UInt {WorldCount}
     foreach world:
@@ -69,7 +69,7 @@
     UInt {Padding}  // 0
 ```
 
-### recv_notify_logout (LogoutNotify)
+## recv_notify_logout (LogoutNotify)
 
 - **Server:** Auth
 - **Direction:** ServerToClient
@@ -80,11 +80,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### recv_select_world_r (WorldSelectResponse)
+## recv_select_world_r (WorldSelectResponse)
 
 - **Server:** Auth
 - **Direction:** ServerToClient
@@ -95,7 +95,7 @@
 
 **Layout:**
 
-```
+```text
     UInt {Result}
     UInt {WorldCount}  // 1
     UShort {Port}
@@ -103,7 +103,7 @@
     FixedString(20, ASCII) {OTP}
 ```
 
-### send_authenticate (AuthenticateRequest)
+## send_authenticate (AuthenticateRequest)
 
 - **Server:** Auth
 - **Direction:** ClientToServer
@@ -114,12 +114,12 @@
 
 **Layout:**
 
-```
+```text
     CString(ASCII) {Username}
     CString(ASCII) {Password}
 ```
 
-### send_check_version (VersionCheckRequest)
+## send_check_version (VersionCheckRequest)
 
 - **Server:** Auth
 - **Direction:** ClientToServer
@@ -130,13 +130,13 @@
 
 **Layout:**
 
-```
+```text
     UInt {Major}
     UInt {Minor}
     UInt {Version}
 ```
 
-### send_get_worldlist (Auth_WorldListRequest)
+## send_get_worldlist (Auth_WorldListRequest)
 
 - **Server:** Auth
 - **Direction:** ClientToServer
@@ -147,11 +147,11 @@
 
 **Layout:**
 
-```
+```text
     (empty)
 ```
 
-### send_select_world (WorldSelectRequest)
+## send_select_world (WorldSelectRequest)
 
 - **Server:** Auth
 - **Direction:** ClientToServer
@@ -162,6 +162,6 @@
 
 **Layout:**
 
-```
+```text
     UInt {WorldID}
 ```
