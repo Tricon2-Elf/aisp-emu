@@ -10,6 +10,7 @@ using System.Text;
 using AISpace.Common;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
+using AISpace.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +56,8 @@ internal class Program
 
         builder.Services.AddSingleton<PacketDispatcher>();
         builder.Services.Configure<MaintenanceOptions>(builder.Configuration.GetSection("Maintenance"));
+        builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+        builder.Services.AddSingleton<BroadcastService>();
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
 
@@ -98,6 +101,29 @@ internal class Program
 
         var app = builder.Build();
 
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                var apiSettings = context.RequestServices.GetRequiredService<IOptions<ApiSettings>>().Value;
+                if (string.IsNullOrEmpty(apiSettings.ApiKey))
+                {
+                    context.Response.StatusCode = 401;
+                    await context.Response.WriteAsJsonAsync(new { error = "API key not configured" });
+                    return;
+                }
+
+                string? providedKey = context.Request.Headers["X-Api-Key"];
+                if (providedKey != apiSettings.ApiKey)
+                {
+                    context.Response.StatusCode = 401;
+                    await context.Response.WriteAsJsonAsync(new { error = "Unauthorized" });
+                    return;
+                }
+            }
+            await next();
+        });
+
         app.MapHealthChecks("/health");
         app.MapGet(
             "/healthz",
@@ -106,6 +132,22 @@ internal class Program
                 var servers = registry.GetSnapshot(state);
                 var allHealthy = servers.Values.All(s => s.State == "healthy");
                 return Results.Json(new { status = allHealthy ? "Healthy" : "Unhealthy", servers }, statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
+            }
+        );
+
+        app.MapPost(
+            "/api/broadcast",
+            async (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) =>
+            {
+                var body = await request.ReadFromJsonAsync<BroadcastRequest>();
+                if (body == null || string.IsNullOrWhiteSpace(body.Message))
+                    return Results.BadRequest(new { error = "message is required" });
+
+                var log = loggerFactory.CreateLogger("API");
+                log.LogInformation("API broadcast: {Message}", body.Message);
+
+                var result = await broadcast.BroadcastAsync(body.Message, request.HttpContext.RequestAborted);
+                return Results.Ok(new { sent = true, areaClients = result.AreaClients, msgClients = result.MsgClients });
             }
         );
 
