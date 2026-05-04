@@ -22,7 +22,7 @@ public class BroadcastServiceTests
         state.RegisterClient(ServerType.Area, session.Object);
 
         var service = new BroadcastService(state);
-        var result = await service.BroadcastAsync("test");
+        var result = await service.BroadcastAsync("test", TestContext.Current.CancellationToken);
 
         Assert.Equal(1, result.AreaClients);
         Assert.Equal(0, result.MsgClients);
@@ -39,7 +39,7 @@ public class BroadcastServiceTests
         state.RegisterClient(ServerType.Msg, session.Object);
 
         var service = new BroadcastService(state);
-        var result = await service.BroadcastAsync("test");
+        var result = await service.BroadcastAsync("test", TestContext.Current.CancellationToken);
 
         Assert.Equal(0, result.AreaClients);
         Assert.Equal(1, result.MsgClients);
@@ -51,7 +51,7 @@ public class BroadcastServiceTests
     {
         var state = new SharedState();
         var service = new BroadcastService(state);
-        var result = await service.BroadcastAsync("test");
+        var result = await service.BroadcastAsync("test", TestContext.Current.CancellationToken);
 
         Assert.Equal(0, result.AreaClients);
         Assert.Equal(0, result.MsgClients);
@@ -71,7 +71,7 @@ public class BroadcastServiceTests
         state.RegisterClient(ServerType.Msg, unauth.Object);
 
         var service = new BroadcastService(state);
-        var result = await service.BroadcastAsync("test");
+        var result = await service.BroadcastAsync("test", TestContext.Current.CancellationToken);
 
         Assert.Equal(1, result.AreaClients);
         Assert.Equal(0, result.MsgClients);
