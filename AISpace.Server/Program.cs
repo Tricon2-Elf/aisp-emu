@@ -54,6 +54,7 @@ internal class Program
         builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().WithScopedLifetime());
 
         builder.Services.AddSingleton<PacketDispatcher>();
+        builder.Services.Configure<MaintenanceOptions>(builder.Configuration.GetSection("Maintenance"));
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
 
@@ -80,6 +81,8 @@ internal class Program
             sp.GetRequiredService<SharedState>(),
             sp.GetRequiredService<GameServerHealthRegistry>()
         ));
+
+        builder.Services.AddHostedService<ScheduledMaintenanceService>();
 
         builder.Services.AddHostedService(sp => new AreaServer(
             sp.GetRequiredService<ILogger<AreaServer>>(),
