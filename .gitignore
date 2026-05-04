@@ -367,5 +367,5 @@ FodyWeavers.xsd
 aisp-decompiled.c
 .cursor
 .vscode/
-docs
+localDocs
 internal-nlog.txt
