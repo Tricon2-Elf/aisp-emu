@@ -61,43 +61,11 @@ internal class Program
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
 
-        builder.Services.AddHostedService(sp => new AuthServer(
-            sp.GetRequiredService<ILogger<AuthServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50050,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<GameServerHealthRegistry>()
-        ));
-
-        builder.Services.AddHostedService(sp => new MsgServer(
-            sp.GetRequiredService<ILogger<MsgServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50052,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<GameServerHealthRegistry>()
-        ));
+        builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AuthServer>(sp, 50050));
+        builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<MsgServer>(sp, 50052));
+        builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AreaServer>(sp, 50054));
 
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
-
-        builder.Services.AddHostedService(sp => new AreaServer(
-            sp.GetRequiredService<ILogger<AreaServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50054,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<GameServerHealthRegistry>()
-        ));
 
         var app = builder.Build();
 
