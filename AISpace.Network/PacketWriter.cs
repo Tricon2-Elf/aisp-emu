@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AISpace.Network;
 
-public class PacketWriter
+public class PacketWriter : IPacketWriter
 {
     private readonly MemoryStream _stream = new();
 
