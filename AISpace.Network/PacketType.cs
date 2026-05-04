@@ -887,7 +887,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_out", ImplementationState.NotImplemented)]
     EventFadeOutNotify = 0x3925,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message", ImplementationState.Implemented)]
     EventMessageNotify = 0x662F,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message_close", ImplementationState.NotImplemented)]
