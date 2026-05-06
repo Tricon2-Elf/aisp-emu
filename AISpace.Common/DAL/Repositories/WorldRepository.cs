@@ -48,7 +48,7 @@ public class WorldRepository(MainContext db) : IWorldRepository
 
     /// <summary>Seeds world data if the Worlds table is empty. Call on startup after EnsureCreated.</summary>
     /// <param name="ipOverride">When set (e.g. IP_OVERRIDE in Docker), used as the world address instead of "localhost".</param>
-    public static async Task SeedWorldsIfEmptyAsync(MainContext db, string? ipOverride = null, CancellationToken ct = default)
+    public static async Task SeedWorldsIfEmptyAsync(MainContext db, string? ipOverride = null, ushort msgPort = 50052, CancellationToken ct = default)
     {
         if (await db.Worlds.AnyAsync(ct))
             return;
@@ -59,7 +59,7 @@ public class WorldRepository(MainContext db) : IWorldRepository
                 Name = "default",
                 Description = "Main World",
                 Address = address,
-                Port = 50052,
+                Port = msgPort,
             }
         );
         await db.SaveChangesAsync(ct);

@@ -74,7 +74,11 @@ public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, ICh
         var areaSession = state.GetAreaSessionByUserId(userId);
         var pendingSelection = areaSession?.PendingAreaMapSelection;
         if (areaSession == null || pendingSelection == null)
+        {
+            if (areaSession == null)
+                logger.LogDebug("GetChannelListMapHandler: No area session found for user {UserId} (area server may be in separate process)", userId);
             return;
+        }
 
         var channelId = (uint)matchingChannels[0].ChannelNum;
         if (!pendingSelection.Destinations.Any(destination => destination.MapId == request.MapId && destination.ChannelId == channelId))

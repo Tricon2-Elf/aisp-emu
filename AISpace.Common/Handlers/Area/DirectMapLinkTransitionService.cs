@@ -240,8 +240,9 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         var currentChannel = await channelRepository.GetByChannelNumAsync(channelId, ct);
         if (currentChannel == null)
         {
-            logger.LogWarning("Channel {ChannelId} was not found while building NotifyChangeMap; falling back to localhost:50054", channelId);
-            return new ServerInfo(serverOptions.Value.ResolveAddress("localhost"), 50054);
+            var port = (ushort)serverOptions.Value.AreaServer.Port;
+            logger.LogWarning("Channel {ChannelId} was not found while building NotifyChangeMap; falling back to localhost:{Port}", channelId, port);
+            return new ServerInfo(serverOptions.Value.ResolveAddress("localhost"), port);
         }
 
         return new ServerInfo(serverOptions.Value.ResolveAddress(currentChannel.IP), currentChannel.Port);

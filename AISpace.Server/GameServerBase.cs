@@ -40,6 +40,7 @@ public abstract class GameServerBase<T> : BackgroundService
         State = state;
         HealthRegistry = healthRegistry;
         _healthKey = healthKey;
+        HealthRegistry.AddServer(_healthKey, _port);
         Db.Database.EnsureCreated();
         Initialize();
     }

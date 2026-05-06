@@ -14,6 +14,7 @@ using AISpace.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NLog.Extensions.Logging;
 
@@ -61,9 +62,22 @@ internal class Program
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
 
-        builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AuthServer>(sp, 50050));
-        builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<MsgServer>(sp, 50052));
-        builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AreaServer>(sp, 50054));
+        // Read per-server config from the Server section
+        var authEnabled = builder.Configuration.GetValue("Server:AuthServer:Enabled", true);
+        var authPort = builder.Configuration.GetValue("Server:AuthServer:Port", 50050);
+        var msgEnabled = builder.Configuration.GetValue("Server:MsgServer:Enabled", true);
+        var msgPort = builder.Configuration.GetValue("Server:MsgServer:Port", 50052);
+        var areaEnabled = builder.Configuration.GetValue("Server:AreaServer:Enabled", true);
+        var areaPort = builder.Configuration.GetValue("Server:AreaServer:Port", 50054);
+
+        if (authEnabled)
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AuthServer>(sp, authPort));
+
+        if (msgEnabled)
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<MsgServer>(sp, msgPort));
+
+        if (areaEnabled)
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AreaServer>(sp, areaPort));
 
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
 
@@ -95,9 +109,9 @@ internal class Program
         app.MapHealthChecks("/health");
         app.MapGet(
             "/healthz",
-            (GameServerHealthRegistry registry, SharedState state) =>
+            (GameServerHealthRegistry registry, ISessionPresenceRepository presenceRepo) =>
             {
-                var servers = registry.GetSnapshot(state);
+                var servers = registry.GetSnapshot(presenceRepo);
                 var allHealthy = servers.Values.All(s => s.State == "healthy");
                 return Results.Json(new { status = allHealthy ? "Healthy" : "Unhealthy", servers }, statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
             }
@@ -119,6 +133,62 @@ internal class Program
             }
         );
 
+        app.MapPost(
+            "/api/area/broadcast",
+            async (HttpRequest request, SharedState state, ILoggerFactory loggerFactory) =>
+            {
+                var body = await request.ReadFromJsonAsync<BroadcastRequest>();
+                if (body == null || string.IsNullOrWhiteSpace(body.Message))
+                    return Results.BadRequest(new { error = "message is required" });
+
+                var log = loggerFactory.CreateLogger("API");
+                log.LogInformation("API area broadcast: {Message}", body.Message);
+
+                var forward = new AISpace.Network.Packets.Msg.TalkForwardNotify(0, 0, body.Message, 0);
+                var data = forward.ToBytes();
+                int count = 0;
+
+                foreach (var client in state.GetServerClients(ServerType.Area))
+                {
+                    if (client.IsAuthenticated)
+                    {
+                        await client.SendAsync(PacketType.TalkForwardNotify, data, request.HttpContext.RequestAborted);
+                        count++;
+                    }
+                }
+
+                return Results.Ok(new { sent = true, areaClients = count });
+            }
+        );
+
+        app.MapPost(
+            "/api/msg/broadcast",
+            async (HttpRequest request, SharedState state, ILoggerFactory loggerFactory) =>
+            {
+                var body = await request.ReadFromJsonAsync<BroadcastRequest>();
+                if (body == null || string.IsNullOrWhiteSpace(body.Message))
+                    return Results.BadRequest(new { error = "message is required" });
+
+                var log = loggerFactory.CreateLogger("API");
+                log.LogInformation("API msg broadcast: {Message}", body.Message);
+
+                var forward = new AISpace.Network.Packets.Msg.TalkForwardNotify(0, 0, body.Message, 0);
+                var data = forward.ToBytes();
+                int count = 0;
+
+                foreach (var client in state.GetServerClients(ServerType.Msg))
+                {
+                    if (client.IsAuthenticated)
+                    {
+                        await client.SendAsync(PacketType.TalkForwardNotify, data, request.HttpContext.RequestAborted);
+                        count++;
+                    }
+                }
+
+                return Results.Ok(new { sent = true, msgClients = count });
+            }
+        );
+
         // Ensure database and Maps table exist, then seed maps if empty
         using (var scope = app.Services.CreateScope())
         {
@@ -129,8 +199,8 @@ internal class Program
             await MapRepository.EnsureSeedMapsPresentAsync(db);
             await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
             await MapLinkRepository.NormalizeSeedMapLinksAsync(db);
-            await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride);
-            await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: 50054);
+            await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride, (ushort)serverOptions.MsgServer.Port);
+            await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
         }
 
         await app.RunAsync();
