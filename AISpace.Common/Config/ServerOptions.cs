@@ -6,6 +6,10 @@ public class ServerOptions
     public string? IPOverride { get; set; }
     public NetworkOptions NetworkOptions { get; set; } = new();
     public DbOptions DbOptions { get; set; } = new();
+
+    /// <summary>Bounded capacity for each game server's packet dispatch channel (Auth, Msg, Area). Producers wait when full.</summary>
+    public int PacketChannelCapacity { get; set; } = 10_000;
+
     public GameServerConfig AuthServer { get; set; } = new() { Port = 50050 };
     public GameServerConfig MsgServer { get; set; } = new() { Port = 50052 };
     public GameServerConfig AreaServer { get; set; } = new() { Port = 50054 };

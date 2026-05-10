@@ -27,12 +27,18 @@ public abstract class GameServerBase<T> : BackgroundService
 
     private readonly int _maxConcurrentClients;
 
-    protected GameServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, int maxConcurrentClients, string healthKey)
+    protected GameServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, int maxConcurrentClients, int packetChannelCapacity, string healthKey)
     {
         Logger = logger;
         Db = db;
         UserRepo = userRepo;
-        _channel = System.Threading.Channels.Channel.CreateUnbounded<Packet>();
+        var channelOpts = new BoundedChannelOptions(packetChannelCapacity)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = false,
+        };
+        _channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
         Channel = _channel.Reader;
         _port = port;
         _serverName = serverName;

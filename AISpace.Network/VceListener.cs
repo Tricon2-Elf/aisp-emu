@@ -170,7 +170,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                             ReadOnlySpan<byte> singlePayload = singleBodyLen > 0 ? cipher.AsSpan(2, singleBodyLen) : [];
                             if (!SuppressedReceiveLogs.Contains(singleType))
                                 logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", singleType, singlePayload.Length, BitConverter.ToString(singlePayload.ToArray()));
-                            channel.Writer.TryWrite(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw));
+                            await channel.Writer.WriteAsync(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw), ct);
                         }
                         else if (payloadLen >= 0)
                             logger.LogWarning("Encrypted packet: payload past msgSize (offset {Offset} packetSize {PacketSize} msgSize {MsgSize})", offset, payloadLen, msgSize);
@@ -183,7 +183,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                     ReadOnlySpan<byte> payload = bodyLen > 0 ? cipher.AsSpan(payloadStart + 2, bodyLen) : [];
                     if (!SuppressedReceiveLogs.Contains(type))
                         logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, BitConverter.ToString(payload.ToArray()));
-                    channel.Writer.TryWrite(new Packet(context, type, payload.ToArray(), typeRaw));
+                    await channel.Writer.WriteAsync(new Packet(context, type, payload.ToArray(), typeRaw), ct);
 
                     offset = payloadEnd;
                 }

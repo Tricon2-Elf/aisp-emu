@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace AISpace.Server;
 
 public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, IOptions<ServerOptions> serverOptions)
-    : GameServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state, healthRegistry, Math.Max(1, serverOptions.Value.AreaServer.MaxConcurrentClients), GameServerHealthRegistry.Keys.AreaServer)
+    : GameServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state, healthRegistry, serverOptions.Value.AreaServer.MaxConcurrentClients, ServerOptions.NormalizePacketChannelCapacity(serverOptions.Value.PacketChannelCapacity), GameServerHealthRegistry.Keys.AreaServer)
 {
     protected override ServerType ActiveServerType => ServerType.Area;
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

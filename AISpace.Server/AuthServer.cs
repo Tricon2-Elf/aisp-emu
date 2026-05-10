@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 namespace AISpace.Server;
 
 public class AuthServer(ILogger<AuthServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, IOptions<ServerOptions> serverOptions)
-    : GameServerBase<AuthServer>(logger, db, userRepo, port, "Auth", loggerFactory, worldRepo, dispatcher, state, healthRegistry, Math.Max(1, serverOptions.Value.AuthServer.MaxConcurrentClients), GameServerHealthRegistry.Keys.AuthServer)
+    : GameServerBase<AuthServer>(logger, db, userRepo, port, "Auth", loggerFactory, worldRepo, dispatcher, state, healthRegistry, serverOptions.Value.AuthServer.MaxConcurrentClients, serverOptions.Value.AuthServer.PacketChannelCapacity, GameServerHealthRegistry.Keys.AuthServer)
 {
     protected override ServerType ActiveServerType => ServerType.Auth;
 
