@@ -2,6 +2,10 @@
   "name": "aisp-emu (.NET 10)",
   "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0-noble",
   "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": true
+    },
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": true,
       "dockerDashComposeVersion": "v2"
@@ -22,8 +26,9 @@
     "50052": { "label": "Msg server" },
     "50054": { "label": "Area server" }
   },
-  "postCreateCommand": "bash -lc 'set -euo pipefail; dotnet tool restore; if git rev-parse --git-dir >/dev/null 2>&1; then git config core.hooksPath .githooks; fi'",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
   "remoteEnv": {
-    "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "PATH": "/home/vscode/.local/bin:${containerEnv:PATH}"
   }
 }
