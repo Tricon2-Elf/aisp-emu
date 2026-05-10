@@ -117,77 +117,39 @@ internal class Program
             }
         );
 
-        app.MapPost(
-            "/api/broadcast",
-            async (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) =>
+        async Task<IResult> HandleBroadcastAsync(string? target, HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory)
+        {
+            var body = await request.ReadFromJsonAsync<BroadcastRequest>();
+            if (body == null || string.IsNullOrWhiteSpace(body.Message))
+                return Results.BadRequest(new { error = "message is required" });
+
+            ServerType[]? serverTypes = target switch
             {
-                var body = await request.ReadFromJsonAsync<BroadcastRequest>();
-                if (body == null || string.IsNullOrWhiteSpace(body.Message))
-                    return Results.BadRequest(new { error = "message is required" });
+                null or "" or "all" => [ServerType.Area, ServerType.Msg],
+                "area" => [ServerType.Area],
+                "msg" => [ServerType.Msg],
+                _ => null,
+            };
 
-                var log = loggerFactory.CreateLogger("API");
-                log.LogInformation("API broadcast: {Message}", body.Message);
+            if (serverTypes == null)
+                return Results.BadRequest(new { error = "target must be area, msg, or all" });
 
-                var result = await broadcast.BroadcastAsync(body.Message, request.HttpContext.RequestAborted);
+            var log = loggerFactory.CreateLogger("API");
+            var logPrefix = target is null or "" or "all" ? "API broadcast" : $"API {target} broadcast";
+            log.LogInformation("{Prefix}: {Message}", logPrefix, body.Message);
+
+            var result = await broadcast.BroadcastToServersAsync(body.Message, serverTypes, request.HttpContext.RequestAborted);
+
+            if (serverTypes.Length == 2)
                 return Results.Ok(new { sent = true, areaClients = result.AreaClients, msgClients = result.MsgClients });
-            }
-        );
+            if (serverTypes[0] == ServerType.Area)
+                return Results.Ok(new { sent = true, areaClients = result.AreaClients });
+            return Results.Ok(new { sent = true, msgClients = result.MsgClients });
+        }
 
-        app.MapPost(
-            "/api/area/broadcast",
-            async (HttpRequest request, SharedState state, ILoggerFactory loggerFactory) =>
-            {
-                var body = await request.ReadFromJsonAsync<BroadcastRequest>();
-                if (body == null || string.IsNullOrWhiteSpace(body.Message))
-                    return Results.BadRequest(new { error = "message is required" });
-
-                var log = loggerFactory.CreateLogger("API");
-                log.LogInformation("API area broadcast: {Message}", body.Message);
-
-                var forward = new AISpace.Network.Packets.Msg.TalkForwardNotify(0, 0, body.Message, 0);
-                var data = forward.ToBytes();
-                int count = 0;
-
-                foreach (var client in state.GetServerClients(ServerType.Area))
-                {
-                    if (client.IsAuthenticated)
-                    {
-                        await client.SendAsync(PacketType.TalkForwardNotify, data, request.HttpContext.RequestAborted);
-                        count++;
-                    }
-                }
-
-                return Results.Ok(new { sent = true, areaClients = count });
-            }
-        );
-
-        app.MapPost(
-            "/api/msg/broadcast",
-            async (HttpRequest request, SharedState state, ILoggerFactory loggerFactory) =>
-            {
-                var body = await request.ReadFromJsonAsync<BroadcastRequest>();
-                if (body == null || string.IsNullOrWhiteSpace(body.Message))
-                    return Results.BadRequest(new { error = "message is required" });
-
-                var log = loggerFactory.CreateLogger("API");
-                log.LogInformation("API msg broadcast: {Message}", body.Message);
-
-                var forward = new AISpace.Network.Packets.Msg.TalkForwardNotify(0, 0, body.Message, 0);
-                var data = forward.ToBytes();
-                int count = 0;
-
-                foreach (var client in state.GetServerClients(ServerType.Msg))
-                {
-                    if (client.IsAuthenticated)
-                    {
-                        await client.SendAsync(PacketType.TalkForwardNotify, data, request.HttpContext.RequestAborted);
-                        count++;
-                    }
-                }
-
-                return Results.Ok(new { sent = true, msgClients = count });
-            }
-        );
+        app.MapPost("/api/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync(null, request, broadcast, loggerFactory));
+        app.MapPost("/api/area/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync("area", request, broadcast, loggerFactory));
+        app.MapPost("/api/msg/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync("msg", request, broadcast, loggerFactory));
 
         // Ensure database and Maps table exist, then seed maps if empty
         using (var scope = app.Services.CreateScope())

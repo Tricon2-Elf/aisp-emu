@@ -1,3 +1,4 @@
+using System.Linq;
 using AISpace.Common;
 using AISpace.Common.Game;
 using AISpace.Network;
@@ -14,28 +15,29 @@ public class BroadcastService
         _state = state;
     }
 
-    public async Task<BroadcastResult> BroadcastAsync(string message, CancellationToken ct = default)
+    public Task<BroadcastResult> BroadcastAsync(string message, CancellationToken ct = default) =>
+        BroadcastToServersAsync(message, [ServerType.Area, ServerType.Msg], ct);
+
+    public async Task<BroadcastResult> BroadcastToServersAsync(string message, IReadOnlyList<ServerType> serverTypes, CancellationToken ct = default)
     {
         var forward = new TalkForwardNotify(0, 0, message, 0);
         var data = forward.ToBytes();
 
-        int area = 0, msg = 0;
+        int area = 0,
+            msg = 0;
 
-        foreach (var client in _state.GetServerClients(ServerType.Area))
+        foreach (var serverType in serverTypes.Distinct())
         {
-            if (client.IsAuthenticated)
+            foreach (var client in _state.GetServerClients(serverType))
             {
-                await client.SendAsync(PacketType.TalkForwardNotify, data, ct);
-                area++;
-            }
-        }
-
-        foreach (var client in _state.GetServerClients(ServerType.Msg))
-        {
-            if (client.IsAuthenticated)
-            {
-                await client.SendAsync(PacketType.TalkForwardNotify, data, ct);
-                msg++;
+                if (client.IsAuthenticated)
+                {
+                    await client.SendAsync(PacketType.TalkForwardNotify, data, ct);
+                    if (serverType == ServerType.Area)
+                        area++;
+                    else if (serverType == ServerType.Msg)
+                        msg++;
+                }
             }
         }
 
