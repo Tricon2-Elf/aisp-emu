@@ -25,7 +25,9 @@ public abstract class GameServerBase<T> : BackgroundService
     protected readonly GameServerHealthRegistry HealthRegistry;
     protected readonly string _healthKey;
 
-    protected GameServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, string healthKey)
+    private readonly int _maxConcurrentClients;
+
+    protected GameServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, int maxConcurrentClients, string healthKey)
     {
         Logger = logger;
         Db = db;
@@ -39,6 +41,7 @@ public abstract class GameServerBase<T> : BackgroundService
         Dispatcher = dispatcher;
         State = state;
         HealthRegistry = healthRegistry;
+        _maxConcurrentClients = maxConcurrentClients;
         _healthKey = healthKey;
         HealthRegistry.AddServer(_healthKey, _port);
         Db.Database.EnsureCreated();
@@ -50,7 +53,7 @@ public abstract class GameServerBase<T> : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         Logger.LogInformation("Starting {ServerType} server", ActiveServerType);
-        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p));
+        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p), _maxConcurrentClients);
         var packetLoop = RunPacketLoop(ct);
         var acceptLoop = listener.RunAsync(ct);
         var gameLoop = RunGameLoop(ct);
