@@ -10,6 +10,9 @@ public class ServerOptions
     /// <summary>Bounded capacity for each game server's packet dispatch channel (Auth, Msg, Area). Producers wait when full.</summary>
     public int PacketChannelCapacity { get; set; } = 10_000;
 
+    /// <summary>Maximum concurrent client handler tasks per TCP listener for Auth, Msg, and Area. Extra connections wait at accept (backpressure).</summary>
+    public int MaxConcurrentClients { get; set; } = 1024;
+
     public GameServerConfig AuthServer { get; set; } = new() { Port = 50050 };
     public GameServerConfig MsgServer { get; set; } = new() { Port = 50052 };
     public GameServerConfig AreaServer { get; set; } = new() { Port = 50054 };

@@ -1,15 +1,13 @@
 using AISpace.Common;
-using AISpace.Common.Config;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
-using Microsoft.Extensions.Options;
 
 namespace AISpace.Server;
 
-public class AreaServer(ILogger<AreaServer> logger, MainContext db, IUserRepository userRepo, int port, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, IOptions<ServerOptions> serverOptions)
-    : GameServerBase<AreaServer>(logger, db, userRepo, port, "Area", loggerFactory, worldRepo, dispatcher, state, healthRegistry, serverOptions.Value.AreaServer.MaxConcurrentClients, ServerOptions.NormalizePacketChannelCapacity(serverOptions.Value.PacketChannelCapacity), GameServerHealthRegistry.Keys.AreaServer)
+public class AreaServer(ILogger<AreaServer> logger, GameServerContext ctx, int port)
+    : GameServerBase<AreaServer>(logger, ctx, port, "Area", GameServerHealthRegistry.Keys.AreaServer)
 {
     protected override ServerType ActiveServerType => ServerType.Area;
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

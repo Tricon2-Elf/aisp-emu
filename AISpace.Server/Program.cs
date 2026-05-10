@@ -70,14 +70,20 @@ internal class Program
         var areaEnabled = builder.Configuration.GetValue("Server:AreaServer:Enabled", true);
         var areaPort = builder.Configuration.GetValue("Server:AreaServer:Port", 50054);
 
+        GameServerContext BuildGameServerContext(IServiceProvider sp)
+        {
+            var o = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
+            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity);
+        }
+
         if (authEnabled)
-            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AuthServer>(sp, authPort));
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AuthServer>(sp, BuildGameServerContext(sp), authPort));
 
         if (msgEnabled)
-            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<MsgServer>(sp, msgPort));
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<MsgServer>(sp, BuildGameServerContext(sp), msgPort));
 
         if (areaEnabled)
-            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AreaServer>(sp, areaPort));
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AreaServer>(sp, BuildGameServerContext(sp), areaPort));
 
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
 

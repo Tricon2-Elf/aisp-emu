@@ -27,12 +27,12 @@ public abstract class GameServerBase<T> : BackgroundService
 
     private readonly int _maxConcurrentClients;
 
-    protected GameServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, int maxConcurrentClients, int packetChannelCapacity, string healthKey)
+    protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port, string serverName, string healthKey)
     {
         Logger = logger;
-        Db = db;
-        UserRepo = userRepo;
-        var channelOpts = new BoundedChannelOptions(packetChannelCapacity)
+        Db = ctx.Db;
+        UserRepo = ctx.UserRepo;
+        var channelOpts = new BoundedChannelOptions(ctx.PacketChannelCapacity)
         {
             FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
@@ -42,12 +42,12 @@ public abstract class GameServerBase<T> : BackgroundService
         Channel = _channel.Reader;
         _port = port;
         _serverName = serverName;
-        _loggerFactory = loggerFactory;
-        WorldRepo = worldRepo;
-        Dispatcher = dispatcher;
-        State = state;
-        HealthRegistry = healthRegistry;
-        _maxConcurrentClients = maxConcurrentClients;
+        _loggerFactory = ctx.LoggerFactory;
+        WorldRepo = ctx.WorldRepo;
+        Dispatcher = ctx.Dispatcher;
+        State = ctx.State;
+        HealthRegistry = ctx.HealthRegistry;
+        _maxConcurrentClients = ctx.MaxConcurrentClients;
         _healthKey = healthKey;
         HealthRegistry.AddServer(_healthKey, _port);
         Db.Database.EnsureCreated();
