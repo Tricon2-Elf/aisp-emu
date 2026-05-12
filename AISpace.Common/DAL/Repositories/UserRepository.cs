@@ -9,6 +9,11 @@ public interface IUserRepository
     Task AddAsync(string username, string password);
     Task<User?> GetByUsernameAsync(string username);
     Task<User?> GetById(int userId);
+    Task SetBannedAsync(int userId, bool isBanned, string? reason = null);
+    Task UpdatePasswordAsync(int userId, string newPassword);
+    Task DeleteAsync(int userId);
+    Task<IReadOnlyList<User>> GetAllAsync(string? search = null, int? skip = null, int? take = null);
+    Task<int> CountAsync(string? search = null);
 }
 
 public class UserRepository(MainContext db) : IUserRepository
@@ -41,5 +46,61 @@ public class UserRepository(MainContext db) : IUserRepository
     public async Task<User?> GetById(int userId)
     {
         return await _db.Users.Include(u => u.Characters).ThenInclude(c => c.Inventory).ThenInclude(i => i.Item).Include(u => u.Characters).ThenInclude(c => c.Equipment).ThenInclude(e => e.Item).FirstOrDefaultAsync(u => u.Id == userId);
+    }
+
+    public async Task SetBannedAsync(int userId, bool isBanned, string? reason = null)
+    {
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null) return;
+
+        user.IsBanned = isBanned;
+        user.BanReason = isBanned ? reason : null;
+        user.BannedAt = isBanned ? DateTime.UtcNow : null;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task UpdatePasswordAsync(int userId, string newPassword)
+    {
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null) return;
+
+        user.SetPassword(newPassword);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int userId)
+    {
+        var user = await _db.Users.FindAsync(userId);
+        if (user == null) return;
+
+        _db.Users.Remove(user);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<IReadOnlyList<User>> GetAllAsync(string? search = null, int? skip = null, int? take = null)
+    {
+        var query = _db.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(u => EF.Functions.Like(u.Username, $"%{search}%"));
+
+        query = query.OrderBy(u => u.Id);
+
+        if (skip.HasValue)
+            query = query.Skip(skip.Value);
+        if (take.HasValue)
+            query = query.Take(take.Value);
+
+        return await query.Include(u => u.Characters).ToListAsync();
+    }
+
+    public async Task<int> CountAsync(string? search = null)
+    {
+        var query = _db.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(u => EF.Functions.Like(u.Username, $"%{search}%"));
+
+        return await query.CountAsync();
     }
 }
