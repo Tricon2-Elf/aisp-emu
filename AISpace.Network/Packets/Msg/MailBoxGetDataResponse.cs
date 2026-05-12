@@ -1,14 +1,14 @@
 using AISpace.Network;
 
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Packets.Msg;
 
-public class RoboVoiceTypeUpdateResponse(uint result, byte voiceType) : IOutgoingPacket
+public class MailBoxGetDataResponse(uint result, uint mailCount) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
         writer.Write(result);
-        writer.Write(voiceType);
+        writer.Write(mailCount);
         return writer.ToBytes();
     }
 }

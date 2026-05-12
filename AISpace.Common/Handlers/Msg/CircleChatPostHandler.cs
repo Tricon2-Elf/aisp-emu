@@ -13,33 +13,19 @@ public class CircleChatPostHandler(ILogger<CircleChatPostHandler> logger, Shared
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        // Read the request (CircleID, Message, BalloonID)
-        var reader = new PacketReader(payload.Span);
-        uint circleId = reader.ReadUInt();
-        string message = reader.ReadString("Shift_JIS");
-        uint balloonId = reader.ReadUInt();
+        var req = CircleChatPostRequest.FromBytes(payload.Span);
 
-        logger.LogInformation($"[CIRCLE CHAT] From:{session.CharacterId} Circle:{circleId}: {message}");
+        logger.LogInformation($"[CIRCLE CHAT] From:{session.CharacterId} Circle:{req.CircleId}: {req.Message}");
 
-        // 1. Response to the sender
         var response = new CmdExecResponse(0, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        // 2. Preparation for distribution (recv_circle_chat_forward)
-        var writer = new PacketWriter();
-        writer.Write(circleId); // ID of the circle
-        writer.Write(session.CharacterId); // Who sent
-        writer.Write(message, "Shift_JIS"); // Text + \0
-        writer.Write(balloonId); // Type of balloon
+        var forwardData = new CircleChatForwardNotify(req.CircleId, session.CharacterId, req.Message, req.BalloonId).ToBytes();
 
-        byte[] forwardData = writer.ToBytes();
-
-        // 3. Distribution to the circle members (except yourself)
         foreach (var client in state.GetServerClients(ServerType.Msg))
         {
             if (client.IsAuthenticated && client.ConnectionId != session.ConnectionId)
             {
-                // Here in the future we need to check: if (client.InCircle == circleId)
                 await client.SendAsync(PacketType.CircleChatForwardNotify, forwardData, ct);
             }
         }

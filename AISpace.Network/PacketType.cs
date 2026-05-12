@@ -638,6 +638,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_avatar_profile_data", ImplementationState.Implemented)]
     AvatarProfileGetDataRequest = 0xCF9A,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_avatar_profile_data_r", ImplementationState.Implemented)]
+    AvatarProfileGetDataResponse = 0xB670,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_friend_link_tag_get_other", ImplementationState.Implemented)]
     FriendLinkTagGetOtherRequest = 0xC9D8,
 
