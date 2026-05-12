@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharacterRepository charRepo) : IPacketHandler
+public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharacterRepository charRepo) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
 
@@ -20,11 +20,6 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        if (!session.IsAuthenticated)
-            return;
-
-        _logger.LogWarning("Client: {ClientId} requested AvatarGetData ", session.ConnectionId);
-
         if (session.User!.Characters.Count != 0)
         {
             Character cha = session.User!.Characters.First();

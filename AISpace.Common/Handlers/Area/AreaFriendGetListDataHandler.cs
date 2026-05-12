@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaFriendGetListDataHandler : IPacketHandler
+public class AreaFriendGetListDataHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.FriendGetListDataRequest;
 

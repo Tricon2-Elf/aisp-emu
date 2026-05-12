@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaUccVoiceBaseListHandler : IPacketHandler
+public class AreaUccVoiceBaseListHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.UccVoiceBaseListRequest;
 

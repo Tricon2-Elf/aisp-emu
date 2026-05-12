@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaUpdateOptionHandler : IPacketHandler
+public class AreaUpdateOptionHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.UpdateOptionRequest;
     public PacketType ResponseType => PacketType.UpdateOptionResponse;

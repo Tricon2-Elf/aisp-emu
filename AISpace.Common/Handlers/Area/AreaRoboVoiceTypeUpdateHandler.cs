@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaRoboVoiceTypeUpdateHandler : IPacketHandler
+public class AreaRoboVoiceTypeUpdateHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.RoboVoiceTypeUpdateRequest;
     public PacketType ResponseType => PacketType.RoboVoiceTypeUpdateResponse;

@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaFriendLinkTagOtherHandler : IPacketHandler
+public class AreaFriendLinkTagOtherHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.FriendLinkTagGetOtherRequest;
     public PacketType ResponseType => (PacketType)0x239E; // FriendLinkTagGetResponse

@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaAiUploadRateGetHandler : IPacketHandler
+public class AreaAiUploadRateGetHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AiUploadRateGetRequest;
 

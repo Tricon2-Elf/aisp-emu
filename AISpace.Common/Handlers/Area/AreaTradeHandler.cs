@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaTradeHandler(ILogger<AreaTradeHandler> logger) : IPacketHandler
+public class AreaTradeHandler(ILogger<AreaTradeHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.TradeRequest;
     public PacketType ResponseType => (PacketType)0; // Пока без ответа

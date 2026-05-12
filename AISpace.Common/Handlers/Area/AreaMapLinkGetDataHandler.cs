@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMapRepository mapRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, ILogger<AreaMapLinkGetDataHandler> logger) : IPacketHandler
+public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMapRepository mapRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, ILogger<AreaMapLinkGetDataHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapLinkGetDataRequest;
 

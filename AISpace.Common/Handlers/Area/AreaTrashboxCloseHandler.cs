@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaTrashboxCloseHandler : IPacketHandler
+public class AreaTrashboxCloseHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.TrashboxCloseRequest;
     public PacketType ResponseType => PacketType.TrashboxCloseResponse;

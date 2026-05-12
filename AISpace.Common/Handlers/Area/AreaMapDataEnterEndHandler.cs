@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEnterEndHandler> logger) : IPacketHandler
+public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEnterEndHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapDataEnterEndRequest;
     public PacketType ResponseType => PacketType.MapDataEnterEndResponse;
@@ -17,9 +17,6 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
     {
         session.IsMapTransitionPending = false;
         await session.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
-
-        if (session.User == null)
-            return;
 
         var myChar = session.Character ?? session.User.Characters.FirstOrDefault();
         if (myChar == null)

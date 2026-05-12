@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleChatOutHandler(ILogger<CircleChatOutHandler> logger) : PacketHandlerBase<CircleChatOutRequest, CircleChatInResponse> // Use the same response type if the format matches
+public class CircleChatOutHandler(ILogger<CircleChatOutHandler> logger) : PacketHandlerBase<CircleChatOutRequest, CircleChatInResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.CircleChatOutRequest;
     public override PacketType ResponseType => PacketType.CircleChatInResponse; // Often the same response (just Result)

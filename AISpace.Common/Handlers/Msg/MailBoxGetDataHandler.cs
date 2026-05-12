@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class MailBoxGetDataHandler : IPacketHandler
+public class MailBoxGetDataHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MailBoxGetDataRequest;
 

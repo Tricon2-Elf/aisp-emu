@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacterRepository charRepo) : PacketHandlerBase<AvatarCreateRequest, AvatarCreateResponse>
+public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacterRepository charRepo) : PacketHandlerBase<AvatarCreateRequest, AvatarCreateResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.AvatarCreateRequest;
     public override PacketType ResponseType => PacketType.AvatarCreateResponse;
@@ -18,9 +18,6 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
     public override async Task<AvatarCreateResponse?> HandleAsync(AvatarCreateRequest request, IPlayerSession session, CancellationToken ct = default)
     {
         _logger.LogInformation("createRequest: {request}", request.ToString());
-
-        if (!session.IsAuthenticated || session.User == null)
-            return null;
 
         Character newChar = await charRepo.CreateAsync(request.AvatarName, session.User.Id, request.modelId, request.visual.BloodType, request.visual.Birthdate, (int)request.visual.Gender, request.visual.Face, request.visual.Hairstyle, ct);
 

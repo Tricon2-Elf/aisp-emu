@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaAvatarProfileGetDataHandler(SharedState state) : IPacketHandler
+public class AreaAvatarProfileGetDataHandler(SharedState state) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarProfileGetDataRequest;
     public PacketType ResponseType => (PacketType)0xB670;

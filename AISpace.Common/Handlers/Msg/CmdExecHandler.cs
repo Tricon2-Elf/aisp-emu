@@ -9,7 +9,7 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState state, IMapRepository mapRepo, ILogger<CmdExecHandler> logger) : IPacketHandler
+public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState state, IMapRepository mapRepo, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
 

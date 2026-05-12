@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaTimeZoneGetHandler : IPacketHandler
+public class AreaTimeZoneGetHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.TimeZoneGetRequest;
     public PacketType ResponseType => PacketType.TimeZoneGetResponse;

@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMyRoomGetFurnitureHandler : IPacketHandler
+public class AreaMyRoomGetFurnitureHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyRoomGetFurnitureRequest;
 

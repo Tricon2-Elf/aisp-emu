@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemEquipEndHandler(ILogger<ItemEquipEndHandler> logger) : IPacketHandler
+public class ItemEquipEndHandler(ILogger<ItemEquipEndHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private readonly ILogger<ItemEquipEndHandler> _logger = logger;
 

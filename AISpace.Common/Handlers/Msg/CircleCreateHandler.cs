@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> logger) : PacketHandlerBase<CircleCreateRequest, CircleCreateResponse>
+public class CircleCreateHandler(MainContext db, ILogger<CircleCreateHandler> logger) : PacketHandlerBase<CircleCreateRequest, CircleCreateResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.CircleCreateRequest;
     public override PacketType ResponseType => PacketType.CircleCreateResponse;

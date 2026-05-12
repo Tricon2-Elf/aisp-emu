@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Msg;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class AvatarGetCreateInfoHandler : IPacketHandler
+public class AvatarGetCreateInfoHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarGetCreateInfoRequest;
 

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventAccessNpcHandler(ILogger<AreaEventAccessNpcHandler> logger) : IPacketHandler
+public class AreaEventAccessNpcHandler(ILogger<AreaEventAccessNpcHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventAccessNpcRequest;
     public PacketType ResponseType => PacketType.EventAccessNpcResponse;

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleChatInHandler(ILogger<CircleChatInHandler> logger) : PacketHandlerBase<CircleChatInRequest, CircleChatInResponse>
+public class CircleChatInHandler(ILogger<CircleChatInHandler> logger) : PacketHandlerBase<CircleChatInRequest, CircleChatInResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.CircleChatInRequest;
     public override PacketType ResponseType => PacketType.CircleChatInResponse;

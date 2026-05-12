@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo, SharedState state, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<GetChannelListMapHandler> logger) : IPacketHandler
+public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo, SharedState state, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<GetChannelListMapHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.GetChannelListMapRequest;
     public PacketType ResponseType => PacketType.GetChannelListMapResponse;

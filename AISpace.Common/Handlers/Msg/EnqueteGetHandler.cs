@@ -5,7 +5,7 @@ using AISpace.Network.Packets.Msg;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class EnqueteGetHandler : IPacketHandler
+public class EnqueteGetHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EnqueteGetRequest;
 

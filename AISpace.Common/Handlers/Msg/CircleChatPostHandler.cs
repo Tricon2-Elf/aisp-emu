@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleChatPostHandler(ILogger<CircleChatPostHandler> logger, SharedState state) : IPacketHandler
+public class CircleChatPostHandler(ILogger<CircleChatPostHandler> logger, SharedState state) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.CircleChatPostRequest;
     public PacketType ResponseType => PacketType.CircleChatPostResponse;

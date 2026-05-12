@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleTalkHandler : IPacketHandler
+public class CircleTalkHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.CircleTalkRequest;
     public PacketType ResponseType => (PacketType)0xA9C1;

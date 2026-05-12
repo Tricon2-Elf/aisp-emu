@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IServiceScopeFactory scopeFactory, IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo) : IPacketHandler
+public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IServiceScopeFactory scopeFactory, IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ChannelSelectRequest;
     public PacketType ResponseType => PacketType.ChannelSelectResponse;

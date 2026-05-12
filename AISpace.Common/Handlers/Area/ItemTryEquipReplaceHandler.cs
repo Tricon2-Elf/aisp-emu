@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemTryEquipReplaceHandler : IPacketHandler
+public class ItemTryEquipReplaceHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemTryEquipReplaceRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipped;

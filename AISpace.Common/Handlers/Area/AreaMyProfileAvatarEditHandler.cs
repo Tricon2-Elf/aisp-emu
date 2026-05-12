@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMyProfileAvatarEditHandler(MainContext db) : IPacketHandler
+public class AreaMyProfileAvatarEditHandler(MainContext db) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyProfileAvatarEditRequest;
     public PacketType ResponseType => PacketType.MyProfileAvatarEditResponse;
