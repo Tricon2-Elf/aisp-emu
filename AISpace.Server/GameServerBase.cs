@@ -50,15 +50,14 @@ public abstract class GameServerBase<T> : BackgroundService
         _maxConcurrentClients = ctx.MaxConcurrentClients;
         _healthKey = healthKey;
         HealthRegistry.AddServer(_healthKey, _port);
-        Db.Database.EnsureCreated();
-        Initialize();
     }
 
-    protected virtual void Initialize() { }
+    protected virtual Task InitializeAsync(CancellationToken ct) => Task.CompletedTask;
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         Logger.LogInformation("Starting {ServerType} server", ActiveServerType);
+        await InitializeAsync(ct);
         var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p), _maxConcurrentClients);
         var packetLoop = RunPacketLoop(ct);
         var acceptLoop = listener.RunAsync(ct);

@@ -1,5 +1,6 @@
 using AISpace.Common;
 using AISpace.Common.Game;
+using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Server;
 
@@ -7,10 +8,10 @@ public class AuthServer(ILogger<AuthServer> logger, GameServerContext ctx, int p
 {
     protected override ServerType ActiveServerType => ServerType.Auth;
 
-    protected override void Initialize()
+    protected override async Task InitializeAsync(CancellationToken ct)
     {
-        if (Db.Users.Any() == false)
-            UserRepo.AddAsync("testuser", "password");
+        if (!await Db.Users.AnyAsync(ct))
+            await UserRepo.AddAsync("testuser", "password");
     }
 
     protected override void OnTick(CancellationToken ct)

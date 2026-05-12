@@ -3,6 +3,7 @@ using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
+using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Server;
 
@@ -12,9 +13,9 @@ public class AreaServer(ILogger<AreaServer> logger, GameServerContext ctx, int p
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     private DateTime _nextTimeUpdate = DateTime.MinValue;
 
-    protected override void Initialize()
+    protected override async Task InitializeAsync(CancellationToken ct)
     {
-        if (Db.Items.Any())
+        if (await Db.Items.AnyAsync(ct))
             return;
 
         List<Item> items = [];
@@ -25,9 +26,16 @@ public class AreaServer(ILogger<AreaServer> logger, GameServerContext ctx, int p
         items = [.. items.DistinctBy(i => i.Id)];
 
         Db.ChangeTracker.AutoDetectChangesEnabled = false;
-        Db.Items.AddRange(items);
-        Db.SaveChanges();
-        Db.ChangeTracker.AutoDetectChangesEnabled = true;
+        try
+        {
+            Db.Items.AddRange(items);
+            await Db.SaveChangesAsync(ct);
+        }
+        finally
+        {
+            Db.ChangeTracker.AutoDetectChangesEnabled = true;
+        }
+
         Logger.LogInformation("Loaded {count} items", items.Count);
     }
 
