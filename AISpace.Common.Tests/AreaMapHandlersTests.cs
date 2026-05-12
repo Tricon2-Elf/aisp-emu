@@ -877,7 +877,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, differentMapPeer);
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
             var move = new MovementData(9f, 8f, 7f, 6, MovementType.Running);
 
             await handler.HandleAsync(move.ToBytes(), mover, TestContext.Current.CancellationToken);
@@ -961,7 +961,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, oldPeer);
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
 
             await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1050,7 +1050,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, peer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
 
             await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1237,7 +1237,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, sameAreaPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaAvatarMoveRequestHandler>.Instance);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
 
             await handler.HandleAsync(new MovementData(-8918f, 2f, -18718f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
