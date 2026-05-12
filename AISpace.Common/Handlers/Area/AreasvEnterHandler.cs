@@ -27,6 +27,12 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
             return;
         }
 
+        if (userSession.User.IsBanned)
+        {
+            await session.SendAsync(ResponseType, new LoginResponse(AuthResponseResult.AccountBanned).ToBytes(), ct);
+            return;
+        }
+
         session.User = userSession.User;
         var chara = await characterRepo.GetByIdAsync(session.User.Characters.First().Id, ct);
 
