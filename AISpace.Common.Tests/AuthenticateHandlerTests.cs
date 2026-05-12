@@ -90,4 +90,32 @@ public class AuthenticateHandlerTests
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
         Assert.Equal(3u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
     }
+
+    [Fact]
+    public async Task BannedUser_SendsAccountBanned_DoesNotSetUser()
+    {
+        var user = new User
+        {
+            Id = 5,
+            Username = "banned",
+            IsBanned = true,
+            BanReason = "cheating",
+        };
+        user.SetPassword("pw");
+
+        var userRepo = new Mock<AISpace.Common.DAL.Repositories.IUserRepository>();
+        userRepo.Setup(r => r.GetByUsernameAsync("banned")).ReturnsAsync(user);
+
+        var handler = new AuthenticateHandler(userRepo.Object, new SharedState(), NullLogger<AuthenticateHandler>.Instance);
+        var session = new CapturingPlayerSession();
+        var req = new AuthenticateRequest("banned", "pw");
+
+        var resp = await handler.HandleAsync(req, session, TestContext.Current.CancellationToken);
+
+        Assert.Null(resp);
+        Assert.Null(session.User);
+        Assert.Single(session.Sent);
+        Assert.Equal(PacketType.AuthenticateFailureResponse, session.Sent[0].Type);
+        Assert.Equal((uint)AuthResponseResult.AccountBanned, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+    }
 }
