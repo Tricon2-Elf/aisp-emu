@@ -33,6 +33,14 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
             return;
         }
 
+        if (session.User!.IsBanned)
+        {
+            _logger.LogWarning("WorldSelectRequest rejected: user {Username} is banned", session.User!.Username);
+            var errResp = new WorldSelectResponse(1, "", 0, "");
+            await session.SendAsync(PacketType.WorldSelectResponse, errResp.ToBytes(), ct);
+            return;
+        }
+
         var world = await _worldRepository.GetByIdAsync(selectedWorldID);
         if (world == null)
         {
@@ -44,7 +52,7 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
 
         User clientUser = session.User!;
         string otp = CryptoUtils.GenerateOTP();
-        await _sessionRepo.CreateAsync(clientUser.Id, otp, TimeSpan.FromHours(1), ct);
+        await _sessionRepo.CreateAsync(clientUser.Id, otp, TimeSpan.FromMinutes(5), ct);
         _logger.LogInformation("World Selected: {ID}", selectedWorldID);
         var resolvedAddress = serverOptions.Value.ResolveAddress(world.Address);
         var WorldSelectResp = new WorldSelectResponse(0, resolvedAddress, world.Port, otp);
