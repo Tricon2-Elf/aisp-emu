@@ -74,7 +74,7 @@ The generic base class `PacketHandlerBase<TRequest, TResponse>` deserializes the
 - **Default**: SQLite. Fallback defined in `MainContext.OnConfiguring()` (`MainContext.cs:25`).
 - **Also supports**: SQL Server (packages are referenced).
 - **Migrations auto-applied** at startup via `db.Database.MigrateAsync()` in `Program.cs:193`.
-- **Seeding**: `Program.cs` calls `Seed*IfEmptyAsync` helpers on repositories for maps, map links, worlds, channels. Items are seeded in `AreaServer.Initialize()` from `testitems.csv`.
+- **Seeding**: `Program.cs` calls `Seed*IfEmptyAsync` helpers on repositories for maps, map links, worlds, channels. Items are seeded once at startup in `Program.cs` (after migrations) via `ItemRepository.SeedItemsIfEmptyAsync` from `seedData/baseItems.json` (under `AISpace.Common/`, copied to output). Runtime code reads items from the database only.
 - **Integration tests**: Use `TestDb.CreateInMemoryMainContext()` (`Support/TestDb.cs:10`) for a disposable SQLite in-memory context.
 - **Migration command** (from repo root):
   ```

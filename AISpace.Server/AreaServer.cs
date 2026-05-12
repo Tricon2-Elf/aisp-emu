@@ -1,43 +1,14 @@
 using AISpace.Common;
-using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
-using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Server;
 
 public class AreaServer(ILogger<AreaServer> logger, GameServerContext ctx, int port) : GameServerBase<AreaServer>(logger, ctx, port, "Area", GameServerHealthRegistry.Keys.AreaServer)
 {
     protected override ServerType ActiveServerType => ServerType.Area;
-    private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     private DateTime _nextTimeUpdate = DateTime.MinValue;
-
-    protected override async Task InitializeAsync(CancellationToken ct)
-    {
-        if (await Db.Items.AnyAsync(ct))
-            return;
-
-        List<Item> items = [];
-        Logger.LogInformation("Loading items from CSV");
-        foreach (var row in File.ReadLines("testitems.csv"))
-            items.Add(new Item { Id = int.Parse(row.Split(',')[0]), Name = row.Split(',')[2] });
-
-        items = [.. items.DistinctBy(i => i.Id)];
-
-        Db.ChangeTracker.AutoDetectChangesEnabled = false;
-        try
-        {
-            Db.Items.AddRange(items);
-            await Db.SaveChangesAsync(ct);
-        }
-        finally
-        {
-            Db.ChangeTracker.AutoDetectChangesEnabled = true;
-        }
-
-        Logger.LogInformation("Loaded {count} items", items.Count);
-    }
 
     protected override void OnTick(CancellationToken ct) => UpdateWorld();
 

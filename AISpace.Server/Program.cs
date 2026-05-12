@@ -46,6 +46,7 @@ internal class Program
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
+        builder.Services.AddScoped<IItemRepository, ItemRepository>();
         builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
         builder.Services.AddSingleton<IPendingMapTransferRepository, PendingMapTransferRepository>();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
@@ -104,6 +105,7 @@ internal class Program
             await MapLinkRepository.NormalizeSeedMapLinksAsync(db);
             await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride, (ushort)serverOptions.MsgServer.Port);
             await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
+            await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(AppContext.BaseDirectory, "seedData", "baseItems.json"));
         }
 
         await app.RunAsync();

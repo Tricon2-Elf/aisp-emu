@@ -61,6 +61,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("Items");
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Socket).HasDefaultValue(0);
+            e.Property(x => x.IconId).HasDefaultValue(1);
         });
 
         b.Entity<CharacterInventory>(e =>
