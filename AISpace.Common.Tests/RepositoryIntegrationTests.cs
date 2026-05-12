@@ -62,8 +62,7 @@ public class RepositoryIntegrationTests
             Assert.NotNull(user);
 
             var db = new MainContext(options);
-            var factory = new TestMainContextFactory(options);
-            var sessionRepo = new UserSessionRepository(db, factory, NullLogger<UserSessionRepository>.Instance);
+            var sessionRepo = new UserSessionRepository(db, NullLogger<UserSessionRepository>.Instance);
             const string otp = "1234567890123456";
 
             await sessionRepo.CreateAsync(user!.Id, otp, TimeSpan.FromHours(1), TestContext.Current.CancellationToken);
@@ -90,8 +89,7 @@ public class RepositoryIntegrationTests
             var user = await userRepo.GetByUsernameAsync("carl");
 
             var db = new MainContext(options);
-            var factory = new TestMainContextFactory(options);
-            var sessionRepo = new UserSessionRepository(db, factory, NullLogger<UserSessionRepository>.Instance);
+            var sessionRepo = new UserSessionRepository(db, NullLogger<UserSessionRepository>.Instance);
             const string otp = "abcdefghijklmnop";
 
             await sessionRepo.CreateAsync(user!.Id, otp, TimeSpan.FromHours(1), TestContext.Current.CancellationToken);

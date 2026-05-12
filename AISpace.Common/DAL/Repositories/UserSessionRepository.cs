@@ -12,11 +12,10 @@ public interface IUserSessionRepository
     Task DeleteAllForUserAsync(int userId, CancellationToken ct = default);
 }
 
-public class UserSessionRepository(MainContext db, IDbContextFactory<MainContext> factory, ILogger<UserSessionRepository> logger) : IUserSessionRepository
+public class UserSessionRepository(MainContext db, ILogger<UserSessionRepository> logger) : IUserSessionRepository
 {
     public async Task<UserSession> CreateAsync(int userId, string otp, TimeSpan duration, CancellationToken ct = default)
     {
-        await using var ctx = await factory.CreateDbContextAsync(ct);
         var session = new UserSession
         {
             UserId = userId,
@@ -24,8 +23,8 @@ public class UserSessionRepository(MainContext db, IDbContextFactory<MainContext
             ExpiresAt = DateTime.UtcNow.Add(duration),
         };
 
-        ctx.UserSessions.Add(session);
-        await ctx.SaveChangesAsync(ct);
+        db.UserSessions.Add(session);
+        await db.SaveChangesAsync(ct);
         return session;
     }
 
@@ -50,9 +49,7 @@ public class UserSessionRepository(MainContext db, IDbContextFactory<MainContext
     public async Task DeleteAllForUserAsync(int userId, CancellationToken ct = default)
     {
         logger.LogInformation("Deleting all sessions for user {UserId}", userId);
-        await using var ctx = await factory.CreateDbContextAsync(ct);
-        await ctx.UserSessions.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
+        await db.UserSessions.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
         logger.LogInformation("Deleted all sessions for user {UserId}", userId);
-        await ctx.SaveChangesAsync(ct);
     }
 }

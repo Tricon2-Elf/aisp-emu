@@ -841,7 +841,7 @@ public class AreaMapHandlersTests
             state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
 
             var session = new CapturingPlayerSession();
-            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), new TestMainContextFactory(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
+            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
 
