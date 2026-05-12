@@ -52,7 +52,7 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
 
         User clientUser = session.User!;
         string otp = CryptoUtils.GenerateOTP();
-        await _sessionRepo.CreateAsync(clientUser.Id, otp, TimeSpan.FromMinutes(5), ct);
+        await _sessionRepo.CreateAsync(clientUser.Id, otp, TimeSpan.FromHours(1), ct);
         _logger.LogInformation("World Selected: {ID}", selectedWorldID);
         var resolvedAddress = serverOptions.Value.ResolveAddress(world.Address);
         var WorldSelectResp = new WorldSelectResponse(0, resolvedAddress, world.Port, otp);
