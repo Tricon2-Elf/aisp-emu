@@ -17,7 +17,7 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
     public Task<Item?> GetByIdAsync(int id, CancellationToken ct = default) => db.Items.AsNoTracking().SingleOrDefaultAsync(i => i.Id == id, ct);
 
     public async Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken ct = default) => await db.Items.AsNoTracking().ToListAsync(ct);
-    
+
     public static async Task SeedItemsIfEmptyAsync(MainContext db, string jsonPath, CancellationToken ct = default)
     {
         if (await db.Items.AnyAsync(ct))

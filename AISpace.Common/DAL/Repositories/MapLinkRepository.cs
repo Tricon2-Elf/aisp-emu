@@ -35,8 +35,7 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
         var json = await File.ReadAllTextAsync(jsonPath, ct);
         var rows = JsonSerializer.Deserialize<List<MapLinkSeedRow>>(json, JsonOptions) ?? [];
 
-        var links = rows
-            .Select(r => new MapLink
+        var links = rows.Select(r => new MapLink
             {
                 SourceMapId = r.SourceMapId,
                 ChannelId = r.ChannelId,

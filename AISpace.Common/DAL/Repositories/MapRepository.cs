@@ -76,8 +76,7 @@ public class MapRepository(MainContext db) : IMapRepository
         var json = await File.ReadAllTextAsync(jsonPath, ct);
         var rows = JsonSerializer.Deserialize<List<MapSeedRow>>(json, JsonOptions) ?? [];
 
-        return rows
-            .DistinctBy(r => r.MapId)
+        return rows.DistinctBy(r => r.MapId)
             .Select(r => new Map
             {
                 MapId = r.MapId,
