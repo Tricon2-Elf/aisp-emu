@@ -133,7 +133,7 @@ public class RepositoryIntegrationTests
 
             await using (var db = new MainContext(options))
             {
-                await MapRepository.EnsureSeedMapsPresentAsync(db, TestContext.Current.CancellationToken);
+                await MapRepository.EnsureSeedMapsPresentAsync(db, Path.Combine(AppContext.BaseDirectory, "seedData", "maps.json"), TestContext.Current.CancellationToken);
             }
 
             await using (var verifyDb = new MainContext(options))

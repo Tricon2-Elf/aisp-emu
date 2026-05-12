@@ -1,0 +1,298 @@
+[
+  {
+    "mapId": 10010100,
+    "name": "D.C. II 1",
+    "spawnX": 400,
+    "spawnY": 0.1,
+    "spawnZ": -6400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10010110,
+    "name": "D.C. II 2",
+    "spawnX": 400,
+    "spawnY": 0.1,
+    "spawnZ": -6400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10010200,
+    "name": "D.C. II 3",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10010210,
+    "name": "D.C. II 4",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10010300,
+    "name": "D.C. II 5",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10010310,
+    "name": "D.C. II 6",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10010400,
+    "name": "D.C. II 7",
+    "spawnX": 400,
+    "spawnY": 0.1,
+    "spawnZ": -6400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10020100,
+    "name": "CLANNAD 1",
+    "spawnX": 22800,
+    "spawnY": 0.1,
+    "spawnZ": -2400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10020110,
+    "name": "CLANNAD 2",
+    "spawnX": 22800,
+    "spawnY": 0.1,
+    "spawnZ": -2400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10020200,
+    "name": "CLANNAD 3",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10020210,
+    "name": "CLANNAD 4",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10020300,
+    "name": "CLANNAD 5",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10020310,
+    "name": "CLANNAD 6",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10020400,
+    "name": "CLANNAD 7",
+    "spawnX": 22800,
+    "spawnY": 0.1,
+    "spawnZ": -2400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10030100,
+    "name": "SHUFFLE! 1",
+    "spawnX": 10800,
+    "spawnY": 0.1,
+    "spawnZ": -1200,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10030110,
+    "name": "SHUFFLE! 2",
+    "spawnX": 10800,
+    "spawnY": 0.1,
+    "spawnZ": -1200,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10030200,
+    "name": "SHUFFLE! 3",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10030210,
+    "name": "SHUFFLE! 4",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10030300,
+    "name": "SHUFFLE! 5",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10030310,
+    "name": "SHUFFLE! 6",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10030400,
+    "name": "SHUFFLE! 7",
+    "spawnX": 10800,
+    "spawnY": 0.1,
+    "spawnZ": -1200,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10990100,
+    "name": "Akihabara",
+    "spawnX": -9100,
+    "spawnY": 2,
+    "spawnZ": -18000,
+    "spawnRotation": 90
+  },
+  {
+    "mapId": 10990110,
+    "name": "Akihabara 2",
+    "spawnX": -11000,
+    "spawnY": 0.1,
+    "spawnZ": -19200,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10990200,
+    "name": "Akihabara 3",
+    "spawnX": -9600,
+    "spawnY": 0.1,
+    "spawnZ": -8400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10990210,
+    "name": "Akihabara 4",
+    "spawnX": -9600,
+    "spawnY": 0.1,
+    "spawnZ": -8400,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 20000000,
+    "name": "My Room 1",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 20000010,
+    "name": "My Room 2",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 20000020,
+    "name": "My Room 3",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 20000030,
+    "name": "My Room 4",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10900100,
+    "name": "Avatar Make",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10990400,
+    "name": "TPS Lobby",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40990200,
+    "name": "TPS UDX",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40010100,
+    "name": "TPS Kazami",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40020100,
+    "name": "TPS Mitsuzaka",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40030100,
+    "name": "TPS Verbena",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10040100,
+    "name": "Touhou",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10050100,
+    "name": "Koihime",
+    "spawnX": 0,
+    "spawnY": 0.1,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  }
+]

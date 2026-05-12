@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AISpace.Common.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,8 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
 {
     private readonly MainContext _db = db;
 
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
     public async Task<IReadOnlyList<MapLink>> GetBySourceMapAsync(uint sourceMapId, uint channelId, CancellationToken ct = default)
     {
         long mapId = sourceMapId;
@@ -20,74 +23,53 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
         return await _db.MapLinks.AsNoTracking().Where(x => x.IsEnabled && x.SourceMapId == mapId && (x.ChannelId == channel || x.ChannelId == 0)).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).ToListAsync(ct);
     }
 
-    /// <summary>
-    /// Corrects the original sample Akihabara direct link so it no longer overlaps the default spawn point.
-    /// Applies only to the legacy seeded row shape and leaves user-authored links untouched.
-    /// </summary>
-    public static async Task NormalizeSeedMapLinksAsync(MainContext db, CancellationToken ct = default)
-    {
-        var candidate = await db.MapLinks.FirstOrDefaultAsync(x => x.SourceMapId == 10990100 && x.ChannelId == 0 && x.SortOrder == 10 && x.DestinationMapIds == "10990110", ct);
-
-        if (candidate == null)
-            return;
-
-        var isLegacyLayout = candidate.PositionY == 2.0f && candidate.PositionZ == -18000f && candidate.Yaw == 0 && (candidate.PositionX == -9100f || candidate.PositionX == -9800f);
-
-        if (!isLegacyLayout)
-            return;
-
-        candidate.PositionX = -9800f;
-        candidate.PositionY = 2.0f;
-        candidate.PositionZ = -18000f;
-        candidate.Length = 300f;
-        candidate.Depth = 0f;
-
-        await db.SaveChangesAsync(ct);
-    }
-
     /// <summary>Seeds map-link entries if the MapLinks table is empty.</summary>
-    public static async Task SeedMapLinksIfEmptyAsync(MainContext db, CancellationToken ct = default)
+    public static async Task SeedMapLinksIfEmptyAsync(MainContext db, string jsonPath, CancellationToken ct = default)
     {
         if (await db.MapLinks.AnyAsync(ct))
             return;
 
-        var links = new[]
-        {
-            // Single destination: client can immediately transition (count=1).
-            new MapLink
+        if (!File.Exists(jsonPath))
+            throw new FileNotFoundException("Map link seed JSON not found (required for empty MapLinks table).", jsonPath);
+
+        var json = await File.ReadAllTextAsync(jsonPath, ct);
+        var rows = JsonSerializer.Deserialize<List<MapLinkSeedRow>>(json, JsonOptions) ?? [];
+
+        var links = rows
+            .Select(r => new MapLink
             {
-                SourceMapId = 10990100,
-                ChannelId = 0,
-                PositionX = -8677f,
-                PositionY = 2.0f,
-                PositionZ = -19312f,
-                Yaw = 0,
-                Length = 300f,
-                Depth = 100f,
-                DestinationMapIds = "10990110",
-                Behavior = MapLinkBehavior.AutoEnterIfSingle,
-                SortOrder = 10,
-                IsEnabled = true,
-            },
-            // Multiple destinations: client should open map selection.
-            new MapLink
-            {
-                SourceMapId = 10990100,
-                ChannelId = 0,
-                PositionX = -10701f,
-                PositionY = 0.1f,
-                PositionZ = -19313f,
-                Yaw = 0,
-                Length = 100f,
-                Depth = 10f,
-                DestinationMapIds = "10990110,10990200,10990210",
-                Behavior = MapLinkBehavior.ForceSelection,
-                SortOrder = 20,
-                IsEnabled = true,
-            },
-        };
+                SourceMapId = r.SourceMapId,
+                ChannelId = r.ChannelId,
+                PositionX = r.PositionX,
+                PositionY = r.PositionY,
+                PositionZ = r.PositionZ,
+                Yaw = r.Yaw,
+                Length = r.Length,
+                Depth = r.Depth,
+                DestinationMapIds = r.DestinationMapIds ?? "",
+                Behavior = r.Behavior,
+                SortOrder = r.SortOrder,
+                IsEnabled = r.IsEnabled,
+            })
+            .ToList();
 
         db.MapLinks.AddRange(links);
         await db.SaveChangesAsync(ct);
+    }
+
+    private sealed class MapLinkSeedRow
+    {
+        public long SourceMapId { get; set; }
+        public long ChannelId { get; set; }
+        public float PositionX { get; set; }
+        public float PositionY { get; set; }
+        public float PositionZ { get; set; }
+        public byte Yaw { get; set; }
+        public float Length { get; set; }
+        public float Depth { get; set; }
+        public string? DestinationMapIds { get; set; }
+        public MapLinkBehavior Behavior { get; set; }
+        public int SortOrder { get; set; }
+        public bool IsEnabled { get; set; } = true;
     }
 }

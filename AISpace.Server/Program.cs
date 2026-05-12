@@ -99,13 +99,13 @@ internal class Program
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
             await db.Database.MigrateAsync();
-            await MapRepository.SeedMapsIfEmptyAsync(db);
-            await MapRepository.EnsureSeedMapsPresentAsync(db);
-            await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
-            await MapLinkRepository.NormalizeSeedMapLinksAsync(db);
-            await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride, (ushort)serverOptions.MsgServer.Port);
-            await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
-            await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(AppContext.BaseDirectory, "seedData", "baseItems.json"));
+            var seedDir = Path.Combine(AppContext.BaseDirectory, "seedData");
+            await MapRepository.SeedMapsIfEmptyAsync(db, Path.Combine(seedDir, "maps.json"));
+            await MapRepository.EnsureSeedMapsPresentAsync(db, Path.Combine(seedDir, "maps.json"));
+            await MapLinkRepository.SeedMapLinksIfEmptyAsync(db, Path.Combine(seedDir, "mapLinks.json"));
+            await WorldRepository.SeedWorldsIfEmptyAsync(db, Path.Combine(seedDir, "worlds.json"), serverOptions.IPOverride, (ushort)serverOptions.MsgServer.Port);
+            await ChannelRepository.SeedChannelsIfEmptyAsync(db, Path.Combine(seedDir, "channels.json"), serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
+            await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(seedDir, "baseItems.json"));
         }
 
         await app.RunAsync();
