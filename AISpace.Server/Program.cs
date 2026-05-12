@@ -59,6 +59,7 @@ internal class Program
         builder.Services.Configure<MaintenanceOptions>(builder.Configuration.GetSection("Maintenance"));
         builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
         builder.Services.AddSingleton<BroadcastService>();
+        builder.Services.AddScoped<UserAdminService>();
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
 
@@ -156,6 +157,96 @@ internal class Program
         app.MapPost("/api/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync(null, request, broadcast, loggerFactory));
         app.MapPost("/api/area/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync("area", request, broadcast, loggerFactory));
         app.MapPost("/api/msg/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync("msg", request, broadcast, loggerFactory));
+
+        app.MapPost("/api/users", async (HttpRequest request, UserAdminService service, CancellationToken ct) =>
+        {
+            var body = await request.ReadFromJsonAsync<CreateUserRequest>(ct);
+            if (body == null || string.IsNullOrWhiteSpace(body.Username))
+                return Results.BadRequest(new { error = "username is required" });
+
+            var (success, error, user) = await service.CreateUserAsync(body.Username, body.Password, ct);
+            if (!success || user == null)
+                return Results.BadRequest<object>(new { error = "failed to create user" });
+
+            return Results.Ok(new { user.Id, user.Username, user.CreatedAt });
+        });
+
+        app.MapDelete("/api/users/{username}", async (string username, UserAdminService service, CancellationToken ct) =>
+        {
+            var (success, error) = await service.DeleteUserAsync(username, ct);
+            if (!success)
+                return Results.NotFound(new { error });
+
+            return Results.Ok(new { deleted = true, username });
+        });
+
+        app.MapPost("/api/users/{username}/reset-password", async (string username, HttpRequest request, UserAdminService service, CancellationToken ct) =>
+        {
+            var body = await request.ReadFromJsonAsync<ResetPasswordRequest>(ct);
+            if (body == null || string.IsNullOrWhiteSpace(body.NewPassword))
+                return Results.BadRequest(new { error = "newPassword is required" });
+
+            var (success, error) = await service.ResetPasswordAsync(username, body.NewPassword, ct);
+            if (!success)
+                return Results.NotFound(new { error });
+
+            return Results.Ok(new { reset = true, username });
+        });
+
+        app.MapGet("/api/users", async (string? search, int? skip, int? take, UserAdminService service, CancellationToken ct) =>
+        {
+            var (users, total) = await service.ListUsersAsync(search, skip, take, ct);
+            return Results.Ok(new { users, total });
+        });
+
+        app.MapGet("/api/users/{username}", async (string username, UserAdminService service, CancellationToken ct) =>
+        {
+            var user = await service.GetUserDetailAsync(username, ct);
+            if (user == null)
+                return Results.NotFound(new { error = "user not found" });
+
+            return Results.Ok(user);
+        });
+
+        app.MapPost("/api/users/{username}/ban", async (string username, HttpRequest request, UserAdminService service, CancellationToken ct) =>
+        {
+            var body = await request.ReadFromJsonAsync<BanRequest>(ct);
+            var (success, error, sessionsKicked) = await service.BanUserAsync(username, body?.Reason, ct);
+            if (!success)
+                return Results.NotFound(new { error });
+
+            return Results.Ok(new { banned = true, username, sessionsKicked });
+        });
+
+        app.MapPost("/api/users/{username}/unban", async (string username, UserAdminService service, CancellationToken ct) =>
+        {
+            var (success, error) = await service.UnbanUserAsync(username, ct);
+            if (!success)
+                return Results.NotFound(new { error });
+
+            return Results.Ok(new { unbanned = true, username });
+        });
+
+        app.MapPost("/api/users/{username}/kick", async (string username, UserAdminService service, CancellationToken ct) =>
+        {
+            var (success, error, sessionsClosed) = await service.KickUserAsync(username, ct);
+            if (!success)
+                return Results.NotFound(new { error });
+
+            return Results.Ok(new { kicked = true, username, sessionsClosed });
+        });
+
+        app.MapGet("/api/servers/clients", (UserAdminService service) =>
+        {
+            var clients = service.GetConnectedClients();
+            return Results.Ok(new { clients, total = clients.Length });
+        });
+
+        app.MapGet("/api/stats", async (UserAdminService service, CancellationToken ct) =>
+        {
+            var stats = await service.GetStatsAsync(ct);
+            return Results.Ok(stats);
+        });
 
         // Ensure database and Maps table exist, then seed maps if empty
         using (var scope = app.Services.CreateScope())
