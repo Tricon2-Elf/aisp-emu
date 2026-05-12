@@ -7,11 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Server;
 
-public class ScheduledMaintenanceService(
-    SharedState state,
-    IOptions<MaintenanceOptions> options,
-    IHostApplicationLifetime lifetime,
-    ILogger<ScheduledMaintenanceService> logger) : BackgroundService
+public class ScheduledMaintenanceService(SharedState state, IOptions<MaintenanceOptions> options, IHostApplicationLifetime lifetime, ILogger<ScheduledMaintenanceService> logger) : BackgroundService
 {
     private readonly MaintenanceOptions _options = options.Value;
     private readonly HashSet<int> _sentWarnings = [];
@@ -72,9 +68,7 @@ public class ScheduledMaintenanceService(
 
     private void BroadcastWarning(int minutesRemaining)
     {
-        var message = minutesRemaining == 1
-            ? "Server maintenance in 1 minute. You will be disconnected."
-            : string.Format(_options.Message, minutesRemaining);
+        var message = minutesRemaining == 1 ? "Server maintenance in 1 minute. You will be disconnected." : string.Format(_options.Message, minutesRemaining);
 
         logger.LogInformation("Broadcasting maintenance warning: {Minutes} min remaining", minutesRemaining);
         SendToAllAreaClients(message);

@@ -6,8 +6,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Server;
 
-public class AreaServer(ILogger<AreaServer> logger, GameServerContext ctx, int port)
-    : GameServerBase<AreaServer>(logger, ctx, port, "Area", GameServerHealthRegistry.Keys.AreaServer)
+public class AreaServer(ILogger<AreaServer> logger, GameServerContext ctx, int port) : GameServerBase<AreaServer>(logger, ctx, port, "Area", GameServerHealthRegistry.Keys.AreaServer)
 {
     protected override ServerType ActiveServerType => ServerType.Area;
     private static readonly long _serverStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();

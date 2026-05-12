@@ -51,7 +51,8 @@ public class UserRepository(MainContext db) : IUserRepository
     public async Task SetBannedAsync(int userId, bool isBanned, string? reason = null)
     {
         var user = await _db.Users.FindAsync(userId);
-        if (user == null) return;
+        if (user == null)
+            return;
 
         user.IsBanned = isBanned;
         user.BanReason = isBanned ? reason : null;
@@ -62,7 +63,8 @@ public class UserRepository(MainContext db) : IUserRepository
     public async Task UpdatePasswordAsync(int userId, string newPassword)
     {
         var user = await _db.Users.FindAsync(userId);
-        if (user == null) return;
+        if (user == null)
+            return;
 
         user.SetPassword(newPassword);
         await _db.SaveChangesAsync();
@@ -71,7 +73,8 @@ public class UserRepository(MainContext db) : IUserRepository
     public async Task DeleteAsync(int userId)
     {
         var user = await _db.Users.FindAsync(userId);
-        if (user == null) return;
+        if (user == null)
+            return;
 
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();

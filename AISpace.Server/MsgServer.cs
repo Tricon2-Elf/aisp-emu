@@ -3,8 +3,7 @@ using AISpace.Common.Game;
 
 namespace AISpace.Server;
 
-public class MsgServer(ILogger<MsgServer> logger, GameServerContext ctx, int port)
-    : GameServerBase<MsgServer>(logger, ctx, port, "Msg", GameServerHealthRegistry.Keys.MsgServer)
+public class MsgServer(ILogger<MsgServer> logger, GameServerContext ctx, int port) : GameServerBase<MsgServer>(logger, ctx, port, "Msg", GameServerHealthRegistry.Keys.MsgServer)
 {
     protected override ServerType ActiveServerType => ServerType.Msg;
 

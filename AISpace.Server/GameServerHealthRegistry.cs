@@ -15,9 +15,7 @@ public sealed class GameServerHealthRegistry
 
     private readonly ConcurrentDictionary<string, ServerHealthInfo> _info = new();
 
-    public GameServerHealthRegistry()
-    {
-    }
+    public GameServerHealthRegistry() { }
 
     public void AddServer(string key, int port)
     {

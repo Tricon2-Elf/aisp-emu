@@ -106,26 +106,28 @@ public class UserAdminService
     private async Task<int> KickUserAsync(User user, CancellationToken ct)
     {
         var serverTypes = new[] { ServerType.Auth, ServerType.Msg, ServerType.Area };
-        var sessionsToClose = new List<PlayerSession>();
+        var matchingSessions = new List<IPlayerSession>();
 
         foreach (var serverType in serverTypes)
         {
             foreach (var session in _state.GetServerClients(serverType))
             {
-                if (session is PlayerSession ps && ps.UserId == user.Id)
-                    sessionsToClose.Add(ps);
+                if (session.UserId == user.Id)
+                    matchingSessions.Add(session);
             }
         }
 
         var logoutData = new LogoutResponse().ToBytes();
 
-        foreach (var session in sessionsToClose)
+        foreach (var session in matchingSessions)
         {
             try
             {
                 await session.SendAsync(PacketType.LogoutResponse, logoutData, ct);
                 await Task.Delay(500, ct);
-                session.ClientConnection.Stream.Close();
+
+                if (session is PlayerSession ps)
+                    ps.ClientConnection.Stream.Close();
             }
             catch (Exception ex)
             {
@@ -133,7 +135,7 @@ public class UserAdminService
             }
         }
 
-        return sessionsToClose.Count;
+        return matchingSessions.Count;
     }
 
     public async Task<(IReadOnlyList<UserSummary> Users, int Total)> ListUsersAsync(string? search = null, int? skip = null, int? take = null, CancellationToken ct = default)
@@ -141,14 +143,16 @@ public class UserAdminService
         var users = await _userRepo.GetAllAsync(search, skip, take);
         var total = await _userRepo.CountAsync(search);
 
-        var summaries = users.Select(u => new UserSummary
-        {
-            Id = u.Id,
-            Username = u.Username,
-            IsBanned = u.IsBanned,
-            CreatedAt = u.CreatedAt,
-            CharacterCount = u.Characters.Count,
-        }).ToList();
+        var summaries = users
+            .Select(u => new UserSummary
+            {
+                Id = u.Id,
+                Username = u.Username,
+                IsBanned = u.IsBanned,
+                CreatedAt = u.CreatedAt,
+                CharacterCount = u.Characters.Count,
+            })
+            .ToList();
 
         return (summaries, total);
     }
@@ -170,14 +174,16 @@ public class UserAdminService
             {
                 if (session.IsAuthenticated)
                 {
-                    clients.Add(new ConnectedClient
-                    {
-                        Username = session.User?.Username ?? "",
-                        Server = serverName,
-                        CharacterName = session.Character?.Name,
-                        MapId = session.MapId,
-                        ChannelId = session.ChannelId,
-                    });
+                    clients.Add(
+                        new ConnectedClient
+                        {
+                            Username = session.User?.Username ?? "",
+                            Server = serverName,
+                            CharacterName = session.Character?.Name,
+                            MapId = session.MapId,
+                            ChannelId = session.ChannelId,
+                        }
+                    );
                 }
             }
         }
@@ -188,9 +194,7 @@ public class UserAdminService
     public async Task<StatsResponse> GetStatsAsync(CancellationToken ct = default)
     {
         var totalUsers = await _userRepo.CountAsync();
-        var onlineCount = _state.GetServerClients(ServerType.Auth).Count(s => s.IsAuthenticated)
-            + _state.GetServerClients(ServerType.Msg).Count(s => s.IsAuthenticated)
-            + _state.GetServerClients(ServerType.Area).Count(s => s.IsAuthenticated);
+        var onlineCount = _state.GetServerClients(ServerType.Auth).Count(s => s.IsAuthenticated) + _state.GetServerClients(ServerType.Msg).Count(s => s.IsAuthenticated) + _state.GetServerClients(ServerType.Area).Count(s => s.IsAuthenticated);
 
         var uptimeSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - _state.StartTimeUnix;
 
@@ -220,12 +224,14 @@ public class UserAdminService
             BannedAt = user.BannedAt,
             NpsPoints = user.NpsPoints,
             CharacterCount = user.Characters.Count,
-            Characters = user.Characters.Select(c => new CharacterSummary
-            {
-                Id = c.Id,
-                Name = c.Name,
-                ModelId = c.ModelId,
-            }).ToList(),
+            Characters = user
+                .Characters.Select(c => new CharacterSummary
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    ModelId = c.ModelId,
+                })
+                .ToList(),
         };
     }
 }
