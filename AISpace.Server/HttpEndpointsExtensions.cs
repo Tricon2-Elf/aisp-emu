@@ -1,5 +1,4 @@
 using AISpace.Common;
-using AISpace.Common.DAL.Repositories;
 using AISpace.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -14,9 +13,9 @@ internal static class HttpEndpointsExtensions
         app.MapHealthChecks("/health");
         app.MapGet(
             "/healthz",
-            (GameServerHealthRegistry registry, ISessionPresenceRepository presenceRepo) =>
+            (GameServerHealthRegistry registry) =>
             {
-                var servers = registry.GetSnapshot(presenceRepo);
+                var servers = registry.GetSnapshot();
                 var allHealthy = servers.Values.All(s => s.State == "healthy");
                 return Results.Json(new { status = allHealthy ? "Healthy" : "Unhealthy", servers }, statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
             }
