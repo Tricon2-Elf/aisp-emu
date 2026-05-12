@@ -15,7 +15,7 @@ public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         // Find the first character (as the emulator currently supports only one)
-        var cha = session.User.Characters.FirstOrDefault();
+        var cha = session.User!.Characters.FirstOrDefault();
 
         if (cha != null)
         {

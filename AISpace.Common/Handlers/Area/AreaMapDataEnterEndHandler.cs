@@ -18,7 +18,7 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
         session.IsMapTransitionPending = false;
         await session.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
 
-        var myChar = session.Character ?? session.User.Characters.FirstOrDefault();
+        var myChar = session.Character ?? session.User!.Characters.FirstOrDefault();
         if (myChar == null)
             return;
 

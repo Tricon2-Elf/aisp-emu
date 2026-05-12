@@ -14,7 +14,7 @@ public class LogoutRequestHandler(IUserSessionRepository sessionRepo, ILogger<Lo
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        logger.LogInformation($"[LOGOUT] User {session.User.Username} is leaving.");
+        logger.LogInformation("[LOGOUT] User {username} is leaving.", session.User!.Username);
         await sessionRepo.DeleteAllForUserAsync(session.User.Id, ct);
         await session.SendAsync(ResponseType, new LogoutResponse().ToBytes(), ct);
 

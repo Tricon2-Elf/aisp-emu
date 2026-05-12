@@ -18,7 +18,7 @@ public class AreaMoneyNpsPointsHandler(IUserRepository userRepo, ILogger<AreaMon
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        var user = await _userRepo.GetById(session.User.Id);
+        var user = await _userRepo.GetById(session.User!.Id);
         if (user == null)
         {
             var response = new MoneyNpsPointsResponse(1, 0, NpsPointsLimit);

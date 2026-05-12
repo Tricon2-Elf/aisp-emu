@@ -12,7 +12,7 @@ public class AvatarSelectHandler : IPacketHandler, IRequiresAuthenticatedSession
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        var cha = session.User.Characters.FirstOrDefault();
+        var cha = session.User!.Characters.FirstOrDefault();
 
         var response = new AvatarSelectResponse(0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
