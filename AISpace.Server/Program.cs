@@ -99,6 +99,8 @@ internal class Program
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
             await db.Database.MigrateAsync();
+            var sessionRepo = scope.ServiceProvider.GetRequiredService<IUserSessionRepository>();
+            await sessionRepo.InvalidateExpiredAsync();
             var seedDir = Path.Combine(AppContext.BaseDirectory, "seedData");
             await MapRepository.SeedMapsIfEmptyAsync(db, Path.Combine(seedDir, "maps.json"));
             await MapRepository.EnsureSeedMapsPresentAsync(db, Path.Combine(seedDir, "maps.json"));
