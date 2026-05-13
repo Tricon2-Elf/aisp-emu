@@ -1047,7 +1047,7 @@ public enum PacketType : ushort
     ItemTryEquipResponse = 0xA5DE,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_try_equip_replace_r", ImplementationState.NotImplemented)]
-    ItemTryEquipReplaceResponse = 0x8CDA,
+    ItemTryEquipReplaceResponse = 0x8C08,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_try_equip_replaced", ImplementationState.NotImplemented)]
     ItemTryEquipReplacedNotify = 0x7CDB,
