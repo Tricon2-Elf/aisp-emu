@@ -17,8 +17,8 @@ public class EventMessageNotify : IOutgoingPacket
     {
         var writer = new PacketWriter();
         writer.Write(ObjId);
-        writer.WriteFixedString(Name, 37, "Shift_JIS");
-        writer.WriteFixedString(Text, 1537, "Shift_JIS");
+        writer.Write(Name, "Shift_JIS");
+        writer.Write(Text, "Shift_JIS");
         return writer.ToBytes();
     }
 }
