@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public sealed class AreaSelectInitIslandEndHandler(DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaSelectInitIslandEndHandler> logger) : IPacketHandler
+public sealed class AreaSelectInitIslandEndHandler(DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaSelectInitIslandEndHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.SelectInitIslandEndRequest;
     public PacketType ResponseType => PacketType.SelectInitIslandStart;

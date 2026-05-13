@@ -5,7 +5,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaNpcGetDataHandler : IPacketHandler
+public class AreaNpcGetDataHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.NpcGetDataRequest;
 

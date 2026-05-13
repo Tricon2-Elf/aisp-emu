@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaAvatarMoveRequestHandler> logger) : IPacketHandler
+public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransitionService directMapLinkTransitionService) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarMoveRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyMove;

@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaNiconiCommonsBaseListHandler : IPacketHandler
+public class AreaNiconiCommonsBaseListHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.NiconiCommonsBaseListRequest;
 

@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEmotionCharaHandler(SharedState state) : IPacketHandler
+public class AreaEmotionCharaHandler(SharedState state) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EmotionCharaRequest;
     public PacketType ResponseType => PacketType.EmotionCharaResponse;

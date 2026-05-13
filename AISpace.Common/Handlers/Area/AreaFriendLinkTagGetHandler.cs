@@ -1,28 +1,19 @@
 using AISpace.Common.Game;
 using AISpace.Network;
+using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaFriendLinkTagGetHandler : IPacketHandler
+public class AreaFriendLinkTagGetHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
-    public PacketType RequestType => (PacketType)0x0F97; // Тот самый 3991
-    public PacketType ResponseType => (PacketType)0x239E; // recv_get_friend_link_tag_r
+    public PacketType RequestType => PacketType.FriendLinkTagGetRequest;
+    public PacketType ResponseType => PacketType.FriendLinkTagGetResponse;
     public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        var reader = new PacketReader(payload.Span);
-        uint targetObjId = reader.ReadUInt();
-
-        var writer = new PacketWriter();
-        writer.Write((uint)0); // Result
-        writer.Write(targetObjId);
-        writer.Write((uint)0); // tagdata
-        writer.Write((uint)0); // slot
-        writer.Write((uint)0); // questionnaire_tagdata
-        writer.Write((uint)0); // questionnaire_slot
-
-        // Total 24 bytes (6 fields by 4 bytes)
-        await session.SendAsync(ResponseType, writer.ToBytes(), ct);
+        var req = FriendLinkTagGetRequest.FromBytes(payload.Span);
+        var response = new FriendLinkTagGetResponse(0, req.TargetObjectId);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

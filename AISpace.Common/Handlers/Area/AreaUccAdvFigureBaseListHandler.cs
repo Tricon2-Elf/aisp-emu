@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaUccAdvFigureBaseListHandler : IPacketHandler
+public class AreaUccAdvFigureBaseListHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.UccAdvFigureBaseListRequest;
 

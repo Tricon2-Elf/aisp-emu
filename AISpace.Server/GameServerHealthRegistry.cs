@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using AISpace.Common;
-using AISpace.Common.Game;
 
 namespace AISpace.Server;
 
@@ -15,11 +13,11 @@ public sealed class GameServerHealthRegistry
 
     private readonly ConcurrentDictionary<string, ServerHealthInfo> _info = new();
 
-    public GameServerHealthRegistry()
+    public GameServerHealthRegistry() { }
+
+    public void AddServer(string key, int port)
     {
-        _info[Keys.AuthServer] = new ServerHealthInfo("AuthServer", 50050, "starting");
-        _info[Keys.MsgServer] = new ServerHealthInfo("MsgServer", 50052, "starting");
-        _info[Keys.AreaServer] = new ServerHealthInfo("AreaServer", 50054, "starting");
+        _info.TryAdd(key, new ServerHealthInfo(KeyToDisplayName(key), port, "starting"));
     }
 
     public void MarkListening(string key, int port)
@@ -27,30 +25,7 @@ public sealed class GameServerHealthRegistry
         _info.AddOrUpdate(key, _ => new ServerHealthInfo(KeyToDisplayName(key), port, "healthy"), (_, existing) => existing with { Port = port, State = "healthy" });
     }
 
-    public IReadOnlyDictionary<string, ServerHealthInfo> GetSnapshot(SharedState state)
-    {
-        return _info.ToDictionary(
-            kv => kv.Key,
-            kv =>
-            {
-                var usernames = ConnectedUsernamesForKey(kv.Key, state);
-                return kv.Value with { ConnectedClients = usernames.Count, ConnectedUsernames = usernames };
-            }
-        );
-    }
-
-    private static IReadOnlyList<string> ConnectedUsernamesForKey(string key, SharedState state)
-    {
-        var clients = key switch
-        {
-            Keys.AuthServer => state.GetServerClients(ServerType.Auth),
-            Keys.MsgServer => state.GetServerClients(ServerType.Msg),
-            Keys.AreaServer => state.GetServerClients(ServerType.Area),
-            _ => [],
-        };
-
-        return clients.Select(session => session.User?.Username).Where(name => !string.IsNullOrWhiteSpace(name)).Select(name => name!).OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
-    }
+    public IReadOnlyDictionary<string, ServerHealthInfo> GetSnapshot() => _info.ToDictionary(kv => kv.Key, kv => kv.Value);
 
     private static string KeyToDisplayName(string key) =>
         key switch
@@ -62,4 +37,4 @@ public sealed class GameServerHealthRegistry
         };
 }
 
-public sealed record ServerHealthInfo(string Name, int Port, string State, int ConnectedClients = 0, IReadOnlyList<string>? ConnectedUsernames = null);
+public sealed record ServerHealthInfo(string Name, int Port, string State);

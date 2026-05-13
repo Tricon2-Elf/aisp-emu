@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleGetDataHandler(MainContext db) : IPacketHandler
+public class CircleGetDataHandler(MainContext db) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.CircleGetDataRequest;
     public PacketType ResponseType => PacketType.CircleGetDataResponse;
@@ -17,34 +17,31 @@ public class CircleGetDataHandler(MainContext db) : IPacketHandler
     {
         var list = new List<CircleData>();
 
-        if (session.User != null)
+        // Reload the character
+        var cha = await db.Characters.Include(c => c.Circle).FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
+
+        if (cha != null && cha.Circle != null)
         {
-            // Reload the character
-            var cha = await db.Characters.Include(c => c.Circle).FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
+            // Use the current character ID as the main identifier
+            uint myId = (uint)cha.Id;
+            uint myCircleId = (uint)cha.Circle.Id;
 
-            if (cha != null && cha.Circle != null)
+            // 1. Add the circle to the list
+            list.Add(new CircleData(myCircleId, cha.Circle.Name, myId));
+
+            // 2. Send the composition (yourself as the leader)
+            var membersList = new List<CircleMemberData>
             {
-                // Use the current character ID as the main identifier
-                uint myId = (uint)cha.Id;
-                uint myCircleId = (uint)cha.Circle.Id;
-
-                // 1. Add the circle to the list
-                list.Add(new CircleData(myCircleId, cha.Circle.Name, myId));
-
-                // 2. Send the composition (yourself as the leader)
-                var membersList = new List<CircleMemberData>
+                new CircleMemberData
                 {
-                    new CircleMemberData
-                    {
-                        AvatarId = myId,
-                        Name = cha.Name,
-                        Role = 2u, // Leader
-                    },
-                };
+                    AvatarId = myId,
+                    Name = cha.Name,
+                    Role = 2u, // Leader
+                },
+            };
 
-                var notify = new CircleNotifyMember(myCircleId, membersList);
-                await session.SendAsync(PacketType.CircleNotifyMember, notify.ToBytes(), ct);
-            }
+            var notify = new CircleNotifyMember(myCircleId, membersList);
+            await session.SendAsync(PacketType.CircleNotifyMember, notify.ToBytes(), ct);
         }
 
         // 3. Send the final response

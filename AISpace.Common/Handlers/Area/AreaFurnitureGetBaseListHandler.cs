@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaFurnitureGetBaseListHandler : IPacketHandler
+public class AreaFurnitureGetBaseListHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.FurnitureGetBaseListRequest;
 

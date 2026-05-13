@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> logger) : IPacketHandler
+public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarDestroyRequest;
     public PacketType ResponseType => PacketType.AvatarDestroyResponse;
@@ -14,11 +14,8 @@ public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> 
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        if (session.User == null)
-            return;
-
         // Find the first character (as the emulator currently supports only one)
-        var cha = session.User.Characters.FirstOrDefault();
+        var cha = session.User!.Characters.FirstOrDefault();
 
         if (cha != null)
         {

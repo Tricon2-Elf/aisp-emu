@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaAiDownloadListGetHandler : IPacketHandler
+public class AreaAiDownloadListGetHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AiDownloadListGetRequest;
 

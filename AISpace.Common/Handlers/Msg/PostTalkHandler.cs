@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Msg;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class PostTalkHandler(SharedState state) : IPacketHandler
+public class PostTalkHandler(SharedState state) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.PostTalkRequest;
     public PacketType ResponseType => PacketType.PostTalkResponse;

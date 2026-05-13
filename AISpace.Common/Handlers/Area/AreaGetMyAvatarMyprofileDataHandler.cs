@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaGetMyAvatarMyprofileDataHandler(MainContext db) : IPacketHandler
+public class AreaGetMyAvatarMyprofileDataHandler(MainContext db) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.GetMyAvatarMyprofileDataRequest;
     public PacketType ResponseType => PacketType.GetMyAvatarMyprofileDataResponse;

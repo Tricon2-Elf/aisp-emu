@@ -1,0 +1,30 @@
+[
+  {
+    "sourceMapId": 10990100,
+    "channelId": 0,
+    "positionX": -8677,
+    "positionY": 2,
+    "positionZ": -19312,
+    "yaw": 0,
+    "length": 300,
+    "depth": 100,
+    "destinationMapIds": "10990110",
+    "behavior": 0,
+    "sortOrder": 10,
+    "isEnabled": true
+  },
+  {
+    "sourceMapId": 10990100,
+    "channelId": 0,
+    "positionX": -10701,
+    "positionY": 0.1,
+    "positionZ": -19313,
+    "yaw": 0,
+    "length": 100,
+    "depth": 10,
+    "destinationMapIds": "10990110,10990200,10990210",
+    "behavior": 1,
+    "sortOrder": 20,
+    "isEnabled": true
+  }
+]

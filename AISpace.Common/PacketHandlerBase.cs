@@ -18,6 +18,8 @@ public interface IPacketHandler
     Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default);
 }
 
+public interface IRequiresAuthenticatedSession;
+
 public abstract class PacketHandlerBase<TRequest, TResponse> : IPacketHandler
     where TRequest : IIncomingPacket<TRequest>
     where TResponse : IOutgoingPacket

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) : IPacketHandler
+public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyData;
@@ -14,12 +14,9 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) 
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        if (!session.IsAuthenticated || session.User == null)
-            return;
-
         session.NeedsPostLoadSelfAvatarNotify = false;
 
-        var cha = session.User.Characters.First();
+        var cha = session.User!.Characters.First();
         var pos = new MovementData(session.X, session.Y, session.Z, session.Rotation, (MovementType)session.MovementTypeId);
 
         var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name) { moveData = pos };

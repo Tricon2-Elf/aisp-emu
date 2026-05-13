@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemTryEquipFixHandler(ILogger<ItemTryEquipFixHandler> logger) : IPacketHandler
+public class ItemTryEquipFixHandler(ILogger<ItemTryEquipFixHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private readonly ILogger<ItemTryEquipFixHandler> _logger = logger;
 

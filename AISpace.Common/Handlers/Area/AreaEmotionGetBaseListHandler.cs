@@ -5,7 +5,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEmotionGetBaseListHandler : IPacketHandler
+public class AreaEmotionGetBaseListHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EmotionGetBaseListRequest;
     public PacketType ResponseType => PacketType.EmotionGetBaseListResponse;

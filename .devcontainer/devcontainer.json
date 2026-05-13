@@ -1,0 +1,34 @@
+{
+  "name": "aisp-emu (.NET 10)",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0-noble",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12",
+      "installTools": true
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": true,
+      "dockerDashComposeVersion": "v2"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-dotnettools.csharp", "ms-dotnettools.csdevkit"],
+      "settings": {
+        "dotnet.defaultSolution": "AISpace.sln"
+      }
+    }
+  },
+  "forwardPorts": [8080, 50050, 50052, 50054],
+  "portsAttributes": {
+    "8080": { "label": "HTTP / healthz" },
+    "50050": { "label": "Auth server" },
+    "50052": { "label": "Msg server" },
+    "50054": { "label": "Area server" }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteEnv": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "PATH": "/home/vscode/.local/bin:${containerEnv:PATH}"
+  }
+}

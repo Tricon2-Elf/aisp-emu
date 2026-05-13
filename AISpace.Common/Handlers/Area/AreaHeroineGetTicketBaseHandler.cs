@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaHeroineGetTicketBaseHandler : IPacketHandler
+public class AreaHeroineGetTicketBaseHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.HeroineGetTicketBaseRequest;
 

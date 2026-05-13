@@ -10,9 +10,10 @@ using System.Text;
 using AISpace.Common;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
+using AISpace.Server.Services;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NLog.Extensions.Logging;
 
@@ -45,6 +46,7 @@ internal class Program
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
+        builder.Services.AddScoped<IItemRepository, ItemRepository>();
         builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
         builder.Services.AddSingleton<IPendingMapTransferRepository, PendingMapTransferRepository>();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
@@ -54,57 +56,42 @@ internal class Program
         builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().WithScopedLifetime());
 
         builder.Services.AddSingleton<PacketDispatcher>();
+        builder.Services.Configure<MaintenanceOptions>(builder.Configuration.GetSection("Maintenance"));
+        builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+        builder.Services.AddSingleton<BroadcastService>();
+        builder.Services.AddScoped<UserAdminService>();
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
 
-        builder.Services.AddHostedService(sp => new AuthServer(
-            sp.GetRequiredService<ILogger<AuthServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50050,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<GameServerHealthRegistry>()
-        ));
+        // Read per-server config from the Server section
+        var authEnabled = builder.Configuration.GetValue("Server:AuthServer:Enabled", true);
+        var authPort = builder.Configuration.GetValue("Server:AuthServer:Port", 50050);
+        var msgEnabled = builder.Configuration.GetValue("Server:MsgServer:Enabled", true);
+        var msgPort = builder.Configuration.GetValue("Server:MsgServer:Port", 50052);
+        var areaEnabled = builder.Configuration.GetValue("Server:AreaServer:Enabled", true);
+        var areaPort = builder.Configuration.GetValue("Server:AreaServer:Port", 50054);
 
-        builder.Services.AddHostedService(sp => new MsgServer(
-            sp.GetRequiredService<ILogger<MsgServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50052,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<GameServerHealthRegistry>()
-        ));
+        GameServerContext BuildGameServerContext(IServiceProvider sp)
+        {
+            var o = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
+            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity);
+        }
 
-        builder.Services.AddHostedService(sp => new AreaServer(
-            sp.GetRequiredService<ILogger<AreaServer>>(),
-            sp.GetRequiredService<MainContext>(),
-            sp.GetRequiredService<IUserRepository>(),
-            50054,
-            sp.GetRequiredService<ILoggerFactory>(),
-            sp.GetRequiredService<IWorldRepository>(),
-            sp.GetRequiredService<PacketDispatcher>(),
-            sp.GetRequiredService<SharedState>(),
-            sp.GetRequiredService<GameServerHealthRegistry>()
-        ));
+        if (authEnabled)
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AuthServer>(sp, BuildGameServerContext(sp), authPort));
+
+        if (msgEnabled)
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<MsgServer>(sp, BuildGameServerContext(sp), msgPort));
+
+        if (areaEnabled)
+            builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AreaServer>(sp, BuildGameServerContext(sp), areaPort));
+
+        builder.Services.AddHostedService<ScheduledMaintenanceService>();
 
         var app = builder.Build();
 
-        app.MapHealthChecks("/health");
-        app.MapGet(
-            "/healthz",
-            (GameServerHealthRegistry registry, SharedState state) =>
-            {
-                var servers = registry.GetSnapshot(state);
-                var allHealthy = servers.Values.All(s => s.State == "healthy");
-                return Results.Json(new { status = allHealthy ? "Healthy" : "Unhealthy", servers }, statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
-            }
-        );
+        app.UseApiKeyAuthForApiRoutes();
+        app.MapAispaceHttpEndpoints();
 
         // Ensure database and Maps table exist, then seed maps if empty
         using (var scope = app.Services.CreateScope())
@@ -112,12 +99,15 @@ internal class Program
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
             await db.Database.MigrateAsync();
-            await MapRepository.SeedMapsIfEmptyAsync(db);
-            await MapRepository.EnsureSeedMapsPresentAsync(db);
-            await MapLinkRepository.SeedMapLinksIfEmptyAsync(db);
-            await MapLinkRepository.NormalizeSeedMapLinksAsync(db);
-            await WorldRepository.SeedWorldsIfEmptyAsync(db, serverOptions.IPOverride);
-            await ChannelRepository.SeedChannelsIfEmptyAsync(db, serverOptions.IPOverride, areaPort: 50054);
+            var sessionRepo = scope.ServiceProvider.GetRequiredService<IUserSessionRepository>();
+            await sessionRepo.InvalidateExpiredAsync();
+            var seedDir = Path.Combine(AppContext.BaseDirectory, "seedData");
+            await MapRepository.SeedMapsIfEmptyAsync(db, Path.Combine(seedDir, "maps.json"));
+            await MapRepository.EnsureSeedMapsPresentAsync(db, Path.Combine(seedDir, "maps.json"));
+            await MapLinkRepository.SeedMapLinksIfEmptyAsync(db, Path.Combine(seedDir, "mapLinks.json"));
+            await WorldRepository.SeedWorldsIfEmptyAsync(db, Path.Combine(seedDir, "worlds.json"), serverOptions.IPOverride, (ushort)serverOptions.MsgServer.Port);
+            await ChannelRepository.SeedChannelsIfEmptyAsync(db, Path.Combine(seedDir, "channels.json"), serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
+            await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(seedDir, "baseItems.json"));
         }
 
         await app.RunAsync();

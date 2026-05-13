@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMapRepository mapRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, ILogger<AreaMapLinkGetDataHandler> logger) : IPacketHandler
+public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMapRepository mapRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, ILogger<AreaMapLinkGetDataHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapLinkGetDataRequest;
 
@@ -29,7 +29,7 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
 
         var links = await mapLinkRepository.GetBySourceMapAsync(request.MapId, request.ChannelId, ct);
         var currentChannel = await channelRepository.GetByChannelNumAsync((int)request.ChannelId, ct);
-        var areaServerInfo = currentChannel is null ? new ServerInfo(serverOptions.Value.ResolveAddress("localhost"), 50054) : new ServerInfo(serverOptions.Value.ResolveAddress(currentChannel.IP), currentChannel.Port);
+        var areaServerInfo = currentChannel is null ? new ServerInfo(serverOptions.Value.ResolveAddress("localhost"), (ushort)serverOptions.Value.AreaServer.Port) : new ServerInfo(serverOptions.Value.ResolveAddress(currentChannel.IP), currentChannel.Port);
         var selectEntries = new List<NotifySelectMapEntry>(links.Count);
 
         if (currentChannel is null)

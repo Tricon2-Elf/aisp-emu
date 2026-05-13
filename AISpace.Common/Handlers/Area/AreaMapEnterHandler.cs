@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaMapEnterHandler> logger) : IPacketHandler
+public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaMapEnterHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapEnterRequest;
     public PacketType ResponseType => PacketType.MapEnterResponse;

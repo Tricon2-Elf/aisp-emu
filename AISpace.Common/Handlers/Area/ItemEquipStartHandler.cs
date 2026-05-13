@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemEquipStartHandler(ILogger<ItemEquipStartHandler> logger) : IPacketHandler
+public class ItemEquipStartHandler(ILogger<ItemEquipStartHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemEquipStartRequest;
 

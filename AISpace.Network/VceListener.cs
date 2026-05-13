@@ -7,9 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null)
+public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
+    private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
     private TcpListener? _tcpListener;
     private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
 
@@ -20,7 +21,8 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         _tcpListener = new TcpListener(System.Net.IPAddress.Parse("0.0.0.0"), port);
         _tcpListener.Start();
         onListeningStarted?.Invoke(name, port);
-        logger.LogInformation("Server {Name} started on {LocalEP}", name, _tcpListener.LocalEndpoint);
+        int handlerCap = Math.Max(1, maxConcurrentClients);
+        logger.LogInformation("Server {Name} started on {LocalEP} (max concurrent client handlers: {MaxHandlers})", name, _tcpListener.LocalEndpoint, handlerCap);
 
         try
         {
@@ -28,10 +30,39 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             {
                 try
                 {
-                    var client = await _tcpListener.AcceptTcpClientAsync(ct);
-                    var context = new ClientConnection(Guid.NewGuid(), client.Client.RemoteEndPoint!, client.GetStream(), loggerFactory.CreateLogger<ClientConnection>());
-                    _clients[context.Id] = context;
-                    _ = HandleClientAsync(context, ct);
+                    await _clientGate.WaitAsync(ct);
+                    TcpClient tcpClient;
+                    try
+                    {
+                        tcpClient = await _tcpListener.AcceptTcpClientAsync(ct);
+                    }
+                    catch
+                    {
+                        _clientGate.Release();
+                        throw;
+                    }
+
+                    try
+                    {
+                        var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>());
+                        _clients[context.Id] = context;
+                        _ = RunClientWithGateAsync(context, ct);
+                    }
+                    catch (Exception setupEx)
+                    {
+                        _clientGate.Release();
+                        try
+                        {
+                            tcpClient.Dispose();
+                        }
+                        catch
+                        { /* ignore */
+                        }
+
+                        if (ct.IsCancellationRequested)
+                            break;
+                        logger.LogError(setupEx, "Failed to initialize client on {Name}: {Message}", name, setupEx.Message);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -59,6 +90,18 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             { /* ignore */
             }
             channel.Writer.Complete();
+        }
+    }
+
+    private async Task RunClientWithGateAsync(ClientConnection context, CancellationToken ct)
+    {
+        try
+        {
+            await HandleClientAsync(context, ct);
+        }
+        finally
+        {
+            _clientGate.Release();
         }
     }
 
@@ -127,7 +170,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                             ReadOnlySpan<byte> singlePayload = singleBodyLen > 0 ? cipher.AsSpan(2, singleBodyLen) : [];
                             if (!SuppressedReceiveLogs.Contains(singleType))
                                 logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", singleType, singlePayload.Length, BitConverter.ToString(singlePayload.ToArray()));
-                            channel.Writer.TryWrite(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw));
+                            await channel.Writer.WriteAsync(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw), ct);
                         }
                         else if (payloadLen >= 0)
                             logger.LogWarning("Encrypted packet: payload past msgSize (offset {Offset} packetSize {PacketSize} msgSize {MsgSize})", offset, payloadLen, msgSize);
@@ -140,7 +183,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                     ReadOnlySpan<byte> payload = bodyLen > 0 ? cipher.AsSpan(payloadStart + 2, bodyLen) : [];
                     if (!SuppressedReceiveLogs.Contains(type))
                         logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, BitConverter.ToString(payload.ToArray()));
-                    channel.Writer.TryWrite(new Packet(context, type, payload.ToArray(), typeRaw));
+                    await channel.Writer.WriteAsync(new Packet(context, type, payload.ToArray(), typeRaw), ct);
 
                     offset = payloadEnd;
                 }

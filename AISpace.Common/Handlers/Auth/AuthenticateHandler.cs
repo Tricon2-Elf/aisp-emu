@@ -41,6 +41,14 @@ public class AuthenticateHandler(IUserRepository userRepo, SharedState state, IL
         if (user == null)
             return null;
 
+        if (user.IsBanned)
+        {
+            _logger.LogWarning($"Auth rejected: User '{user.Username}' is banned. Reason: {user.BanReason}");
+            var banResp = new AuthenticateFailureResponse(AuthResponseResult.AccountBanned);
+            await session.SendAsync(PacketType.AuthenticateFailureResponse, banResp.ToBytes(), ct);
+            return null;
+        }
+
         _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
         session.User = user;
         session.UserId = user.Id;

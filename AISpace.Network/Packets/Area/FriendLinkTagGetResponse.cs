@@ -1,16 +1,18 @@
+using AISpace.Network;
+
 namespace AISpace.Network.Packets.Area;
 
-public class FriendLinkTagGetResponse : IOutgoingPacket
+public class FriendLinkTagGetResponse(uint result, uint avatarId, uint tagData = 0, uint slot = 0, uint questionnaireTagData = 0, uint questionnaireSlot = 0) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
         PacketWriter writer = new();
-        writer.Write((uint)0); //Result
-        writer.Write((uint)0); //avatar_id
-        writer.Write((uint)0); // tagdata
-        writer.Write((uint)0); // slot
-        writer.Write((uint)0); // questionnaire_tagdata
-        writer.Write((uint)0); // questionnaire_slot
+        writer.Write(result);
+        writer.Write(avatarId);
+        writer.Write(tagData);
+        writer.Write(slot);
+        writer.Write(questionnaireTagData);
+        writer.Write(questionnaireSlot);
         return writer.ToBytes();
     }
 }

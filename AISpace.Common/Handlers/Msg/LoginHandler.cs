@@ -28,6 +28,12 @@ public class LoginHandler(IUserSessionRepository sessionRepo, SharedState state,
             return new LoginResponse(AuthResponseResult.InvalidCredentials);
         }
 
+        if (userSession.User.IsBanned)
+        {
+            _logger.LogWarning("Client: {ClientId} Login rejected: user {UserID} is banned", session.ConnectionId, request._userId);
+            return new LoginResponse(AuthResponseResult.AccountBanned);
+        }
+
         session.User = userSession.User;
         session.UserId = userSession.User.Id;
         state.RegisterClient(ServerType.Msg, session);

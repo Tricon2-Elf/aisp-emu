@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventAreaMapSelectExecRHandler(DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaEventAreaMapSelectExecRHandler> logger) : IPacketHandler
+public class AreaEventAreaMapSelectExecRHandler(DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaEventAreaMapSelectExecRHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventAreaMapSelectExecRRequest;
     public PacketType ResponseType => PacketType.EventAreaMapSelectCloseNotify;

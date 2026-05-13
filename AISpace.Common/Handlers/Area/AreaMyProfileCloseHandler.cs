@@ -3,7 +3,7 @@ using AISpace.Network;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMyProfileCloseHandler : IPacketHandler
+public class AreaMyProfileCloseHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyProfileCloseRequest;
     public PacketType ResponseType => (PacketType)0;

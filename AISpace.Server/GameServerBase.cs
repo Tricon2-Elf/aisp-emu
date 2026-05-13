@@ -25,31 +25,40 @@ public abstract class GameServerBase<T> : BackgroundService
     protected readonly GameServerHealthRegistry HealthRegistry;
     protected readonly string _healthKey;
 
-    protected GameServerBase(ILogger<T> logger, MainContext db, IUserRepository userRepo, int port, string serverName, ILoggerFactory loggerFactory, IWorldRepository worldRepo, PacketDispatcher dispatcher, SharedState state, GameServerHealthRegistry healthRegistry, string healthKey)
+    private readonly int _maxConcurrentClients;
+
+    protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port, string serverName, string healthKey)
     {
         Logger = logger;
-        Db = db;
-        UserRepo = userRepo;
-        _channel = System.Threading.Channels.Channel.CreateUnbounded<Packet>();
+        Db = ctx.Db;
+        UserRepo = ctx.UserRepo;
+        var channelOpts = new BoundedChannelOptions(ctx.PacketChannelCapacity)
+        {
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true,
+            SingleWriter = false,
+        };
+        _channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
         Channel = _channel.Reader;
         _port = port;
         _serverName = serverName;
-        _loggerFactory = loggerFactory;
-        WorldRepo = worldRepo;
-        Dispatcher = dispatcher;
-        State = state;
-        HealthRegistry = healthRegistry;
+        _loggerFactory = ctx.LoggerFactory;
+        WorldRepo = ctx.WorldRepo;
+        Dispatcher = ctx.Dispatcher;
+        State = ctx.State;
+        HealthRegistry = ctx.HealthRegistry;
+        _maxConcurrentClients = ctx.MaxConcurrentClients;
         _healthKey = healthKey;
-        Db.Database.EnsureCreated();
-        Initialize();
+        HealthRegistry.AddServer(_healthKey, _port);
     }
 
-    protected virtual void Initialize() { }
+    protected virtual Task InitializeAsync(CancellationToken ct) => Task.CompletedTask;
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         Logger.LogInformation("Starting {ServerType} server", ActiveServerType);
-        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p));
+        await InitializeAsync(ct);
+        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p), _maxConcurrentClients);
         var packetLoop = RunPacketLoop(ct);
         var acceptLoop = listener.RunAsync(ct);
         var gameLoop = RunGameLoop(ct);

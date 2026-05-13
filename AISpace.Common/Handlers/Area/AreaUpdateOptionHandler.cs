@@ -1,9 +1,10 @@
 using AISpace.Common.Game;
 using AISpace.Network;
+using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaUpdateOptionHandler : IPacketHandler
+public class AreaUpdateOptionHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.UpdateOptionRequest;
     public PacketType ResponseType => PacketType.UpdateOptionResponse;
@@ -11,8 +12,6 @@ public class AreaUpdateOptionHandler : IPacketHandler
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        var writer = new PacketWriter();
-        writer.Write((uint)0);
-        await session.SendAsync(ResponseType, writer.ToBytes(), ct);
+        await session.SendAsync(ResponseType, new UpdateOptionResponse(0).ToBytes(), ct);
     }
 }

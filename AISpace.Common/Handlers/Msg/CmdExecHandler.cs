@@ -9,7 +9,7 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<CmdExecHandler> logger) : IPacketHandler
+public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState state, IMapRepository mapRepo, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
 
@@ -28,10 +28,14 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
 
         if (cmd == "pos" || cmd == "coords")
         {
-            var areaClient = state.GetAreaSessionByCharacterId(session.CharacterId);
-            if (areaClient != null)
+            var presence = presenceRepo.GetAreaSessionByCharacterId(session.CharacterId);
+            if (presence != null)
             {
-                logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {areaClient.CharacterId}\n" + $"  X: {areaClient.X}f\n" + $"  Y: {areaClient.Y}f\n" + $"  Z: {areaClient.Z}f\n" + $"  Rotation: {areaClient.Rotation}\n" + "==========================================");
+                logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {presence.CharacterId}\n" + $"  X: {presence.X}f\n" + $"  Y: {presence.Y}f\n" + $"  Z: {presence.Z}f\n" + $"  Rotation: {presence.Rotation}\n" + "==========================================");
+            }
+            else
+            {
+                logger.LogWarning("CmdExecHandler: No area session found for character {CharacterId} (server may be in separate process)", session.CharacterId);
             }
             return;
         }
@@ -69,6 +73,10 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, ILogger<C
                     await other.SendAsync(PacketType.NotifyDisappearChara, disappearPacket, ct);
                     await other.SendAsync(PacketType.AvatarNotifyData, appearPacket, ct);
                 }
+            }
+            else
+            {
+                logger.LogWarning("CmdExecHandler: escape command requires Area server in the same process (character {CharacterId})", session.CharacterId);
             }
         }
     }

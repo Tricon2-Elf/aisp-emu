@@ -37,6 +37,9 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.Username).HasMaxLength(64).IsRequired();
             e.Property(x => x.PasswordHash).HasColumnName("PasswordHash").HasMaxLength(512).IsRequired();
             e.Property(x => x.NpsPoints).HasDefaultValue(0L);
+            e.Property(x => x.IsBanned).HasDefaultValue(false);
+            e.Property(x => x.BanReason).HasMaxLength(256);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.Username).IsUnique();
 
             e.HasMany(x => x.Sessions).WithOne(s => s.User).HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
@@ -58,6 +61,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("Items");
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Socket).HasDefaultValue(0);
+            e.Property(x => x.IconId).HasDefaultValue(1);
         });
 
         b.Entity<CharacterInventory>(e =>

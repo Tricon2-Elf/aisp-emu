@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class ChannelListGetHandler(IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo) : IPacketHandler
+public class ChannelListGetHandler(IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ChannelListGetRequest;
     public PacketType ResponseType => PacketType.ChannelListGetResponse;

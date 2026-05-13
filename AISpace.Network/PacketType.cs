@@ -638,6 +638,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_avatar_profile_data", ImplementationState.Implemented)]
     AvatarProfileGetDataRequest = 0xCF9A,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_avatar_profile_data_r", ImplementationState.Implemented)]
+    AvatarProfileGetDataResponse = 0xB670,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_friend_link_tag_get_other", ImplementationState.Implemented)]
     FriendLinkTagGetOtherRequest = 0xC9D8,
 
@@ -887,7 +890,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_out", ImplementationState.NotImplemented)]
     EventFadeOutNotify = 0x3925,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message", ImplementationState.Implemented)]
     EventMessageNotify = 0x662F,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message_close", ImplementationState.NotImplemented)]
@@ -1044,7 +1047,7 @@ public enum PacketType : ushort
     ItemTryEquipResponse = 0xA5DE,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_try_equip_replace_r", ImplementationState.NotImplemented)]
-    ItemTryEquipReplaceResponse = 0x8CDA,
+    ItemTryEquipReplaceResponse = 0x8C08,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_try_equip_replaced", ImplementationState.NotImplemented)]
     ItemTryEquipReplacedNotify = 0x7CDB,

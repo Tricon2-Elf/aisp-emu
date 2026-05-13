@@ -41,6 +41,8 @@ public class SharedState
     /// <summary>Gets or creates a session for the given connection id. Factory is invoked only when a new session is needed.</summary>
     public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) => _sessionStore.GetOrAddSession(connectionId, createSession);
 
+    public bool TryGetSession(Guid connectionId, out IPlayerSession? session) => _sessionStore.TryGetSession(connectionId, out session);
+
     public void RegisterClient(ServerType serverType, IPlayerSession session)
     {
         if (_sessionPresenceRepository == null)

@@ -1,26 +1,77 @@
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 using Xunit;
 
 namespace AISpace.Common.Tests;
 
 public class PacketDispatcherTests
 {
+    private sealed class HandlerInvocationSink
+    {
+        public IPlayerSession? LastSession { get; set; }
+
+        public int InvokeCount { get; set; }
+    }
+
+    private sealed class RecordingAuthAuthenticateHandler(HandlerInvocationSink sink) : IPacketHandler
+    {
+        public PacketType RequestType => PacketType.AuthenticateRequest;
+
+        public PacketType ResponseType => PacketType.AuthenticateResponse;
+
+        public ServerType ServerType => ServerType.Auth;
+
+        public Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+        {
+            sink.InvokeCount++;
+            sink.LastSession = session;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class AuthPingOnlyHandler(HandlerInvocationSink sink) : IPacketHandler
+    {
+        public PacketType RequestType => PacketType.Ping;
+
+        public PacketType ResponseType => PacketType.Ping;
+
+        public ServerType ServerType => ServerType.Auth;
+
+        public Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+        {
+            sink.InvokeCount++;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class AuthRequiredPingHandler(HandlerInvocationSink sink) : IPacketHandler, IRequiresAuthenticatedSession
+    {
+        public PacketType RequestType => PacketType.Ping;
+
+        public PacketType ResponseType => PacketType.Ping;
+
+        public ServerType ServerType => ServerType.Auth;
+
+        public Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+        {
+            sink.InvokeCount++;
+            sink.LastSession = session;
+            return Task.CompletedTask;
+        }
+    }
+
     [Fact]
     public async Task DispatchAsync_InvokesMatchingHandler()
     {
-        var handlerMock = new Mock<IPacketHandler>();
-        handlerMock.Setup(h => h.ServerType).Returns(ServerType.Auth);
-        handlerMock.Setup(h => h.RequestType).Returns(PacketType.AuthenticateRequest);
-        handlerMock.Setup(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<IPlayerSession>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
-
+        var sink = new HandlerInvocationSink();
         var services = new ServiceCollection();
-        services.AddSingleton<IPacketHandler>(handlerMock.Object);
+        services.AddSingleton(sink);
+        services.AddScoped<IPacketHandler, RecordingAuthAuthenticateHandler>();
         services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton<PacketDispatcher>();
@@ -31,19 +82,17 @@ public class PacketDispatcherTests
 
         await dispatcher.DispatchAsync(ServerType.Auth, PacketType.AuthenticateRequest, [], session, TestContext.Current.CancellationToken);
 
-        handlerMock.Verify(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), session, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(1, sink.InvokeCount);
+        Assert.Same(session, sink.LastSession);
     }
 
     [Fact]
     public async Task DispatchAsync_DoesNotInvokeHandler_WhenRequestTypeMismatch()
     {
-        var handlerMock = new Mock<IPacketHandler>();
-        handlerMock.Setup(h => h.ServerType).Returns(ServerType.Auth);
-        handlerMock.Setup(h => h.RequestType).Returns(PacketType.Ping);
-        handlerMock.Setup(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<IPlayerSession>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
-
+        var sink = new HandlerInvocationSink();
         var services = new ServiceCollection();
-        services.AddSingleton<IPacketHandler>(handlerMock.Object);
+        services.AddSingleton(sink);
+        services.AddScoped<IPacketHandler, AuthPingOnlyHandler>();
         services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton<PacketDispatcher>();
@@ -53,6 +102,49 @@ public class PacketDispatcherTests
 
         await dispatcher.DispatchAsync(ServerType.Auth, PacketType.AuthenticateRequest, [], new CapturingPlayerSession(), TestContext.Current.CancellationToken);
 
-        handlerMock.Verify(h => h.HandleAsync(It.IsAny<ReadOnlyMemory<byte>>(), It.IsAny<IPlayerSession>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal(0, sink.InvokeCount);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_DoesNotInvokeAuthRequiredHandler_WhenSessionIsUnauthenticated()
+    {
+        var sink = new HandlerInvocationSink();
+        var services = new ServiceCollection();
+        services.AddSingleton(sink);
+        services.AddScoped<IPacketHandler, AuthRequiredPingHandler>();
+        services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        services.AddSingleton<PacketDispatcher>();
+
+        await using var provider = services.BuildServiceProvider();
+        var dispatcher = provider.GetRequiredService<PacketDispatcher>();
+
+        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.Ping, [], new CapturingPlayerSession(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, sink.InvokeCount);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_InvokesAuthRequiredHandler_WhenSessionIsAuthenticated()
+    {
+        var sink = new HandlerInvocationSink();
+        var services = new ServiceCollection();
+        services.AddSingleton(sink);
+        services.AddScoped<IPacketHandler, AuthRequiredPingHandler>();
+        services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        services.AddSingleton<PacketDispatcher>();
+
+        await using var provider = services.BuildServiceProvider();
+        var dispatcher = provider.GetRequiredService<PacketDispatcher>();
+        var session = new CapturingPlayerSession
+        {
+            User = new User { Id = 1, Username = "test" },
+        };
+
+        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.Ping, [], session, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, sink.InvokeCount);
+        Assert.Same(session, sink.LastSession);
     }
 }
