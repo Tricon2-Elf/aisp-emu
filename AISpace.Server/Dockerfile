@@ -15,6 +15,7 @@ WORKDIR /src
 
 COPY ["AISpace.Server/AISpace.Server.csproj", "AISpace.Server/"]
 COPY ["AISpace.Common/AISpace.Common.csproj", "AISpace.Common/"]
+COPY ["AISpace.Network/AISpace.Network.csproj", "AISpace.Network/"]
 RUN dotnet restore "AISpace.Server/AISpace.Server.csproj"
 
 COPY . .
