@@ -4,23 +4,5 @@
     "mapId": 10990100,
     "currentUsers": 0,
     "maxUsers": 1000
-  },
-  {
-    "channelNum": 2,
-    "mapId": 10010100,
-    "currentUsers": 0,
-    "maxUsers": 1000
-  },
-  {
-    "channelNum": 3,
-    "mapId": 10020100,
-    "currentUsers": 0,
-    "maxUsers": 1000
-  },
-  {
-    "channelNum": 4,
-    "mapId": 10030100,
-    "currentUsers": 0,
-    "maxUsers": 1000
   }
 ]
