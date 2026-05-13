@@ -5,7 +5,7 @@ using AISpace.Network.Packets.Msg;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class ItemGetBaseListHandler(IItemRepository itemRepo) : IPacketHandler, IRequiresAuthenticatedSession
+public class ItemGetBaseListHandler(IItemRepository itemRepo) : IPacketHandler
 {
     public PacketType RequestType => PacketType.ItemGetBaseListRequest;
     public PacketType ResponseType => PacketType.ItemGetBaseListResponse;
