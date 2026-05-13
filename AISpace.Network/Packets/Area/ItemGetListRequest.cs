@@ -6,6 +6,6 @@ public class ItemGetListRequest : IIncomingPacket<ItemGetListRequest>
 {
     public static ItemGetListRequest FromBytes(ReadOnlySpan<byte> data)
     {
-        throw new NotImplementedException();
+        return new ItemGetListRequest();
     }
 }
