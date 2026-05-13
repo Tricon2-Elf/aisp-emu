@@ -15,7 +15,15 @@ namespace AISpace.Common.DAL.Migrations
 
             migrationBuilder.AddColumn<DateTime>(name: "BannedAt", table: "Users", type: "TEXT", nullable: true);
 
-            migrationBuilder.AddColumn<DateTime>(name: "CreatedAt", table: "Users", type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP");
+            // SQLite cannot ALTER TABLE ADD COLUMN with a non-constant default (e.g. CURRENT_TIMESTAMP).
+            // Add the column as nullable first, backfill existing rows, then alter to NOT NULL with the
+            // CURRENT_TIMESTAMP default. On SQLite, AlterColumn triggers a table rebuild that embeds the
+            // default; on SQL Server it emits a normal ALTER COLUMN.
+            migrationBuilder.AddColumn<DateTime>(name: "CreatedAt", table: "Users", type: "TEXT", nullable: true);
+
+            migrationBuilder.Sql("UPDATE \"Users\" SET \"CreatedAt\" = CURRENT_TIMESTAMP WHERE \"CreatedAt\" IS NULL;");
+
+            migrationBuilder.AlterColumn<DateTime>(name: "CreatedAt", table: "Users", type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP", oldClrType: typeof(DateTime), oldType: "TEXT", oldNullable: true);
 
             migrationBuilder.AddColumn<bool>(name: "IsBanned", table: "Users", type: "INTEGER", nullable: false, defaultValue: false);
         }
