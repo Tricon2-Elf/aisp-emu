@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Server;
 
-public class AuthServer(ILogger<AuthServer> logger, GameServerContext ctx, int port) : GameServerBase<AuthServer>(logger, ctx, port, "Auth", GameServerHealthRegistry.Keys.AuthServer)
+public class AuthServer(ILogger<AuthServer> logger, GameServerContext ctx, int port) : GameServerBase<AuthServer>(logger, ctx, port, GameServerHealthRegistry.Keys.AuthServer)
 {
     protected override ServerType ActiveServerType => ServerType.Auth;
 
