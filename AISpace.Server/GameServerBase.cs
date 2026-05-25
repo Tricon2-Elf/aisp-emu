@@ -16,18 +16,16 @@ public abstract class GameServerBase<T> : BackgroundService
     protected readonly ChannelReader<Packet> Channel;
     protected readonly Channel<Packet> _channel;
     protected readonly int _port;
-    protected readonly string _serverName;
     protected readonly ILoggerFactory _loggerFactory;
     protected readonly TimeSpan TickRate = TimeSpan.FromMilliseconds(1000.0 / 60.0);
 
     protected abstract ServerType ActiveServerType { get; }
 
     protected readonly GameServerHealthRegistry HealthRegistry;
-    protected readonly string _healthKey;
 
     private readonly int _maxConcurrentClients;
 
-    protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port, string serverName, string healthKey)
+    protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
     {
         Logger = logger;
         Db = ctx.Db;
@@ -41,15 +39,13 @@ public abstract class GameServerBase<T> : BackgroundService
         _channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
         Channel = _channel.Reader;
         _port = port;
-        _serverName = serverName;
         _loggerFactory = ctx.LoggerFactory;
         WorldRepo = ctx.WorldRepo;
         Dispatcher = ctx.Dispatcher;
         State = ctx.State;
         HealthRegistry = ctx.HealthRegistry;
         _maxConcurrentClients = ctx.MaxConcurrentClients;
-        _healthKey = healthKey;
-        HealthRegistry.AddServer(_healthKey, _port);
+        HealthRegistry.AddServer(ActiveServerType, _port);
     }
 
     protected virtual Task InitializeAsync(CancellationToken ct) => Task.CompletedTask;
@@ -58,7 +54,7 @@ public abstract class GameServerBase<T> : BackgroundService
     {
         Logger.LogInformation("Starting {ServerType} server", ActiveServerType);
         await InitializeAsync(ct);
-        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, _serverName, _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(_healthKey, p), _maxConcurrentClients);
+        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, ActiveServerType.ToString(), _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(ActiveServerType, p), _maxConcurrentClients);
         var packetLoop = RunPacketLoop(ct);
         var acceptLoop = listener.RunAsync(ct);
         var gameLoop = RunGameLoop(ct);

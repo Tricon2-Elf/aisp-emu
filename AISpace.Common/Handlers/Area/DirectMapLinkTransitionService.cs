@@ -189,6 +189,42 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return true;
     }
 
+    public async Task<bool> TryTeleportToMapAsync(IPlayerSession session, uint destinationMapId, CancellationToken ct = default)
+    {
+        var character = await ResolveCharacterAsync(session, ct);
+        if (character == null)
+            return false;
+
+        var destinationMap = await mapRepository.GetByMapIdAsync(destinationMapId, ct);
+        if (destinationMap == null)
+            return false;
+
+        var channelId = await ResolveChannelIdForMapAsync(destinationMapId, ct);
+        if (channelId == null)
+            return false;
+
+        var areaServerInfo = await ResolveAreaServerInfoAsync(channelId.Value, ct);
+        var notifyChangeMap = destinationMapId == session.MapId ? null : CreateNotifyChangeMap((uint)channelId.Value, destinationMapId, destinationMap, areaServerInfo);
+
+        await CompleteMapTransitionAsync(session, character, destinationMapId, (uint)channelId.Value, destinationMap, notifyChangeMap, sendMapEnterResponse: notifyChangeMap == null, ct);
+        return true;
+    }
+
+    private async Task<int?> ResolveChannelIdForMapAsync(uint destinationMapId, CancellationToken ct)
+    {
+        var channels = await channelRepository.GetAllAsync(ct);
+        if (channels.Count == 0)
+            return null;
+
+        var exactMatch = channels.Where(channel => channel.MapId == destinationMapId).OrderBy(channel => channel.ChannelNum).FirstOrDefault();
+        if (exactMatch != null)
+            return exactMatch.ChannelNum;
+
+        var mapGroup = destinationMapId / 10_000u;
+        var groupMatch = channels.Where(channel => channel.MapId / 10_000u == mapGroup).OrderBy(channel => channel.ChannelNum).FirstOrDefault();
+        return groupMatch?.ChannelNum ?? channels.OrderBy(channel => channel.ChannelNum).First().ChannelNum;
+    }
+
     public async Task CompleteMapTransitionAsync(IPlayerSession session, DAL.Entities.Character character, uint destinationMapId, uint destinationChannelId, DAL.Entities.Map destinationMap, NotifyChangeMap? notifyChangeMap, bool sendMapEnterResponse, CancellationToken ct = default)
     {
         if (notifyChangeMap != null)

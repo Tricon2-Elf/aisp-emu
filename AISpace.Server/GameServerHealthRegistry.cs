@@ -1,40 +1,27 @@
 using System.Collections.Concurrent;
+using AISpace.Common;
 
 namespace AISpace.Server;
 
 public sealed class GameServerHealthRegistry
 {
-    public static class Keys
+    private readonly ConcurrentDictionary<ServerType, ServerHealthInfo> _info = new();
+
+    public void AddServer(ServerType serverType, int port)
     {
-        public const string AuthServer = "authServer";
-        public const string MsgServer = "msgServer";
-        public const string AreaServer = "areaServer";
+        _info.TryAdd(serverType, new ServerHealthInfo(ToDisplayName(serverType), port, "starting"));
     }
 
-    private readonly ConcurrentDictionary<string, ServerHealthInfo> _info = new();
-
-    public GameServerHealthRegistry() { }
-
-    public void AddServer(string key, int port)
+    public void MarkListening(ServerType serverType, int port)
     {
-        _info.TryAdd(key, new ServerHealthInfo(KeyToDisplayName(key), port, "starting"));
+        _info.AddOrUpdate(serverType, _ => new ServerHealthInfo(ToDisplayName(serverType), port, "healthy"), (_, existing) => existing with { Port = port, State = "healthy" });
     }
 
-    public void MarkListening(string key, int port)
-    {
-        _info.AddOrUpdate(key, _ => new ServerHealthInfo(KeyToDisplayName(key), port, "healthy"), (_, existing) => existing with { Port = port, State = "healthy" });
-    }
+    public IReadOnlyDictionary<string, ServerHealthInfo> GetSnapshot() => _info.ToDictionary(kv => ToJsonKey(kv.Key), kv => kv.Value);
 
-    public IReadOnlyDictionary<string, ServerHealthInfo> GetSnapshot() => _info.ToDictionary(kv => kv.Key, kv => kv.Value);
+    private static string ToDisplayName(ServerType serverType) => $"{serverType}Server";
 
-    private static string KeyToDisplayName(string key) =>
-        key switch
-        {
-            Keys.AuthServer => "AuthServer",
-            Keys.MsgServer => "MsgServer",
-            Keys.AreaServer => "AreaServer",
-            _ => key,
-        };
+    private static string ToJsonKey(ServerType serverType) => char.ToLowerInvariant(serverType.ToString()[0]) + serverType.ToString()[1..] + "Server";
 }
 
 public sealed record ServerHealthInfo(string Name, int Port, string State);
