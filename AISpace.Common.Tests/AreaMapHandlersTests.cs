@@ -803,6 +803,80 @@ public class AreaMapHandlersTests
     }
 
     [Fact]
+    public async Task AreasvEnterHandler_FallsBackToMainChannelMap_WhenCurrentMapIdIsZero()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            const string otp = "main-channel-otp-12";
+            var user = CreateUserWithCharacter(1, 3062, "fallback-user", "Fallback User", 0);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.UserSessions.Add(
+                    new UserSession
+                    {
+                        UserId = user.Id,
+                        OTP = otp,
+                        ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                    }
+                );
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        CurrentUsers = 0,
+                        MaxUsers = 1000,
+                        MapId = 10990100,
+                    }
+                );
+                db.Maps.Add(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = -9100f,
+                        SpawnY = 2f,
+                        SpawnZ = -18000f,
+                        SpawnRotation = 90,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var session = new CapturingPlayerSession();
+            var handler = new AreasvEnterHandler(
+                new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance),
+                new MapRepository(new MainContext(options)),
+                new ChannelRepository(new MainContext(options)),
+                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                new SharedState(),
+                NullLogger<AreasvEnterHandler>.Instance
+            );
+
+            await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
+
+            Assert.Equal(10990100u, session.MapId);
+            Assert.Equal(1, session.ChannelId);
+            Assert.Equal(10990100u, session.Character!.CurrentMapId);
+            Assert.Equal(2f, session.Y);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.AreasvEnterResponse);
+
+            await using var verifyDb = new MainContext(options);
+            var persisted = await verifyDb.Characters.SingleAsync(c => c.Id == 3062, TestContext.Current.CancellationToken);
+            Assert.Equal(10990100u, persisted.CurrentMapId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task AreasvEnterHandler_UsesPendingTransitionSpawn_WithoutRandomSpread()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
@@ -841,7 +915,7 @@ public class AreaMapHandlersTests
             state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
 
             var session = new CapturingPlayerSession();
-            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
+            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new ChannelRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
 

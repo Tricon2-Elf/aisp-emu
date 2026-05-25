@@ -8,9 +8,10 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, ICharacterRepository characterRepo, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
+public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, IChannelRepository channelRepo, ICharacterRepository characterRepo, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
 {
     private const float SpawnSpread = 50.0f;
+    private const int MainChannelNum = 1;
 
     public PacketType RequestType => PacketType.AreasvEnterRequest;
     public PacketType ResponseType => PacketType.AreasvEnterResponse;
@@ -52,7 +53,24 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
 
         var map = await mapRepo.GetByMapIdAsync(mapId, ct);
 
-        if (map is null)
+        if (!hasPendingTransition && (mapId == 0 || map is null))
+        {
+            var mainChannel = await channelRepo.GetByChannelNumAsync(MainChannelNum, ct) ?? (await channelRepo.GetAllAsync(ct)).OrderBy(c => c.ChannelNum).FirstOrDefault();
+
+            if (mainChannel is null)
+            {
+                logger.LogWarning("Map not found for MapId={MapId} and no channels are configured; character may spawn at default position.", mapId);
+            }
+            else
+            {
+                logger.LogInformation("Falling back to main channel {ChannelId} map {MapId} for user {UserId} (character CurrentMapId was {CurrentMapId})", mainChannel.ChannelNum, mainChannel.MapId, session.User.Id, chara.CurrentMapId);
+                mapId = mainChannel.MapId;
+                map = await mapRepo.GetByMapIdAsync(mapId, ct);
+                session.ChannelId = mainChannel.ChannelNum;
+                chara = await characterRepo.UpdateCurrentMapAsync(chara.Id, mapId, ct) ?? chara;
+            }
+        }
+        else if (map is null)
         {
             logger.LogWarning("Map not found for MapId={MapId} (character may spawn at default position). Ensure Maps table is seeded on VPS (e.g. volume for main.db or run migration/seed).", mapId);
         }
@@ -69,6 +87,9 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         }
         else
         {
+            if (session.ChannelId == 0)
+                session.ChannelId = MainChannelNum;
+
             float offsetX = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
             float offsetZ = (float)(Random.Shared.NextDouble() * 2 * SpawnSpread) - SpawnSpread;
 

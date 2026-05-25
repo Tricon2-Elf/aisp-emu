@@ -1,5 +1,6 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
+using AISpace.Common.Handlers.Area;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
@@ -9,7 +10,7 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState state, IMapRepository mapRepo, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState state, IMapRepository mapRepo, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
 
@@ -28,21 +29,48 @@ public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState
 
         if (cmd == "pos" || cmd == "coords")
         {
-            var presence = presenceRepo.GetAreaSessionByCharacterId(session.CharacterId);
+            var presence = ResolveAreaPresence(session);
             if (presence != null)
             {
                 logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {presence.CharacterId}\n" + $"  X: {presence.X}f\n" + $"  Y: {presence.Y}f\n" + $"  Z: {presence.Z}f\n" + $"  Rotation: {presence.Rotation}\n" + "==========================================");
             }
             else
             {
-                logger.LogWarning("CmdExecHandler: No area session found for character {CharacterId} (server may be in separate process)", session.CharacterId);
+                logger.LogWarning("CmdExecHandler: No area session found for user {UserId} (server may be in separate process or not in area)", session.User?.Id ?? session.UserId);
             }
+            return;
+        }
+
+        if (cmd == "tele" || cmd == "tp" || cmd == "teleport")
+        {
+            if (request.Arguments.Count == 0 || !uint.TryParse(request.Arguments[0], out uint destinationMapId))
+            {
+                logger.LogWarning("CmdExecHandler: tele requires a map ID as the first argument");
+                return;
+            }
+
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null)
+            {
+                logger.LogWarning("CmdExecHandler: tele requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            if (!await directMapLinkTransitionService.TryTeleportToMapAsync(areaClient, destinationMapId, ct))
+            {
+                logger.LogWarning("CmdExecHandler: tele to map {MapId} failed for user {UserId} (character {CharacterId})", destinationMapId, session.User?.Id ?? session.UserId, areaClient.CharacterId);
+            }
+            else
+            {
+                logger.LogInformation("CmdExecHandler: teleported user {UserId} (character {CharacterId}) to map {MapId}", session.User?.Id ?? session.UserId, areaClient.CharacterId, destinationMapId);
+            }
+
             return;
         }
 
         if (cmd == "escape" || cmd == "reset")
         {
-            var areaClient = state.GetAreaSessionByCharacterId(session.CharacterId);
+            var areaClient = ResolveAreaClient(session);
 
             if (areaClient != null && areaClient.User != null && areaClient.User.Characters.Count > 0)
             {
@@ -76,9 +104,41 @@ public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState
             }
             else
             {
-                logger.LogWarning("CmdExecHandler: escape command requires Area server in the same process (character {CharacterId})", session.CharacterId);
+                logger.LogWarning("CmdExecHandler: escape requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
             }
         }
+    }
+
+    private IPlayerSession? ResolveAreaClient(IPlayerSession msgSession)
+    {
+        var userId = msgSession.User?.Id ?? msgSession.UserId;
+        if (userId != 0)
+        {
+            var byUser = state.GetAreaSessionByUserId(userId);
+            if (byUser != null)
+                return byUser;
+        }
+
+        if (msgSession.CharacterId != 0)
+            return state.GetAreaSessionByCharacterId(msgSession.CharacterId);
+
+        return null;
+    }
+
+    private DAL.Entities.SessionPresence? ResolveAreaPresence(IPlayerSession msgSession)
+    {
+        var userId = msgSession.User?.Id ?? msgSession.UserId;
+        if (userId != 0)
+        {
+            var byUser = presenceRepo.GetAreaSessionByUserId(userId);
+            if (byUser != null)
+                return byUser;
+        }
+
+        if (msgSession.CharacterId != 0)
+            return presenceRepo.GetAreaSessionByCharacterId(msgSession.CharacterId);
+
+        return null;
     }
 
     private static byte[] CreateTeleportNotify(Character cha, uint objId, MovementData pos)
