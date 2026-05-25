@@ -80,7 +80,6 @@ public class CmdExecHandlerTests
             };
 
             var handler = new CmdExecHandler(
-                new StubSessionPresenceRepository(),
                 state,
                 new MapRepository(new MainContext(options)),
                 CreateDirectMapLinkTransitionService(options, state),
@@ -107,21 +106,28 @@ public class CmdExecHandlerTests
         }
     }
 
-    private sealed class StubSessionPresenceRepository : ISessionPresenceRepository
+    [Fact]
+    public async Task PosCommand_ResolvesLiveAreaSession_NotPersistedPresenceSnapshot()
     {
-        public void Upsert(ServerType serverType, IPlayerSession session) { }
+        var user = CreateUserWithCharacter(1, 8002, "pos-user", "Pos User", 10990100);
+        var state = new SharedState();
+        var areaSession = new CapturingPlayerSession
+        {
+            User = user,
+            UserId = user.Id,
+            CharacterId = 8002,
+            X = -9100f,
+            Z = -18000f,
+        };
+        state.RegisterClient(ServerType.Area, areaSession);
 
-        public void Remove(ServerType serverType, Guid connectionId) { }
+        areaSession.X = -9055.5f;
+        areaSession.Z = -17988.75f;
 
-        public IReadOnlyList<SessionPresence> GetByServerType(ServerType serverType) => [];
-
-        public IReadOnlyList<SessionPresence> GetAreaSessions(uint mapId, int channelId) => [];
-
-        public SessionPresence? GetAreaSessionByCharacterId(uint characterId, uint? mapId = null, int? channelId = null) => null;
-
-        public SessionPresence? GetAreaSessionByUserId(int userId, uint? mapId = null, int? channelId = null) => null;
-
-        public int PruneStale(TimeSpan maxAge) => 0;
+        var resolved = state.GetAreaSessionByUserId(user.Id);
+        Assert.Same(areaSession, resolved);
+        Assert.Equal(-9055.5f, resolved!.X);
+        Assert.Equal(-17988.75f, resolved.Z);
     }
 
     private static byte[] BuildCmdExecPayload(string command, params string[] args)

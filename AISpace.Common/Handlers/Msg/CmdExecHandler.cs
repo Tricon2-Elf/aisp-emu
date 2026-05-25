@@ -10,7 +10,7 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState state, IMapRepository mapRepo, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
 
@@ -29,10 +29,10 @@ public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState
 
         if (cmd == "pos" || cmd == "coords")
         {
-            var presence = ResolveAreaPresence(session);
-            if (presence != null)
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient != null)
             {
-                logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {presence.CharacterId}\n" + $"  X: {presence.X}f\n" + $"  Y: {presence.Y}f\n" + $"  Z: {presence.Z}f\n" + $"  Rotation: {presence.Rotation}\n" + "==========================================");
+                logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {areaClient.CharacterId}\n" + $"  Map: {areaClient.MapId}\n" + $"  Channel: {areaClient.ChannelId}\n" + $"  X: {areaClient.X}f\n" + $"  Y: {areaClient.Y}f\n" + $"  Z: {areaClient.Z}f\n" + $"  Rotation: {areaClient.Rotation}\n" + "==========================================");
             }
             else
             {
@@ -121,22 +121,6 @@ public class CmdExecHandler(ISessionPresenceRepository presenceRepo, SharedState
 
         if (msgSession.CharacterId != 0)
             return state.GetAreaSessionByCharacterId(msgSession.CharacterId);
-
-        return null;
-    }
-
-    private DAL.Entities.SessionPresence? ResolveAreaPresence(IPlayerSession msgSession)
-    {
-        var userId = msgSession.User?.Id ?? msgSession.UserId;
-        if (userId != 0)
-        {
-            var byUser = presenceRepo.GetAreaSessionByUserId(userId);
-            if (byUser != null)
-                return byUser;
-        }
-
-        if (msgSession.CharacterId != 0)
-            return presenceRepo.GetAreaSessionByCharacterId(msgSession.CharacterId);
 
         return null;
     }
