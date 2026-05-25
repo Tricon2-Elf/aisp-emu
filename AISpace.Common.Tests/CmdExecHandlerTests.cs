@@ -107,6 +107,57 @@ public class CmdExecHandlerTests
     }
 
     [Fact]
+    public async Task JumpCommand_MovesAreaSessionForwardAlongRotation()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8003, "jump-user", "Jump User", 10990100);
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8003,
+                MapId = 10990100,
+                ChannelId = 1,
+                X = 100f,
+                Y = 2f,
+                Z = 200f,
+                Rotation = 90,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+            };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(BuildCmdExecPayload("jump"), msgSession, TestContext.Current.CancellationToken);
+
+            Assert.Equal(100f, areaSession.X, precision: 3);
+            Assert.Equal(2f, areaSession.Y, precision: 3);
+            Assert.Equal(100f, areaSession.Z, precision: 3);
+            Assert.Contains(areaSession.Sent, packet => packet.Type == PacketType.AvatarNotifyMove);
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task PosCommand_ResolvesLiveAreaSession_NotPersistedPresenceSnapshot()
     {
         var user = CreateUserWithCharacter(1, 8002, "pos-user", "Pos User", 10990100);

@@ -13,6 +13,7 @@ namespace AISpace.Common.Handlers.Msg;
 public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
+    private const float JumpDistance = 100f;
 
     public PacketType RequestType => PacketType.CmdExecRequest;
     public PacketType ResponseType => PacketType.CmdExecResponse;
@@ -43,10 +44,10 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
 
         if (cmd == "tele" || cmd == "tp" || cmd == "teleport")
         {
-            if (request.Arguments.Count == 0 || !uint.TryParse(request.Arguments[0], out uint destinationMapId))
+            var destinationMapId = 10990100u;
+            if (request.Arguments.Count == 0 || !uint.TryParse(request.Arguments[0], out destinationMapId))
             {
-                logger.LogWarning("CmdExecHandler: tele requires a map ID as the first argument");
-                return;
+                destinationMapId = 10990100u;
             }
 
             var areaClient = ResolveAreaClient(session);
@@ -63,6 +64,38 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
             else
             {
                 logger.LogInformation("CmdExecHandler: teleported user {UserId} (character {CharacterId}) to map {MapId}", session.User?.Id ?? session.UserId, areaClient.CharacterId, destinationMapId);
+            }
+
+            return;
+        }
+
+        if (cmd == "jump")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.User == null || areaClient.User.Characters.Count == 0)
+            {
+                logger.LogWarning("CmdExecHandler: jump requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            var angle = areaClient.Rotation * (MathF.PI / 180f);
+            areaClient.X += MathF.Cos(angle) * JumpDistance;
+            areaClient.Z += -MathF.Sin(angle) * JumpDistance;
+            areaClient.MovementTypeId = (int)MovementType.Stopped;
+
+            var chara = areaClient.Character ?? areaClient.User.Characters.First();
+            var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
+
+            var notifyMove = new AvatarNotifyMove(1, areaClient.CharacterId, newPos).ToBytes();
+            await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
+
+            var disappearPacket = new NotifyDisappearChara(areaClient.CharacterId).ToBytes();
+            var appearPacket = CreateTeleportNotify(chara, areaClient.CharacterId, newPos);
+
+            foreach (var other in state.GetAreaPeers(areaClient))
+            {
+                await other.SendAsync(PacketType.NotifyDisappearChara, disappearPacket, ct);
+                await other.SendAsync(PacketType.AvatarNotifyData, appearPacket, ct);
             }
 
             return;
