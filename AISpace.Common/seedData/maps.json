@@ -185,11 +185,11 @@
   },
   {
     "mapId": 10990200,
-    "name": "Akihabara 3",
-    "spawnX": -9600,
+    "name": "Akihabara 3 UDX",
+    "spawnX": -8696,
     "spawnY": 0.1,
-    "spawnZ": -8400,
-    "spawnRotation": 0
+    "spawnZ": -15219,
+    "spawnRotation": 90
   },
   {
     "mapId": 10990210,
@@ -242,10 +242,18 @@
   {
     "mapId": 10990400,
     "name": "TPS Lobby",
-    "spawnX": 0,
+    "spawnX": 500,
     "spawnY": 0.1,
-    "spawnZ": 0,
-    "spawnRotation": 0
+    "spawnZ": -200,
+    "spawnRotation": -120
+  },
+  {
+    "mapId": 10990300,
+    "name": "Sotokanda Building",
+    "spawnX": -900,
+    "spawnY": 0.1,
+    "spawnZ": 1300,
+    "spawnRotation": 90
   },
   {
     "mapId": 40990200,
@@ -282,9 +290,9 @@
   {
     "mapId": 10040100,
     "name": "Touhou",
-    "spawnX": 0,
+    "spawnX": -4547,
     "spawnY": 0.1,
-    "spawnZ": 0,
+    "spawnZ": -8208.773,
     "spawnRotation": 0
   },
   {
