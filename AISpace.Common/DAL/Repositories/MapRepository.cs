@@ -50,8 +50,7 @@ public class MapRepository(MainContext db) : IMapRepository
     /// <summary>Seeds map data if the Maps table is empty. Call on startup after EnsureCreated.</summary>
     public static async Task SeedMapsIfEmptyAsync(MainContext db, string jsonPath, CancellationToken ct = default)
     {
-        if (await db.Maps.AnyAsync(ct))
-            return;
+        await db.Maps.ExecuteDeleteAsync(ct);
 
         var canonicalMaps = await LoadMapsFromJsonAsync(jsonPath, ct);
         db.Maps.AddRange(

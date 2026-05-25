@@ -23,14 +23,13 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
         return await _db.MapLinks.AsNoTracking().Where(x => x.IsEnabled && x.SourceMapId == mapId && (x.ChannelId == channel || x.ChannelId == 0)).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).ToListAsync(ct);
     }
 
-    /// <summary>Seeds map-link entries if the MapLinks table is empty.</summary>
+    /// <summary>Replaces all map-link entries from seed JSON on every call.</summary>
     public static async Task SeedMapLinksIfEmptyAsync(MainContext db, string jsonPath, CancellationToken ct = default)
     {
-        if (await db.MapLinks.AnyAsync(ct))
-            return;
+        await db.MapLinks.ExecuteDeleteAsync(ct);
 
         if (!File.Exists(jsonPath))
-            throw new FileNotFoundException("Map link seed JSON not found (required for empty MapLinks table).", jsonPath);
+            throw new FileNotFoundException("Map link seed JSON not found.", jsonPath);
 
         var json = await File.ReadAllTextAsync(jsonPath, ct);
         var rows = JsonSerializer.Deserialize<List<MapLinkSeedRow>>(json, JsonOptions) ?? [];
