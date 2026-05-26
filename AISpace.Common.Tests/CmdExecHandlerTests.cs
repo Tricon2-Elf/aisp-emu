@@ -148,6 +148,11 @@ public class CmdExecHandlerTests
             Assert.Equal(100f, areaSession.X, precision: 3);
             Assert.Equal(2f, areaSession.Y, precision: 3);
             Assert.Equal(100f, areaSession.Z, precision: 3);
+
+            areaSession.Z = 200f;
+            await handler.HandleAsync(BuildCmdExecPayload("jump", "50"), msgSession, TestContext.Current.CancellationToken);
+
+            Assert.Equal(150f, areaSession.Z, precision: 3);
             Assert.Contains(areaSession.Sent, packet => packet.Type == PacketType.AvatarNotifyMove);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }

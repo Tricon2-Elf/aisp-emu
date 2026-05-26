@@ -78,9 +78,13 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
                 return;
             }
 
+            var jumpDistance = JumpDistance;
+            if (request.Arguments.Count > 0 && float.TryParse(request.Arguments[0], out var parsedDistance))
+                jumpDistance = parsedDistance;
+
             var angle = areaClient.Rotation * (MathF.PI / 180f);
-            areaClient.X += MathF.Cos(angle) * JumpDistance;
-            areaClient.Z += -MathF.Sin(angle) * JumpDistance;
+            areaClient.X += MathF.Cos(angle) * jumpDistance;
+            areaClient.Z += -MathF.Sin(angle) * jumpDistance;
             areaClient.MovementTypeId = (int)MovementType.Stopped;
 
             var chara = areaClient.Character ?? areaClient.User.Characters.First();
