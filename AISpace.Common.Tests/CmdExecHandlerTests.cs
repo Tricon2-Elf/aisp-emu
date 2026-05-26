@@ -73,18 +73,9 @@ public class CmdExecHandlerTests
             };
             state.RegisterClient(ServerType.Area, areaSession);
 
-            var msgSession = new CapturingPlayerSession
-            {
-                User = user,
-                UserId = user.Id,
-            };
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("tele", "10990110"), msgSession, TestContext.Current.CancellationToken);
 
@@ -130,18 +121,9 @@ public class CmdExecHandlerTests
             };
             state.RegisterClient(ServerType.Area, areaSession);
 
-            var msgSession = new CapturingPlayerSession
-            {
-                User = user,
-                UserId = user.Id,
-            };
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("jump"), msgSession, TestContext.Current.CancellationToken);
 

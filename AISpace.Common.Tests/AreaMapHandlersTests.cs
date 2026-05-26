@@ -849,14 +849,7 @@ public class AreaMapHandlersTests
             }
 
             var session = new CapturingPlayerSession();
-            var handler = new AreasvEnterHandler(
-                new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance),
-                new MapRepository(new MainContext(options)),
-                new ChannelRepository(new MainContext(options)),
-                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-                new SharedState(),
-                NullLogger<AreasvEnterHandler>.Instance
-            );
+            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new ChannelRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new SharedState(), NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
 

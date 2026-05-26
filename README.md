@@ -4,7 +4,7 @@ AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MM
 
 ## Project scope
 
-- Provides a replacement server stack for AISp@ce, implemented in .NET 9.0 with Entity Framework Core and NLog for persistence and logging. 
+- Provides a replacement server stack for AISp@ce, implemented in .NET 10.0 with Entity Framework Core and NLog for persistence and logging.
 - Serves as a learning resource for networking, game server architecture, and reverse engineering of legacy online games.
 - Does **not** ship original game assets. For game data and metadata about AISp@ce itself, refer to the community-maintained archive at [Tricon2-Elf/AI-Space](https://github.com/Tricon2-Elf/AI-Space).
 
