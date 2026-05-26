@@ -105,6 +105,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Maps");
             e.HasKey(x => x.MapId);
+            e.Property(x => x.Island).HasMaxLength(32).IsRequired();
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
         });
 
