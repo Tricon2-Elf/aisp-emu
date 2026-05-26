@@ -302,5 +302,101 @@
     "spawnY": 0.1,
     "spawnZ": 0,
     "spawnRotation": 0
+  },
+  {
+    "mapId": 19001003,
+    "name": "Stage",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10900200,
+    "name": "Inside the Train",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10999999,
+    "name": "White Background for 2D Background Display",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 90000000,
+    "name": "For Isolating Violators",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10990500,
+    "name": "Transfer Room",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40020200,
+    "name": "TPS(001)",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10060100,
+    "name": "06",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40040100,
+    "name": "Touhou Project",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40050100,
+    "name": "Koihime Musou",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40060100,
+    "name": "06",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 10999900,
+    "name": "test (Normal)",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
+    "mapId": 40999900,
+    "name": "test",
+    "spawnX": 0,
+    "spawnY": 2.5,
+    "spawnZ": 0,
+    "spawnRotation": 0
   }
 ]
