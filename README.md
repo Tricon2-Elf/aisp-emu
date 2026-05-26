@@ -10,8 +10,12 @@ AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MM
 
 ## Repository layout
 
-- `AISpace.Server/` — Executable server project; references `AISpace.Common` and includes runtime configuration such as `appsettings.json` and `NLog.config`.
-- `AISpace.Common/` — Shared library that contains cryptography, hosting abstractions, and Entity Framework Core components shared by server modules.
+- `AISpace.Network/` — Wire format, TCP transport, and client-compatible encryption (no game logic or database code).
+- `AISpace.Common/` — Game logic, packet handlers, and Entity Framework Core persistence; references `AISpace.Network`.
+- `AISpace.Server/` — Executable host; runs Auth, Msg, and Area servers in one process. Includes runtime configuration such as `appsettings.json` and `NLog.config`.
+- `AISpace.Network.Tests/`, `AISpace.Common.Tests/`, `AISpace.Server.Tests/` — xUnit test projects for each layer.
+
+Dependency order: `AISpace.Network` → `AISpace.Common` → `AISpace.Server`.
 
 ## Prerequisites
 
@@ -27,7 +31,25 @@ dotnet restore
 dotnet build
 ```
 
-This restores NuGet dependencies and compiles both the server and shared library projects in the solution.
+This restores NuGet dependencies and compiles all projects in the solution.
+
+## Testing
+
+Run the full test suite from the repository root:
+
+```bash
+dotnet test AISpace.sln
+```
+
+Run tests for a single project:
+
+```bash
+dotnet test AISpace.Common.Tests
+dotnet test AISpace.Network.Tests
+dotnet test AISpace.Server.Tests
+```
+
+Tests use **xUnit v3** with in-memory SQLite for database integration tests. See `AGENTS.md` for more detail on test conventions and helpers.
 
 ## Running the server
 
