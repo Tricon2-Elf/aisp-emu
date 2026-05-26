@@ -1,7 +1,7 @@
 [
   {
     "mapId": 10010100,
-    "name": "D.C. II 1",
+    "name": "Kazami Academy",
     "spawnX": 400,
     "spawnY": 0.1,
     "spawnZ": -6400,
@@ -9,7 +9,7 @@
   },
   {
     "mapId": 10010110,
-    "name": "D.C. II 2",
+    "name": "Kazami Academy Event Area",
     "spawnX": 400,
     "spawnY": 0.1,
     "spawnZ": -6400,
@@ -17,7 +17,7 @@
   },
   {
     "mapId": 10010200,
-    "name": "D.C. II 3",
+    "name": "Shopping Street",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -25,7 +25,7 @@
   },
   {
     "mapId": 10010210,
-    "name": "D.C. II 4",
+    "name": "Shopping Street Event Area",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -33,7 +33,7 @@
   },
   {
     "mapId": 10010300,
-    "name": "D.C. II 5",
+    "name": "Kazami Academy Classroom",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -41,7 +41,7 @@
   },
   {
     "mapId": 10010310,
-    "name": "D.C. II 6",
+    "name": "Kazami Academy Classroom Event Area",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -49,7 +49,7 @@
   },
   {
     "mapId": 10010400,
-    "name": "D.C. II 7",
+    "name": "Da Capo Island Residential Area",
     "spawnX": 400,
     "spawnY": 0.1,
     "spawnZ": -6400,
@@ -57,7 +57,7 @@
   },
   {
     "mapId": 10020100,
-    "name": "CLANNAD 1",
+    "name": "Hikarizaka High School",
     "spawnX": 22800,
     "spawnY": 0.1,
     "spawnZ": -2400,
@@ -65,7 +65,7 @@
   },
   {
     "mapId": 10020110,
-    "name": "CLANNAD 2",
+    "name": "Hikarizaka High School Event Area",
     "spawnX": 22800,
     "spawnY": 0.1,
     "spawnZ": -2400,
@@ -73,7 +73,7 @@
   },
   {
     "mapId": 10020200,
-    "name": "CLANNAD 3",
+    "name": "Shopping Street",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -81,7 +81,7 @@
   },
   {
     "mapId": 10020210,
-    "name": "CLANNAD 4",
+    "name": "Shopping Street Event Area",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -89,7 +89,7 @@
   },
   {
     "mapId": 10020300,
-    "name": "CLANNAD 5",
+    "name": "Hikarizaka High School Classroom",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -97,7 +97,7 @@
   },
   {
     "mapId": 10020310,
-    "name": "CLANNAD 6",
+    "name": "Hikarizaka High School Classroom Event Area",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -105,7 +105,7 @@
   },
   {
     "mapId": 10020400,
-    "name": "CLANNAD 7",
+    "name": "Clannad Island Residential Area",
     "spawnX": 22800,
     "spawnY": 0.1,
     "spawnZ": -2400,
@@ -113,7 +113,7 @@
   },
   {
     "mapId": 10030100,
-    "name": "SHUFFLE! 1",
+    "name": "Verbena Academy",
     "spawnX": 10800,
     "spawnY": 0.1,
     "spawnZ": -1200,
@@ -121,7 +121,7 @@
   },
   {
     "mapId": 10030110,
-    "name": "SHUFFLE! 2",
+    "name": "Verbena Academy Event Area",
     "spawnX": 10800,
     "spawnY": 0.1,
     "spawnZ": -1200,
@@ -129,7 +129,7 @@
   },
   {
     "mapId": 10030200,
-    "name": "SHUFFLE! 3",
+    "name": "Shopping Street",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -137,7 +137,7 @@
   },
   {
     "mapId": 10030210,
-    "name": "SHUFFLE! 4",
+    "name": "Shopping Street Event Area",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -145,7 +145,7 @@
   },
   {
     "mapId": 10030300,
-    "name": "SHUFFLE! 5",
+    "name": "Verbena Academy Kindergarten Classroom",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -153,7 +153,7 @@
   },
   {
     "mapId": 10030310,
-    "name": "SHUFFLE! 6",
+    "name": "Verbena Academy Classroom Event Area",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -161,7 +161,7 @@
   },
   {
     "mapId": 10030400,
-    "name": "SHUFFLE! 7",
+    "name": "Shuffle Island Residential Area",
     "spawnX": 10800,
     "spawnY": 0.1,
     "spawnZ": -1200,
@@ -169,7 +169,7 @@
   },
   {
     "mapId": 10990100,
-    "name": "Akihabara",
+    "name": "Akihabara Station Street",
     "spawnX": -9100,
     "spawnY": 2,
     "spawnZ": -18000,
@@ -177,7 +177,7 @@
   },
   {
     "mapId": 10990110,
-    "name": "Akihabara 2",
+    "name": "Akihabara Station Front Street Event Area",
     "spawnX": -11000,
     "spawnY": 0.1,
     "spawnZ": -19200,
@@ -185,7 +185,7 @@
   },
   {
     "mapId": 10990200,
-    "name": "Akihabara 3 UDX",
+    "name": "Akihabara UDX",
     "spawnX": -8696,
     "spawnY": 0.1,
     "spawnZ": -15219,
@@ -193,7 +193,7 @@
   },
   {
     "mapId": 10990210,
-    "name": "Akihabara 4",
+    "name": "Akihabara UDX Event Area",
     "spawnX": -9600,
     "spawnY": 0.1,
     "spawnZ": -8400,
@@ -201,7 +201,7 @@
   },
   {
     "mapId": 20000000,
-    "name": "My Room 1",
+    "name": "My Room (6 tatami mats)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -209,7 +209,7 @@
   },
   {
     "mapId": 20000010,
-    "name": "My Room 2",
+    "name": "My Room (8 tatami mats)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -217,7 +217,7 @@
   },
   {
     "mapId": 20000020,
-    "name": "My Room 3",
+    "name": "My Room (10 tatami mats)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -225,7 +225,7 @@
   },
   {
     "mapId": 20000030,
-    "name": "My Room 4",
+    "name": "My Room (12 tatami mats)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -233,7 +233,7 @@
   },
   {
     "mapId": 10900100,
-    "name": "Avatar Make",
+    "name": "Avatar Makeup",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -241,7 +241,7 @@
   },
   {
     "mapId": 10990400,
-    "name": "TPS Lobby",
+    "name": "TPS(Lobby)",
     "spawnX": 500,
     "spawnY": 0.1,
     "spawnZ": -200,
@@ -249,7 +249,7 @@
   },
   {
     "mapId": 10990300,
-    "name": "Sotokanda Building",
+    "name": "Inside the Sotokanda Building",
     "spawnX": -900,
     "spawnY": 0.1,
     "spawnZ": 1300,
@@ -257,7 +257,7 @@
   },
   {
     "mapId": 40990200,
-    "name": "TPS UDX",
+    "name": "TPS(UDX)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -265,7 +265,7 @@
   },
   {
     "mapId": 40010100,
-    "name": "TPS Kazami",
+    "name": "TPS(Kazami Academy)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -273,7 +273,7 @@
   },
   {
     "mapId": 40020100,
-    "name": "TPS Mitsuzaka",
+    "name": "TPS(Hikarizaka High School)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -281,7 +281,7 @@
   },
   {
     "mapId": 40030100,
-    "name": "TPS Verbena",
+    "name": "TPS(Verbena Academy)",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
@@ -289,7 +289,7 @@
   },
   {
     "mapId": 10040100,
-    "name": "Touhou",
+    "name": "Touhou Project",
     "spawnX": -4547,
     "spawnY": 0.1,
     "spawnZ": -8208.773,
@@ -297,7 +297,7 @@
   },
   {
     "mapId": 10050100,
-    "name": "Koihime",
+    "name": "Koihime Musou",
     "spawnX": 0,
     "spawnY": 0.1,
     "spawnZ": 0,
