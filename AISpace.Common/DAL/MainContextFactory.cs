@@ -1,3 +1,4 @@
+using AISpace.Common.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -7,8 +8,8 @@ public sealed class MainContextFactory : IDesignTimeDbContextFactory<MainContext
 {
     public MainContext CreateDbContext(string[] args)
     {
-        var options = new DbContextOptionsBuilder<MainContext>().UseSqlite("Data Source=main.db", b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)).Options;
-
-        return new MainContext(options);
+        var optionsBuilder = new DbContextOptionsBuilder<MainContext>();
+        new DbOptions().ConfigureDbContext(optionsBuilder);
+        return new MainContext(optionsBuilder.Options);
     }
 }

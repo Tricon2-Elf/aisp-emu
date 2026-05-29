@@ -10,6 +10,9 @@ services:
       - "50054:50054"   # Area
     environment:
       - IP_OVERRIDE=host.docker.internal
+      - Server__DbOptions__ConnectionString=Data Source=/data/main.db
+    volumes:
+      - aisp-data:/data
     restart: unless-stopped
     healthcheck:
       # /healthz returns 503 if any game server (auth/msg/area) is not healthy.
@@ -34,3 +37,6 @@ services:
       - AUTOHEAL_START_PERIOD=30
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  aisp-data:
