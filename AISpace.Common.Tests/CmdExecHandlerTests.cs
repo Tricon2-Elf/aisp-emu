@@ -73,18 +73,9 @@ public class CmdExecHandlerTests
             };
             state.RegisterClient(ServerType.Area, areaSession);
 
-            var msgSession = new CapturingPlayerSession
-            {
-                User = user,
-                UserId = user.Id,
-            };
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("tele", "10990110"), msgSession, TestContext.Current.CancellationToken);
 
@@ -130,24 +121,20 @@ public class CmdExecHandlerTests
             };
             state.RegisterClient(ServerType.Area, areaSession);
 
-            var msgSession = new CapturingPlayerSession
-            {
-                User = user,
-                UserId = user.Id,
-            };
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("jump"), msgSession, TestContext.Current.CancellationToken);
 
             Assert.Equal(100f, areaSession.X, precision: 3);
             Assert.Equal(2f, areaSession.Y, precision: 3);
             Assert.Equal(100f, areaSession.Z, precision: 3);
+
+            areaSession.Z = 200f;
+            await handler.HandleAsync(BuildCmdExecPayload("jump", "50"), msgSession, TestContext.Current.CancellationToken);
+
+            Assert.Equal(150f, areaSession.Z, precision: 3);
             Assert.Contains(areaSession.Sent, packet => packet.Type == PacketType.AvatarNotifyMove);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }

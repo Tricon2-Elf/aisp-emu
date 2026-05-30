@@ -1,3 +1,4 @@
+using AISpace.Common.Config;
 using AISpace.Common.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,7 +26,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
-            optionsBuilder.UseSqlite("Data Source=main.db", b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+            new DbOptions().ConfigureDbContext(optionsBuilder);
     }
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -105,6 +106,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Maps");
             e.HasKey(x => x.MapId);
+            e.Property(x => x.Island).HasMaxLength(32).IsRequired();
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
         });
 

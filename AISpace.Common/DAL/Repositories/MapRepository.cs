@@ -32,6 +32,7 @@ public class MapRepository(MainContext db) : IMapRepository
             .Select(map => new Map
             {
                 MapId = map.MapId,
+                Island = map.Island,
                 Name = map.Name,
                 SpawnX = map.SpawnX,
                 SpawnY = map.SpawnY,
@@ -57,6 +58,7 @@ public class MapRepository(MainContext db) : IMapRepository
             canonicalMaps.Select(map => new Map
             {
                 MapId = map.MapId,
+                Island = map.Island,
                 Name = map.Name,
                 SpawnX = map.SpawnX,
                 SpawnY = map.SpawnY,
@@ -79,6 +81,7 @@ public class MapRepository(MainContext db) : IMapRepository
             .Select(r => new Map
             {
                 MapId = r.MapId,
+                Island = r.Island,
                 Name = r.Name,
                 SpawnX = r.SpawnX,
                 SpawnY = r.SpawnY,
@@ -91,6 +94,7 @@ public class MapRepository(MainContext db) : IMapRepository
     private sealed class MapSeedRow
     {
         public long MapId { get; set; }
+        public string Island { get; set; } = "";
         public string Name { get; set; } = "";
         public float SpawnX { get; set; }
         public float SpawnY { get; set; }

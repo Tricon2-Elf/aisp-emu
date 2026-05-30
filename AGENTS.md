@@ -3,7 +3,7 @@
 ## Quick reference
 
 | Task | Command |
-|------|---------|
+| ------ | --------- |
 | Restore + build | `dotnet restore AISpace.sln && dotnet build AISpace.sln` |
 | Run tests (all) | `dotnet test AISpace.sln` |
 | Run single test project | `dotnet test AISpace.Common.Tests` |
@@ -23,7 +23,7 @@
 
 ## Project dependency graph (strict — no cycles)
 
-```
+```text
 AISpace.Network  (no project deps — wire format + transport only)
        ↑
 AISpace.Common   (game logic, EF Core DAL, packet handlers)
@@ -40,16 +40,17 @@ Each layer must not reference anything above it. `AISpace.Network` has zero game
 All three game servers run as `BackgroundService` instances inside one process:
 
 | Server | Port | ServerType enum |
-|--------|------|-----------------|
-| Auth   | 50050 | `ServerType.Auth` (1) |
-| Msg    | 50052 | `ServerType.Msg` (3) |
-| Area   | 50054 | `ServerType.Area` (2) |
+| -------- | ------ | ----------------- |
+| Auth | 50050 | `ServerType.Auth` (1) |
+| Msg | 50052 | `ServerType.Msg` (3) |
+| Area | 50054 | `ServerType.Area` (2) |
 
 Each derives from `GameServerBase<T>` (`GameServerBase.cs:50`) which owns a TCP `VceListener`, a `Channel<Packet>` dispatch loop, and a 60 Hz tick timer.
 
 ### Packet handler pattern
 
 Packet handlers implement `IPacketHandler` (`PacketHandlerBase.cs:21`) with three properties:
+
 - `RequestType` (`PacketType` enum)
 - `ResponseType` (`PacketType` enum)
 - `ServerType` (`ServerType` enum)
@@ -71,15 +72,17 @@ The generic base class `PacketHandlerBase<TRequest, TResponse>` deserializes the
 
 ## Database
 
-- **Default**: SQLite. Fallback defined in `MainContext.OnConfiguring()` (`MainContext.cs:25`).
+- **Default**: SQLite at `db/main.db` (relative to the process working directory). Override via `Server:DbOptions` in config or `Server__DbOptions__ConnectionString` (Docker: `/data/main.db` with compose volume `aisp-data` → `/data`).
 - **Also supports**: SQL Server (packages are referenced).
 - **Migrations auto-applied** at startup via `db.Database.MigrateAsync()` in `Program.cs:193`.
 - **Seeding**: `Program.cs` calls `Seed*IfEmptyAsync` helpers on repositories for maps, map links, worlds, channels. Items are seeded once at startup in `Program.cs` (after migrations) via `ItemRepository.SeedItemsIfEmptyAsync` from `seedData/baseItems.json` (under `AISpace.Common/`, copied to output). Runtime code reads items from the database only.
 - **Integration tests**: Use `TestDb.CreateInMemoryMainContext()` (`Support/TestDb.cs:10`) for a disposable SQLite in-memory context.
 - **Migration command** (from repo root):
-  ```
+
+  ```bash
   dotnet ef migrations add <Name> --project AISpace.Common/AISpace.Common.csproj --startup-project AISpace.Server/AISpace.Server.csproj --context MainContext --output-dir DAL/Migrations
   ```
+
   Or use `./scripts/generate-migration.sh <Name>`.
 
 ## Configuration

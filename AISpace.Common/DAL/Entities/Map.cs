@@ -6,6 +6,9 @@ public class Map
     /// <summary>Game map id (e.g. 10990100). Used as primary key.</summary>
     public long MapId { get; set; }
 
+    /// <summary>Island grouping from map id prefix (e.g. Da Capo, Clannad). Empty when not on a themed island.</summary>
+    public string Island { get; set; } = string.Empty;
+
     public string Name { get; set; } = string.Empty;
 
     public float SpawnX { get; set; }

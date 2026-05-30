@@ -34,9 +34,8 @@ internal class Program
         builder.Logging.AddNLog();
 
         builder.Services.Configure<ServerOptions>(builder.Configuration.GetSection("Server"));
-        //Database
-        builder.Services.AddDbContext<MainContext>();
-        builder.Services.AddDbContextFactory<MainContext>();
+        builder.Services.AddDbContext<MainContext>((sp, options) => sp.GetRequiredService<IOptions<ServerOptions>>().Value.DbOptions.ConfigureDbContext(options));
+        builder.Services.AddDbContextFactory<MainContext>((sp, options) => sp.GetRequiredService<IOptions<ServerOptions>>().Value.DbOptions.ConfigureDbContext(options));
 
         //Repo
         builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -96,8 +95,9 @@ internal class Program
         // Ensure database and Maps table exist, then seed maps if empty
         using (var scope = app.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             var serverOptions = scope.ServiceProvider.GetRequiredService<IOptions<ServerOptions>>().Value;
+            serverOptions.DbOptions.EnsureDataDirectoryExists();
+            var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             await db.Database.MigrateAsync();
             var sessionRepo = scope.ServiceProvider.GetRequiredService<IUserSessionRepository>();
             await sessionRepo.InvalidateExpiredAsync();
