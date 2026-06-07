@@ -23,7 +23,7 @@ public class SharedState
     public SharedState()
         : this(new SessionStore(), new SessionClientRegistry(), new PendingTransitionStore()) { }
 
-    internal SharedState(ISessionStore sessionStore, ISessionClientRegistry sessionClientRegistry, IPendingTransitionStore pendingTransitionStore)
+    public SharedState(ISessionStore sessionStore, ISessionClientRegistry sessionClientRegistry, IPendingTransitionStore pendingTransitionStore)
     {
         _sessionStore = sessionStore;
         _sessionClientRegistry = sessionClientRegistry;

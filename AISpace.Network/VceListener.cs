@@ -7,10 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024)
+public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024, int maxReceiveFrameSize = 4096)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
+    private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
     private TcpListener? _tcpListener;
     private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
 

@@ -8,10 +8,19 @@ public class ServerOptions
     public DbOptions DbOptions { get; set; } = new();
 
     /// <summary>Bounded capacity for each game server's packet dispatch channel (Auth, Msg, Area). Producers wait when full.</summary>
-    public int PacketChannelCapacity { get; set; } = 10_000;
+    public int PacketChannelCapacity { get; set; } = 512;
 
     /// <summary>Maximum concurrent client handler tasks per TCP listener for Auth, Msg, and Area. Extra connections wait at accept (backpressure).</summary>
-    public int MaxConcurrentClients { get; set; } = 1024;
+    public int MaxConcurrentClients { get; set; } = 32;
+
+    /// <summary>Maximum encrypted receive frame plaintext size in bytes. Frames larger than this are rejected before allocation.</summary>
+    public int MaxReceiveFrameSize { get; set; } = 4096;
+
+    /// <summary>Game loop tick rate in Hz for Auth, Msg, and Area background servers.</summary>
+    public int TickRateHz { get; set; } = 60;
+
+    /// <summary>When false, session presence is kept in-memory (single-node VPS). When true, SessionPresences table is used (multi-instance).</summary>
+    public bool UseDistributedSessionPresence { get; set; } = true;
 
     public GameServerConfig AuthServer { get; set; } = new() { Port = 50050 };
     public GameServerConfig MsgServer { get; set; } = new() { Port = 50052 };

@@ -17,13 +17,14 @@ public abstract class GameServerBase<T> : BackgroundService
     protected readonly Channel<Packet> _channel;
     protected readonly int _port;
     protected readonly ILoggerFactory _loggerFactory;
-    protected readonly TimeSpan TickRate = TimeSpan.FromMilliseconds(1000.0 / 60.0);
+    protected readonly TimeSpan TickRate;
 
     protected abstract ServerType ActiveServerType { get; }
 
     protected readonly GameServerHealthRegistry HealthRegistry;
 
     private readonly int _maxConcurrentClients;
+    private readonly int _maxReceiveFrameSize;
 
     protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
     {
@@ -45,6 +46,8 @@ public abstract class GameServerBase<T> : BackgroundService
         State = ctx.State;
         HealthRegistry = ctx.HealthRegistry;
         _maxConcurrentClients = ctx.MaxConcurrentClients;
+        _maxReceiveFrameSize = ctx.MaxReceiveFrameSize;
+        TickRate = TimeSpan.FromMilliseconds(1000.0 / Math.Max(1, ctx.TickRateHz));
         HealthRegistry.AddServer(ActiveServerType, _port);
     }
 
@@ -54,7 +57,7 @@ public abstract class GameServerBase<T> : BackgroundService
     {
         Logger.LogInformation("Starting {ServerType} server", ActiveServerType);
         await InitializeAsync(ct);
-        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, ActiveServerType.ToString(), _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(ActiveServerType, p), _maxConcurrentClients);
+        var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), _channel, ActiveServerType.ToString(), _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(ActiveServerType, p), _maxConcurrentClients, _maxReceiveFrameSize);
         var packetLoop = RunPacketLoop(ct);
         var acceptLoop = listener.RunAsync(ct);
         var gameLoop = RunGameLoop(ct);
