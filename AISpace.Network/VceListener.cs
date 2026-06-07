@@ -45,7 +45,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
                     try
                     {
-                        var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>());
+                        var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>(), tcpClient);
                         _clients[context.Id] = context;
                         _ = RunClientWithGateAsync(context, ct);
                     }
@@ -124,6 +124,12 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                 await ReadExactAsync(context.Stream, header, ct);
                 int msgSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(header);
 
+                if (!VceFrameValidation.IsAcceptableFrameSize(msgSize, _maxReceiveFrameSize))
+                {
+                    logger.LogWarning("{Name} rejecting oversized frame from {RemoteEndPoint}: msgSize={MsgSize} max={MaxReceiveFrameSize}", name, context.RemoteEndPoint, msgSize, _maxReceiveFrameSize);
+                    break;
+                }
+
                 int paddedSize = (msgSize + 15) / 16 * 16;
                 byte[] cipher = new byte[paddedSize];
                 await ReadExactAsync(context.Stream, cipher, ct);
@@ -200,6 +206,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             _clients.TryRemove(context.Id, out _);
             onDisconnect?.Invoke(context.Id);
             logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
+            context.Dispose();
         }
     }
 
