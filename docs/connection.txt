@@ -1,0 +1,9 @@
+1,localhost,# server ip
+2,50050,# server port
+3,1,# bypass nico login
+
+4,127.0.0.1,# download ip
+5,ai-sp/dev/download.php,# download path
+
+6,127.0.0.1,# upload ip
+7,ai-sp/dev/upload.php,# upload path
