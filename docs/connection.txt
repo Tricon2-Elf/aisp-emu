@@ -1,4 +1,4 @@
-1,localhost,# server ip
+1,aisp.moe,# server ip
 2,50050,# server port
 3,1,# bypass nico login
 
