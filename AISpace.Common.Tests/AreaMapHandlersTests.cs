@@ -927,6 +927,45 @@ public class AreaMapHandlersTests
     }
 
     [Fact]
+    public async Task AvatarMoveHandler_ForwardsAllMoves_WithRunningAnimation()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var state = new SharedState();
+            var mover = CreateSession(CreateUserWithCharacter(1, 4001, "move-user", "Mover", 10990100), 10990100, 1);
+            var peer = CreateSession(CreateUserWithCharacter(2, 4002, "same-peer", "Same Peer", 10990100), 10990100, 1);
+
+            state.RegisterClient(ServerType.Area, mover);
+            state.RegisterClient(ServerType.Area, peer);
+
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
+            var moves = new[]
+            {
+                new MovementData(1f, 2f, 3f, 4, MovementType.Running),
+                new MovementData(5f, 6f, 7f, 8, MovementType.Walking),
+            };
+
+            await handler.HandleAsync(BuildAvatarMovePayload(moves), mover, TestContext.Current.CancellationToken);
+
+            var notify = peer.Sent.Single(packet => packet.Type == PacketType.AvatarNotifyMove);
+            var reader = new PacketReader(notify.Payload);
+            Assert.Equal(2u, reader.ReadUInt());
+            Assert.Equal(4001u, reader.ReadUInt());
+            var firstMove = MovementData.FromBytes(reader.ReadBytes(14));
+            Assert.Equal(MovementType.Running, firstMove.Animation);
+            Assert.Equal(4001u, reader.ReadUInt());
+            var secondMove = MovementData.FromBytes(reader.ReadBytes(14));
+            Assert.Equal(MovementType.Walking, secondMove.Animation);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task AvatarMoveHandler_BroadcastsOnlyWithinSameMapAndChannel()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
@@ -1425,6 +1464,14 @@ public class AreaMapHandlersTests
 
         user.Characters.Add(character);
         return user;
+    }
+
+    private static byte[] BuildAvatarMovePayload(IReadOnlyList<MovementData> moves)
+    {
+        var writer = new PacketWriter();
+        foreach (var move in moves)
+            writer.Write(move.ToBytes());
+        return writer.ToBytes();
     }
 
     private static byte[] BuildUIntPairPayload(uint first, uint second)
