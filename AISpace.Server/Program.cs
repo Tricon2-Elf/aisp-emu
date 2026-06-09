@@ -32,7 +32,7 @@ internal class Program
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         builder.Logging.ClearProviders();
-        builder.Logging.SetMinimumLevel(LogLevel.Information);
+        builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
         builder.Logging.AddNLog();
 
         builder.Services.Configure<ServerOptions>(builder.Configuration.GetSection("Server"));
