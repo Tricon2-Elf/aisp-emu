@@ -7,10 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024)
+public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024, int maxReceiveFrameSize = 4096)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
+    private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
     private TcpListener? _tcpListener;
     private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
 
@@ -44,7 +45,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
                     try
                     {
-                        var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>());
+                        var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>(), tcpClient);
                         _clients[context.Id] = context;
                         _ = RunClientWithGateAsync(context, ct);
                     }
@@ -123,6 +124,12 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                 await ReadExactAsync(context.Stream, header, ct);
                 int msgSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(header);
 
+                if (!VceFrameValidation.IsAcceptableFrameSize(msgSize, _maxReceiveFrameSize))
+                {
+                    logger.LogWarning("{Name} rejecting oversized frame from {RemoteEndPoint}: msgSize={MsgSize} max={MaxReceiveFrameSize}", name, context.RemoteEndPoint, msgSize, _maxReceiveFrameSize);
+                    break;
+                }
+
                 int paddedSize = (msgSize + 15) / 16 * 16;
                 byte[] cipher = new byte[paddedSize];
                 await ReadExactAsync(context.Stream, cipher, ct);
@@ -199,6 +206,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             _clients.TryRemove(context.Id, out _);
             onDisconnect?.Invoke(context.Id);
             logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
+            context.Dispose();
         }
     }
 

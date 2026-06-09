@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, ILogger<ClientConnection> logger)
+public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, ILogger<ClientConnection> logger, TcpClient? _tcpClient = null) : IDisposable
 {
     const int MaxChunkSize = 1392;
     const int BlockSize = 16;
@@ -101,4 +101,23 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
     }
 
     public async Task SendAsync(PacketType type, IOutgoingPacket packet, CancellationToken ct = default) => await SendAsync(type, packet.ToBytes(), ct);
+
+    public void Dispose()
+    {
+        try
+        {
+            Stream.Dispose();
+        }
+        catch
+        { /* ignore */
+        }
+
+        try
+        {
+            _tcpClient?.Dispose();
+        }
+        catch
+        { /* ignore */
+        }
+    }
 }

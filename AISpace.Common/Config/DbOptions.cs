@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using AISpace.Common.DAL;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Config;
@@ -28,6 +29,6 @@ public sealed class DbOptions
         if (!Provider.Equals("sqlite", StringComparison.OrdinalIgnoreCase))
             throw new NotSupportedException($"Database provider '{Provider}' is not supported.");
 
-        optionsBuilder.UseSqlite(EffectiveConnectionString, b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+        optionsBuilder.UseSqlite(EffectiveConnectionString, b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)).AddInterceptors(new SqlitePragmaConnectionInterceptor());
     }
 }

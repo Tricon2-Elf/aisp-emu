@@ -10,11 +10,13 @@ using System.Text;
 using AISpace.Common;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
+using AISpace.Common.Services;
 using AISpace.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using NLog.Extensions.Logging;
 
 namespace AISpace.Server;
@@ -30,7 +32,7 @@ internal class Program
 
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         builder.Logging.ClearProviders();
-        builder.Logging.SetMinimumLevel(LogLevel.Information);
+        builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
         builder.Logging.AddNLog();
 
         builder.Services.Configure<ServerOptions>(builder.Configuration.GetSection("Server"));
@@ -49,8 +51,22 @@ internal class Program
         builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
         builder.Services.AddSingleton<IPendingMapTransferRepository, PendingMapTransferRepository>();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
+        builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
 
-        builder.Services.AddSingleton<SharedState>(sp => new SharedState(new SessionStore(), new SessionClientRegistry(), new PendingTransitionStore(), sp.GetRequiredService<ISessionPresenceRepository>(), sp.GetRequiredService<IPendingMapTransferRepository>()));
+        builder.Services.AddSingleton<SharedState>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
+            var sessionStore = new SessionStore();
+            var sessionClientRegistry = new SessionClientRegistry();
+            var pendingTransitionStore = new PendingTransitionStore();
+
+            if (options.UseDistributedSessionPresence)
+            {
+                return new SharedState(sessionStore, sessionClientRegistry, pendingTransitionStore, sp.GetRequiredService<ISessionPresenceRepository>(), sp.GetRequiredService<IPendingMapTransferRepository>());
+            }
+
+            return new SharedState(sessionStore, sessionClientRegistry, pendingTransitionStore);
+        });
         // Add all IPacketHandler classsess
         builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().WithScopedLifetime());
 
@@ -73,7 +89,7 @@ internal class Program
         GameServerContext BuildGameServerContext(IServiceProvider sp)
         {
             var o = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
-            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity);
+            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity, o.MaxReceiveFrameSize, o.TickRateHz);
         }
 
         if (authEnabled)
@@ -108,6 +124,7 @@ internal class Program
             await WorldRepository.SeedWorldsIfEmptyAsync(db, Path.Combine(seedDir, "worlds.json"), serverOptions.IPOverride, (ushort)serverOptions.MsgServer.Port);
             await ChannelRepository.SeedChannelsIfEmptyAsync(db, Path.Combine(seedDir, "channels.json"), serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
             await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(seedDir, "baseItems.json"));
+            await scope.ServiceProvider.GetRequiredService<IItemBaseListCache>().WarmAsync();
         }
 
         await app.RunAsync();

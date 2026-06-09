@@ -17,7 +17,14 @@ public class PostTalkHandler(SharedState state) : IPacketHandler, IRequiresAuthe
         var response = new PostTalkResponse(chatRequest.MessageID, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        var forwardPacket = new TalkForwardNotify(session.CharacterId, chatRequest.DistID, chatRequest.Message, chatRequest.BalloonID);
+        var fromId = session.CharacterId;
+        if (fromId == 0)
+        {
+            var areaSession = state.GetAreaSessionByUserId(session.UserId);
+            fromId = areaSession?.CharacterId ?? 0;
+        }
+
+        var forwardPacket = new TalkForwardNotify(fromId, chatRequest.DistID, chatRequest.Message, chatRequest.BalloonID);
         byte[] broadcastData = forwardPacket.ToBytes();
 
         foreach (var client in state.GetServerClients(ServerType.Msg))
