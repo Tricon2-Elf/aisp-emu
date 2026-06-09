@@ -36,6 +36,11 @@ public class LoginHandler(IUserSessionRepository sessionRepo, SharedState state,
 
         session.User = userSession.User;
         session.UserId = userSession.User.Id;
+
+        var character = userSession.User.Characters.FirstOrDefault();
+        if (character != null)
+            session.CharacterId = (uint)character.Id;
+
         state.RegisterClient(ServerType.Msg, session);
         _logger.LogInformation("Client: {ClientId} LoginRequest UserID: {UserID}, OTP: {OTP}, Name: {name}", session.ConnectionId, request._userId, otp, session.User!.Username);
         return new LoginResponse(AuthResponseResult.Success);

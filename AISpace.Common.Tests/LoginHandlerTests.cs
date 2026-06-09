@@ -18,6 +18,7 @@ public class LoginHandlerTests
     {
         const string otp = "12345678901234567890";
         var user = new User { Id = 5, Username = "u" };
+        user.Characters.Add(new Character { Id = 42, Name = "ChatUser", UserId = 5 });
         var us = new UserSession
         {
             UserId = 5,
@@ -42,6 +43,7 @@ public class LoginHandlerTests
 
         Assert.Equal(5, session.UserId);
         Assert.NotNull(session.User);
+        Assert.Equal(42u, session.CharacterId);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.LoginResponse, session.Sent[0].Type);
         Assert.Equal((uint)AuthResponseResult.Success, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
