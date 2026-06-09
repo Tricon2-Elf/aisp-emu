@@ -90,7 +90,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
             var chara = areaClient.Character ?? areaClient.User.Characters.First();
             var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
 
-            var notifyMove = new AvatarNotifyMove(1, areaClient.CharacterId, newPos).ToBytes();
+            var notifyMove = new AvatarNotifyMove(areaClient.CharacterId, [newPos]).ToBytes();
             await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
 
             var disappearPacket = new NotifyDisappearChara(areaClient.CharacterId).ToBytes();
@@ -127,7 +127,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
 
                 var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
 
-                var notifyMove = new AvatarNotifyMove(1, areaClient.CharacterId, newPos).ToBytes();
+                var notifyMove = new AvatarNotifyMove(areaClient.CharacterId, [newPos]).ToBytes();
                 await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
 
                 var disappearPacket = new NotifyDisappearChara(areaClient.CharacterId).ToBytes();

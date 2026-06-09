@@ -30,17 +30,6 @@ public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransi
 
         var lastMovement = avatarMove.Moves[^1];
 
-        byte maxAnimation = 0;
-        foreach (var m in avatarMove.Moves)
-        {
-            if ((byte)m.Animation > maxAnimation)
-            {
-                maxAnimation = (byte)m.Animation;
-            }
-        }
-
-        lastMovement.Animation = (MovementType)maxAnimation;
-
         session.X = lastMovement.X;
         session.Y = lastMovement.Y;
         session.Z = lastMovement.Z;
@@ -52,7 +41,7 @@ public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransi
 
         session.HasMovedSinceMapLoad = true;
         //logger.LogInformation("AvatarMoveRequestHandler: CharacterId='{CharacterId}', X='{X}', Y='{Y}', Z='{Z}', Rotation='{Rotation}'", session.CharacterId, session.X, session.Y, session.Z, session.Rotation);
-        var notify = new AvatarNotifyMove(1, session.CharacterId, lastMovement).ToBytes();
+        var notify = new AvatarNotifyMove(session.CharacterId, avatarMove.Moves).ToBytes();
 
         foreach (var other in state.GetAreaPeers(session))
         {
