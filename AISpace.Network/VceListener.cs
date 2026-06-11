@@ -13,14 +13,18 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
     private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
     private TcpListener? _tcpListener;
+    private volatile bool _isListening;
     private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
 
     public ChannelReader<Packet> PacketReader => channel.Reader;
+
+    public bool IsListening => _isListening;
 
     public async Task RunAsync(CancellationToken ct = default)
     {
         _tcpListener = new TcpListener(System.Net.IPAddress.Parse("0.0.0.0"), port);
         _tcpListener.Start();
+        _isListening = true;
         onListeningStarted?.Invoke(name, port);
         int handlerCap = Math.Max(1, maxConcurrentClients);
         logger.LogInformation("Server {Name} started on {LocalEP} (max concurrent client handlers: {MaxHandlers})", name, _tcpListener.LocalEndpoint, handlerCap);
@@ -80,9 +84,12 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                     logger.LogError(ex, "Accept/peek failed on {Name}, continuing: {Message}", name, ex.Message);
                 }
             }
+
+            logger.LogInformation("Server {Name} accept loop stopped on {LocalEP}", name, _tcpListener?.LocalEndpoint);
         }
         finally
         {
+            _isListening = false;
             try
             {
                 _tcpListener?.Stop();
@@ -108,16 +115,16 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
     private async Task HandleClientAsync(ClientConnection context, CancellationToken ct)
     {
-        logger.LogInformation("{Name} Handling new Encrypted client {Id}", name, context.Id);
-        byte[] rsaN = new byte[16];
-        await ReadExactAsync(context.Stream, rsaN, ct);
-        var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-        var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-        context.SetCamelliaKeys(s2cPlain, c2sPlain);
-        await context.SendRawAsync([.. s2cEnc, .. c2sEnc], ct);
-
         try
         {
+            logger.LogInformation("{Name} Handling new Encrypted client {Id}", name, context.Id);
+            byte[] rsaN = new byte[16];
+            await ReadExactAsync(context.Stream, rsaN, ct);
+            var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+            var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+            context.SetCamelliaKeys(s2cPlain, c2sPlain);
+            await context.SendRawAsync([.. s2cEnc, .. c2sEnc], ct);
+
             while (!ct.IsCancellationRequested)
             {
                 var header = new byte[4];

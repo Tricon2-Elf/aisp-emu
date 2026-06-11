@@ -133,3 +133,23 @@ The generic base class `PacketHandlerBase<TRequest, TResponse>` deserializes the
 ## Docs
 
 See `docs/Project-Layout.md` for a deeper architecture walkthrough and `docs/Encryption.md` / `docs/PacketLayout/` for packet-level details.
+
+## Decompiled client reference (`localDocs/aisp-decompiled.c`)
+
+The 27 MB / 925k-line Hex-Rays decompile is the primary source for packet opcodes, field layouts, and client-side protocol logic. See `localDocs/aisp-decompiled-packet-llm-guide.md` for search strategies.
+
+### Search acceleration indices
+
+Run `python3 scripts/index-decompiled.py` to generate three assistive files:
+
+| File | What | Size |
+| --- | --- | --- |
+| `localDocs/aisp-func-index.json` | Function name → `{addr, start, end}` for all ~21k functions | ~2 MB |
+| `localDocs/aisp-protocol.c` | Protocol-relevant subset (13x smaller than original) | ~3 MB |
+| `localDocs/aisp-dispatch.json` | 581 recv dispatch entries with opcode + alloc size | ~84 KB |
+
+**Suggested agent workflow**:
+1. Grep the smaller `aisp-protocol.c` for a packet name or opcode
+2. Or look up the function in `aisp-func-index.json` → read exact line range with `sed`
+3. For recv packets, check `aisp-dispatch.json` for alloc size (complexity hint) and exact line
+4. After extracting the layout, map into `AISpace.Network/PacketType.cs` + handlers

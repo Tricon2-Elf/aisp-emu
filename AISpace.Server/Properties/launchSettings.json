@@ -1,7 +1,8 @@
 {
   "profiles": {
     "AISpace.Auth.Server": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "applicationUrl": "http://0.0.0.0:8080"
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"

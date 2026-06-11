@@ -13,6 +13,7 @@ using AISpace.Common.Handlers.Area;
 using AISpace.Common.Services;
 using AISpace.Server.Services;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,8 @@ internal class Program
     static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        // Sdk.Web auto-binds Kestrel:Endpoints from appsettings; FrameworkReference-only projects do not.
+        builder.WebHost.ConfigureKestrel((context, serverOptions) => serverOptions.Configure(context.Configuration.GetSection("Kestrel")));
         // IP override: set Server__IPOverride (e.g. Server__IPOverride=host.docker.internal) or IP_OVERRIDE env to replace localhost addresses in Docker.
         if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IP_OVERRIDE")))
             builder.Configuration["Server:IPOverride"] = Environment.GetEnvironmentVariable("IP_OVERRIDE");
