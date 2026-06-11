@@ -26,6 +26,7 @@ public abstract class GameServerBase<T> : BackgroundService
     private readonly int _maxReceiveFrameSize;
     private readonly int _packetChannelCapacity;
     private bool _initialized;
+    private DateTime _lastHeartbeatUtc = DateTime.MinValue;
 
     protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
     {
@@ -71,6 +72,7 @@ public abstract class GameServerBase<T> : BackgroundService
             var channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
 
             var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), channel, ActiveServerType.ToString(), _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(ActiveServerType, p), _maxConcurrentClients, _maxReceiveFrameSize);
+            HealthRegistry.SetAcceptCheck(ActiveServerType, () => listener.IsListening);
 
             var acceptLoop = listener.RunAsync(runToken);
             var packetLoop = RunPacketLoop(channel.Reader, runToken);
@@ -89,6 +91,7 @@ public abstract class GameServerBase<T> : BackgroundService
             }
 
             runCts.Cancel();
+            HealthRegistry.ClearAcceptCheck(ActiveServerType);
             await Task.WhenAll(acceptLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default), packetLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default), gameLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default));
 
             if (ct.IsCancellationRequested)
@@ -134,6 +137,13 @@ public abstract class GameServerBase<T> : BackgroundService
             {
                 try
                 {
+                    var now = DateTime.UtcNow;
+                    if (now - _lastHeartbeatUtc >= HealthRegistry.HeartbeatInterval)
+                    {
+                        HealthRegistry.RecordHeartbeat(ActiveServerType);
+                        _lastHeartbeatUtc = now;
+                    }
+
                     OnTick(ct);
                 }
                 catch (OperationCanceledException)

@@ -26,6 +26,8 @@ public class ServerOptions
     public GameServerConfig MsgServer { get; set; } = new() { Port = 50052 };
     public GameServerConfig AreaServer { get; set; } = new() { Port = 50054 };
 
+    public HealthCheckOptions HealthCheck { get; set; } = new();
+
     /// <summary>Returns the address to use for clients: if IPOverride is set and address is localhost/127.0.0.1, returns IPOverride; otherwise returns address.</summary>
     public string ResolveAddress(string address)
     {
