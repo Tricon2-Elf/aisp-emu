@@ -13,9 +13,9 @@ internal static class HttpEndpointsExtensions
         app.MapHealthChecks("/health");
         app.MapGet(
             "/healthz",
-            async (GameServerHealthRegistry registry, CancellationToken ct) =>
+            (GameServerHealthRegistry registry) =>
             {
-                var servers = await registry.GetVerifiedSnapshotAsync(ct);
+                var servers = registry.GetSnapshot();
                 var allHealthy = servers.Values.All(s => s.State == "healthy");
                 return Results.Json(new { status = allHealthy ? "Healthy" : "Unhealthy", servers }, statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
             }
