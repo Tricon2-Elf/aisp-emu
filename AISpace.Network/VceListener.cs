@@ -13,14 +13,18 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
     private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
     private TcpListener? _tcpListener;
+    private volatile bool _isListening;
     private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
 
     public ChannelReader<Packet> PacketReader => channel.Reader;
+
+    public bool IsListening => _isListening;
 
     public async Task RunAsync(CancellationToken ct = default)
     {
         _tcpListener = new TcpListener(System.Net.IPAddress.Parse("0.0.0.0"), port);
         _tcpListener.Start();
+        _isListening = true;
         onListeningStarted?.Invoke(name, port);
         int handlerCap = Math.Max(1, maxConcurrentClients);
         logger.LogInformation("Server {Name} started on {LocalEP} (max concurrent client handlers: {MaxHandlers})", name, _tcpListener.LocalEndpoint, handlerCap);
@@ -85,6 +89,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         }
         finally
         {
+            _isListening = false;
             try
             {
                 _tcpListener?.Stop();
