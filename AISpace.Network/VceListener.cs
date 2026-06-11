@@ -80,6 +80,8 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                     logger.LogError(ex, "Accept/peek failed on {Name}, continuing: {Message}", name, ex.Message);
                 }
             }
+
+            logger.LogInformation("Server {Name} accept loop stopped on {LocalEP}", name, _tcpListener?.LocalEndpoint);
         }
         finally
         {
