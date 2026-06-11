@@ -110,16 +110,16 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
     private async Task HandleClientAsync(ClientConnection context, CancellationToken ct)
     {
-        logger.LogInformation("{Name} Handling new Encrypted client {Id}", name, context.Id);
-        byte[] rsaN = new byte[16];
-        await ReadExactAsync(context.Stream, rsaN, ct);
-        var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-        var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-        context.SetCamelliaKeys(s2cPlain, c2sPlain);
-        await context.SendRawAsync([.. s2cEnc, .. c2sEnc], ct);
-
         try
         {
+            logger.LogInformation("{Name} Handling new Encrypted client {Id}", name, context.Id);
+            byte[] rsaN = new byte[16];
+            await ReadExactAsync(context.Stream, rsaN, ct);
+            var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+            var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+            context.SetCamelliaKeys(s2cPlain, c2sPlain);
+            await context.SendRawAsync([.. s2cEnc, .. c2sEnc], ct);
+
             while (!ct.IsCancellationRequested)
             {
                 var header = new byte[4];
