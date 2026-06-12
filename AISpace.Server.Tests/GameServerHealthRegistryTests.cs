@@ -1,5 +1,6 @@
 using AISpace.Common;
 using AISpace.Common.Config;
+using AISpace.Network;
 using AISpace.Server;
 using Microsoft.Extensions.Options;
 
@@ -8,7 +9,14 @@ namespace AISpace.Server.Tests;
 public class GameServerHealthRegistryTests
 {
     private static GameServerHealthRegistry CreateRegistry(int heartbeatSeconds = 5, int stalenessSeconds = 30) =>
-        new(Options.Create(new ServerOptions { HealthCheck = new HealthCheckOptions { HeartbeatIntervalSeconds = heartbeatSeconds, StalenessSeconds = stalenessSeconds } }));
+        new(
+            Options.Create(
+                new ServerOptions
+                {
+                    HealthCheck = new HealthCheckOptions { HeartbeatIntervalSeconds = heartbeatSeconds, StalenessSeconds = stalenessSeconds },
+                }
+            )
+        );
 
     [Fact]
     public void MarkListening_WithFreshHeartbeat_IsHealthy()
@@ -95,5 +103,35 @@ public class GameServerHealthRegistryTests
 
         Assert.Equal("unhealthy", snapshot["authServer"].State);
         Assert.Equal("tcp listener stopped", snapshot["authServer"].LastError);
+    }
+
+    [Fact]
+    public void GetSnapshot_IncludesClientLoadMetrics()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 7, AvailableSlots: 25, MaxHandlers: 32));
+
+        var snapshot = registry.GetSnapshot();
+
+        Assert.Equal(7, snapshot["authServer"].ActiveHandlers);
+        Assert.Equal(25, snapshot["authServer"].AvailableSlots);
+        Assert.Equal(32, snapshot["authServer"].MaxHandlers);
+    }
+
+    [Fact]
+    public void GetSnapshot_WhenClientHandlerSlotsExhausted_ReturnsUnhealthy()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 32, AvailableSlots: 0, MaxHandlers: 32));
+
+        var snapshot = registry.GetSnapshot();
+
+        Assert.Equal("unhealthy", snapshot["authServer"].State);
+        Assert.Equal("client handler slots exhausted", snapshot["authServer"].LastError);
+        Assert.Equal(0, snapshot["authServer"].AvailableSlots);
     }
 }

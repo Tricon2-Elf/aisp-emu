@@ -16,6 +16,7 @@ services:
       - Server__MaxConcurrentClients=32
       - Server__PacketChannelCapacity=512
       - Server__MaxReceiveFrameSize=4096
+      - Server__ClientReadTimeoutSeconds=300
       - Server__TickRateHz=20
       - Server__UseDistributedSessionPresence=false
       - IP_OVERRIDE=host.docker.internal
