@@ -1,6 +1,7 @@
 using AISpace.Common;
 using AISpace.Common.Game;
 using AISpace.Network;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AISpace.Server;
 
@@ -10,10 +11,8 @@ public abstract class GameServerBase<T> : BackgroundService
     protected readonly ILogger<T> Logger;
 
     protected readonly SharedState State;
-    protected readonly MainContext Db;
     protected readonly PacketDispatcher Dispatcher;
-    protected readonly IUserRepository UserRepo;
-    protected readonly IWorldRepository WorldRepo;
+    protected readonly IServiceScopeFactory ScopeFactory;
     protected readonly int _port;
     protected readonly ILoggerFactory _loggerFactory;
     protected readonly TimeSpan TickRate;
@@ -24,6 +23,7 @@ public abstract class GameServerBase<T> : BackgroundService
 
     private readonly int _maxConcurrentClients;
     private readonly int _maxReceiveFrameSize;
+    private readonly int _clientReadTimeoutSeconds;
     private readonly int _packetChannelCapacity;
     private bool _initialized;
     private DateTime _lastHeartbeatUtc = DateTime.MinValue;
@@ -31,16 +31,15 @@ public abstract class GameServerBase<T> : BackgroundService
     protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
     {
         Logger = logger;
-        Db = ctx.Db;
-        UserRepo = ctx.UserRepo;
+        ScopeFactory = ctx.ScopeFactory;
         _port = port;
         _loggerFactory = ctx.LoggerFactory;
-        WorldRepo = ctx.WorldRepo;
         Dispatcher = ctx.Dispatcher;
         State = ctx.State;
         HealthRegistry = ctx.HealthRegistry;
         _maxConcurrentClients = ctx.MaxConcurrentClients;
         _maxReceiveFrameSize = ctx.MaxReceiveFrameSize;
+        _clientReadTimeoutSeconds = ctx.ClientReadTimeoutSeconds;
         _packetChannelCapacity = ctx.PacketChannelCapacity;
         TickRate = TimeSpan.FromMilliseconds(1000.0 / Math.Max(1, ctx.TickRateHz));
         HealthRegistry.AddServer(ActiveServerType, _port);
@@ -71,8 +70,9 @@ public abstract class GameServerBase<T> : BackgroundService
             };
             var channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
 
-            var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), channel, ActiveServerType.ToString(), _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(ActiveServerType, p), _maxConcurrentClients, _maxReceiveFrameSize);
+            var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), channel, ActiveServerType.ToString(), _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(ActiveServerType, p), _maxConcurrentClients, _maxReceiveFrameSize, _clientReadTimeoutSeconds);
             HealthRegistry.SetAcceptCheck(ActiveServerType, () => listener.IsListening);
+            HealthRegistry.SetClientLoadCheck(ActiveServerType, () => listener.GetClientLoad());
 
             var acceptLoop = listener.RunAsync(runToken);
             var packetLoop = RunPacketLoop(channel.Reader, runToken);
@@ -92,6 +92,7 @@ public abstract class GameServerBase<T> : BackgroundService
 
             runCts.Cancel();
             HealthRegistry.ClearAcceptCheck(ActiveServerType);
+            HealthRegistry.ClearClientLoadCheck(ActiveServerType);
             await Task.WhenAll(acceptLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default), packetLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default), gameLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default));
 
             if (ct.IsCancellationRequested)

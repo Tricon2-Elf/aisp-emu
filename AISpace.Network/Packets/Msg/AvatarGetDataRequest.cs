@@ -2,7 +2,7 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarGetDataRequest(uint result) : IIncomingPacket<AvatarGetDataRequest>
+public class AvatarGetDataRequest() : IIncomingPacket<AvatarGetDataRequest>
 {
     public static AvatarGetDataRequest FromBytes(ReadOnlySpan<byte> data)
     {

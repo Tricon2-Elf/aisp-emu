@@ -16,6 +16,9 @@ public class ServerOptions
     /// <summary>Maximum encrypted receive frame plaintext size in bytes. Frames larger than this are rejected before allocation.</summary>
     public int MaxReceiveFrameSize { get; set; } = 4096;
 
+    /// <summary>Idle read timeout in seconds for client TCP connections. Handlers are released when no data arrives within this window.</summary>
+    public int ClientReadTimeoutSeconds { get; set; } = 300;
+
     /// <summary>Game loop tick rate in Hz for Auth, Msg, and Area background servers.</summary>
     public int TickRateHz { get; set; } = 60;
 

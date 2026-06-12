@@ -45,6 +45,8 @@ public class SharedState
 
     public void RegisterClient(ServerType serverType, IPlayerSession session)
     {
+        CloseSupersededClients(serverType, session);
+
         if (_sessionPresenceRepository == null)
         {
             _sessionClientRegistry.Register(serverType, session);
@@ -145,6 +147,29 @@ public class SharedState
         _sessionStore.TryGetSession(presence.ConnectionId, out var session);
         return session;
     }
+
+    private void CloseSupersededClients(ServerType serverType, IPlayerSession session)
+    {
+        foreach (var existing in GetServerClients(serverType))
+        {
+            if (existing.ConnectionId == session.ConnectionId)
+                continue;
+
+            if (!ShouldSupersede(serverType, existing, session))
+                continue;
+
+            if (existing is PlayerSession playerSession)
+                playerSession.ClientConnection.Dispose();
+        }
+    }
+
+    private static bool ShouldSupersede(ServerType serverType, IPlayerSession existing, IPlayerSession incoming) =>
+        serverType switch
+        {
+            ServerType.Area => existing.CharacterId != 0 && existing.CharacterId == incoming.CharacterId,
+            ServerType.Auth or ServerType.Msg => existing.UserId != 0 && existing.UserId == incoming.UserId,
+            _ => false,
+        };
 
     private IReadOnlyList<IPlayerSession> ResolveConnectedSessions(IEnumerable<Guid> connectionIds)
     {

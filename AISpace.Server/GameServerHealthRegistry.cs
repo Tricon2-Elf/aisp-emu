@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using AISpace.Common;
 using AISpace.Common.Config;
+using AISpace.Network;
 using Microsoft.Extensions.Options;
 
 namespace AISpace.Server;
@@ -24,46 +25,24 @@ public sealed class GameServerHealthRegistry
 
     public void AddServer(ServerType serverType, int port)
     {
-        _entries.TryAdd(
-            serverType,
-            new ServerHealthEntry(ToDisplayName(serverType), port, "starting", null, DateTime.UtcNow, null)
-        );
+        _entries.TryAdd(serverType, new ServerHealthEntry(ToDisplayName(serverType), port, "starting", null, DateTime.UtcNow, null));
     }
 
     public void MarkListening(ServerType serverType, int port)
     {
         var now = DateTime.UtcNow;
-        _entries.AddOrUpdate(
-            serverType,
-            _ => new ServerHealthEntry(ToDisplayName(serverType), port, "healthy", null, now, now),
-            (_, existing) =>
-                existing with
-                {
-                    Port = port,
-                    ReportedState = "healthy",
-                    LastError = null,
-                    LastHeartbeatUtc = now,
-                }
-        );
+        _entries.AddOrUpdate(serverType, _ => new ServerHealthEntry(ToDisplayName(serverType), port, "healthy", null, now, now), (_, existing) => existing with { Port = port, ReportedState = "healthy", LastError = null, LastHeartbeatUtc = now });
     }
 
     public void MarkUnhealthy(ServerType serverType, string reason)
     {
-        _entries.AddOrUpdate(
-            serverType,
-            _ => new ServerHealthEntry(ToDisplayName(serverType), 0, "unhealthy", reason, DateTime.UtcNow, null),
-            (_, existing) => existing with { ReportedState = "unhealthy", LastError = reason }
-        );
+        _entries.AddOrUpdate(serverType, _ => new ServerHealthEntry(ToDisplayName(serverType), 0, "unhealthy", reason, DateTime.UtcNow, null), (_, existing) => existing with { ReportedState = "unhealthy", LastError = reason });
     }
 
     public void RecordHeartbeat(ServerType serverType)
     {
         var now = DateTime.UtcNow;
-        _entries.AddOrUpdate(
-            serverType,
-            _ => new ServerHealthEntry(ToDisplayName(serverType), 0, "healthy", null, now, now),
-            (_, existing) => existing with { LastHeartbeatUtc = now }
-        );
+        _entries.AddOrUpdate(serverType, _ => new ServerHealthEntry(ToDisplayName(serverType), 0, "healthy", null, now, now), (_, existing) => existing with { LastHeartbeatUtc = now });
     }
 
     public void SetAcceptCheck(ServerType serverType, Func<bool> isAccepting)
@@ -78,6 +57,18 @@ public sealed class GameServerHealthRegistry
             _entries[serverType] = entry with { AcceptCheck = null };
     }
 
+    public void SetClientLoadCheck(ServerType serverType, Func<VceClientLoad> getClientLoad)
+    {
+        if (_entries.TryGetValue(serverType, out var entry))
+            _entries[serverType] = entry with { ClientLoadCheck = getClientLoad };
+    }
+
+    public void ClearClientLoadCheck(ServerType serverType)
+    {
+        if (_entries.TryGetValue(serverType, out var entry))
+            _entries[serverType] = entry with { ClientLoadCheck = null };
+    }
+
     public IReadOnlyDictionary<string, ServerHealthInfo> GetSnapshot()
     {
         var now = DateTime.UtcNow;
@@ -87,68 +78,45 @@ public sealed class GameServerHealthRegistry
     private ServerHealthInfo Evaluate(ServerHealthEntry entry, DateTime now)
     {
         var listenerAccepting = entry.AcceptCheck?.Invoke();
+        var clientLoad = entry.ClientLoadCheck?.Invoke();
 
         if (entry.ReportedState == "unhealthy")
         {
-            return ToInfo(
-                entry,
-                "unhealthy",
-                entry.LastError,
-                listenerAccepting
-            );
+            return ToInfo(entry, "unhealthy", entry.LastError, listenerAccepting, clientLoad);
         }
 
         if (entry.ReportedState == "healthy" && listenerAccepting == false)
         {
-            return ToInfo(
-                entry,
-                "unhealthy",
-                "listener not accepting",
-                listenerAccepting
-            );
+            return ToInfo(entry, "unhealthy", "listener not accepting", listenerAccepting, clientLoad);
+        }
+
+        if (entry.ReportedState == "healthy" && clientLoad is { MaxHandlers: > 0 } load && load.ActiveHandlers >= load.MaxHandlers)
+        {
+            return ToInfo(entry, "unhealthy", "client handler slots exhausted", listenerAccepting, clientLoad);
         }
 
         if (entry.ReportedState == "healthy")
         {
             if (entry.LastHeartbeatUtc is null || now - entry.LastHeartbeatUtc.Value > _stalenessThreshold)
             {
-                return ToInfo(
-                    entry,
-                    "unhealthy",
-                    $"heartbeat stale (>{_stalenessThreshold.TotalSeconds:0}s)",
-                    listenerAccepting
-                );
+                return ToInfo(entry, "unhealthy", $"heartbeat stale (>{_stalenessThreshold.TotalSeconds:0}s)", listenerAccepting, clientLoad);
             }
         }
         else if (entry.ReportedState == "starting" && now - entry.RegisteredAtUtc > _stalenessThreshold)
         {
-            return ToInfo(
-                entry,
-                "unhealthy",
-                "timed out while starting",
-                listenerAccepting
-            );
+            return ToInfo(entry, "unhealthy", "timed out while starting", listenerAccepting, clientLoad);
         }
 
-        return ToInfo(entry, entry.ReportedState, entry.LastError, listenerAccepting);
+        return ToInfo(entry, entry.ReportedState, entry.LastError, listenerAccepting, clientLoad);
     }
 
-    private static ServerHealthInfo ToInfo(ServerHealthEntry entry, string state, string? lastError, bool? listenerAccepting) =>
-        new(entry.Name, entry.Port, state, lastError, entry.LastHeartbeatUtc, listenerAccepting);
+    private static ServerHealthInfo ToInfo(ServerHealthEntry entry, string state, string? lastError, bool? listenerAccepting, VceClientLoad? clientLoad) => new(entry.Name, entry.Port, state, lastError, entry.LastHeartbeatUtc, listenerAccepting, clientLoad?.ActiveHandlers, clientLoad?.AvailableSlots, clientLoad?.MaxHandlers);
 
     private static string ToDisplayName(ServerType serverType) => $"{serverType}Server";
 
     private static string ToJsonKey(ServerType serverType) => char.ToLowerInvariant(serverType.ToString()[0]) + serverType.ToString()[1..] + "Server";
 
-    private sealed record ServerHealthEntry(
-        string Name,
-        int Port,
-        string ReportedState,
-        string? LastError,
-        DateTime RegisteredAtUtc,
-        DateTime? LastHeartbeatUtc,
-        Func<bool>? AcceptCheck = null
-    );
+    private sealed record ServerHealthEntry(string Name, int Port, string ReportedState, string? LastError, DateTime RegisteredAtUtc, DateTime? LastHeartbeatUtc, Func<bool>? AcceptCheck = null, Func<VceClientLoad>? ClientLoadCheck = null);
 }
 
-public sealed record ServerHealthInfo(string Name, int Port, string State, string? LastError, DateTime? LastHeartbeatUtc, bool? ListenerAccepting);
+public sealed record ServerHealthInfo(string Name, int Port, string State, string? LastError, DateTime? LastHeartbeatUtc, bool? ListenerAccepting, int? ActiveHandlers = null, int? AvailableSlots = null, int? MaxHandlers = null);

@@ -7,11 +7,13 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024, int maxReceiveFrameSize = 4096)
+public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024, int maxReceiveFrameSize = 4096, int clientReadTimeoutSeconds = 300)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
+    private readonly int _maxConcurrentClients = Math.Max(1, maxConcurrentClients);
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
     private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
+    private readonly TimeSpan _readTimeout = clientReadTimeoutSeconds > 0 ? TimeSpan.FromSeconds(clientReadTimeoutSeconds) : TimeSpan.Zero;
     private TcpListener? _tcpListener;
     private volatile bool _isListening;
     private readonly ConcurrentDictionary<Guid, ClientConnection> _clients = new();
@@ -19,6 +21,12 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
     public ChannelReader<Packet> PacketReader => channel.Reader;
 
     public bool IsListening => _isListening;
+
+    public VceClientLoad GetClientLoad()
+    {
+        int active = _clients.Count;
+        return new VceClientLoad(active, _maxConcurrentClients - active, _maxConcurrentClients);
+    }
 
     public async Task RunAsync(CancellationToken ct = default)
     {
@@ -49,6 +57,9 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
                     try
                     {
+                        if (_readTimeout > TimeSpan.Zero)
+                            tcpClient.ReceiveTimeout = (int)Math.Min(_readTimeout.TotalMilliseconds, int.MaxValue);
+
                         var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>(), tcpClient);
                         _clients[context.Id] = context;
                         _ = RunClientWithGateAsync(context, ct);
@@ -211,8 +222,16 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         finally
         {
             _clients.TryRemove(context.Id, out _);
-            onDisconnect?.Invoke(context.Id);
-            logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
+            try
+            {
+                onDisconnect?.Invoke(context.Id);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "{Name} onDisconnect failed for {Id}", name, context.Id);
+            }
+
+            logger.LogInformation("{Name} Client disconnected: {RemoteEndPoint} ({Id})", name, context.RemoteEndPoint, context.Id);
             context.Dispose();
         }
     }
@@ -234,7 +253,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
     private static bool IsExpectedDisconnect(Exception ex)
     {
-        if (ex is IOException io && io.Message is "Disconnected" or "The client closed the connection.")
+        if (ex is IOException io && io.Message is "Disconnected" or "The client closed the connection." or "Read timed out")
             return true;
         if (ex is ObjectDisposedException)
             return true;
@@ -243,15 +262,32 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         return false;
     }
 
-    private static async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
+    private async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
     {
         int totalRead = 0;
         while (totalRead < buffer.Length)
         {
-            int read = await stream.ReadAsync(buffer[totalRead..], ct);
+            int read = await ReadChunkAsync(stream, buffer[totalRead..], ct);
             if (read == 0)
                 throw new IOException("Disconnected");
             totalRead += read;
+        }
+    }
+
+    private async Task<int> ReadChunkAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
+    {
+        if (_readTimeout <= TimeSpan.Zero)
+            return await stream.ReadAsync(buffer, ct);
+
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(_readTimeout);
+        try
+        {
+            return await stream.ReadAsync(buffer, timeoutCts.Token);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new IOException("Read timed out");
         }
     }
 }

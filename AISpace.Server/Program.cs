@@ -92,7 +92,7 @@ internal class Program
         GameServerContext BuildGameServerContext(IServiceProvider sp)
         {
             var o = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
-            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity, o.MaxReceiveFrameSize, o.TickRateHz);
+            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity, o.MaxReceiveFrameSize, o.ClientReadTimeoutSeconds, o.TickRateHz);
         }
 
         if (authEnabled)
