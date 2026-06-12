@@ -25,7 +25,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
     public VceClientLoad GetClientLoad()
     {
         int active = _clients.Count;
-        return new VceClientLoad(active, _clientGate.CurrentCount, _maxConcurrentClients);
+        return new VceClientLoad(active, _maxConcurrentClients - active, _maxConcurrentClients);
     }
 
     public async Task RunAsync(CancellationToken ct = default)

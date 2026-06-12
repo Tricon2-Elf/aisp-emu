@@ -134,4 +134,20 @@ public class GameServerHealthRegistryTests
         Assert.Equal("client handler slots exhausted", snapshot["authServer"].LastError);
         Assert.Equal(0, snapshot["authServer"].AvailableSlots);
     }
+
+    [Fact]
+    public void GetSnapshot_WhenOneSlotBelowCapacity_RemainsHealthy()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 31, AvailableSlots: 1, MaxHandlers: 32));
+
+        var snapshot = registry.GetSnapshot();
+
+        Assert.Equal("healthy", snapshot["authServer"].State);
+        Assert.Null(snapshot["authServer"].LastError);
+        Assert.Equal(31, snapshot["authServer"].ActiveHandlers);
+        Assert.Equal(1, snapshot["authServer"].AvailableSlots);
+    }
 }

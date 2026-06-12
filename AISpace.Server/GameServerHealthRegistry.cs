@@ -90,7 +90,7 @@ public sealed class GameServerHealthRegistry
             return ToInfo(entry, "unhealthy", "listener not accepting", listenerAccepting, clientLoad);
         }
 
-        if (entry.ReportedState == "healthy" && clientLoad is { AvailableSlots: 0 })
+        if (entry.ReportedState == "healthy" && clientLoad is { MaxHandlers: > 0 } load && load.ActiveHandlers >= load.MaxHandlers)
         {
             return ToInfo(entry, "unhealthy", "client handler slots exhausted", listenerAccepting, clientLoad);
         }
