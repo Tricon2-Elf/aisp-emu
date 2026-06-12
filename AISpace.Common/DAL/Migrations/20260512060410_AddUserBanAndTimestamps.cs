@@ -15,14 +15,16 @@ namespace AISpace.Common.DAL.Migrations
 
             migrationBuilder.AddColumn<DateTime>(name: "BannedAt", table: "Users", type: "TEXT", nullable: true);
 
+            migrationBuilder.AddColumn<bool>(name: "IsBanned", table: "Users", type: "INTEGER", nullable: false, defaultValue: false);
+
             // SQLite cannot ADD COLUMN with a non-constant DEFAULT (e.g. CURRENT_TIMESTAMP).
-            // Use a constant default to avoid AlterColumn, which rebuilds the table and runs PRAGMA foreign_keys
-            // outside a transaction. Backfill existing rows; new inserts use User.CreatedAt / EF default.
-            migrationBuilder.AddColumn<DateTime>(name: "CreatedAt", table: "Users", type: "TEXT", nullable: false, defaultValue: new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            // Add with a constant default, backfill existing rows, then rebuild the column default.
+            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            migrationBuilder.AddColumn<DateTime>(name: "CreatedAt", table: "Users", type: "TEXT", nullable: false, defaultValue: epoch);
 
             migrationBuilder.Sql("UPDATE \"Users\" SET \"CreatedAt\" = CURRENT_TIMESTAMP;");
 
-            migrationBuilder.AddColumn<bool>(name: "IsBanned", table: "Users", type: "INTEGER", nullable: false, defaultValue: false);
+            migrationBuilder.AlterColumn<DateTime>(name: "CreatedAt", table: "Users", type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP", oldClrType: typeof(DateTime), oldType: "TEXT", oldNullable: false, oldDefaultValue: epoch);
         }
 
         /// <inheritdoc />
