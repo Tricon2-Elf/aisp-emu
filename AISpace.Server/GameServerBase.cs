@@ -1,6 +1,7 @@
 using AISpace.Common;
 using AISpace.Common.Game;
 using AISpace.Network;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AISpace.Server;
 
@@ -10,10 +11,8 @@ public abstract class GameServerBase<T> : BackgroundService
     protected readonly ILogger<T> Logger;
 
     protected readonly SharedState State;
-    protected readonly MainContext Db;
     protected readonly PacketDispatcher Dispatcher;
-    protected readonly IUserRepository UserRepo;
-    protected readonly IWorldRepository WorldRepo;
+    protected readonly IServiceScopeFactory ScopeFactory;
     protected readonly int _port;
     protected readonly ILoggerFactory _loggerFactory;
     protected readonly TimeSpan TickRate;
@@ -32,11 +31,9 @@ public abstract class GameServerBase<T> : BackgroundService
     protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
     {
         Logger = logger;
-        Db = ctx.Db;
-        UserRepo = ctx.UserRepo;
+        ScopeFactory = ctx.ScopeFactory;
         _port = port;
         _loggerFactory = ctx.LoggerFactory;
-        WorldRepo = ctx.WorldRepo;
         Dispatcher = ctx.Dispatcher;
         State = ctx.State;
         HealthRegistry = ctx.HealthRegistry;

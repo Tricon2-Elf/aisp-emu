@@ -1,6 +1,9 @@
 using AISpace.Common;
+using AISpace.Common.DAL;
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AISpace.Server;
 
@@ -10,8 +13,11 @@ public class AuthServer(ILogger<AuthServer> logger, GameServerContext ctx, int p
 
     protected override async Task InitializeAsync(CancellationToken ct)
     {
-        if (!await Db.Users.AnyAsync(ct))
-            await UserRepo.AddAsync("testuser", "password");
+        using var scope = ScopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MainContext>();
+        var userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+        if (!await db.Users.AnyAsync(ct))
+            await userRepo.AddAsync("testuser", "password");
     }
 
     protected override void OnTick(CancellationToken ct)

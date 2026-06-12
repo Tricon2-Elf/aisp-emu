@@ -24,8 +24,8 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
     public VceClientLoad GetClientLoad()
     {
-        int available = _clientGate.CurrentCount;
-        return new VceClientLoad(_maxConcurrentClients - available, available, _maxConcurrentClients);
+        int active = _clients.Count;
+        return new VceClientLoad(active, _clientGate.CurrentCount, _maxConcurrentClients);
     }
 
     public async Task RunAsync(CancellationToken ct = default)
@@ -222,8 +222,16 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         finally
         {
             _clients.TryRemove(context.Id, out _);
-            onDisconnect?.Invoke(context.Id);
-            logger.LogInformation("Client disconnected: {RemoteEndPoint} ({Id})", context.RemoteEndPoint, context.Id);
+            try
+            {
+                onDisconnect?.Invoke(context.Id);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "{Name} onDisconnect failed for {Id}", name, context.Id);
+            }
+
+            logger.LogInformation("{Name} Client disconnected: {RemoteEndPoint} ({Id})", name, context.RemoteEndPoint, context.Id);
             context.Dispose();
         }
     }
