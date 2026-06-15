@@ -4,12 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT/AISpace.Launcher/AISpace.Launcher.csproj"
 
-runtime="${1:-}"
-if [[ -z "$runtime" ]]; then
-  echo "Usage: $0 <win-x64|linux-x64>"
-  exit 1
-fi
+dotnet publish "$PROJECT" -c Release -p:PublishProfile="win-x64"
+dotnet publish "$PROJECT" -c Release -p:PublishProfile="linux-x64" -p:PublishSingleFile=true
 
-dotnet publish "$PROJECT" -c Release -p:PublishProfile="$runtime"
-
-echo "Published to AISpace.Launcher/bin/publish/$runtime/"
+echo "Published to AISpace.Launcher/bin/publish/win-x64/"
+echo "Published to AISpace.Launcher/bin/publish/linux-x64/"
