@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <AssemblyName>AISpace.Launcher</AssemblyName>
+    <AssemblyName>aisp.launch</AssemblyName>
   </PropertyGroup>
 
   <!-- Used when publishing with -p:PublishProfile=win-x64 or linux-x64 -->
