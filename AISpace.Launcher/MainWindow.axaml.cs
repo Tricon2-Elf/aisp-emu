@@ -16,6 +16,7 @@ public partial class MainWindow : Window
 
         _gameLauncher = new GameLauncher(LauncherBootstrap.Settings);
 
+        LauncherBootstrap.ConfigureWebViewEnvironment(WebsiteWebView);
         EnvironmentComboBox.SelectedIndex = Math.Clamp((int)LauncherBootstrap.Settings.SelectedEnvironment, 0, 2);
         WebsiteWebView.Source = new Uri(_gameLauncher.Settings.WebsiteUrl);
     }
