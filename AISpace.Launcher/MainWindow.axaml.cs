@@ -14,6 +14,8 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        Title = LaunchVersion.WindowTitle;
+
         _gameLauncher = new GameLauncher(LauncherBootstrap.Settings);
 
         LauncherBootstrap.ConfigureWebViewEnvironment(WebsiteWebView);

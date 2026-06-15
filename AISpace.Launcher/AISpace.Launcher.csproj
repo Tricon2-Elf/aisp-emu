@@ -7,6 +7,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>aisp.launch</AssemblyName>
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">dev</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <!-- Used when publishing with -p:PublishProfile=win-x64 or linux-x64 -->
