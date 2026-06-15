@@ -23,6 +23,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Compute CalVer
+        id: calver
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          date="$(date -u +'%Y.%m.%d')"
+          date_regex="${date//./\\.}"
+
+          tags="$(gh api \
+            --paginate \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GITHUB_REPOSITORY}/packages/container/server/versions?per_page=100" \
+            --jq '.[].metadata.container.tags[]?' \
+            2>/dev/null || true)"
+
+          max_rev=0
+          while IFS= read -r tag; do
+            [[ -z "$tag" ]] && continue
+            if [[ "$tag" == "$date" ]]; then
+              (( max_rev < 1 )) && max_rev=1
+            elif [[ "$tag" =~ ^${date_regex}\.([0-9]+)$ ]]; then
+              rev="${BASH_REMATCH[1]}"
+              (( rev > max_rev )) && max_rev=$rev
+            fi
+          done <<< "$tags"
+
+          version="${date}.$((max_rev + 1))"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "CalVer: $version"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -39,8 +69,10 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
-            type=sha,prefix=
+            type=raw,value=latest
+            type=raw,value=${{ steps.calver.outputs.version }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.calver.outputs.version }}
 
       - name: Build and push
         id: build

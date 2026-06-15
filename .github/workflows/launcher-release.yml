@@ -1,0 +1,125 @@
+name: Release Launcher
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  calver:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.calver.outputs.version }}
+      tag: ${{ steps.calver.outputs.tag }}
+    steps:
+      - name: Compute CalVer
+        id: calver
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          date="$(date -u +'%Y.%m.%d')"
+          date_regex="${date//./\\.}"
+
+          tags="$(gh release list --limit 200 --json tagName --jq '.[].tagName' 2>/dev/null || true)"
+
+          max_rev=0
+          while IFS= read -r tag; do
+            [[ -z "$tag" ]] && continue
+            if [[ "$tag" == "launcher-${date}" ]]; then
+              (( max_rev < 1 )) && max_rev=1
+            elif [[ "$tag" =~ ^launcher-${date_regex}\.([0-9]+)$ ]]; then
+              rev="${BASH_REMATCH[1]}"
+              (( rev > max_rev )) && max_rev=$rev
+            fi
+          done <<< "$tags"
+
+          version="${date}.$((max_rev + 1))"
+          tag="launcher-${version}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "CalVer: $version (tag: $tag)"
+
+  build-windows:
+    needs: calver
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish win-x64
+        run: >
+          dotnet publish AISpace.Launcher/AISpace.Launcher.csproj
+          -c Release
+          -p:PublishProfile=win-x64
+          -p:InformationalVersion=${{ needs.calver.outputs.version }}
+          -p:Version=${{ needs.calver.outputs.version }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: launcher-win-x64
+          path: AISpace.Launcher/bin/publish/win-x64/aisp.launch.exe
+
+  build-linux:
+    needs: calver
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish linux-x64
+        run: >
+          dotnet publish AISpace.Launcher/AISpace.Launcher.csproj
+          -c Release
+          -p:PublishProfile=linux-x64
+          -p:InformationalVersion=${{ needs.calver.outputs.version }}
+          -p:Version=${{ needs.calver.outputs.version }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: launcher-linux-x64
+          path: AISpace.Launcher/bin/publish/linux-x64/aisp.launch
+
+  release:
+    needs: [calver, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Prepare release assets
+        env:
+          VERSION: ${{ needs.calver.outputs.version }}
+        run: |
+          cp "dist/launcher-win-x64/aisp.launch.exe" "dist/aisp.launch-${VERSION}-win-x64.exe"
+          cp "dist/launcher-linux-x64/aisp.launch" "dist/aisp.launch-${VERSION}-linux-x64"
+          chmod +x "dist/aisp.launch-${VERSION}-linux-x64"
+          sha256sum dist/aisp.launch-* > dist/SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.calver.outputs.tag }}
+          name: Launcher ${{ needs.calver.outputs.version }}
+          generate_release_notes: true
+          files: |
+            dist/aisp.launch-${{ needs.calver.outputs.version }}-win-x64.exe
+            dist/aisp.launch-${{ needs.calver.outputs.version }}-linux-x64
+            dist/SHA256SUMS
