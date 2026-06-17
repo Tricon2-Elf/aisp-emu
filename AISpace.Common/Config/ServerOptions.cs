@@ -19,9 +19,6 @@ public class ServerOptions
     /// <summary>Idle read timeout in seconds for client TCP connections. Handlers are released when no data arrives within this window.</summary>
     public int ClientReadTimeoutSeconds { get; set; } = 300;
 
-    /// <summary>Game loop tick rate in Hz for the Msg server (internal message queue polling).</summary>
-    public int TickRateHz { get; set; } = 10;
-
     /// <summary>When false, session presence is kept in-memory (single-node VPS). When true, SessionPresences table is used (multi-instance).</summary>
     public bool UseDistributedSessionPresence { get; set; } = false;
 

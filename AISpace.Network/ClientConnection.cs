@@ -21,7 +21,17 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
     public NetworkStream Stream = _ns;
     public DateTimeOffset Connected { get; } = DateTimeOffset.UtcNow;
 
-    public async Task SendRawAsync(byte[] data, CancellationToken ct = default) => await Stream.WriteAsync(data, ct);
+    private int _closed;
+
+    public bool IsClosed => Volatile.Read(ref _closed) != 0;
+
+    public async Task SendRawAsync(byte[] data, CancellationToken ct = default)
+    {
+        if (IsClosed)
+            return;
+
+        await Stream.WriteAsync(data, ct);
+    }
 
     public void SetCamelliaKeys(byte[] s2cKey, byte[] c2sKey)
     {
@@ -55,6 +65,9 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public async Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default)
     {
+        if (IsClosed)
+            return;
+
         if (type != PacketType.Ping && type != PacketType.TimeZoneGetResponse)
             logger.LogInformation("Sending: {type}, {len}", type, payload.Length);
         try
@@ -86,6 +99,10 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
                 offset += plainChunkSize;
             }
         }
+        catch (ObjectDisposedException)
+        {
+            // connection closed while a fire-and-forget send was in flight
+        }
         catch (Exception ex)
         {
             logger.LogError("Err {ex}", ex);
@@ -104,6 +121,9 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _closed, 1) != 0)
+            return;
+
         try
         {
             Stream.Dispose();

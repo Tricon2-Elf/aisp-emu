@@ -72,6 +72,7 @@ public class PacketDispatcherTests
         var services = new ServiceCollection();
         services.AddSingleton(sink);
         services.AddScoped<IPacketHandler, RecordingAuthAuthenticateHandler>();
+        services.AddScoped<RecordingAuthAuthenticateHandler>();
         services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton<PacketDispatcher>();
@@ -93,6 +94,7 @@ public class PacketDispatcherTests
         var services = new ServiceCollection();
         services.AddSingleton(sink);
         services.AddScoped<IPacketHandler, AuthPingOnlyHandler>();
+        services.AddScoped<AuthPingOnlyHandler>();
         services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton<PacketDispatcher>();
@@ -112,6 +114,7 @@ public class PacketDispatcherTests
         var services = new ServiceCollection();
         services.AddSingleton(sink);
         services.AddScoped<IPacketHandler, AuthRequiredPingHandler>();
+        services.AddScoped<AuthRequiredPingHandler>();
         services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton<PacketDispatcher>();
@@ -131,6 +134,7 @@ public class PacketDispatcherTests
         var services = new ServiceCollection();
         services.AddSingleton(sink);
         services.AddScoped<IPacketHandler, AuthRequiredPingHandler>();
+        services.AddScoped<AuthRequiredPingHandler>();
         services.AddSingleton<ILogger<PacketDispatcher>>(NullLogger<PacketDispatcher>.Instance);
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton<PacketDispatcher>();

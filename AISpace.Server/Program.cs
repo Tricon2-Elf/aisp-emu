@@ -27,13 +27,7 @@ internal class Program
     static async Task Main(string[] args)
     {
         // appsettings.json is copied next to the DLL; use that path so config loads regardless of cwd (e.g. dotnet run from repo root).
-        var builder = WebApplication.CreateBuilder(
-            new WebApplicationOptions
-            {
-                Args = args,
-                ContentRootPath = AppContext.BaseDirectory,
-            }
-        );
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
         // Sdk.Web auto-binds Kestrel:Endpoints from appsettings; FrameworkReference-only projects do not.
         builder.WebHost.ConfigureKestrel((context, serverOptions) => serverOptions.Configure(context.Configuration.GetSection("Kestrel")));
         // IP override: set Server__IPOverride (e.g. Server__IPOverride=host.docker.internal) or IP_OVERRIDE env to replace localhost addresses in Docker.
@@ -45,7 +39,7 @@ internal class Program
         builder.Logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
         builder.Logging.AddNLog();
 
-        builder.Services.Configure<ServerOptions>(builder.Configuration.GetSection("Server"));
+        builder.Services.AddOptions<ServerOptions>().Bind(builder.Configuration.GetSection("Server"));
         builder.Services.AddDbContext<MainContext>((sp, options) => sp.GetRequiredService<IOptions<ServerOptions>>().Value.DbOptions.ConfigureDbContext(options));
         builder.Services.AddDbContextFactory<MainContext>((sp, options) => sp.GetRequiredService<IOptions<ServerOptions>>().Value.DbOptions.ConfigureDbContext(options));
 
@@ -78,11 +72,11 @@ internal class Program
             return new SharedState(sessionStore, sessionClientRegistry, pendingTransitionStore);
         });
         // Add all IPacketHandler classsess
-        builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().WithScopedLifetime());
+        builder.Services.Scan(scan => scan.FromAssemblyOf<IPacketHandler>().AddClasses(classes => classes.AssignableTo<IPacketHandler>()).AsImplementedInterfaces().AsSelf().WithScopedLifetime());
 
         builder.Services.AddSingleton<PacketDispatcher>();
-        builder.Services.Configure<MaintenanceOptions>(builder.Configuration.GetSection("Maintenance"));
-        builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+        builder.Services.AddOptions<MaintenanceOptions>().Bind(builder.Configuration.GetSection("Maintenance"));
+        builder.Services.AddOptions<ApiSettings>().Bind(builder.Configuration.GetSection("ApiSettings"));
         builder.Services.AddSingleton<BroadcastService>();
         builder.Services.AddScoped<UserAdminService>();
         builder.Services.AddSingleton<GameServerHealthRegistry>();
@@ -99,7 +93,7 @@ internal class Program
         GameServerContext BuildGameServerContext(IServiceProvider sp)
         {
             var o = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
-            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity, o.MaxReceiveFrameSize, o.ClientReadTimeoutSeconds, o.TickRateHz);
+            return GameServerContext.Create(sp, o.MaxConcurrentClients, o.PacketChannelCapacity, o.MaxReceiveFrameSize, o.ClientReadTimeoutSeconds);
         }
 
         if (authEnabled)
@@ -111,6 +105,7 @@ internal class Program
         if (areaEnabled)
             builder.Services.AddHostedService(sp => ActivatorUtilities.CreateInstance<AreaServer>(sp, BuildGameServerContext(sp), areaPort));
 
+        builder.Services.AddHostedService<GameServerSchedulerService>();
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
 
         var app = builder.Build();

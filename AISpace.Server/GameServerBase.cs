@@ -15,7 +15,6 @@ public abstract class GameServerBase<T> : BackgroundService
     protected readonly IServiceScopeFactory ScopeFactory;
     protected readonly int _port;
     protected readonly ILoggerFactory _loggerFactory;
-    protected readonly TimeSpan TickRate;
 
     protected abstract ServerType ActiveServerType { get; }
 
@@ -26,7 +25,6 @@ public abstract class GameServerBase<T> : BackgroundService
     private readonly int _clientReadTimeoutSeconds;
     private readonly int _packetChannelCapacity;
     private bool _initialized;
-    private DateTime _lastHeartbeatUtc = DateTime.MinValue;
 
     protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
     {
@@ -41,11 +39,12 @@ public abstract class GameServerBase<T> : BackgroundService
         _maxReceiveFrameSize = ctx.MaxReceiveFrameSize;
         _clientReadTimeoutSeconds = ctx.ClientReadTimeoutSeconds;
         _packetChannelCapacity = ctx.PacketChannelCapacity;
-        TickRate = TimeSpan.FromMilliseconds(1000.0 / Math.Max(1, ctx.TickRateHz));
         HealthRegistry.AddServer(ActiveServerType, _port);
     }
 
     protected virtual Task InitializeAsync(CancellationToken ct) => Task.CompletedTask;
+
+    protected virtual IEnumerable<Task> GetAdditionalLoops(CancellationToken ct) => [];
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
@@ -76,24 +75,32 @@ public abstract class GameServerBase<T> : BackgroundService
 
             var acceptLoop = listener.RunAsync(runToken);
             var packetLoop = RunPacketLoop(channel.Reader, runToken);
-            var gameLoop = RunGameLoop(runToken);
+            var additionalLoops = GetAdditionalLoops(runToken).ToArray();
 
-            var completed = await Task.WhenAny(acceptLoop, packetLoop);
+            var allLoops = new List<Task>(2 + additionalLoops.Length) { acceptLoop, packetLoop };
+            allLoops.AddRange(additionalLoops);
+
+            var completed = await Task.WhenAny(allLoops);
             if (completed == acceptLoop)
             {
                 Logger.LogWarning("{ServerType} TCP listener stopped unexpectedly; restarting", ActiveServerType);
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "tcp listener stopped");
             }
-            else
+            else if (completed == packetLoop)
             {
                 Logger.LogWarning("{ServerType} packet loop stopped unexpectedly; restarting listener", ActiveServerType);
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "packet loop stopped");
+            }
+            else
+            {
+                Logger.LogWarning("{ServerType} auxiliary loop stopped unexpectedly; restarting listener", ActiveServerType);
+                HealthRegistry.MarkUnhealthy(ActiveServerType, "auxiliary loop stopped");
             }
 
             runCts.Cancel();
             HealthRegistry.ClearAcceptCheck(ActiveServerType);
             HealthRegistry.ClearClientLoadCheck(ActiveServerType);
-            await Task.WhenAll(acceptLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default), packetLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default), gameLoop.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default));
+            await Task.WhenAll(allLoops.Select(task => task.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default)));
 
             if (ct.IsCancellationRequested)
                 break;
@@ -128,45 +135,4 @@ public abstract class GameServerBase<T> : BackgroundService
             // expected during listener restart
         }
     }
-
-    /// <summary>When null, no periodic game loop runs. Override to enable <see cref="OnTick"/>.</summary>
-    protected virtual TimeSpan? GameLoopInterval => null;
-
-    private async Task RunGameLoop(CancellationToken ct)
-    {
-        try
-        {
-            var interval = GameLoopInterval ?? HealthRegistry.HeartbeatInterval;
-            using var timer = new PeriodicTimer(interval);
-            while (await timer.WaitForNextTickAsync(ct))
-            {
-                try
-                {
-                    var now = DateTime.UtcNow;
-                    if (now - _lastHeartbeatUtc >= HealthRegistry.HeartbeatInterval)
-                    {
-                        HealthRegistry.RecordHeartbeat(ActiveServerType);
-                        _lastHeartbeatUtc = now;
-                    }
-
-                    if (GameLoopInterval is not null)
-                        OnTick(ct);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, "Game tick failed (ServerType={ServerType}): {Message}", ActiveServerType, ex.Message);
-                }
-            }
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            // expected during listener restart
-        }
-    }
-
-    protected virtual void OnTick(CancellationToken ct) { }
 }
