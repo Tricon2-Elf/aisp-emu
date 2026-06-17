@@ -19,9 +19,4 @@ public class AuthServer(ILogger<AuthServer> logger, GameServerContext ctx, int p
         if (!await db.Users.AnyAsync(ct))
             await userRepo.AddAsync("testuser", "password");
     }
-
-    protected override void OnTick(CancellationToken ct)
-    {
-        //Clear expired sessions
-    }
 }

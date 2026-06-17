@@ -129,11 +129,15 @@ public abstract class GameServerBase<T> : BackgroundService
         }
     }
 
+    /// <summary>When null, no periodic game loop runs. Override to enable <see cref="OnTick"/>.</summary>
+    protected virtual TimeSpan? GameLoopInterval => null;
+
     private async Task RunGameLoop(CancellationToken ct)
     {
         try
         {
-            using var timer = new PeriodicTimer(TickRate);
+            var interval = GameLoopInterval ?? HealthRegistry.HeartbeatInterval;
+            using var timer = new PeriodicTimer(interval);
             while (await timer.WaitForNextTickAsync(ct))
             {
                 try
@@ -145,7 +149,8 @@ public abstract class GameServerBase<T> : BackgroundService
                         _lastHeartbeatUtc = now;
                     }
 
-                    OnTick(ct);
+                    if (GameLoopInterval is not null)
+                        OnTick(ct);
                 }
                 catch (OperationCanceledException)
                 {

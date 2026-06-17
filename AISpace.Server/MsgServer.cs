@@ -7,6 +7,8 @@ public class MsgServer(ILogger<MsgServer> logger, GameServerContext ctx, int por
 {
     protected override ServerType ActiveServerType => ServerType.Msg;
 
+    protected override TimeSpan? GameLoopInterval => TickRate;
+
     protected override void OnTick(CancellationToken ct)
     {
         while (State.TryDequeueMessage(out var message))
