@@ -21,6 +21,7 @@ services:
       - Server__UseDistributedSessionPresence=false
       - IP_OVERRIDE=host.docker.internal
       - Server__DbOptions__ConnectionString=Data Source=/data/main.db;Cache=Shared;Default Timeout=5
+      - ApiSettings__ApiKey=1mQmb9SvUkATRoVLdVEvkmaKbuufQMVH
     volumes:
       - /opt/aisp-data:/data
     restart: unless-stopped
