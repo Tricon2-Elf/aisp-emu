@@ -41,9 +41,19 @@ public sealed class GameServerHealthRegistry
 
     public void RecordHeartbeat(ServerType serverType)
     {
-        var now = DateTime.UtcNow;
-        _entries.AddOrUpdate(serverType, _ => new ServerHealthEntry(ToDisplayName(serverType), 0, "healthy", null, now, now), (_, existing) => existing with { LastHeartbeatUtc = now });
+        if (!_entries.TryGetValue(serverType, out var existing))
+            return;
+
+        _entries[serverType] = existing with { LastHeartbeatUtc = DateTime.UtcNow };
     }
+
+    public void RecordHeartbeatsForRegisteredServers()
+    {
+        foreach (var serverType in _entries.Keys)
+            RecordHeartbeat(serverType);
+    }
+
+    public bool IsRegistered(ServerType serverType) => _entries.ContainsKey(serverType);
 
     public void SetAcceptCheck(ServerType serverType, Func<bool> isAccepting)
     {

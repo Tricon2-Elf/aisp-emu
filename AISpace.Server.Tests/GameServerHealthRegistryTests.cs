@@ -19,6 +19,31 @@ public class GameServerHealthRegistryTests
         );
 
     [Fact]
+    public void RecordHeartbeat_WhenServerNotRegistered_DoesNotCreateEntry()
+    {
+        var registry = CreateRegistry();
+
+        registry.RecordHeartbeat(ServerType.Auth);
+
+        Assert.Empty(registry.GetSnapshot());
+    }
+
+    [Fact]
+    public void RecordHeartbeatsForRegisteredServers_OnlyUpdatesRegisteredServers()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Msg, 50052);
+        registry.MarkListening(ServerType.Msg, 50052);
+
+        registry.RecordHeartbeatsForRegisteredServers();
+
+        var snapshot = registry.GetSnapshot();
+        Assert.Single(snapshot);
+        Assert.Equal("healthy", snapshot["msgServer"].State);
+        Assert.NotNull(snapshot["msgServer"].LastHeartbeatUtc);
+    }
+
+    [Fact]
     public void MarkListening_WithFreshHeartbeat_IsHealthy()
     {
         var registry = CreateRegistry();

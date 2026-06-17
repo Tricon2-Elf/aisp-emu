@@ -7,12 +7,18 @@ public class MsgServer(ILogger<MsgServer> logger, GameServerContext ctx, int por
 {
     protected override ServerType ActiveServerType => ServerType.Msg;
 
-    protected override void OnTick(CancellationToken ct)
+    protected override IEnumerable<Task> GetAdditionalLoops(CancellationToken ct) => [RunMessageLoop(ct)];
+
+    private async Task RunMessageLoop(CancellationToken ct)
     {
-        while (State.TryDequeueMessage(out var message))
+        try
         {
-            Logger.LogInformation("{id} sent {message}", message.id, message.message);
-            // Send message to all other users
+            await foreach (var (id, message) in State.Messages.ReadAllAsync(ct))
+                Logger.LogInformation("{id} sent {message}", id, message);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // expected during listener restart
         }
     }
 }

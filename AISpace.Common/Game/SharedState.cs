@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using AISpace.Common.DAL.Repositories;
 
 namespace AISpace.Common.Game;
@@ -11,8 +12,7 @@ public class SharedState
     private readonly ISessionPresenceRepository? _sessionPresenceRepository;
     private readonly IPendingMapTransferRepository? _pendingMapTransferRepository;
 
-    private readonly Queue<(string id, string message)> _newMessages = new();
-    private readonly object _newMessagesLock = new();
+    private readonly Channel<(string Id, string Message)> _messages = Channel.CreateUnbounded<(string Id, string Message)>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
 
     public IReadOnlyCollection<IPlayerSession> AuthClients => GetServerClients(ServerType.Auth);
     public IReadOnlyCollection<IPlayerSession> MsgClients => GetServerClients(ServerType.Msg);
@@ -82,21 +82,9 @@ public class SharedState
         return _pendingMapTransferRepository.TryTake(userId, out transition);
     }
 
-    public void EnqueueMessage(string id, string message)
-    {
-        lock (_newMessagesLock)
-        {
-            _newMessages.Enqueue((id, message));
-        }
-    }
+    public void EnqueueMessage(string id, string message) => _messages.Writer.TryWrite((id, message));
 
-    public bool TryDequeueMessage(out (string id, string message) message)
-    {
-        lock (_newMessagesLock)
-        {
-            return _newMessages.TryDequeue(out message);
-        }
-    }
+    public ChannelReader<(string Id, string Message)> Messages => _messages.Reader;
 
     public IReadOnlyList<IPlayerSession> GetServerClients(ServerType serverType)
     {
@@ -159,7 +147,10 @@ public class SharedState
                 continue;
 
             if (existing is PlayerSession playerSession)
+            {
+                UnregisterClient(serverType, playerSession.ConnectionId);
                 playerSession.ClientConnection.Dispose();
+            }
         }
     }
 

@@ -32,7 +32,7 @@ public sealed class PacketDispatcher
         }
 
         using var scope = _scopeFactory.CreateScope();
-        var handler = (IPacketHandler)ActivatorUtilities.CreateInstance(scope.ServiceProvider, handlerType);
+        var handler = (IPacketHandler)scope.ServiceProvider.GetRequiredService(handlerType);
         if (handler is IRequiresAuthenticatedSession && !session.IsAuthenticated)
         {
             _logger.LogWarning("Rejecting unauthenticated packet {ServerType}:{PacketType} from client {ClientId}", ServerType, type, session.ConnectionId);
