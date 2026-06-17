@@ -11,8 +11,6 @@ namespace AISpace.Server.Services;
 /// <summary>Single process-wide timer for health heartbeats and area timezone broadcasts.</summary>
 public sealed class GameServerSchedulerService(SharedState state, GameServerHealthRegistry healthRegistry, IOptions<ServerOptions> options, ILogger<GameServerSchedulerService> logger) : BackgroundService
 {
-    private static readonly ServerType[] HeartbeatServers = [ServerType.Auth, ServerType.Msg, ServerType.Area];
-
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         var heartbeatIntervalSeconds = Math.Max(1, options.Value.HealthCheck.HeartbeatIntervalSeconds);
@@ -24,10 +22,7 @@ public sealed class GameServerSchedulerService(SharedState state, GameServerHeal
         {
             tick++;
             if (tick % heartbeatIntervalSeconds == 0)
-            {
-                foreach (var serverType in HeartbeatServers)
-                    healthRegistry.RecordHeartbeat(serverType);
-            }
+                healthRegistry.RecordHeartbeatsForRegisteredServers();
 
             BroadcastAreaTimeIfNeeded();
         }
@@ -35,6 +30,9 @@ public sealed class GameServerSchedulerService(SharedState state, GameServerHeal
 
     private void BroadcastAreaTimeIfNeeded()
     {
+        if (!healthRegistry.IsRegistered(ServerType.Area))
+            return;
+
         var clients = state.GetServerClients(ServerType.Area);
         if (!clients.Any(client => client.IsAuthenticated))
             return;
