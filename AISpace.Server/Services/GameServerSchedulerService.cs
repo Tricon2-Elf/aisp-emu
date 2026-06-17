@@ -22,9 +22,25 @@ public sealed class GameServerSchedulerService(SharedState state, GameServerHeal
         {
             tick++;
             if (tick % heartbeatIntervalSeconds == 0)
-                healthRegistry.RecordHeartbeatsForRegisteredServers();
+                RunTickStep("heartbeat", () => healthRegistry.RecordHeartbeatsForRegisteredServers());
 
-            BroadcastAreaTimeIfNeeded();
+            RunTickStep("area time broadcast", BroadcastAreaTimeIfNeeded);
+        }
+    }
+
+    private void RunTickStep(string stepName, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Game scheduler {StepName} failed: {Message}", stepName, ex.Message);
         }
     }
 
