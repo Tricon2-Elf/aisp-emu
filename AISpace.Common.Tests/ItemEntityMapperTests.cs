@@ -59,6 +59,16 @@ public class ItemEntityMapperTests
     }
 
     [Theory]
+    [InlineData(10100220, 101)]
+    [InlineData(10500070, 105)]
+    public void ToItemBaseListData_sets_limit_map_key_for_wardrobe_equip_checks(int itemId, uint expectedKey)
+    {
+        var item = new Item { Id = itemId, Socket = 0, Name = "test" };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(expectedKey, data._0x044c);
+    }
+
+    [Theory]
     [InlineData(10100220, 3)] // shirt
     [InlineData(10200100, 5)] // pants
     [InlineData(10200000, 4)] // skirt

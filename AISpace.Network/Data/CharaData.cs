@@ -15,8 +15,11 @@ public class CharaData(uint slotId, uint modelId, string name)
 
     public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<CharacterEquipSlot, uint> resolveSocket)
     {
-        foreach (var eq in equipment)
-            AddEquip(eq.ItemId, resolveSocket(eq));
+        for (byte slot = 0; slot < 30; slot++)
+        {
+            var eq = equipment.FirstOrDefault(e => e.SlotIndex == slot);
+            AddEquip(eq.ItemId, eq.ItemId != 0 ? resolveSocket(eq) : 0);
+        }
     }
 
     public byte[] ToBytes()

@@ -84,6 +84,7 @@ internal static class ItemEntityMapper
         var iconId = (uint)item.IconId;
         var (socket1, socket2) = GetCatalogSockets(item.Id, ResolveBodyspot(item));
         var category = ResolveCatalogCategory(item.Id, item.Name);
+        var limitMapKey = ResolveLimitMapKey(item.Id);
 
         return new ItemData
         {
@@ -95,6 +96,7 @@ internal static class ItemEntityMapper
             Socket1 = socket1,
             Socket2 = socket2,
             Category = category,
+            _0x044c = limitMapKey,
         };
     }
 
@@ -151,4 +153,11 @@ internal static class ItemEntityMapper
         // Socket2 is an alternate bodyspot; 0 means single-slot equip (no picker dialog).
         return (socket, 0);
     }
+
+    /// <summary>
+    /// Key into the client item-limit map (item_base_t dword_44c → dword_74_unk_map_idx).
+    /// Zero fails sub_406E60 and blocks wardrobe re-equip. Clothing prefixes match default client entries (101–106).
+    /// </summary>
+    private static uint ResolveLimitMapKey(int itemId) =>
+        itemId is >= 10_000_000 and < 200_000_000 ? (uint)(itemId / 100_000) : (uint)itemId;
 }
