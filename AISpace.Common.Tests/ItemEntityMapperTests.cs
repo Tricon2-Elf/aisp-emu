@@ -49,6 +49,15 @@ public class ItemEntityMapperTests
         Assert.Equal(8u, data.Category);
     }
 
+    [Fact]
+    public void ToItemBaseListData_sets_socket2_zero_for_single_slot_clothing()
+    {
+        var item = new Item { Id = 10100220, Socket = 0, Name = "テストシャツ" };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(8u, data.Socket1);
+        Assert.Equal(0u, data.Socket2);
+    }
+
     [Theory]
     [InlineData(10100220, 3)] // shirt
     [InlineData(10200100, 5)] // pants

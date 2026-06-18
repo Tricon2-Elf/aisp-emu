@@ -148,6 +148,7 @@ internal static class ItemEntityMapper
         if (itemId / 100_000 == 105)
             return (ShoeSlotPrimary, ShoeSlotSecondary);
 
-        return (socket, socket);
+        // Socket2 is an alternate bodyspot; 0 means single-slot equip (no picker dialog).
+        return (socket, 0);
     }
 }
