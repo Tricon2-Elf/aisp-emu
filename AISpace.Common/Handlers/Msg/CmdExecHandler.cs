@@ -172,8 +172,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
         cd.Visual.Gender = (uint)cha.Gender;
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
-        foreach (var eq in cha.Equipment)
-            cd.AddEquip((uint)eq.ItemId, eq.SlotIndex);
+        cd.AddEquip(cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveBodyspot);
         return new AvatarNotifyData(1, new AvatarData(objId, cd)).ToBytes();
     }
 }

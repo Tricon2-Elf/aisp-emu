@@ -2,6 +2,7 @@ using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Msg;
 using Microsoft.Extensions.Logging;
 
@@ -32,12 +33,10 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
             dataResponse.Visual.Gender = (uint)cha.Gender;
             dataResponse.Visual.Face = (byte)cha.FaceType;
             dataResponse.Visual.Hairstyle = cha.Hairstyle;
-            // Fill 30 slots by SlotIndex so client gets correct slot mapping
-            for (byte slot = 0; slot < 30; slot++)
-            {
-                var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == slot);
-                dataResponse.AddEquip(eq != null ? (uint)eq.ItemId : 0, slot);
-            }
+            dataResponse.AddEquip(
+                cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
+                ItemEntityMapper.ResolveBodyspot
+            );
             await session.SendAsync(ResponseType, dataResponse.ToBytes(), ct);
         }
         var avatarGetDataResp = new AvatarGetDataResponse(0);

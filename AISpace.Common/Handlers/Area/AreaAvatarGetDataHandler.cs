@@ -28,11 +28,7 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) 
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
 
-        for (byte s = 0; s < 30; s++)
-        {
-            var eq = cha.Equipment.FirstOrDefault(e => e.SlotIndex == s);
-            cd.AddEquip(eq != null ? (uint)eq.ItemId : 0, s);
-        }
+        cd.AddEquip(cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveBodyspot);
 
         var avatarData = new AvatarData((uint)cha.Id, cd);
         logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, cha.Id);

@@ -13,6 +13,12 @@ public class CharaData(uint slotId, uint modelId, string name)
         Equips.Add(new ItemSlotInfo(id, socket));
     }
 
+    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<uint, uint> resolveSocket)
+    {
+        foreach (var eq in equipment)
+            AddEquip(eq.ItemId, resolveSocket(eq.ItemId));
+    }
+
     public byte[] ToBytes()
     {
         while (Equips.Count < 30)

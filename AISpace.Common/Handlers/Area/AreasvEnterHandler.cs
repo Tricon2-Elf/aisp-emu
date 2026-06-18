@@ -149,8 +149,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         cd.Visual.Gender = (uint)cha.Gender;
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
-        foreach (var eq in cha.Equipment)
-            cd.AddEquip((uint)eq.ItemId, eq.SlotIndex);
+        cd.AddEquip(cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveBodyspot);
         return new AvatarNotifyData(res, new AvatarData(objId, cd)).ToBytes();
     }
 }

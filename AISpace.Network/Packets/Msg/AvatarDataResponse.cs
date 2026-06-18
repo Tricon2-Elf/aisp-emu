@@ -14,6 +14,21 @@ public class AvatarDataResponse(uint avatarId, string name, uint modelId, uint i
         Equips.Add(new ItemSlotInfo(id, socket));
     }
 
+    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<uint, uint> resolveSocket)
+    {
+        for (byte slot = 0; slot < 30; slot++)
+        {
+            if (!equipment.Any(e => e.SlotIndex == slot))
+            {
+                AddEquip(0, 0);
+                continue;
+            }
+
+            var eq = equipment.First(e => e.SlotIndex == slot);
+            AddEquip(eq.ItemId, resolveSocket(eq.ItemId));
+        }
+    }
+
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
