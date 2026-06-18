@@ -46,6 +46,21 @@ public class ItemEntityMapperTests
         var data = ItemEntityMapper.ToItemBaseListData(item);
         Assert.Equal(512u, data.Socket1);
         Assert.Equal(256u, data.Socket2);
+        Assert.Equal(8u, data.Category);
+    }
+
+    [Theory]
+    [InlineData(10100220, 3)] // shirt
+    [InlineData(10200100, 5)] // pants
+    [InlineData(10200000, 4)] // skirt
+    [InlineData(10400030, 7)] // socks
+    [InlineData(10500070, 8)] // shoes
+    [InlineData(10600000, 9)] // bra
+    public void ToItemBaseListData_maps_wardrobe_category_by_item_type(int itemId, uint expectedCategory)
+    {
+        var item = new Item { Id = itemId, Socket = 0, Name = "test" };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(expectedCategory, data.Category);
     }
 
     [Fact]

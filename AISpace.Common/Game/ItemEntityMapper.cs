@@ -81,19 +81,9 @@ internal static class ItemEntityMapper
     public static ItemData ToItemBaseListData(Item item)
     {
         var id = (uint)item.Id;
-        var socket = ResolveBodyspot(item);
         var iconId = (uint)item.IconId;
-        var (socket1, socket2) = GetCatalogSockets(item.Id, socket);
-
-        uint category = 1;
-        if (socket == 2)
-            category = 2;
-        if (socket == 4)
-            category = 8;
-        if (socket == 8)
-            category = 8;
-        if (socket == 16)
-            category = 4;
+        var (socket1, socket2) = GetCatalogSockets(item.Id, ResolveBodyspot(item));
+        var category = ResolveCatalogCategory(item.Id, item.Name);
 
         return new ItemData
         {
@@ -106,6 +96,51 @@ internal static class ItemEntityMapper
             Socket2 = socket2,
             Category = category,
         };
+    }
+
+    /// <summary>
+    /// Wardrobe inventory tab category (item_base_t dword_74 / category_skilleq20).
+    /// Matches client CSV clothing types: shirt=3, skirt=4, pants=5, socks=7, shoes=8, bra=9, gloves=10, hat=11.
+    /// </summary>
+    private static uint ResolveCatalogCategory(int itemId, string? name)
+    {
+        if (itemId is < 10_000_000 or >= 200_000_000)
+            return 0;
+
+        if (!string.IsNullOrEmpty(name) && (name.Contains("コート", StringComparison.Ordinal) || name.Contains("アウター", StringComparison.Ordinal)))
+            return 1;
+
+        return (itemId / 100_000) switch
+        {
+            100 => 11, // hat
+            101 => 3, // shirt
+            102 => ResolveLowerBodyCategory(itemId, name),
+            103 => 10, // gloves
+            104 => 7, // socks
+            105 => 8, // shoes
+            106 => 9, // bra
+            107 => 16, // lower underwear
+            _ => 0,
+        };
+    }
+
+    private static uint ResolveLowerBodyCategory(int itemId, string? name)
+    {
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (name.Contains("スカート", StringComparison.Ordinal))
+                return 4;
+            if (
+                name.Contains("パンツ", StringComparison.Ordinal)
+                || name.Contains("ズボン", StringComparison.Ordinal)
+                || name.Contains("男性用", StringComparison.Ordinal)
+                || name.Contains("ショートパンツ", StringComparison.Ordinal)
+                || name.Contains("カブリ", StringComparison.Ordinal)
+            )
+                return 5;
+        }
+
+        return itemId == 10200100 ? 5u : 4u;
     }
 
     private static (uint Socket1, uint Socket2) GetCatalogSockets(int itemId, uint socket)
