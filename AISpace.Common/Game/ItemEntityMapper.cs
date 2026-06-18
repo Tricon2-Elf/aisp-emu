@@ -32,11 +32,13 @@ internal static class ItemEntityMapper
     public static uint ResolveBodyspot(uint itemId) => ResolveBodyspot((int)itemId);
 
     /// <summary>
-    /// Socket sent in equip packets. Shoes use 0 so the client picks the mesh from the item
-    /// catalog (same as default create-info equipment). Other clothing uses bodyspot for UI slots.
+    /// Socket sent in equip packets (CharaData / avatar notify). The client stores 0 for all
+    /// clothing and resolves the bodyspot from item_base_list Socket1 at equip time (see
+    /// AvatarGetCreateInfoResponse and CChara::SetEquipment). Non-zero values break wardrobe
+    /// preview mesh reload after remove/re-add.
     /// </summary>
     public static uint ResolveEquipSocket(CharacterEquipSlot slot) =>
-        slot.ItemId is >= 10_500_000 and < 10_600_000 ? 0 : ResolveBodyspot(slot.ItemId);
+        slot.ItemId is >= 10_000_000 and < 200_000_000 ? 0 : ResolveBodyspot((int)slot.ItemId);
 
     /// <summary>
     /// UI slot dockets from the client wardrobe (CSV columns 6+ → bit index):
@@ -64,7 +66,7 @@ internal static class ItemEntityMapper
         if (!string.IsNullOrEmpty(name))
         {
             if (name.Contains("スカート", StringComparison.Ordinal))
-                return 16;
+                return 16 + 2048;
             if (
                 name.Contains("パンツ", StringComparison.Ordinal)
                 || name.Contains("ズボン", StringComparison.Ordinal)
@@ -72,7 +74,7 @@ internal static class ItemEntityMapper
                 || name.Contains("ショートパンツ", StringComparison.Ordinal)
                 || name.Contains("カブリ", StringComparison.Ordinal)
             )
-                return 32;
+                return 32 + 2048;
         }
 
         return itemId == 10200100 ? 32u : 16u;

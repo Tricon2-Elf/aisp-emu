@@ -25,18 +25,15 @@ public class ItemEntityMapperTests
         Assert.Equal(512u, ItemEntityMapper.ResolveBodyspot(item));
     }
 
-    [Fact]
-    public void ResolveEquipSocket_sends_zero_for_shoes_so_client_uses_catalog_mesh()
+    [Theory]
+    [InlineData(10100220)] // shirt
+    [InlineData(10200100)] // pants
+    [InlineData(10400030)] // socks
+    [InlineData(10500070)] // shoes
+    public void ResolveEquipSocket_sends_zero_for_clothing_so_client_uses_catalog_bodyspot(uint itemId)
     {
-        var slot = new CharacterEquipSlot(3, 10500070);
+        var slot = new CharacterEquipSlot(0, itemId);
         Assert.Equal(0u, ItemEntityMapper.ResolveEquipSocket(slot));
-    }
-
-    [Fact]
-    public void ResolveEquipSocket_sends_bodyspot_for_other_clothing()
-    {
-        var slot = new CharacterEquipSlot(0, 10100220);
-        Assert.Equal(8u, ItemEntityMapper.ResolveEquipSocket(slot));
     }
 
     [Fact]
