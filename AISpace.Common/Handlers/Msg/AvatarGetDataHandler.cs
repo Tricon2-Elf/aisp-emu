@@ -35,7 +35,7 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
             dataResponse.Visual.Hairstyle = cha.Hairstyle;
             dataResponse.AddEquip(
                 cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
-                ItemEntityMapper.ResolveBodyspot
+                ItemEntityMapper.ResolveEquipSocket
             );
             await session.SendAsync(ResponseType, dataResponse.ToBytes(), ct);
         }

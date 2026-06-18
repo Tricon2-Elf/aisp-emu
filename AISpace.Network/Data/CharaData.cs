@@ -13,10 +13,10 @@ public class CharaData(uint slotId, uint modelId, string name)
         Equips.Add(new ItemSlotInfo(id, socket));
     }
 
-    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<uint, uint> resolveSocket)
+    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<CharacterEquipSlot, uint> resolveSocket)
     {
         foreach (var eq in equipment)
-            AddEquip(eq.ItemId, resolveSocket(eq.ItemId));
+            AddEquip(eq.ItemId, resolveSocket(eq));
     }
 
     public byte[] ToBytes()

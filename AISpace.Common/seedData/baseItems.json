@@ -4423,1243 +4423,1243 @@
   },
   {
     "id": 10500000,
-    "socket": 256,
+    "socket": 512,
     "name": "ワークシューズ(赤)",
     "iconId": 10500000
   },
   {
     "id": 10500010,
-    "socket": 256,
+    "socket": 512,
     "name": "キャンバススニーカー(黒)",
     "iconId": 10500010
   },
   {
     "id": 10500011,
-    "socket": 256,
+    "socket": 512,
     "name": "キャンバススニーカー(白)",
     "iconId": 10500011
   },
   {
     "id": 10500012,
-    "socket": 256,
+    "socket": 512,
     "name": "キャンバススニーカー(緑)",
     "iconId": 10500012
   },
   {
     "id": 10500013,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500013
   },
   {
     "id": 10500014,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500014
   },
   {
     "id": 10500020,
-    "socket": 256,
+    "socket": 512,
     "name": "チャイナヒール(青)",
     "iconId": 10500020
   },
   {
     "id": 10500021,
-    "socket": 256,
+    "socket": 512,
     "name": "チャイナヒール(赤)",
     "iconId": 10500021
   },
   {
     "id": 10500022,
-    "socket": 256,
+    "socket": 512,
     "name": "チャイナヒール(白)",
     "iconId": 10500022
   },
   {
     "id": 10500023,
-    "socket": 256,
+    "socket": 512,
     "name": "チャイナヒール(桜)",
     "iconId": 10500023
   },
   {
     "id": 10500024,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500024
   },
   {
     "id": 10500040,
-    "socket": 256,
+    "socket": 512,
     "name": "ローファー(茶)",
     "iconId": 10500040
   },
   {
     "id": 10500041,
-    "socket": 256,
+    "socket": 512,
     "name": "亜沙とお揃いのローファー",
     "iconId": 10500041
   },
   {
     "id": 10500045,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500045
   },
   {
     "id": 10500046,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500046
   },
   {
     "id": 10500047,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500047
   },
   {
     "id": 10500048,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500048
   },
   {
     "id": 10500050,
-    "socket": 256,
+    "socket": 512,
     "name": "音姫とお揃いのブーツ",
     "iconId": 10500050
   },
   {
     "id": 10500060,
-    "socket": 256,
+    "socket": 512,
     "name": "ミリタリーロングブーツ(迷彩)",
     "iconId": 10500060
   },
   {
     "id": 10500070,
-    "socket": 256,
+    "socket": 512,
     "name": "(男性用アイテム)",
     "iconId": 10500070
   },
   {
     "id": 10500071,
-    "socket": 256,
+    "socket": 512,
     "name": "(男性用アイテム)",
     "iconId": 10500071
   },
   {
     "id": 10500072,
-    "socket": 256,
+    "socket": 512,
     "name": "(男性用アイテム)",
     "iconId": 10500072
   },
   {
     "id": 10500090,
-    "socket": 256,
+    "socket": 512,
     "name": "アイコンのみ(黒ローファー)・未使用?",
     "iconId": 10500090
   },
   {
     "id": 10500091,
-    "socket": 256,
+    "socket": 512,
     "name": "アイコンのみ(茶ローファー)・未使用?",
     "iconId": 10500091
   },
   {
     "id": 10500100,
-    "socket": 256,
+    "socket": 512,
     "name": "アイコンのみ(下駄)",
     "iconId": 10500100
   },
   {
     "id": 10500101,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500101
   },
   {
     "id": 10500102,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500102
   },
   {
     "id": 10500110,
-    "socket": 256,
+    "socket": 512,
     "name": "バスケットシューズ♂",
     "iconId": 10500110
   },
   {
     "id": 10500111,
-    "socket": 256,
+    "socket": 512,
     "name": "バスケットシューズ♂",
     "iconId": 10500111
   },
   {
     "id": 10500112,
-    "socket": 256,
+    "socket": 512,
     "name": "バスケットシューズ♂",
     "iconId": 10500112
   },
   {
     "id": 10500120,
-    "socket": 256,
+    "socket": 512,
     "name": "(男性用アイテム)",
     "iconId": 10500120
   },
   {
     "id": 10500130,
-    "socket": 256,
+    "socket": 512,
     "name": "革のハイヒール(黒)",
     "iconId": 10500130
   },
   {
     "id": 10500131,
-    "socket": 256,
+    "socket": 512,
     "name": "革のハイヒール(白)",
     "iconId": 10500131
   },
   {
     "id": 10500132,
-    "socket": 256,
+    "socket": 512,
     "name": "革のハイヒール(金)",
     "iconId": 10500132
   },
   {
     "id": 10500133,
-    "socket": 256,
+    "socket": 512,
     "name": "革のハイヒール(ピンク)",
     "iconId": 10500133
   },
   {
     "id": 10500134,
-    "socket": 256,
+    "socket": 512,
     "name": "革のハイヒール(赤)",
     "iconId": 10500134
   },
   {
     "id": 10500135,
-    "socket": 256,
+    "socket": 512,
     "name": "革のハイヒール(青)",
     "iconId": 10500135
   },
   {
     "id": 10500136,
-    "socket": 256,
+    "socket": 512,
     "name": "不明・消滅?",
     "iconId": 10500136
   },
   {
     "id": 10500150,
-    "socket": 256,
+    "socket": 512,
     "name": "ウェスタンブーツ(こげ茶)♀",
     "iconId": 10500150
   },
   {
     "id": 10500151,
-    "socket": 256,
+    "socket": 512,
     "name": "ウェスタンブーツ(黒)♀",
     "iconId": 10500151
   },
   {
     "id": 10500152,
-    "socket": 256,
+    "socket": 512,
     "name": "ウェスタンブーツ(茶)♀",
     "iconId": 10500152
   },
   {
     "id": 10500180,
-    "socket": 256,
+    "socket": 512,
     "name": "四角い黄色いもの? 背高い",
     "iconId": 10500180
   },
   {
     "id": 10500190,
-    "socket": 256,
+    "socket": 512,
     "name": "ムートンブーツ(ベージュ)",
     "iconId": 10500190
   },
   {
     "id": 10500191,
-    "socket": 256,
+    "socket": 512,
     "name": "ムートンブーツ(白)",
     "iconId": 10500191
   },
   {
     "id": 10500192,
-    "socket": 256,
+    "socket": 512,
     "name": "ムートンブーツ(茶)",
     "iconId": 10500192
   },
   {
     "id": 10500200,
-    "socket": 256,
+    "socket": 512,
     "name": "メリーメリーブーツ(赤白)♀",
     "iconId": 10500200
   },
   {
     "id": 10500201,
-    "socket": 256,
+    "socket": 512,
     "name": "メリーメリーブーツ(白白)♀",
     "iconId": 10500201
   },
   {
     "id": 10500210,
-    "socket": 256,
+    "socket": 512,
     "name": "船形下駄(赤)",
     "iconId": 10500210
   },
   {
     "id": 10500211,
-    "socket": 256,
+    "socket": 512,
     "name": "船形下駄(黒)",
     "iconId": 10500211
   },
   {
     "id": 10500212,
-    "socket": 256,
+    "socket": 512,
     "name": "船形下駄(黄)",
     "iconId": 10500212
   },
   {
     "id": 10500213,
-    "socket": 256,
+    "socket": 512,
     "name": "船形下駄(青)",
     "iconId": 10500213
   },
   {
     "id": 10500214,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500214
   },
   {
     "id": 10500215,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500215
   },
   {
     "id": 10500220,
-    "socket": 256,
+    "socket": 512,
     "name": "足ティッシュ",
     "iconId": 10500220
   },
   {
     "id": 10500230,
-    "socket": 256,
+    "socket": 512,
     "name": "ヴァイスブーツ♀",
     "iconId": 10500230
   },
   {
     "id": 10500231,
-    "socket": 256,
+    "socket": 512,
     "name": "シュヴァルツブーツ♀",
     "iconId": 10500231
   },
   {
     "id": 10500240,
-    "socket": 256,
+    "socket": 512,
     "name": "ゴスロリワルツシューズ♀(黒)",
     "iconId": 10500240
   },
   {
     "id": 10500241,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500241
   },
   {
     "id": 10500242,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500242
   },
   {
     "id": 10500250,
-    "socket": 256,
+    "socket": 512,
     "name": "レースのシューズ♀(白)",
     "iconId": 10500250
   },
   {
     "id": 10500260,
-    "socket": 256,
+    "socket": 512,
     "name": "ショートブーツ(黒)",
     "iconId": 10500260
   },
   {
     "id": 10500261,
-    "socket": 256,
+    "socket": 512,
     "name": "ショートブーツ(茶)",
     "iconId": 10500261
   },
   {
     "id": 10500262,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500262
   },
   {
     "id": 10500263,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500263
   },
   {
     "id": 10500270,
-    "socket": 256,
+    "socket": 512,
     "name": "ニーハイブーツ♀(黒)",
     "iconId": 10500270
   },
   {
     "id": 10500271,
-    "socket": 256,
+    "socket": 512,
     "name": "ニーハイブーツ♀(白)",
     "iconId": 10500271
   },
   {
     "id": 10500280,
-    "socket": 256,
+    "socket": 512,
     "name": "ゴスパンクシューズ♀(黒)",
     "iconId": 10500280
   },
   {
     "id": 10500281,
-    "socket": 256,
+    "socket": 512,
     "name": "ゴスパンクシューズ♀(白)",
     "iconId": 10500281
   },
   {
     "id": 10500290,
-    "socket": 256,
+    "socket": 512,
     "name": "バレリーナシューズ♀(白)",
     "iconId": 10500290
   },
   {
     "id": 10500291,
-    "socket": 256,
+    "socket": 512,
     "name": "バレリーナシューズ♀(黒)",
     "iconId": 10500291
   },
   {
     "id": 10500300,
-    "socket": 256,
+    "socket": 512,
     "name": "茶色のローファー風・未公開",
     "iconId": 10500300
   },
   {
     "id": 10500310,
-    "socket": 256,
+    "socket": 512,
     "name": "ななかとお揃いのブーツ♀",
     "iconId": 10500310
   },
   {
     "id": 10500320,
-    "socket": 256,
+    "socket": 512,
     "name": "雪村杏とお揃いの靴♀",
     "iconId": 10500320
   },
   {
     "id": 10500330,
-    "socket": 256,
+    "socket": 512,
     "name": "喫茶フローラシューズ♀",
     "iconId": 10500330
   },
   {
     "id": 10500340,
-    "socket": 256,
+    "socket": 512,
     "name": "関羽とお揃いの靴♀",
     "iconId": 10500340
   },
   {
     "id": 10500350,
-    "socket": 256,
+    "socket": 512,
     "name": "不明",
     "iconId": 10500350
   },
   {
     "id": 10500360,
-    "socket": 256,
+    "socket": 512,
     "name": "不明",
     "iconId": 10500360
   },
   {
     "id": 10500361,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500361
   },
   {
     "id": 10500370,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500370
   },
   {
     "id": 10500371,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500371
   },
   {
     "id": 10500372,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500372
   },
   {
     "id": 10500380,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500380
   },
   {
     "id": 10500390,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500390
   },
   {
     "id": 10500391,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500391
   },
   {
     "id": 10500400,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500400
   },
   {
     "id": 10500401,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500401
   },
   {
     "id": 10500402,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500402
   },
   {
     "id": 10500410,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500410
   },
   {
     "id": 10500420,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500420
   },
   {
     "id": 10500421,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500421
   },
   {
     "id": 10500430,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500430
   },
   {
     "id": 10500431,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500431
   },
   {
     "id": 10500440,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500440
   },
   {
     "id": 10500450,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500450
   },
   {
     "id": 10500451,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500451
   },
   {
     "id": 10500460,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500460
   },
   {
     "id": 10500480,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500480
   },
   {
     "id": 10500481,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500481
   },
   {
     "id": 10500490,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500490
   },
   {
     "id": 10500500,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500500
   },
   {
     "id": 10500510,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500510
   },
   {
     "id": 10500520,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500520
   },
   {
     "id": 10500530,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500530
   },
   {
     "id": 10500540,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500540
   },
   {
     "id": 10500550,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500550
   },
   {
     "id": 10500560,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500560
   },
   {
     "id": 10500570,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500570
   },
   {
     "id": 10500580,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500580
   },
   {
     "id": 10500600,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500600
   },
   {
     "id": 10500610,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500610
   },
   {
     "id": 10500611,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500611
   },
   {
     "id": 10500612,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500612
   },
   {
     "id": 10500620,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500620
   },
   {
     "id": 10500630,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500630
   },
   {
     "id": 10500631,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500631
   },
   {
     "id": 10500632,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500632
   },
   {
     "id": 10500633,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500633
   },
   {
     "id": 10500640,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500640
   },
   {
     "id": 10500650,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500650
   },
   {
     "id": 10500651,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500651
   },
   {
     "id": 10500652,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500652
   },
   {
     "id": 10500660,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500660
   },
   {
     "id": 10500670,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500670
   },
   {
     "id": 10500671,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500671
   },
   {
     "id": 10500680,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500680
   },
   {
     "id": 10500690,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500690
   },
   {
     "id": 10500700,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500700
   },
   {
     "id": 10500710,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500710
   },
   {
     "id": 10500720,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500720
   },
   {
     "id": 10500730,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500730
   },
   {
     "id": 10500740,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500740
   },
   {
     "id": 10500750,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500750
   },
   {
     "id": 10500760,
-    "socket": 256,
+    "socket": 512,
     "name": "N/A",
     "iconId": 10500760
   },
   {
     "id": 10600000,
-    "socket": 512,
+    "socket": 1024,
     "name": "プリティーブラ(ピンク)",
     "iconId": 10600000
   },
   {
     "id": 10600001,
-    "socket": 512,
+    "socket": 1024,
     "name": "プリティーブラ(白)",
     "iconId": 10600001
   },
   {
     "id": 10600002,
-    "socket": 512,
+    "socket": 1024,
     "name": "プリティーブラ(黄)",
     "iconId": 10600002
   },
   {
     "id": 10600010,
-    "socket": 512,
+    "socket": 1024,
     "name": "チェックの紐ブラ(水色)",
     "iconId": 10600010
   },
   {
     "id": 10600011,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600011
   },
   {
     "id": 10600012,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600012
   },
   {
     "id": 10600013,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600013
   },
   {
     "id": 10600014,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600014
   },
   {
     "id": 10600015,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600015
   },
   {
     "id": 10600016,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600016
   },
   {
     "id": 10600020,
-    "socket": 512,
+    "socket": 1024,
     "name": "音姫とお揃いのブラ",
     "iconId": 10600020
   },
   {
     "id": 10600030,
-    "socket": 512,
+    "socket": 1024,
     "name": "Ｔシャツブラ(ベージュ)",
     "iconId": 10600030
   },
   {
     "id": 10600040,
-    "socket": 512,
+    "socket": 1024,
     "name": "不明",
     "iconId": 10600040
   },
   {
     "id": 10600041,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600041
   },
   {
     "id": 10600042,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600042
   },
   {
     "id": 10600043,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600043
   },
   {
     "id": 10600044,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600044
   },
   {
     "id": 10600050,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600050
   },
   {
     "id": 10600070,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600070
   },
   {
     "id": 10600080,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600080
   },
   {
     "id": 10600090,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600090
   },
   {
     "id": 10600100,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600100
   },
   {
     "id": 10600110,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600110
   },
   {
     "id": 10600120,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600120
   },
   {
     "id": 10600121,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600121
   },
   {
     "id": 10600122,
-    "socket": 512,
+    "socket": 1024,
     "name": "N/A",
     "iconId": 10600122
   },
   {
     "id": 10700000,
-    "socket": 1024,
+    "socket": 2048,
     "name": "プリティーショーツ(ピンク)",
     "iconId": 10700000
   },
   {
     "id": 10700001,
-    "socket": 1024,
+    "socket": 2048,
     "name": "プリティーショーツ(白)",
     "iconId": 10700001
   },
   {
     "id": 10700002,
-    "socket": 1024,
+    "socket": 2048,
     "name": "プリティーショーツ(黄)",
     "iconId": 10700002
   },
   {
     "id": 10700010,
-    "socket": 1024,
+    "socket": 2048,
     "name": "チェックの紐パン(水色)♀",
     "iconId": 10700010
   },
   {
     "id": 10700011,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700011
   },
   {
     "id": 10700012,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700012
   },
   {
     "id": 10700013,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700013
   },
   {
     "id": 10700014,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700014
   },
   {
     "id": 10700015,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700015
   },
   {
     "id": 10700016,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700016
   },
   {
     "id": 10700020,
-    "socket": 1024,
+    "socket": 2048,
     "name": "音姫とお揃いショーツ",
     "iconId": 10700020
   },
   {
     "id": 10700030,
-    "socket": 1024,
+    "socket": 2048,
     "name": "(男性用アイテム)",
     "iconId": 10700030
   },
   {
     "id": 10700031,
-    "socket": 1024,
+    "socket": 2048,
     "name": "(男性用アイテム)",
     "iconId": 10700031
   },
   {
     "id": 10700032,
-    "socket": 1024,
+    "socket": 2048,
     "name": "(男性用アイテム)",
     "iconId": 10700032
   },
   {
     "id": 10700040,
-    "socket": 1024,
+    "socket": 2048,
     "name": "不明",
     "iconId": 10700040
   },
   {
     "id": 10700041,
-    "socket": 1024,
+    "socket": 2048,
     "name": "不明",
     "iconId": 10700041
   },
   {
     "id": 10700042,
-    "socket": 1024,
+    "socket": 2048,
     "name": "不明",
     "iconId": 10700042
   },
   {
     "id": 10700050,
-    "socket": 1024,
+    "socket": 2048,
     "name": "(男性用アイテム)",
     "iconId": 10700050
   },
   {
     "id": 10700051,
-    "socket": 1024,
+    "socket": 2048,
     "name": "(男性用アイテム)",
     "iconId": 10700051
   },
   {
     "id": 10700052,
-    "socket": 1024,
+    "socket": 2048,
     "name": "(男性用アイテム)",
     "iconId": 10700052
   },
   {
     "id": 10700060,
-    "socket": 1024,
+    "socket": 2048,
     "name": "ダイヤ柄ストッキング(黒)",
     "iconId": 10700060
   },
   {
     "id": 10700061,
-    "socket": 1024,
+    "socket": 2048,
     "name": "ダイヤ柄ストッキング(赤)",
     "iconId": 10700061
   },
   {
     "id": 10700062,
-    "socket": 1024,
+    "socket": 2048,
     "name": "ダイヤ柄ストッキング(ベージュ)",
     "iconId": 10700062
   },
   {
     "id": 10700063,
-    "socket": 1024,
+    "socket": 2048,
     "name": "ダイヤ柄ストッキング(紫)",
     "iconId": 10700063
   },
   {
     "id": 10700070,
-    "socket": 1024,
+    "socket": 2048,
     "name": "ニットタイツ(グレー)",
     "iconId": 10700070
   },
   {
     "id": 10700071,
-    "socket": 1024,
+    "socket": 2048,
     "name": "ニットタイツ(黒)",
     "iconId": 10700071
   },
   {
     "id": 10700072,
-    "socket": 1024,
+    "socket": 2048,
     "name": "風子とお揃いのタイツ♀",
     "iconId": 10700072
   },
   {
     "id": 10700080,
-    "socket": 1024,
+    "socket": 2048,
     "name": "雪村杏とお揃いのオーバーニー♀",
     "iconId": 10700080
   },
   {
     "id": 10700090,
-    "socket": 1024,
+    "socket": 2048,
     "name": "喫茶フローラソックス(白)♀",
     "iconId": 10700090
   },
   {
     "id": 10700100,
-    "socket": 1024,
+    "socket": 2048,
     "name": "喫茶フローラソックス(黒)♀",
     "iconId": 10700100
   },
   {
     "id": 10700110,
-    "socket": 1024,
+    "socket": 2048,
     "name": "縞パン(青)",
     "iconId": 10700110
   },
   {
     "id": 10700111,
-    "socket": 1024,
+    "socket": 2048,
     "name": "縞パン(緑)",
     "iconId": 10700111
   },
   {
     "id": 10700112,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700112
   },
   {
     "id": 10700120,
-    "socket": 1024,
+    "socket": 2048,
     "name": "不明",
     "iconId": 10700120
   },
   {
     "id": 10700130,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700130
   },
   {
     "id": 10700131,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700131
   },
   {
     "id": 10700140,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700140
   },
   {
     "id": 10700150,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700150
   },
   {
     "id": 10700160,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700160
   },
   {
     "id": 10700170,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700170
   },
   {
     "id": 10700180,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700180
   },
   {
     "id": 10700190,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700190
   },
   {
     "id": 10700200,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700200
   },
   {
     "id": 10700201,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700201
   },
   {
     "id": 10700202,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700202
   },
   {
     "id": 10700210,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700210
   },
   {
     "id": 10700220,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700220
   },
   {
     "id": 10700230,
-    "socket": 1024,
+    "socket": 2048,
     "name": "N/A",
     "iconId": 10700230
   },
