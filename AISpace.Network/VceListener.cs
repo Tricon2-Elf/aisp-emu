@@ -168,8 +168,8 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
                 if (!VceFrameValidation.IsAcceptableFrameSize(msgSize, _maxReceiveFrameSize))
                 {
-                    logger.LogWarning("{Name} rejecting oversized frame from {RemoteEndPoint}: msgSize={MsgSize} max={MaxReceiveFrameSize}", name, context.RemoteEndPoint, msgSize, _maxReceiveFrameSize);
-                    break;
+                    logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: invalid frame size msgSize={MsgSize} max={MaxReceiveFrameSize}", name, context.RemoteEndPoint, msgSize, _maxReceiveFrameSize);
+                    return;
                 }
 
                 int paddedSize = (msgSize + 15) / 16 * 16;
