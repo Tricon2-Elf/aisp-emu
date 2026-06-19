@@ -93,6 +93,14 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                     if (ct.IsCancellationRequested)
                         break;
                     logger.LogError(ex, "Accept/peek failed on {Name}, continuing: {Message}", name, ex.Message);
+                    try
+                    {
+                        await Task.Delay(250, ct);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -257,7 +265,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             return true;
         if (ex is ObjectDisposedException)
             return true;
-        if (ex is SocketException se && (se.SocketErrorCode is SocketError.ConnectionReset or SocketError.Shutdown or SocketError.ConnectionAborted))
+        if (ex is SocketException se && se.SocketErrorCode is SocketError.ConnectionReset or SocketError.Shutdown or SocketError.ConnectionAborted or SocketError.TimedOut)
             return true;
         return false;
     }
@@ -276,16 +284,11 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
     private async Task<int> ReadChunkAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
     {
-        if (_readTimeout <= TimeSpan.Zero)
-            return await stream.ReadAsync(buffer, ct);
-
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeoutCts.CancelAfter(_readTimeout);
         try
         {
-            return await stream.ReadAsync(buffer, timeoutCts.Token);
+            return await stream.ReadAsync(buffer, ct);
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
         {
             throw new IOException("Read timed out");
         }
