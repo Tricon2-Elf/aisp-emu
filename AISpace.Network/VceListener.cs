@@ -145,7 +145,8 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
         try
         {
-            logger.LogInformation("{Name} Handling new Encrypted client {Id}", name, context.Id);
+            var remote = (IPEndPoint)context.RemoteEndPoint;
+            logger.LogInformation("{Name} Handling new Encrypted client {Id} from {RemoteAddress}:{RemotePort}", name, context.Id, remote.Address, remote.Port);
             byte[] rsaN = new byte[16];
             await ReadExactAsync(context.Stream, rsaN, ct, readCt, armIdle);
             if (!CryptoUtils.IsPlausibleClientRsaModulus(rsaN))
