@@ -126,7 +126,7 @@ The generic base class `PacketHandlerBase<TRequest, TResponse>` deserializes the
 
 ## Environment / Docker
 
-- `Dockerfile` at `AISpace.Server/Dockerfile` (build context is repo root). Multi-stage Alpine build.
+- `Dockerfile` at `AISpace.Server/Dockerfile` (build context is repo root). Multi-stage Debian/glibc build.
 - `docker-compose.yml` includes an `autoheal` sidecar to restart unhealthy containers.
 - Healthcheck hits `/healthz` which returns 503 if any game server is unhealthy.
 
