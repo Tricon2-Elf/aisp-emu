@@ -27,6 +27,8 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
             await charRepo.EquipAsync(newChar.Id, 1, 10200100, ct);
             await charRepo.EquipAsync(newChar.Id, 2, 10400030, ct);
             await charRepo.EquipAsync(newChar.Id, 3, 10500070, ct);
+            // Wardrobe preview curtain (sub_4013E0) requires 0x800 on an equipped item for males.
+            await charRepo.EquipAsync(newChar.Id, 4, 10700020, ct);
         }
         else
         {
