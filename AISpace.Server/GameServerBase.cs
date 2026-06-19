@@ -75,9 +75,10 @@ public abstract class GameServerBase<T> : BackgroundService
 
             var acceptLoop = listener.RunAsync(runToken);
             var packetLoop = RunPacketLoop(channel.Reader, runToken);
+            var heartbeatLoop = RunHeartbeatLoop(runToken);
             var additionalLoops = GetAdditionalLoops(runToken).ToArray();
 
-            var allLoops = new List<Task>(2 + additionalLoops.Length) { acceptLoop, packetLoop };
+            var allLoops = new List<Task>(3 + additionalLoops.Length) { acceptLoop, packetLoop, heartbeatLoop };
             allLoops.AddRange(additionalLoops);
 
             var completed = await Task.WhenAny(allLoops);
@@ -90,6 +91,11 @@ public abstract class GameServerBase<T> : BackgroundService
             {
                 Logger.LogWarning("{ServerType} packet loop stopped unexpectedly; restarting listener", ActiveServerType);
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "packet loop stopped");
+            }
+            else if (completed == heartbeatLoop)
+            {
+                Logger.LogWarning("{ServerType} heartbeat loop stopped unexpectedly; restarting listener", ActiveServerType);
+                HealthRegistry.MarkUnhealthy(ActiveServerType, "heartbeat loop stopped");
             }
             else
             {
@@ -106,6 +112,20 @@ public abstract class GameServerBase<T> : BackgroundService
                 break;
 
             await Task.Delay(TimeSpan.FromSeconds(1), ct);
+        }
+    }
+
+    private async Task RunHeartbeatLoop(CancellationToken ct)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(HealthRegistry.HeartbeatInterval);
+            while (await timer.WaitForNextTickAsync(ct))
+                HealthRegistry.RecordHeartbeat(ActiveServerType);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // expected during listener restart
         }
     }
 

@@ -8,23 +8,34 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Server.Services;
 
-/// <summary>Single process-wide timer for health heartbeats and area timezone broadcasts.</summary>
+/// <summary>Single process-wide timer for scheduler health sampling and area timezone broadcasts.</summary>
 public sealed class GameServerSchedulerService(SharedState state, GameServerHealthRegistry healthRegistry, IOptions<ServerOptions> options, ILogger<GameServerSchedulerService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         var heartbeatIntervalSeconds = Math.Max(1, options.Value.HealthCheck.HeartbeatIntervalSeconds);
-        logger.LogInformation("Game scheduler started (1s tick, heartbeat every {HeartbeatSeconds}s)", heartbeatIntervalSeconds);
+        var schedulerTickSeconds = Math.Max(1, options.Value.HealthCheck.SchedulerTickSeconds);
+        logger.LogInformation("Game scheduler started ({TickSeconds}s tick)", schedulerTickSeconds);
 
         var tick = 0;
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        var lastTickUtc = DateTime.UtcNow;
+        healthRegistry.RecordSchedulerTick(TimeSpan.Zero);
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(schedulerTickSeconds));
         while (await timer.WaitForNextTickAsync(ct))
         {
+            var now = DateTime.UtcNow;
+            var lag = now - lastTickUtc;
+            lastTickUtc = now;
+
+            RunTickStep("scheduler tick", () =>
+            {
+                healthRegistry.RecordSchedulerTick(lag);
+                healthRegistry.SampleProcessCpu();
+            });
+
             tick++;
             if (tick % heartbeatIntervalSeconds == 0)
-                RunTickStep("heartbeat", () => healthRegistry.RecordHeartbeatsForRegisteredServers());
-
-            RunTickStep("area time broadcast", BroadcastAreaTimeIfNeeded);
+                RunTickStep("area time broadcast", BroadcastAreaTimeIfNeeded);
         }
     }
 

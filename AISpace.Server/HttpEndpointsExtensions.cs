@@ -15,9 +15,12 @@ internal static class HttpEndpointsExtensions
             "/healthz",
             (GameServerHealthRegistry registry) =>
             {
-                var servers = registry.GetSnapshot();
-                var allHealthy = servers.Values.All(s => s.State == "healthy");
-                return Results.Json(new { status = allHealthy ? "Healthy" : "Unhealthy", servers }, statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
+                var report = registry.GetHealthReport();
+                var allHealthy = report.Process.State == "healthy" && report.Servers.Values.All(s => s.State == "healthy");
+                return Results.Json(
+                    new { status = allHealthy ? "Healthy" : "Unhealthy", process = report.Process, servers = report.Servers },
+                    statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable
+                );
             }
         );
 

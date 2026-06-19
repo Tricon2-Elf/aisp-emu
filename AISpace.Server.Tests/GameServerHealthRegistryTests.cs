@@ -8,12 +8,17 @@ namespace AISpace.Server.Tests;
 
 public class GameServerHealthRegistryTests
 {
-    private static GameServerHealthRegistry CreateRegistry(int heartbeatSeconds = 5, int stalenessSeconds = 30) =>
+    private static GameServerHealthRegistry CreateRegistry(int heartbeatSeconds = 5, int stalenessSeconds = 30, int idleMaxCpu = 85) =>
         new(
             Options.Create(
                 new ServerOptions
                 {
-                    HealthCheck = new HealthCheckOptions { HeartbeatIntervalSeconds = heartbeatSeconds, StalenessSeconds = stalenessSeconds },
+                    HealthCheck = new HealthCheckOptions
+                    {
+                        HeartbeatIntervalSeconds = heartbeatSeconds,
+                        StalenessSeconds = stalenessSeconds,
+                        IdleMaxProcessCpuPercent = idleMaxCpu,
+                    },
                 }
             )
         );
@@ -29,13 +34,13 @@ public class GameServerHealthRegistryTests
     }
 
     [Fact]
-    public void RecordHeartbeatsForRegisteredServers_OnlyUpdatesRegisteredServers()
+    public void RecordHeartbeat_OnlyUpdatesRegisteredServer()
     {
         var registry = CreateRegistry();
         registry.AddServer(ServerType.Msg, 50052);
         registry.MarkListening(ServerType.Msg, 50052);
 
-        registry.RecordHeartbeatsForRegisteredServers();
+        registry.RecordHeartbeat(ServerType.Msg);
 
         var snapshot = registry.GetSnapshot();
         Assert.Single(snapshot);
@@ -174,5 +179,103 @@ public class GameServerHealthRegistryTests
         Assert.Null(snapshot["authServer"].LastError);
         Assert.Equal(31, snapshot["authServer"].ActiveHandlers);
         Assert.Equal(1, snapshot["authServer"].AvailableSlots);
+    }
+
+    [Fact]
+    public void GetHealthReport_WhenSchedulerNotTicked_ProcessIsUnhealthy()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.RecordHeartbeat(ServerType.Auth);
+
+        var report = registry.GetHealthReport();
+
+        Assert.Equal("unhealthy", report.Process.State);
+        Assert.Equal("scheduler has not ticked yet", report.Process.LastError);
+        Assert.Equal("healthy", report.Servers["authServer"].State);
+    }
+
+    [Fact]
+    public void GetHealthReport_AfterInitialSchedulerTick_ProcessCanBeHealthy()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.RecordHeartbeat(ServerType.Auth);
+        registry.RecordSchedulerTick(TimeSpan.Zero);
+        registry.SampleProcessCpu();
+
+        var report = registry.GetHealthReport();
+
+        Assert.Equal("healthy", report.Process.State);
+    }
+
+    [Fact]
+    public void GetHealthReport_WhenSchedulerLagTooHigh_ProcessIsUnhealthy()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.RecordHeartbeat(ServerType.Auth);
+        registry.RecordSchedulerTick(TimeSpan.FromSeconds(12));
+
+        var report = registry.GetHealthReport();
+
+        Assert.Equal("unhealthy", report.Process.State);
+        Assert.Contains("scheduler lag", report.Process.LastError, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GetHealthReport_WhenHighCpuWhileIdle_ProcessIsUnhealthy()
+    {
+        var registry = new GameServerHealthRegistry(
+            Options.Create(
+                new ServerOptions
+                {
+                    HealthCheck = new HealthCheckOptions
+                    {
+                        HeartbeatIntervalSeconds = 5,
+                        StalenessSeconds = 30,
+                        IdleMaxProcessCpuPercent = Math.Max(5, (int)(60.0 / Environment.ProcessorCount)),
+                        IdleMaxActiveHandlers = 2,
+                    },
+                }
+            )
+        );
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.RecordHeartbeat(ServerType.Auth);
+        registry.RecordSchedulerTick(TimeSpan.FromSeconds(1));
+        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 1, AvailableSlots: 31, MaxHandlers: 32));
+
+        registry.SampleProcessCpu();
+        var deadline = Environment.TickCount64 + 500;
+        while (Environment.TickCount64 < deadline)
+        { /* burn CPU on this thread */
+        }
+
+        registry.SampleProcessCpu();
+
+        var report = registry.GetHealthReport();
+
+        Assert.Equal("unhealthy", report.Process.State);
+        Assert.Contains("high CPU while idle", report.Process.LastError, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GetHealthReport_WhenProcessAndServersHealthy_ReturnsHealthy()
+    {
+        var registry = CreateRegistry();
+        registry.AddServer(ServerType.Auth, 50050);
+        registry.MarkListening(ServerType.Auth, 50050);
+        registry.RecordHeartbeat(ServerType.Auth);
+        registry.RecordSchedulerTick(TimeSpan.FromSeconds(1));
+        registry.SampleProcessCpu();
+
+        var report = registry.GetHealthReport();
+
+        Assert.Equal("healthy", report.Process.State);
+        Assert.Equal("healthy", report.Servers["authServer"].State);
     }
 }
