@@ -11,8 +11,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - DOTNET_EnableDiagnostics=0
-      - DOTNET_gcServer=0
-      - DOTNET_GCHeapHardLimit=300000000
+      - DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0
+      - DOTNET_ThreadPool_ForceMinWorkerThreads=4
+      - DOTNET_ThreadPool_ForceMaxWorkerThreads=32
       - Server__MaxConcurrentClients=32
       - Server__PacketChannelCapacity=512
       - Server__MaxReceiveFrameSize=4096
