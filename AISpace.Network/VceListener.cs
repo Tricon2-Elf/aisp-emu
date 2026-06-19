@@ -11,6 +11,7 @@ namespace AISpace.Network;
 public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024, int maxReceiveFrameSize = 4096, int clientReadTimeoutSeconds = 300)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
+    private static readonly TimeSpan IdleTimerRearmMinInterval = TimeSpan.FromMilliseconds(250);
     private readonly int _maxConcurrentClients = Math.Max(1, maxConcurrentClients);
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
     private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
@@ -141,37 +142,48 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             readCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             readCt = readCts.Token;
             idleTimer = new Timer(_ => readCts.Cancel(), null, _readTimeout, Timeout.InfiniteTimeSpan);
-            armIdle = () => idleTimer.Change(_readTimeout, Timeout.InfiniteTimeSpan);
-        }
+            long lastIdleArmAtMs = Environment.TickCount64;
+            armIdle = () =>
+            {
+                var nowMs = Environment.TickCount64;
+                if (nowMs - lastIdleArmAtMs < IdleTimerRearmMinInterval.TotalMilliseconds)
+                    return;
 
-        using var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var handshakeTimeout = TimeSpan.FromSeconds(5);
-        handshakeCts.CancelAfter(handshakeTimeout);
-        var handshakeCt = handshakeCts.Token;
+                idleTimer.Change(_readTimeout, Timeout.InfiniteTimeSpan);
+                lastIdleArmAtMs = nowMs;
+            };
+        }
 
         try
         {
             var remote = (IPEndPoint)context.RemoteEndPoint;
             logger.LogInformation("{Name} Handling new Encrypted client {Id} from {RemoteAddress}:{RemotePort}", name, context.Id, remote.Address, remote.Port);
-            byte[] rsaN = new byte[16];
-            await ReadExactAsync(context.Stream, rsaN, ct, handshakeCt, null);
-            if (!CryptoUtils.IsPlausibleClientRsaModulus(rsaN))
+            using (var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
             {
-                logger.LogDebug("{Name} rejecting implausible RSA modulus from {RemoteEndPoint}", name, context.RemoteEndPoint);
-                return;
+                var handshakeTimeout = TimeSpan.FromSeconds(5);
+                handshakeCts.CancelAfter(handshakeTimeout);
+                var handshakeCt = handshakeCts.Token;
+
+                byte[] rsaN = new byte[16];
+                await ReadExactAsync(context.Stream, rsaN, ct, handshakeCt, null);
+                if (!CryptoUtils.IsPlausibleClientRsaModulus(rsaN))
+                {
+                    logger.LogDebug("{Name} rejecting implausible RSA modulus from {RemoteEndPoint}", name, context.RemoteEndPoint);
+                    return;
+                }
+
+                var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+                var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+                context.SetCamelliaKeys(s2cPlain, c2sPlain);
+
+                if (context.Stream.DataAvailable)
+                {
+                    logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: unexpected bytes after RSA handshake", name, context.RemoteEndPoint);
+                    return;
+                }
+
+                await context.SendRawAsync([.. s2cEnc, .. c2sEnc], handshakeCt);
             }
-
-            var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-            var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-            context.SetCamelliaKeys(s2cPlain, c2sPlain);
-
-            if (context.Stream.DataAvailable)
-            {
-                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: unexpected bytes after RSA handshake", name, context.RemoteEndPoint);
-                return;
-            }
-
-            await context.SendRawAsync([.. s2cEnc, .. c2sEnc], handshakeCt);
 
             while (!ct.IsCancellationRequested)
             {
