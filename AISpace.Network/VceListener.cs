@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Channels;
 using AISpace.Network.Crypto;
@@ -143,12 +144,17 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             armIdle = () => idleTimer.Change(_readTimeout, Timeout.InfiniteTimeSpan);
         }
 
+        using var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var handshakeTimeout = TimeSpan.FromSeconds(5);
+        handshakeCts.CancelAfter(handshakeTimeout);
+        var handshakeCt = handshakeCts.Token;
+
         try
         {
             var remote = (IPEndPoint)context.RemoteEndPoint;
             logger.LogInformation("{Name} Handling new Encrypted client {Id} from {RemoteAddress}:{RemotePort}", name, context.Id, remote.Address, remote.Port);
             byte[] rsaN = new byte[16];
-            await ReadExactAsync(context.Stream, rsaN, ct, readCt, armIdle);
+            await ReadExactAsync(context.Stream, rsaN, ct, handshakeCt, null);
             if (!CryptoUtils.IsPlausibleClientRsaModulus(rsaN))
             {
                 logger.LogDebug("{Name} rejecting implausible RSA modulus from {RemoteEndPoint}", name, context.RemoteEndPoint);
@@ -158,7 +164,14 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
             var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
             context.SetCamelliaKeys(s2cPlain, c2sPlain);
-            await context.SendRawAsync([.. s2cEnc, .. c2sEnc], ct);
+
+            if (context.Stream.DataAvailable)
+            {
+                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: unexpected bytes after RSA handshake", name, context.RemoteEndPoint);
+                return;
+            }
+
+            await context.SendRawAsync([.. s2cEnc, .. c2sEnc], handshakeCt);
 
             while (!ct.IsCancellationRequested)
             {
