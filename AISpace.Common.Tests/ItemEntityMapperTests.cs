@@ -85,4 +85,29 @@ public class ItemEntityMapperTests
         var item = new Item { Id = 10800000, Socket = 11, Name = "ふちなしメガネ" };
         Assert.Equal(11u, ItemEntityMapper.ResolveBodyspot(item));
     }
+
+    [Theory]
+    [InlineData(10200100, 32, 0x40u)] // pants
+    [InlineData(10200000, 16, 0x40u)] // skirt
+    public void ToItemBaseListData_sets_modesty_flag_on_outer_lower_body_without_underwear_socket(
+        int itemId,
+        uint expectedSocket,
+        uint expectedFlags
+    )
+    {
+        var name = expectedSocket == 32u ? "(男性用アイテム)" : "テストスカート";
+        var item = new Item { Id = itemId, Socket = 0, Name = name };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(expectedSocket, data.Socket1);
+        Assert.Equal(0u, data.Socket2);
+        Assert.Equal(expectedFlags, data.Flags);
+    }
+
+    [Fact]
+    public void ToItemBaseListData_does_not_set_modesty_flag_on_shirt()
+    {
+        var item = new Item { Id = 10100220, Socket = 0, Name = "テストシャツ" };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(0u, data.Flags);
+    }
 }

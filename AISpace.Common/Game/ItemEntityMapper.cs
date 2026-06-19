@@ -9,6 +9,12 @@ internal static class ItemEntityMapper
     private const uint ShoeSlotSecondary = 256;
 
     /// <summary>
+    /// Client flag_2_non_tradable bit 0x40: outer lower-body (pants/skirt) counts as underwear
+    /// coverage for wardrobe modesty checks (sub_404B70) without OR'ing 2048 into Socket1.
+    /// </summary>
+    private const uint OuterLowerBodyModestyFlag = 0x40;
+
+    /// <summary>
     /// Returns the bodyspot bitmask for item catalog data (Socket1/Socket2).
     /// Clothing categories (100–107) are always derived from item id/name.
     /// </summary>
@@ -66,7 +72,7 @@ internal static class ItemEntityMapper
         if (!string.IsNullOrEmpty(name))
         {
             if (name.Contains("スカート", StringComparison.Ordinal))
-                return 16 + 2048;
+                return 16;
             if (
                 name.Contains("パンツ", StringComparison.Ordinal)
                 || name.Contains("ズボン", StringComparison.Ordinal)
@@ -74,7 +80,7 @@ internal static class ItemEntityMapper
                 || name.Contains("ショートパンツ", StringComparison.Ordinal)
                 || name.Contains("カブリ", StringComparison.Ordinal)
             )
-                return 32 + 2048;
+                return 32;
         }
 
         return itemId == 10200100 ? 32u : 16u;
@@ -87,6 +93,7 @@ internal static class ItemEntityMapper
         var (socket1, socket2) = GetCatalogSockets(item.Id, ResolveBodyspot(item));
         var category = ResolveCatalogCategory(item.Id, item.Name);
         var limitMapKey = ResolveLimitMapKey(item.Id);
+        var flags = ResolveCatalogFlags(item.Id);
 
         return new ItemData
         {
@@ -98,6 +105,7 @@ internal static class ItemEntityMapper
             Socket1 = socket1,
             Socket2 = socket2,
             Category = category,
+            Flags = flags,
             _0x044c = limitMapKey,
         };
     }
@@ -146,6 +154,9 @@ internal static class ItemEntityMapper
 
         return itemId == 10200100 ? 5u : 4u;
     }
+
+    private static uint ResolveCatalogFlags(int itemId) =>
+        itemId / 100_000 == 102 ? OuterLowerBodyModestyFlag : 0;
 
     private static (uint Socket1, uint Socket2) GetCatalogSockets(int itemId, uint socket)
     {
