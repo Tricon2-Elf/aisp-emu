@@ -45,6 +45,26 @@ public class CryptoUtils
         }
     }
 
+    private static readonly BigInteger MinPlausibleModulus = BigInteger.One << 120;
+
+    public static bool IsPlausibleClientRsaModulus(ReadOnlySpan<byte> rsaNLe)
+    {
+        if (rsaNLe.Length != 16)
+            return false;
+
+        var n = FromLeUnsigned(rsaNLe);
+        if (n <= 1)
+            return false;
+        if (n.IsEven)
+            return false;
+        if (BigInteger.GreatestCommonDivisor(n, RsaE) != BigInteger.One)
+            return false;
+        if (n < MinPlausibleModulus)
+            return false;
+
+        return true;
+    }
+
     public static (byte[] PlainKeyLe, byte[] EncryptedKeyLe) CreateEncryptedKey(byte[] rsaNLe)
     {
         var n = FromLeUnsigned(rsaNLe);

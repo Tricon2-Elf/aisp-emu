@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using AISpace.Common;
 using AISpace.Common.Config;
 using AISpace.Network;
@@ -10,13 +11,30 @@ public sealed class GameServerHealthRegistry
 {
     private readonly TimeSpan _heartbeatInterval;
     private readonly TimeSpan _stalenessThreshold;
+    private readonly TimeSpan _schedulerTickInterval;
+    private readonly TimeSpan _schedulerMaxLag;
+    private readonly TimeSpan _schedulerMaxStale;
+    private readonly int _idleMaxProcessCpuPercent;
+    private readonly int _idleMaxActiveHandlers;
     private readonly ConcurrentDictionary<ServerType, ServerHealthEntry> _entries = new();
+
+    private readonly object _processLock = new();
+    private DateTime _lastSchedulerTickUtc;
+    private TimeSpan _lastSchedulerLag = TimeSpan.Zero;
+    private double _processCpuPercent;
+    private TimeSpan _lastCpuSample;
+    private DateTime _lastCpuSampleUtc;
 
     public GameServerHealthRegistry(IOptions<ServerOptions> options)
     {
         var health = options.Value.HealthCheck;
         _heartbeatInterval = TimeSpan.FromSeconds(Math.Max(1, health.HeartbeatIntervalSeconds));
         _stalenessThreshold = TimeSpan.FromSeconds(Math.Max(1, health.StalenessSeconds));
+        _schedulerTickInterval = TimeSpan.FromSeconds(Math.Max(1, health.SchedulerTickSeconds));
+        _schedulerMaxLag = TimeSpan.FromSeconds(Math.Max(1, health.SchedulerMaxLagSeconds));
+        _schedulerMaxStale = TimeSpan.FromSeconds(Math.Max(1, health.SchedulerMaxStaleSeconds));
+        _idleMaxProcessCpuPercent = Math.Max(0, health.IdleMaxProcessCpuPercent);
+        _idleMaxActiveHandlers = Math.Max(0, health.IdleMaxActiveHandlers);
     }
 
     public TimeSpan HeartbeatInterval => _heartbeatInterval;
@@ -47,13 +65,40 @@ public sealed class GameServerHealthRegistry
         _entries[serverType] = existing with { LastHeartbeatUtc = DateTime.UtcNow };
     }
 
-    public void RecordHeartbeatsForRegisteredServers()
+    public bool IsRegistered(ServerType serverType) => _entries.ContainsKey(serverType);
+
+    public void RecordSchedulerTick(TimeSpan lagSincePreviousTick)
     {
-        foreach (var serverType in _entries.Keys)
-            RecordHeartbeat(serverType);
+        lock (_processLock)
+        {
+            _lastSchedulerTickUtc = DateTime.UtcNow;
+            _lastSchedulerLag = lagSincePreviousTick;
+        }
     }
 
-    public bool IsRegistered(ServerType serverType) => _entries.ContainsKey(serverType);
+    public void SampleProcessCpu()
+    {
+        var proc = Process.GetCurrentProcess();
+        var wallUtc = DateTime.UtcNow;
+        var cpuTime = proc.TotalProcessorTime;
+
+        lock (_processLock)
+        {
+            if (_lastCpuSampleUtc != default)
+            {
+                var wallMs = (wallUtc - _lastCpuSampleUtc).TotalMilliseconds;
+                var cpuMs = (cpuTime - _lastCpuSample).TotalMilliseconds;
+                if (wallMs >= 50)
+                {
+                    var cpuCount = Math.Max(1, Environment.ProcessorCount);
+                    _processCpuPercent = cpuMs / wallMs / cpuCount * 100.0;
+                }
+            }
+
+            _lastCpuSample = cpuTime;
+            _lastCpuSampleUtc = wallUtc;
+        }
+    }
 
     public void SetAcceptCheck(ServerType serverType, Func<bool> isAccepting)
     {
@@ -79,13 +124,17 @@ public sealed class GameServerHealthRegistry
             _entries[serverType] = entry with { ClientLoadCheck = null };
     }
 
-    public IReadOnlyDictionary<string, ServerHealthInfo> GetSnapshot()
+    public HealthReport GetHealthReport()
     {
         var now = DateTime.UtcNow;
-        return _entries.ToDictionary(kv => ToJsonKey(kv.Key), kv => Evaluate(kv.Value, now));
+        var servers = _entries.ToDictionary(kv => ToJsonKey(kv.Key), kv => EvaluateServer(kv.Value, now));
+        var process = EvaluateProcess(servers, now);
+        return new HealthReport(servers, process);
     }
 
-    private ServerHealthInfo Evaluate(ServerHealthEntry entry, DateTime now)
+    public IReadOnlyDictionary<string, ServerHealthInfo> GetSnapshot() => GetHealthReport().Servers;
+
+    private ServerHealthInfo EvaluateServer(ServerHealthEntry entry, DateTime now)
     {
         var listenerAccepting = entry.AcceptCheck?.Invoke();
         var clientLoad = entry.ClientLoadCheck?.Invoke();
@@ -120,6 +169,65 @@ public sealed class GameServerHealthRegistry
         return ToInfo(entry, entry.ReportedState, entry.LastError, listenerAccepting, clientLoad);
     }
 
+    private ProcessHealthInfo EvaluateProcess(IReadOnlyDictionary<string, ServerHealthInfo> servers, DateTime now)
+    {
+        DateTime lastSchedulerTickUtc;
+        TimeSpan lastSchedulerLag;
+        double processCpuPercent;
+
+        lock (_processLock)
+        {
+            lastSchedulerTickUtc = _lastSchedulerTickUtc;
+            lastSchedulerLag = _lastSchedulerLag;
+            processCpuPercent = _processCpuPercent;
+        }
+
+        var totalActiveHandlers = servers.Values.Sum(s => s.ActiveHandlers ?? 0);
+
+        if (lastSchedulerTickUtc == default)
+        {
+            return new ProcessHealthInfo("unhealthy", "scheduler has not ticked yet", null, null, Math.Round(processCpuPercent, 1), totalActiveHandlers);
+        }
+
+        if (now - lastSchedulerTickUtc > _schedulerMaxStale)
+        {
+            return new ProcessHealthInfo(
+                "unhealthy",
+                $"scheduler stale (>{_schedulerMaxStale.TotalSeconds:0}s)",
+                lastSchedulerTickUtc,
+                Math.Round(lastSchedulerLag.TotalSeconds, 2),
+                Math.Round(processCpuPercent, 1),
+                totalActiveHandlers
+            );
+        }
+
+        if (lastSchedulerLag > _schedulerMaxLag)
+        {
+            return new ProcessHealthInfo(
+                "unhealthy",
+                $"scheduler lag ({lastSchedulerLag.TotalSeconds:0.0}s > {_schedulerMaxLag.TotalSeconds:0}s)",
+                lastSchedulerTickUtc,
+                Math.Round(lastSchedulerLag.TotalSeconds, 2),
+                Math.Round(processCpuPercent, 1),
+                totalActiveHandlers
+            );
+        }
+
+        if (_idleMaxProcessCpuPercent > 0 && totalActiveHandlers <= _idleMaxActiveHandlers && processCpuPercent > _idleMaxProcessCpuPercent)
+        {
+            return new ProcessHealthInfo(
+                "unhealthy",
+                $"high CPU while idle ({processCpuPercent:0}% > {_idleMaxProcessCpuPercent}%)",
+                lastSchedulerTickUtc,
+                Math.Round(lastSchedulerLag.TotalSeconds, 2),
+                Math.Round(processCpuPercent, 1),
+                totalActiveHandlers
+            );
+        }
+
+        return new ProcessHealthInfo("healthy", null, lastSchedulerTickUtc, Math.Round(lastSchedulerLag.TotalSeconds, 2), Math.Round(processCpuPercent, 1), totalActiveHandlers);
+    }
+
     private static ServerHealthInfo ToInfo(ServerHealthEntry entry, string state, string? lastError, bool? listenerAccepting, VceClientLoad? clientLoad) => new(entry.Name, entry.Port, state, lastError, entry.LastHeartbeatUtc, listenerAccepting, clientLoad?.ActiveHandlers, clientLoad?.AvailableSlots, clientLoad?.MaxHandlers);
 
     private static string ToDisplayName(ServerType serverType) => $"{serverType}Server";
@@ -130,3 +238,7 @@ public sealed class GameServerHealthRegistry
 }
 
 public sealed record ServerHealthInfo(string Name, int Port, string State, string? LastError, DateTime? LastHeartbeatUtc, bool? ListenerAccepting, int? ActiveHandlers = null, int? AvailableSlots = null, int? MaxHandlers = null);
+
+public sealed record ProcessHealthInfo(string State, string? LastError, DateTime? LastSchedulerTickUtc, double? SchedulerLagSeconds, double? ProcessCpuPercent, int TotalActiveHandlers);
+
+public sealed record HealthReport(IReadOnlyDictionary<string, ServerHealthInfo> Servers, ProcessHealthInfo Process);

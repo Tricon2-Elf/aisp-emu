@@ -57,9 +57,6 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
                     try
                     {
-                        if (_readTimeout > TimeSpan.Zero)
-                            tcpClient.ReceiveTimeout = (int)Math.Min(_readTimeout.TotalMilliseconds, int.MaxValue);
-
                         var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>(), tcpClient);
                         _clients[context.Id] = context;
                         _ = RunClientWithGateAsync(context, ct);
@@ -134,11 +131,29 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
     private async Task HandleClientAsync(ClientConnection context, CancellationToken ct)
     {
+        CancellationTokenSource? readCts = null;
+        Timer? idleTimer = null;
+        var readCt = ct;
+        Action? armIdle = null;
+        if (_readTimeout > TimeSpan.Zero)
+        {
+            readCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            readCt = readCts.Token;
+            idleTimer = new Timer(_ => readCts.Cancel(), null, _readTimeout, Timeout.InfiniteTimeSpan);
+            armIdle = () => idleTimer.Change(_readTimeout, Timeout.InfiniteTimeSpan);
+        }
+
         try
         {
             logger.LogInformation("{Name} Handling new Encrypted client {Id}", name, context.Id);
             byte[] rsaN = new byte[16];
-            await ReadExactAsync(context.Stream, rsaN, ct);
+            await ReadExactAsync(context.Stream, rsaN, ct, readCt, armIdle);
+            if (!CryptoUtils.IsPlausibleClientRsaModulus(rsaN))
+            {
+                logger.LogDebug("{Name} rejecting implausible RSA modulus from {RemoteEndPoint}", name, context.RemoteEndPoint);
+                return;
+            }
+
             var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
             var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
             context.SetCamelliaKeys(s2cPlain, c2sPlain);
@@ -147,7 +162,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             while (!ct.IsCancellationRequested)
             {
                 var header = new byte[4];
-                await ReadExactAsync(context.Stream, header, ct);
+                await ReadExactAsync(context.Stream, header, ct, readCt, armIdle);
                 int msgSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(header);
 
                 if (!VceFrameValidation.IsAcceptableFrameSize(msgSize, _maxReceiveFrameSize))
@@ -158,7 +173,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
                 int paddedSize = (msgSize + 15) / 16 * 16;
                 byte[] cipher = new byte[paddedSize];
-                await ReadExactAsync(context.Stream, cipher, ct);
+                await ReadExactAsync(context.Stream, cipher, ct, readCt, armIdle);
                 context.DecryptBlocks(cipher);
 
                 int offset = 0;
@@ -229,6 +244,9 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         }
         finally
         {
+            idleTimer?.Dispose();
+            readCts?.Dispose();
+
             _clients.TryRemove(context.Id, out _);
             try
             {
@@ -270,25 +288,28 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         return false;
     }
 
-    private async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
+    private async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken serverCt, CancellationToken readCt, Action? armIdle)
     {
         int totalRead = 0;
         while (totalRead < buffer.Length)
         {
-            int read = await ReadChunkAsync(stream, buffer[totalRead..], ct);
+            int read = await ReadChunkAsync(stream, buffer[totalRead..], serverCt, readCt, armIdle);
             if (read == 0)
                 throw new IOException("Disconnected");
             totalRead += read;
         }
     }
 
-    private async Task<int> ReadChunkAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken ct)
+    private static async Task<int> ReadChunkAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken serverCt, CancellationToken readCt, Action? armIdle)
     {
         try
         {
-            return await stream.ReadAsync(buffer, ct);
+            int read = await stream.ReadAsync(buffer, readCt);
+            if (read > 0)
+                armIdle?.Invoke();
+            return read;
         }
-        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+        catch (OperationCanceledException) when (readCt.IsCancellationRequested && !serverCt.IsCancellationRequested)
         {
             throw new IOException("Read timed out");
         }
