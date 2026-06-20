@@ -11,11 +11,11 @@ public class EquipOrderListResponseTests
         var payload = new EquipOrderListResponse().ToBytes();
 
         Assert.Equal(0u, BitConverter.ToUInt32(payload, 0));
-        Assert.Equal(7u, BitConverter.ToUInt32(payload, 4));
+        Assert.Equal(8u, BitConverter.ToUInt32(payload, 4));
         Assert.Equal(101u, BitConverter.ToUInt32(payload, 8));
-        Assert.Equal(285 * 7 + 8 + 4, payload.Length);
+        Assert.Equal(285 * 8 + 8 + 4, payload.Length);
 
-        var jobCountOffset = 8 + 285 * 7;
+        var jobCountOffset = 8 + 285 * 8;
         Assert.Equal(0u, BitConverter.ToUInt32(payload, jobCountOffset));
         Assert.Equal(jobCountOffset + 4, payload.Length);
     }
@@ -28,5 +28,13 @@ public class EquipOrderListResponseTests
         Assert.Equal(101u, BitConverter.ToUInt32(shirt, 0));
         Assert.Equal(1, shirt[0xC5]);
         Assert.Equal(1, shirt[0xC6]);
+    }
+
+    [Fact]
+    public void ForGender_uses_matching_limit_byte_for_female()
+    {
+        var pants = CharaOrderData.ForGender(2).First(o => o.Category == 102);
+        Assert.Equal(1, pants.LimitByte1);
+        Assert.Equal(2, pants.LimitByte2);
     }
 }
