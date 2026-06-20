@@ -22,21 +22,11 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
         Character newChar = await charRepo.CreateAsync(request.AvatarName, session.User!.Id, request.modelId, request.visual.BloodType, request.visual.Birthdate, (int)request.visual.Gender, request.visual.Face, request.visual.Hairstyle, ct);
 
         if ((int)request.visual.Gender == 1)
-        {
-            await charRepo.EquipAsync(newChar.Id, 0, DefaultClothingItems.Male[0], ct);
-            await charRepo.EquipAsync(newChar.Id, 1, DefaultClothingItems.Male[1], ct);
-            await charRepo.EquipAsync(newChar.Id, 2, DefaultClothingItems.Male[2], ct);
-            await charRepo.EquipAsync(newChar.Id, 3, DefaultClothingItems.Male[3], ct);
-            // Wardrobe preview curtain (sub_4013E0) requires 0x800 on an equipped item for males.
-            await charRepo.EquipAsync(newChar.Id, 4, DefaultClothingItems.Male[4], ct);
-        }
+            for (byte slot = 0; slot < 4; slot++)
+                await charRepo.EquipAsync(newChar.Id, slot, DefaultClothingItems.Male[slot], ct);
         else
-        {
-            await charRepo.EquipAsync(newChar.Id, 0, DefaultClothingItems.Female[0], ct);
-            await charRepo.EquipAsync(newChar.Id, 1, DefaultClothingItems.Female[1], ct);
-            await charRepo.EquipAsync(newChar.Id, 2, DefaultClothingItems.Female[2], ct);
-            await charRepo.EquipAsync(newChar.Id, 3, DefaultClothingItems.Female[3], ct);
-        }
+            for (byte slot = 0; slot < 4; slot++)
+                await charRepo.EquipAsync(newChar.Id, slot, DefaultClothingItems.Female[slot], ct);
 
         foreach (var itemId in DefaultClothingItems.WardrobeInventoryForGender((int)request.visual.Gender))
             await charRepo.AddInventoryAsync(newChar.Id, itemId, 1, ct);
