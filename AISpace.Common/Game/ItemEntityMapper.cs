@@ -98,6 +98,7 @@ internal static class ItemEntityMapper
             Socket1 = socket1,
             Socket2 = socket2,
             Category = category,
+            MaxPossessionCount = (ushort)short.MaxValue,
             PlacementTypeId = limitMapKey,
         };
     }

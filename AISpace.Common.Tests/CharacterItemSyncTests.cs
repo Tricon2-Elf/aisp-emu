@@ -28,7 +28,7 @@ public class CharacterItemSyncTests
 
         await CharacterItemSync.SendBootstrapAsync(session, character, TestContext.Current.CancellationToken);
 
-        Assert.Equal(3, session.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
+        Assert.Equal(2, session.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
         Assert.Single(session.Sent, p => p.Type == PacketType.ItemEquippedNotify);
         Assert.Equal(2, session.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
 

@@ -66,7 +66,8 @@ public class ItemData
 
     public ItemFlags Flags { get; set; } = ItemFlags.None;
 
-    // Maximum copies of this item a player can own (0 = unlimited)
+    // Maximum copies of this item a player can own.
+    // Client logic treats 0 as a hard zero-cap in several flows.
     public ushort MaxPossessionCount { get; set; } = 0;
 
     // Key for furniture/placement/item-box map lookup (cls_491020::m_UnkMap)

@@ -33,6 +33,7 @@ internal static class CharacterItemSync
     public static async Task SendBootstrapAsync(IPlayerSession session, Character character, CancellationToken ct)
     {
         var objId = ResolveObjId(session);
+        var inventoryCounts = character.Inventory.Where(i => i.Quantity > 0).ToDictionary(i => i.ItemId, i => i.Quantity);
 
         // Inventory first — wardrobe tabs read the place=0 list in this client build.
         foreach (var stack in character.Inventory.OrderBy(i => i.ItemId))
@@ -62,11 +63,17 @@ internal static class CharacterItemSync
             var serialId = ResolveSerialId(equip.ItemId);
             var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId, name: equip.Item?.Name);
 
-            await session.SendAsync(
-                PacketType.ItemCreateNotify,
-                new ItemCreateNotify(EquipmentPlace, serialId, 1, (uint)equip.ItemId).ToBytes(),
-                ct
-            );
+            // Avoid rewriting the same place/serial entry when inventory already created it.
+            // Re-sending create with num=1 here can desync local counts and block unequip.
+            if (!inventoryCounts.TryGetValue(equip.ItemId, out var inventoryCount) || inventoryCount <= 0)
+            {
+                await session.SendAsync(
+                    PacketType.ItemCreateNotify,
+                    new ItemCreateNotify(EquipmentPlace, serialId, 1, (uint)equip.ItemId).ToBytes(),
+                    ct
+                );
+            }
+
             await session.SendAsync(PacketType.ItemEquippedNotify, new ItemEquippedNotify(objId, serialId, socket).ToBytes(), ct);
         }
     }
@@ -77,6 +84,12 @@ internal static class CharacterItemSync
 
         await session.SendAsync(PacketType.ItemCreateNotify, new ItemCreateNotify(InventoryPlace, serialId, quantity, (uint)itemId).ToBytes(), ct);
         await session.SendAsync(PacketType.ItemUpdateListNotify, new ItemUpdateListNotify(InventoryPlace, serialId, quantity).ToBytes(), ct);
+    }
+
+    private static async Task SendInventoryCountAsync(IPlayerSession session, int itemId, int count, CancellationToken ct)
+    {
+        var clamped = count <= 0 ? (ushort)0 : (ushort)Math.Min(count, ushort.MaxValue);
+        await SendInventoryItemAsync(session, itemId, clamped, ct);
     }
 
     public static async Task SendUnequippedAsync(IPlayerSession session, uint objId, EquippedItemChange change, CancellationToken ct)
@@ -109,5 +122,8 @@ internal static class CharacterItemSync
 
         foreach (var added in result.Added)
             await SendEquippedAsync(session, objId, added, ct);
+
+        foreach (var (itemId, count) in result.InventoryCountsByItemId)
+            await SendInventoryCountAsync(session, itemId, count, ct);
     }
 }

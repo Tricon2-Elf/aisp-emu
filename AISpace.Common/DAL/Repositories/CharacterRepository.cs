@@ -210,6 +210,18 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         }
 
         await db.SaveChangesAsync(ct);
-        return new EquipReplaceResult(removed, added);
+
+        var changedItemIds = removed.Select(x => x.ItemId).Concat(added.Select(x => x.ItemId)).Distinct().ToList();
+        var countsByItemId = await db
+            .CharacterInventories.Where(i => i.CharacterId == characterId && changedItemIds.Contains(i.ItemId))
+            .ToDictionaryAsync(i => i.ItemId, i => i.Quantity, ct);
+
+        foreach (var itemId in changedItemIds)
+        {
+            if (!countsByItemId.ContainsKey(itemId))
+                countsByItemId[itemId] = 0;
+        }
+
+        return new EquipReplaceResult(removed, added, countsByItemId);
     }
 }
