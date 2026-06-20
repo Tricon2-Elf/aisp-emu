@@ -24,7 +24,10 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, ILog
 
         EquipReplaceResult? replaceResult = null;
         if (session.CharacterId != 0)
+        {
             replaceResult = await characterRepo.ReplaceEquipmentAsync((int)session.CharacterId, request.Equips, ct);
+            session.Character = await characterRepo.GetByIdAsync((int)session.CharacterId, ct);
+        }
 
         await session.SendAsync(PacketType.ItemTryEquipReplaceResponse, new ItemTryEquipReplaceResponse(0).ToBytes(), ct);
         await session.SendAsync(
