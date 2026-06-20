@@ -10,7 +10,13 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class CmdExecHandler(
+    SharedState state,
+    IMapRepository mapRepo,
+    ICharacterRepository characterRepo,
+    DirectMapLinkTransitionService directMapLinkTransitionService,
+    ILogger<CmdExecHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
     private const float JumpDistance = 100f;
@@ -105,6 +111,43 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
             return;
         }
 
+        if (cmd is "outfit" or "starter" or "starteroutfit")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.CharacterId == 0)
+            {
+                logger.LogWarning("CmdExecHandler: outfit requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            var characterId = (int)areaClient.CharacterId;
+            var character = await characterRepo.GetByIdAsync(characterId, ct);
+            if (character is null)
+            {
+                logger.LogWarning("CmdExecHandler: outfit could not resolve character {CharacterId}", characterId);
+                return;
+            }
+
+            var itemIds = DefaultClothingItems.WardrobeInventoryForGender(character.Gender).ToList();
+
+            foreach (var itemId in itemIds)
+                await characterRepo.AddInventoryAsync(characterId, itemId, 1, ct);
+
+            var refreshed = await characterRepo.GetByIdAsync(characterId, ct);
+            if (refreshed is null)
+                return;
+
+            areaClient.Character = refreshed;
+            await CharacterItemSync.SendInventoryBootstrapAsync(areaClient, refreshed, ct);
+
+            logger.LogInformation(
+                "CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client",
+                itemIds.Count,
+                characterId
+            );
+            return;
+        }
+
         if (cmd == "escape" || cmd == "reset")
         {
             var areaClient = ResolveAreaClient(session);
@@ -172,8 +215,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
         cd.Visual.Gender = (uint)cha.Gender;
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
-        foreach (var eq in cha.Equipment)
-            cd.AddEquip((uint)eq.ItemId, eq.SlotIndex);
+        cd.AddEquip(cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveEquipSocket);
         return new AvatarNotifyData(1, new AvatarData(objId, cd)).ToBytes();
     }
 }

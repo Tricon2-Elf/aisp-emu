@@ -22,19 +22,14 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
         Character newChar = await charRepo.CreateAsync(request.AvatarName, session.User!.Id, request.modelId, request.visual.BloodType, request.visual.Birthdate, (int)request.visual.Gender, request.visual.Face, request.visual.Hairstyle, ct);
 
         if ((int)request.visual.Gender == 1)
-        {
-            await charRepo.EquipAsync(newChar.Id, 0, 10100220, ct);
-            await charRepo.EquipAsync(newChar.Id, 1, 10200100, ct);
-            await charRepo.EquipAsync(newChar.Id, 2, 10400030, ct);
-            await charRepo.EquipAsync(newChar.Id, 3, 10500070, ct);
-        }
+            for (byte slot = 0; slot < 4; slot++)
+                await charRepo.EquipAsync(newChar.Id, slot, DefaultClothingItems.Male[slot], ct);
         else
-        {
-            await charRepo.EquipAsync(newChar.Id, 0, 10100060, ct);
-            await charRepo.EquipAsync(newChar.Id, 1, 10200090, ct);
-            await charRepo.EquipAsync(newChar.Id, 2, 10400000, ct);
-            await charRepo.EquipAsync(newChar.Id, 3, 10500010, ct);
-        }
+            for (byte slot = 0; slot < 4; slot++)
+                await charRepo.EquipAsync(newChar.Id, slot, DefaultClothingItems.Female[slot], ct);
+
+        foreach (var itemId in DefaultClothingItems.WardrobeInventoryForGender((int)request.visual.Gender))
+            await charRepo.AddInventoryAsync(newChar.Id, itemId, 1, ct);
 
         return new AvatarCreateResponse(0);
     }

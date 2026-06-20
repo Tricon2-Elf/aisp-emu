@@ -13,6 +13,15 @@ public class CharaData(uint slotId, uint modelId, string name)
         Equips.Add(new ItemSlotInfo(id, socket));
     }
 
+    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<CharacterEquipSlot, uint> resolveSocket)
+    {
+        for (byte slot = 0; slot < 30; slot++)
+        {
+            var eq = equipment.FirstOrDefault(e => e.SlotIndex == slot);
+            AddEquip(eq.ItemId, eq.ItemId != 0 ? resolveSocket(eq) : 0);
+        }
+    }
+
     public byte[] ToBytes()
     {
         while (Equips.Count < 30)
