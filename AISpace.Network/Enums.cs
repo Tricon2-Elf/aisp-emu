@@ -3,9 +3,10 @@
 public enum ClientState
 {
     Init = 1,
-    ConnectedToAuth = 2,
-    ConnectedToMsg = 3,
-    ConnectedToArea = 4,
+    WaitingForHandshake = 2,
+    WaitingForVersionCheck = 3,
+    Connected = 4,
+    ForceDisconnect = 5,
 }
 
 public enum AuthResponseResult : uint

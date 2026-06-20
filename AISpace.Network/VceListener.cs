@@ -1,5 +1,7 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Channels;
 using AISpace.Network.Crypto;
@@ -10,6 +12,7 @@ namespace AISpace.Network;
 public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024, int maxReceiveFrameSize = 4096, int clientReadTimeoutSeconds = 300)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
+    private static readonly TimeSpan IdleTimerRearmMinInterval = TimeSpan.FromMilliseconds(250);
     private readonly int _maxConcurrentClients = Math.Max(1, maxConcurrentClients);
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
     private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
@@ -140,100 +143,42 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             readCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             readCt = readCts.Token;
             idleTimer = new Timer(_ => readCts.Cancel(), null, _readTimeout, Timeout.InfiniteTimeSpan);
-            armIdle = () => idleTimer.Change(_readTimeout, Timeout.InfiniteTimeSpan);
+            long lastIdleArmAtMs = Environment.TickCount64;
+            armIdle = () =>
+            {
+                var nowMs = Environment.TickCount64;
+                if (nowMs - lastIdleArmAtMs < IdleTimerRearmMinInterval.TotalMilliseconds)
+                    return;
+
+                idleTimer.Change(_readTimeout, Timeout.InfiniteTimeSpan);
+                lastIdleArmAtMs = nowMs;
+            };
         }
 
         try
         {
-            logger.LogInformation("{Name} Handling new Encrypted client {Id}", name, context.Id);
-            byte[] rsaN = new byte[16];
-            await ReadExactAsync(context.Stream, rsaN, ct, readCt, armIdle);
-            if (!CryptoUtils.IsPlausibleClientRsaModulus(rsaN))
-            {
-                logger.LogDebug("{Name} rejecting implausible RSA modulus from {RemoteEndPoint}", name, context.RemoteEndPoint);
+            var remote = (IPEndPoint)context.RemoteEndPoint;
+            logger.LogInformation("{Name} Handling new Encrypted client {Id} from {RemoteAddress}:{RemotePort}", name, context.Id, remote.Address, remote.Port);
+            context.CurrentState = ClientState.WaitingForHandshake;
+            if (!await HandshakeAsync(context, ct))
                 return;
-            }
-
-            var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-            var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
-            context.SetCamelliaKeys(s2cPlain, c2sPlain);
-            await context.SendRawAsync([.. s2cEnc, .. c2sEnc], ct);
+            context.CurrentState = ClientState.WaitingForVersionCheck;
 
             while (!ct.IsCancellationRequested)
             {
-                var header = new byte[4];
-                await ReadExactAsync(context.Stream, header, ct, readCt, armIdle);
-                int msgSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(header);
+                var frame = await ReceiveFrameAsync(context, ct, readCt, armIdle);
+                if (frame is null)
+                    return;
 
-                if (!VceFrameValidation.IsAcceptableFrameSize(msgSize, _maxReceiveFrameSize))
+                try
                 {
-                    logger.LogWarning("{Name} rejecting oversized frame from {RemoteEndPoint}: msgSize={MsgSize} max={MaxReceiveFrameSize}", name, context.RemoteEndPoint, msgSize, _maxReceiveFrameSize);
-                    break;
+                    await ParseAndDispatchFrameAsync(context, frame.Value.Buffer, frame.Value.MessageSize, ct);
+                    if (context.CurrentState == ClientState.ForceDisconnect)
+                        return;
                 }
-
-                int paddedSize = (msgSize + 15) / 16 * 16;
-                byte[] cipher = new byte[paddedSize];
-                await ReadExactAsync(context.Stream, cipher, ct, readCt, armIdle);
-                context.DecryptBlocks(cipher);
-
-                int offset = 0;
-                while (offset < msgSize)
+                finally
                 {
-                    if (offset + 2 > msgSize)
-                        break;
-
-                    byte codecType = cipher[offset];
-                    var headerType = (VceCodecHeaderType)((codecType >> 4) & 0xF);
-                    int headerParam = codecType & 0xF;
-                    if (headerType != VceCodecHeaderType.PacketData)
-                    {
-                        if ((headerType == VceCodecHeaderType.Ping || headerType == VceCodecHeaderType.Pong) && msgSize - offset >= 9)
-                        {
-                            offset += 9;
-                            continue;
-                        }
-                        if (headerType == VceCodecHeaderType.Terminated && msgSize - offset >= 5)
-                        {
-                            offset += 5;
-                            continue;
-                        }
-                        break;
-                    }
-
-                    int payloadStartOffset = 2 + headerParam;
-                    if (offset + payloadStartOffset > msgSize)
-                        break;
-                    int payloadStart = offset + payloadStartOffset;
-                    int payloadLen = CalculatePayloadLength(cipher, offset, headerParam);
-
-                    int payloadEnd = payloadStart + payloadLen;
-
-                    if (payloadLen < 0 || payloadEnd > msgSize)
-                    {
-                        if (offset == 0 && msgSize >= 2)
-                        {
-                            var singleTypeRaw = BinaryPrimitives.ReadUInt16LittleEndian(cipher.AsSpan(0, 2));
-                            var singleType = (PacketType)singleTypeRaw;
-                            int singleBodyLen = msgSize - 2;
-                            ReadOnlySpan<byte> singlePayload = singleBodyLen > 0 ? cipher.AsSpan(2, singleBodyLen) : [];
-                            if (!SuppressedReceiveLogs.Contains(singleType))
-                                logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", singleType, singlePayload.Length, BitConverter.ToString(singlePayload.ToArray()));
-                            await channel.Writer.WriteAsync(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw), ct);
-                        }
-                        else if (payloadLen >= 0)
-                            logger.LogWarning("Encrypted packet: payload past msgSize (offset {Offset} packetSize {PacketSize} msgSize {MsgSize})", offset, payloadLen, msgSize);
-                        break;
-                    }
-
-                    var typeRaw = BinaryPrimitives.ReadUInt16LittleEndian(cipher.AsSpan(payloadStart, 2));
-                    var type = (PacketType)typeRaw;
-                    int bodyLen = payloadLen - 2;
-                    ReadOnlySpan<byte> payload = bodyLen > 0 ? cipher.AsSpan(payloadStart + 2, bodyLen) : [];
-                    if (!SuppressedReceiveLogs.Contains(type))
-                        logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, BitConverter.ToString(payload.ToArray()));
-                    await channel.Writer.WriteAsync(new Packet(context, type, payload.ToArray(), typeRaw), ct);
-
-                    offset = payloadEnd;
+                    ArrayPool<byte>.Shared.Return(frame.Value.Buffer);
                 }
             }
         }
@@ -259,6 +204,161 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
 
             logger.LogInformation("{Name} Client disconnected: {RemoteEndPoint} ({Id})", name, context.RemoteEndPoint, context.Id);
             context.Dispose();
+        }
+    }
+
+    private async Task<bool> HandshakeAsync(ClientConnection context, CancellationToken ct)
+    {
+        using var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var handshakeTimeout = TimeSpan.FromSeconds(5);
+        handshakeCts.CancelAfter(handshakeTimeout);
+        var handshakeCt = handshakeCts.Token;
+
+        byte[] rsaN = new byte[16];
+        await ReadExactAsync(context.Stream, rsaN, ct, handshakeCt, null);
+        if (!CryptoUtils.IsPlausibleClientRsaModulus(rsaN))
+        {
+            logger.LogDebug("{Name} rejecting implausible RSA modulus from {RemoteEndPoint}", name, context.RemoteEndPoint);
+            return false;
+        }
+
+        var (s2cPlain, s2cEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+        var (c2sPlain, c2sEnc) = CryptoUtils.CreateEncryptedKey(rsaN);
+        context.SetCamelliaKeys(s2cPlain, c2sPlain);
+
+        if (context.Stream.DataAvailable)
+        {
+            logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: unexpected bytes after RSA handshake", name, context.RemoteEndPoint);
+            return false;
+        }
+
+        await context.SendRawAsync([.. s2cEnc, .. c2sEnc], handshakeCt);
+        return true;
+    }
+
+    private async Task<ReceivedFrame?> ReceiveFrameAsync(ClientConnection context, CancellationToken ct, CancellationToken readCt, Action? armIdle)
+    {
+        var header = new byte[4];
+        await ReadExactAsync(context.Stream, header, ct, readCt, armIdle);
+        int msgSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(header);
+
+        if (!VceFrameValidation.IsAcceptableFrameSize(msgSize, _maxReceiveFrameSize))
+        {
+            logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: invalid frame size msgSize={MsgSize} max={MaxReceiveFrameSize}", name, context.RemoteEndPoint, msgSize, _maxReceiveFrameSize);
+            return null;
+        }
+
+        int paddedSize = (msgSize + 15) / 16 * 16;
+        var rented = ArrayPool<byte>.Shared.Rent(paddedSize);
+        try
+        {
+            await ReadExactAsync(context.Stream, rented.AsMemory(0, paddedSize), ct, readCt, armIdle);
+            context.DecryptBlocks(rented.AsSpan(0, paddedSize));
+            return new ReceivedFrame(rented, msgSize);
+        }
+        catch
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+            throw;
+        }
+    }
+
+    private async Task ParseAndDispatchFrameAsync(ClientConnection context, byte[] decryptedFrame, int msgSize, CancellationToken ct)
+    {
+        int offset = 0;
+        while (offset < msgSize)
+        {
+            if (offset + 2 > msgSize)
+            {
+                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: truncated packet header (offset={Offset} msgSize={MsgSize})", name, context.RemoteEndPoint, offset, msgSize);
+                context.CurrentState = ClientState.ForceDisconnect;
+                return;
+            }
+
+            byte codecType = decryptedFrame[offset];
+            var headerType = (VceCodecHeaderType)((codecType >> 4) & 0xF);
+            int headerParam = codecType & 0xF;
+            if (headerType != VceCodecHeaderType.PacketData)
+            {
+                if ((headerType == VceCodecHeaderType.Ping || headerType == VceCodecHeaderType.Pong) && msgSize - offset >= 9)
+                {
+                    offset += 9;
+                    continue;
+                }
+                if (headerType == VceCodecHeaderType.Terminated && msgSize - offset >= 5)
+                {
+                    offset += 5;
+                    continue;
+                }
+                if (headerType == VceCodecHeaderType.DirectContact)
+                {
+                    logger.LogDebug("{Name} ignoring DirectContact control frame from {RemoteEndPoint}", name, context.RemoteEndPoint);
+                    break;
+                }
+
+                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: unexpected codec header {HeaderType}", name, context.RemoteEndPoint, headerType);
+                context.CurrentState = ClientState.ForceDisconnect;
+                return;
+            }
+
+            int payloadStartOffset = 2 + headerParam;
+            if (offset + payloadStartOffset > msgSize)
+            {
+                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: invalid payload start offset (offset={Offset} startOffset={PayloadStartOffset} msgSize={MsgSize})", name, context.RemoteEndPoint, offset, payloadStartOffset, msgSize);
+                context.CurrentState = ClientState.ForceDisconnect;
+                return;
+            }
+            int payloadStart = offset + payloadStartOffset;
+            int payloadLen = CalculatePayloadLength(decryptedFrame, offset, headerParam);
+
+            int payloadEnd = payloadStart + payloadLen;
+
+            if (payloadLen < 0 || payloadEnd > msgSize)
+            {
+                if (offset == 0 && msgSize >= 2)
+                {
+                    var singleTypeRaw = BinaryPrimitives.ReadUInt16LittleEndian(decryptedFrame.AsSpan(0, 2));
+                    var singleType = (PacketType)singleTypeRaw;
+                    int singleBodyLen = msgSize - 2;
+                    ReadOnlySpan<byte> singlePayload = singleBodyLen > 0 ? decryptedFrame.AsSpan(2, singleBodyLen) : [];
+                    if (context.CurrentState == ClientState.WaitingForVersionCheck && singleType != PacketType.VersionCheckRequest)
+                    {
+                        logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: first packet was {PacketType}, expected VersionCheckRequest", name, context.RemoteEndPoint, singleType);
+                        context.CurrentState = ClientState.ForceDisconnect;
+                        return;
+                    }
+
+                    if (context.CurrentState == ClientState.WaitingForVersionCheck)
+                        context.CurrentState = ClientState.Connected;
+                    if (!SuppressedReceiveLogs.Contains(singleType))
+                        logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", singleType, singlePayload.Length, BitConverter.ToString(singlePayload.ToArray()));
+                    await channel.Writer.WriteAsync(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw), ct);
+                    break;
+                }
+
+                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: invalid payload length (offset={Offset} payloadLen={PayloadLen} payloadEnd={PayloadEnd} msgSize={MsgSize})", name, context.RemoteEndPoint, offset, payloadLen, payloadEnd, msgSize);
+                context.CurrentState = ClientState.ForceDisconnect;
+                return;
+            }
+
+            var typeRaw = BinaryPrimitives.ReadUInt16LittleEndian(decryptedFrame.AsSpan(payloadStart, 2));
+            var type = (PacketType)typeRaw;
+            int bodyLen = payloadLen - 2;
+            if (context.CurrentState == ClientState.WaitingForVersionCheck && type != PacketType.VersionCheckRequest)
+            {
+                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: first packet was {PacketType}, expected VersionCheckRequest", name, context.RemoteEndPoint, type);
+                context.CurrentState = ClientState.ForceDisconnect;
+                return;
+            }
+
+            if (context.CurrentState == ClientState.WaitingForVersionCheck)
+                context.CurrentState = ClientState.Connected;
+            ReadOnlySpan<byte> payload = bodyLen > 0 ? decryptedFrame.AsSpan(payloadStart + 2, bodyLen) : [];
+            if (!SuppressedReceiveLogs.Contains(type))
+                logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", type, payload.Length, BitConverter.ToString(payload.ToArray()));
+            await channel.Writer.WriteAsync(new Packet(context, type, payload.ToArray(), typeRaw), ct);
+
+            offset = payloadEnd;
         }
     }
 
@@ -314,4 +414,6 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             throw new IOException("Read timed out");
         }
     }
+
+    private readonly record struct ReceivedFrame(byte[] Buffer, int MessageSize);
 }
