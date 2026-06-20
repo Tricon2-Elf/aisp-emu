@@ -163,7 +163,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         }
 
         var removed = new List<EquippedItemChange>();
-        var added = new List<EquippedItemChange>();
+        var pendingAdds = new List<(byte SlotIndex, ItemEquipEntry Equip)>();
 
         foreach (var old in existing)
         {
@@ -177,7 +177,6 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
                     ItemEntityMapper.ResolveBodyspot(old.ItemId, name: old.Item?.Name)
                 )
             );
-            await AddInventoryAsync(characterId, old.ItemId, 1, ct);
         }
 
         foreach (var (slotIndex, equip) in newBySlot)
@@ -188,10 +187,70 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             if (old is not null && old.ItemId == equipItemId)
                 continue;
 
-            var item = await db.Items.FindAsync([equipItemId], ct);
+            pendingAdds.Add((slotIndex, equip));
+        }
+
+        var addedItemIds = pendingAdds.Select(x => (int)x.Equip.ItemId).Distinct().ToList();
+        var addedItemsById = await db.Items.Where(i => addedItemIds.Contains(i.Id)).ToDictionaryAsync(i => i.Id, ct);
+
+        var added = new List<EquippedItemChange>(pendingAdds.Count);
+        foreach (var (_, equip) in pendingAdds)
+        {
+            var equipItemId = (int)equip.ItemId;
+            addedItemsById.TryGetValue(equipItemId, out var item);
             var socket = equip.SocketBit != 0 ? equip.SocketBit : ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
             added.Add(new EquippedItemChange(equipItemId, item?.Name, socket));
-            await RemoveInventoryAsync(characterId, equipItemId, 1, ct);
+        }
+
+        var changedItemIds = removed.Select(x => x.ItemId).Concat(added.Select(x => x.ItemId)).Distinct().ToList();
+        var inventoryByItemId = await db
+            .CharacterInventories.Where(i => i.CharacterId == characterId && changedItemIds.Contains(i.ItemId))
+            .ToDictionaryAsync(i => i.ItemId, ct);
+
+        // Validate ownership before mutating: newly equipped items must be owned, accounting for
+        // items that are unequipped in this same replacement and returned to inventory first.
+        var availableByItemId = inventoryByItemId.ToDictionary(x => x.Key, x => x.Value.Quantity);
+        foreach (var change in removed)
+            availableByItemId[change.ItemId] = availableByItemId.GetValueOrDefault(change.ItemId) + 1;
+
+        var requiredByItemId = pendingAdds
+            .GroupBy(x => (int)x.Equip.ItemId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        foreach (var (itemId, required) in requiredByItemId)
+        {
+            if (availableByItemId.GetValueOrDefault(itemId) < required)
+                throw new InvalidOperationException($"Character {characterId} does not own required quantity of item {itemId}.");
+        }
+
+        foreach (var change in removed)
+        {
+            if (inventoryByItemId.TryGetValue(change.ItemId, out var existingInventory))
+            {
+                existingInventory.Quantity += 1;
+            }
+            else
+            {
+                existingInventory = new CharacterInventory
+                {
+                    CharacterId = characterId,
+                    ItemId = change.ItemId,
+                    Quantity = 1,
+                };
+                db.CharacterInventories.Add(existingInventory);
+                inventoryByItemId[change.ItemId] = existingInventory;
+            }
+        }
+
+        foreach (var (itemId, required) in requiredByItemId)
+        {
+            var inventory = inventoryByItemId[itemId];
+            inventory.Quantity -= required;
+            if (inventory.Quantity <= 0)
+            {
+                db.CharacterInventories.Remove(inventory);
+                inventoryByItemId.Remove(itemId);
+            }
         }
 
         if (existing.Count > 0)
@@ -210,8 +269,6 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         }
 
         await db.SaveChangesAsync(ct);
-
-        var changedItemIds = removed.Select(x => x.ItemId).Concat(added.Select(x => x.ItemId)).Distinct().ToList();
         var countsByItemId = await db
             .CharacterInventories.Where(i => i.CharacterId == characterId && changedItemIds.Contains(i.ItemId))
             .ToDictionaryAsync(i => i.ItemId, i => i.Quantity, ct);
