@@ -1,4 +1,5 @@
 ﻿using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
 using AISpace.Network.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,7 @@ public interface ICharacterRepository
     Task AddInventoryAsync(int characterId, int itemId, int quantity, CancellationToken ct = default);
     Task EquipAsync(int characterId, byte slotIndex, int itemId, CancellationToken ct = default);
     Task UnequipAsync(int characterId, byte slotIndex, CancellationToken ct = default);
+    Task ReplaceEquipmentAsync(int characterId, IEnumerable<ItemEquipEntry> equips, CancellationToken ct = default);
 }
 
 public sealed class CharacterRepository(MainContext db, ILogger<CharacterRepository> _logger) : ICharacterRepository
@@ -119,6 +121,36 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             return;
 
         db.CharacterEquipments.Remove(existing);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task ReplaceEquipmentAsync(int characterId, IEnumerable<ItemEquipEntry> equips, CancellationToken ct = default)
+    {
+        var existing = await db.CharacterEquipments.Where(x => x.CharacterId == characterId).ToListAsync(ct);
+        if (existing.Count > 0)
+            db.CharacterEquipments.RemoveRange(existing);
+
+        foreach (var equip in equips)
+        {
+            if (equip.ItemId == 0)
+                continue;
+
+            if (!EquipSlotMapper.TryResolveSlotIndex(equip.ItemId, equip.SocketBit, out var slotIndex))
+            {
+                _logger.LogWarning("Skipping unmapped wardrobe equip item {ItemId} socket {Socket} for character {CharacterId}", equip.ItemId, equip.SocketBit, characterId);
+                continue;
+            }
+
+            db.CharacterEquipments.Add(
+                new CharacterEquipment
+                {
+                    CharacterId = characterId,
+                    SlotIndex = slotIndex,
+                    ItemId = (int)equip.ItemId,
+                }
+            );
+        }
+
         await db.SaveChangesAsync(ct);
     }
 }

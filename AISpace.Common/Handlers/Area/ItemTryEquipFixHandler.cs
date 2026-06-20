@@ -20,8 +20,5 @@ public class ItemTryEquipFixHandler(ILogger<ItemTryEquipFixHandler> logger) : IP
 
         var response = new ItemTryEquipFixResponse(0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
-
-        var equipEnded = new ItemEquipEnded(request.ObjId);
-        await session.SendAsync(PacketType.ItemEquipEnded, equipEnded.ToBytes(), ct);
     }
 }
