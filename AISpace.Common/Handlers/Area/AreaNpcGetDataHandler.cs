@@ -37,7 +37,7 @@ public class AreaNpcGetDataHandler : IPacketHandler, IRequiresAuthenticatedSessi
             var sourceChar = session.User?.Characters.FirstOrDefault();
             uint modelId = sourceChar?.ModelId ?? DefaultNpcModelId;
 
-            var npcChara = new CharaData(NpcObjectIdBase, modelId, "NPC") { moveData = pos };
+            var npcChara = new CharaData(NpcObjectIdBase, modelId, "NPC") { MoveData = pos };
             if (sourceChar != null)
             {
                 npcChara.Visual.BloodType = sourceChar.BloodType;
