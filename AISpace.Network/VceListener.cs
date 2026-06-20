@@ -185,6 +185,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                 await context.SendRawAsync([.. s2cEnc, .. c2sEnc], handshakeCt);
             }
 
+            var awaitingVersionCheck = true;
             while (!ct.IsCancellationRequested)
             {
                 var header = new byte[4];
@@ -242,13 +243,21 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
                             var singleType = (PacketType)singleTypeRaw;
                             int singleBodyLen = msgSize - 2;
                             ReadOnlySpan<byte> singlePayload = singleBodyLen > 0 ? cipher.AsSpan(2, singleBodyLen) : [];
+                            if (awaitingVersionCheck && singleType != PacketType.VersionCheckRequest)
+                            {
+                                logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: first packet was {PacketType}, expected VersionCheckRequest", name, context.RemoteEndPoint, singleType);
+                                return;
+                            }
+
+                            awaitingVersionCheck = false;
                             if (!SuppressedReceiveLogs.Contains(singleType))
                                 logger.LogInformation("Recieving packet {PacketType} ({Length} bytes): {Hex}", singleType, singlePayload.Length, BitConverter.ToString(singlePayload.ToArray()));
                             await channel.Writer.WriteAsync(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw), ct);
+                            break;
                         }
-                        else if (payloadLen >= 0)
-                            logger.LogWarning("Encrypted packet: payload past msgSize (offset {Offset} packetSize {PacketSize} msgSize {MsgSize})", offset, payloadLen, msgSize);
-                        break;
+
+                        logger.LogDebug("{Name} disconnecting client {RemoteEndPoint}: invalid payload length (offset={Offset} payloadLen={PayloadLen} payloadEnd={PayloadEnd} msgSize={MsgSize})", name, context.RemoteEndPoint, offset, payloadLen, payloadEnd, msgSize);
+                        return;
                     }
 
                     var typeRaw = BinaryPrimitives.ReadUInt16LittleEndian(cipher.AsSpan(payloadStart, 2));
