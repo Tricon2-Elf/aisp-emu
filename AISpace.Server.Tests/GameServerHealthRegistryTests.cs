@@ -70,9 +70,7 @@ public class GameServerHealthRegistryTests
         registry.MarkListening(ServerType.Msg, 50052);
         registry.RecordHeartbeat(ServerType.Msg);
 
-        Thread.Sleep(1200);
-
-        var snapshot = registry.GetSnapshot();
+        var snapshot = WaitForServerState(registry, "msgServer", "unhealthy");
 
         Assert.Equal("unhealthy", snapshot["msgServer"].State);
         Assert.Contains("heartbeat stale", snapshot["msgServer"].LastError, StringComparison.Ordinal);
@@ -114,9 +112,7 @@ public class GameServerHealthRegistryTests
         Assert.Equal(TimeSpan.FromSeconds(1), registry.StalenessThreshold);
 
         registry.AddServer(ServerType.Auth, 50050);
-        Thread.Sleep(1500);
-
-        var snapshot = registry.GetSnapshot();
+        var snapshot = WaitForServerState(registry, "authServer", "unhealthy");
 
         Assert.Equal("unhealthy", snapshot["authServer"].State);
         Assert.Equal("timed out while starting", snapshot["authServer"].LastError);
@@ -277,5 +273,23 @@ public class GameServerHealthRegistryTests
 
         Assert.Equal("healthy", report.Process.State);
         Assert.Equal("healthy", report.Servers["authServer"].State);
+    }
+
+    private static IReadOnlyDictionary<string, ServerHealthInfo> WaitForServerState(GameServerHealthRegistry registry, string serverKey, string expectedState, int timeoutMs = 5000, int pollMs = 25)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        IReadOnlyDictionary<string, ServerHealthInfo>? snapshot = null;
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            snapshot = registry.GetSnapshot();
+            if (snapshot.TryGetValue(serverKey, out var info) && info.State == expectedState)
+                return snapshot;
+
+            Thread.Sleep(pollMs);
+        }
+
+        snapshot ??= registry.GetSnapshot();
+        var actual = snapshot.TryGetValue(serverKey, out var finalInfo) ? finalInfo.State : "<missing>";
+        throw new Xunit.Sdk.XunitException($"Timed out waiting for {serverKey} to become '{expectedState}'. Last state was '{actual}'.");
     }
 }
