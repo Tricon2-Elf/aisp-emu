@@ -183,13 +183,15 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         foreach (var (slotIndex, equip) in newBySlot)
         {
             var old = existing.FirstOrDefault(e => e.SlotIndex == slotIndex);
-            if (old is not null && old.ItemId == (int)equip.ItemId)
+            var equipItemId = (int)equip.ItemId;
+
+            if (old is not null && old.ItemId == equipItemId)
                 continue;
 
-            var item = await db.Items.FindAsync([equip.ItemId], ct);
-            var socket = equip.SocketBit != 0 ? equip.SocketBit : ItemEntityMapper.ResolveBodyspot((int)equip.ItemId, name: item?.Name);
-            added.Add(new EquippedItemChange((int)equip.ItemId, item?.Name, socket));
-            await RemoveInventoryAsync(characterId, (int)equip.ItemId, 1, ct);
+            var item = await db.Items.FindAsync([equipItemId], ct);
+            var socket = equip.SocketBit != 0 ? equip.SocketBit : ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
+            added.Add(new EquippedItemChange(equipItemId, item?.Name, socket));
+            await RemoveInventoryAsync(characterId, equipItemId, 1, ct);
         }
 
         if (existing.Count > 0)

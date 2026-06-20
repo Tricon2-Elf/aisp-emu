@@ -374,6 +374,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_start_r", ImplementationState.Implemented)]
     ItemEquipStartResponse = 0x6448,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_started", ImplementationState.Implemented)]
+    ItemEquipStarted = 0x0F60,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_force_started", ImplementationState.Implemented)]
     ItemEquipForceStarted = 0x7E82,
 

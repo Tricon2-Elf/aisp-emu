@@ -106,6 +106,8 @@ internal static class ItemEntityMapper
     /// Wardrobe inventory tab category (item_base_t dword_74 / category_skilleq20).
     /// Matches client CSV clothing types: shirt=3, skirt=4, pants=5, socks=7, shoes=8, bra=9, gloves=10, hat=11.
     /// </summary>
+    public static uint ResolveInventoryTabCategory(int itemId, string? name = null) => ResolveCatalogCategory(itemId, name);
+
     private static uint ResolveCatalogCategory(int itemId, string? name)
     {
         if (itemId is < 10_000_000 or >= 200_000_000)

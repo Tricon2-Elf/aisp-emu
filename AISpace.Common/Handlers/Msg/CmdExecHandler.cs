@@ -121,15 +121,14 @@ public class CmdExecHandler(
             }
 
             var characterId = (int)areaClient.CharacterId;
-            var character = areaClient.Character ?? session.User?.Characters.FirstOrDefault(c => c.Id == characterId);
+            var character = await characterRepo.GetByIdAsync(characterId, ct);
             if (character is null)
             {
                 logger.LogWarning("CmdExecHandler: outfit could not resolve character {CharacterId}", characterId);
                 return;
             }
 
-            var itemIds = DefaultClothingItems.ForGender(character.Gender);
-            var existingInventory = character.Inventory.Select(i => i.ItemId).ToHashSet();
+            var itemIds = DefaultClothingItems.WardrobeInventoryForGender(character.Gender).ToList();
 
             foreach (var itemId in itemIds)
                 await characterRepo.AddInventoryAsync(characterId, itemId, 1, ct);
@@ -139,17 +138,10 @@ public class CmdExecHandler(
                 return;
 
             areaClient.Character = refreshed;
-
-            foreach (var stack in refreshed.Inventory.Where(i => itemIds.Contains(i.ItemId)))
-            {
-                if (existingInventory.Contains(stack.ItemId))
-                    continue;
-
-                await CharacterItemSync.SendInventoryItemAsync(areaClient, stack.ItemId, stack.Item?.Name, (ushort)stack.Quantity, ct);
-            }
+            await CharacterItemSync.SendInventoryBootstrapAsync(areaClient, refreshed, ct);
 
             logger.LogInformation(
-                "CmdExecHandler: added default outfit ({Count} items) to inventory for character {CharacterId}",
+                "CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client",
                 itemIds.Count,
                 characterId
             );

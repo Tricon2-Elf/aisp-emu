@@ -201,10 +201,12 @@ public class CmdExecHandlerTests
 
             await using var verifyDb = new MainContext(options);
             var inventory = await verifyDb.CharacterInventories.Where(i => i.CharacterId == 8004).ToListAsync(TestContext.Current.CancellationToken);
-            Assert.Equal(DefaultClothingItems.Male.Count, inventory.Count);
-            Assert.All(DefaultClothingItems.Male, itemId => Assert.Contains(inventory, i => i.ItemId == itemId && i.Quantity == 1));
-            Assert.Equal(DefaultClothingItems.Male.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
-            Assert.Equal(DefaultClothingItems.Male.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
+            var expectedItems = DefaultClothingItems.WardrobeInventoryForGender(1).ToList();
+            Assert.Equal(expectedItems.Count, inventory.Count);
+            Assert.All(expectedItems, itemId => Assert.Contains(inventory, i => i.ItemId == itemId && i.Quantity == 1));
+            Assert.Contains(areaSession.Sent, p => p.Type == PacketType.ItemGetListResponse);
+            Assert.Equal(expectedItems.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
+            Assert.Equal(expectedItems.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
         finally

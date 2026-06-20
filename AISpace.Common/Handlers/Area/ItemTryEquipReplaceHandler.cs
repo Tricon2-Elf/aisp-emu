@@ -22,8 +22,9 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, ILog
             request.Equips.Count
         );
 
+        EquipReplaceResult? replaceResult = null;
         if (session.CharacterId != 0)
-            await characterRepo.ReplaceEquipmentAsync((int)session.CharacterId, request.Equips, ct);
+            replaceResult = await characterRepo.ReplaceEquipmentAsync((int)session.CharacterId, request.Equips, ct);
 
         await session.SendAsync(PacketType.ItemTryEquipReplaceResponse, new ItemTryEquipReplaceResponse(0).ToBytes(), ct);
         await session.SendAsync(
@@ -31,5 +32,8 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, ILog
             new ItemTryEquipReplacedNotify(request.ObjId, request.Equips).ToBytes(),
             ct
         );
+
+        if (replaceResult is not null)
+            await CharacterItemSync.SendReplaceChangesAsync(session, replaceResult, ct);
     }
 }

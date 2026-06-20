@@ -38,6 +38,9 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
             await charRepo.EquipAsync(newChar.Id, 3, DefaultClothingItems.Female[3], ct);
         }
 
+        foreach (var itemId in DefaultClothingItems.WardrobeInventoryForGender((int)request.visual.Gender))
+            await charRepo.AddInventoryAsync(newChar.Id, itemId, 1, ct);
+
         return new AvatarCreateResponse(0);
     }
 }
