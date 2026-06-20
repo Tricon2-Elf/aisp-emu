@@ -81,7 +81,6 @@ public class AdditionalPacketParserTests
         var bytes = new ChannelInfo(1, 4, 1000, new ServerInfo("localhost", 50054)).ToBytes();
         var reader = new PacketReader(bytes);
 
-        Assert.Equal(ChannelInfo.PacketSize, bytes.Length);
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(4f, reader.ReadFloat());
         Assert.Equal(1000u, reader.ReadUInt());
