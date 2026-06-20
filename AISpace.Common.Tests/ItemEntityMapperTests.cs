@@ -62,7 +62,7 @@ public class ItemEntityMapperTests
     {
         var item = new Item { Id = itemId, Socket = 0, Name = "test" };
         var data = ItemEntityMapper.ToItemBaseListData(item);
-        Assert.Equal(expectedKey, data._0x044c);
+        Assert.Equal(expectedKey, data.PlacementTypeId);
     }
 
     [Theory]

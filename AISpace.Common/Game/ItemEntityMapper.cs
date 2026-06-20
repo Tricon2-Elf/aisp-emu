@@ -98,7 +98,7 @@ internal static class ItemEntityMapper
             Socket1 = socket1,
             Socket2 = socket2,
             Category = category,
-            _0x044c = limitMapKey,
+            PlacementTypeId = limitMapKey,
         };
     }
 
