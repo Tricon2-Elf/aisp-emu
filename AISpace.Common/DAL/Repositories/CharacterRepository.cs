@@ -15,7 +15,8 @@ public interface ICharacterRepository
     Task AddInventoryAsync(int characterId, int itemId, int quantity, CancellationToken ct = default);
     Task EquipAsync(int characterId, byte slotIndex, int itemId, CancellationToken ct = default);
     Task UnequipAsync(int characterId, byte slotIndex, CancellationToken ct = default);
-    Task ReplaceEquipmentAsync(int characterId, IEnumerable<ItemEquipEntry> equips, CancellationToken ct = default);
+    Task RemoveInventoryAsync(int characterId, int itemId, int quantity, CancellationToken ct = default);
+    Task<EquipReplaceResult> ReplaceEquipmentAsync(int characterId, IEnumerable<ItemEquipEntry> equips, CancellationToken ct = default);
 }
 
 public sealed class CharacterRepository(MainContext db, ILogger<CharacterRepository> _logger) : ICharacterRepository
@@ -124,12 +125,29 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task ReplaceEquipmentAsync(int characterId, IEnumerable<ItemEquipEntry> equips, CancellationToken ct = default)
+    public async Task RemoveInventoryAsync(int characterId, int itemId, int quantity, CancellationToken ct = default)
     {
-        var existing = await db.CharacterEquipments.Where(x => x.CharacterId == characterId).ToListAsync(ct);
-        if (existing.Count > 0)
-            db.CharacterEquipments.RemoveRange(existing);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(quantity);
 
+        var existing = await db.CharacterInventories.SingleOrDefaultAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
+        if (existing is null)
+            return;
+
+        existing.Quantity -= quantity;
+        if (existing.Quantity <= 0)
+            db.CharacterInventories.Remove(existing);
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<EquipReplaceResult> ReplaceEquipmentAsync(int characterId, IEnumerable<ItemEquipEntry> equips, CancellationToken ct = default)
+    {
+        var existing = await db
+            .CharacterEquipments.Include(e => e.Item)
+            .Where(x => x.CharacterId == characterId)
+            .ToListAsync(ct);
+
+        var newBySlot = new Dictionary<byte, ItemEquipEntry>();
         foreach (var equip in equips)
         {
             if (equip.ItemId == 0)
@@ -141,6 +159,44 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
                 continue;
             }
 
+            newBySlot[slotIndex] = equip;
+        }
+
+        var removed = new List<EquippedItemChange>();
+        var added = new List<EquippedItemChange>();
+
+        foreach (var old in existing)
+        {
+            if (newBySlot.TryGetValue(old.SlotIndex, out var replacement) && replacement.ItemId == (uint)old.ItemId)
+                continue;
+
+            removed.Add(
+                new EquippedItemChange(
+                    old.ItemId,
+                    old.Item?.Name,
+                    ItemEntityMapper.ResolveBodyspot(old.ItemId, name: old.Item?.Name)
+                )
+            );
+            await AddInventoryAsync(characterId, old.ItemId, 1, ct);
+        }
+
+        foreach (var (slotIndex, equip) in newBySlot)
+        {
+            var old = existing.FirstOrDefault(e => e.SlotIndex == slotIndex);
+            if (old is not null && old.ItemId == (int)equip.ItemId)
+                continue;
+
+            var item = await db.Items.FindAsync([equip.ItemId], ct);
+            var socket = equip.SocketBit != 0 ? equip.SocketBit : ItemEntityMapper.ResolveBodyspot((int)equip.ItemId, name: item?.Name);
+            added.Add(new EquippedItemChange((int)equip.ItemId, item?.Name, socket));
+            await RemoveInventoryAsync(characterId, (int)equip.ItemId, 1, ct);
+        }
+
+        if (existing.Count > 0)
+            db.CharacterEquipments.RemoveRange(existing);
+
+        foreach (var (slotIndex, equip) in newBySlot)
+        {
             db.CharacterEquipments.Add(
                 new CharacterEquipment
                 {
@@ -152,5 +208,6 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         }
 
         await db.SaveChangesAsync(ct);
+        return new EquipReplaceResult(removed, added);
     }
 }

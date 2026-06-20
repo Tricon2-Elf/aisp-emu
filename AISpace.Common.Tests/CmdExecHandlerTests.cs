@@ -75,7 +75,13 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
 
             await handler.HandleAsync(BuildCmdExecPayload("tele", "10990110"), msgSession, TestContext.Current.CancellationToken);
 
@@ -123,7 +129,13 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
 
             await handler.HandleAsync(BuildCmdExecPayload("jump"), msgSession, TestContext.Current.CancellationToken);
 
@@ -136,6 +148,63 @@ public class CmdExecHandlerTests
 
             Assert.Equal(150f, areaSession.Z, precision: 3);
             Assert.Contains(areaSession.Sent, packet => packet.Type == PacketType.AvatarNotifyMove);
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task OutfitCommand_AddsDefaultClothingToInventoryAndNotifiesAreaClient()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8004, "outfit-user", "Outfit User", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                foreach (var itemId in DefaultClothingItems.Male)
+                {
+                    db.Items.Add(new Item { Id = itemId, Name = $"item-{itemId}", IconId = itemId, Socket = 0 });
+                }
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8004,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(BuildCmdExecPayload("outfit"), msgSession, TestContext.Current.CancellationToken);
+
+            await using var verifyDb = new MainContext(options);
+            var inventory = await verifyDb.CharacterInventories.Where(i => i.CharacterId == 8004).ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(DefaultClothingItems.Male.Count, inventory.Count);
+            Assert.All(DefaultClothingItems.Male, itemId => Assert.Contains(inventory, i => i.ItemId == itemId && i.Quantity == 1));
+            Assert.Equal(DefaultClothingItems.Male.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
+            Assert.Equal(DefaultClothingItems.Male.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
         finally
