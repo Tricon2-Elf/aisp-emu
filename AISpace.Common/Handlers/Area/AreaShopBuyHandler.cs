@@ -74,7 +74,18 @@ public sealed class AreaShopBuyHandler(
 
         ulong totalCost = 0;
         foreach (var (itemId, quantity) in mergedQuantities)
-            totalCost += (ulong)StarterShopCatalog.ResolvePrice(catalog[itemId], request.PriceType) * quantity;
+        {
+            var unitPrice = StarterShopCatalog.ResolvePrice(catalog[itemId], request.PriceType);
+            // Reject zero-priced entries so catalog/config mistakes cannot grant free items.
+            if (unitPrice == 0)
+            {
+                var total = request.PriceType == ShopPriceType.NicoPoints ? (ulong)Math.Max(0, session.User.NicoPoints) : (ulong)Math.Max(0, session.User.AiPoints);
+                await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
+                return;
+            }
+
+            totalCost += (ulong)unitPrice * quantity;
+        }
 
         ulong currentBalance = request.PriceType switch
         {
