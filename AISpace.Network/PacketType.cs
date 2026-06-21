@@ -495,10 +495,10 @@ public enum PacketType : ushort
     MoneyNpsPointsResponse = 0x3CF5,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_money_updated_nicopoint", ImplementationState.NotImplemented)]
-    MoneyUpdatedNicopoint = 0xE100,
+    MoneyUpdatedNicopoint = 0x7B72,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_money_updated_aipoint", ImplementationState.NotImplemented)]
-    MoneyUpdatedAipoint = 0xE101,
+    MoneyUpdatedAipoint = 0x196F,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_myroom_furniture", ImplementationState.Implemented)]
     MyRoomGetFurnitureRequest = 0xE868,

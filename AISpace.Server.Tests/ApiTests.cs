@@ -294,7 +294,8 @@ public class UserAdminServiceTests
         user.BanReason = "bad behavior";
         user.IsBanned = true;
         user.BannedAt = DateTime.UtcNow.AddDays(-1);
-        user.NpsPoints = 500;
+        user.AiPoints = 500;
+        user.NicoPoints = 250;
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("detailuser")).ReturnsAsync(user);
 
@@ -307,7 +308,8 @@ public class UserAdminServiceTests
         Assert.Equal("detailuser", detail.Username);
         Assert.True(detail.IsBanned);
         Assert.Equal("bad behavior", detail.BanReason);
-        Assert.Equal(500, detail.NpsPoints);
+        Assert.Equal(500, detail.AiPoints);
+        Assert.Equal(250, detail.NicoPoints);
     }
 
     [Fact]

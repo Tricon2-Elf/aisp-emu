@@ -4,7 +4,7 @@ namespace AISpace.Common.Game;
 
 internal static class StarterShopCatalog
 {
-    public sealed record Entry(uint ItemId, uint NpsPrice, uint NiconicoPrice);
+    public sealed record Entry(uint ItemId, uint AiPrice, uint NiconicoPrice);
 
     // Keep this intentionally small for first-pass interoperability with the client shop flow.
     public static readonly IReadOnlyList<Entry> Items =
@@ -22,8 +22,8 @@ internal static class StarterShopCatalog
     public static uint ResolvePrice(Entry entry, ShopPriceType priceType) =>
         priceType switch
         {
-            ShopPriceType.NpsPoints => entry.NpsPrice,
-            ShopPriceType.NiconicoPoints => entry.NiconicoPrice,
+            ShopPriceType.AiPoints => entry.AiPrice,
+            ShopPriceType.NicoPoints => entry.NiconicoPrice,
             _ => 0,
         };
 }

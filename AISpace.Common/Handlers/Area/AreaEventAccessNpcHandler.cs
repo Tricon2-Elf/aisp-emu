@@ -35,7 +35,7 @@ public class AreaEventAccessNpcHandler(ILogger<AreaEventAccessNpcHandler> logger
         await session.SendAsync(PacketType.ShopStartedNotify, new ShopStartedNotify(StarterShopNpc.ObjectId, StarterShopNpc.Name, StarterShopNpc.ObjectId).ToBytes(), ct);
         await session.SendAsync(
             PacketType.ShopItemNotify,
-            new ShopItemNotify(StarterShopCatalog.Items.Select(x => new ShopItemNotify.ShopItem(x.ItemId, x.NpsPrice, x.NiconicoPrice)).ToList()).ToBytes(),
+            new ShopItemNotify(StarterShopCatalog.Items.Select(x => new ShopItemNotify.ShopItem(x.ItemId, x.AiPrice, x.NiconicoPrice)).ToList()).ToBytes(),
             ct
         );
     }

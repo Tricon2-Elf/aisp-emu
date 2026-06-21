@@ -34,14 +34,14 @@ public sealed class AreaShopBuyHandler(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to parse ShopBuyRequest for character {CharacterId}", session.CharacterId);
-            var total = (ulong)Math.Max(0, session.User.NpsPoints);
+            var total = (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
         }
 
-        if (request.PriceType is not ShopPriceType.NpsPoints and not ShopPriceType.NiconicoPoints)
+        if (request.PriceType is not ShopPriceType.AiPoints and not ShopPriceType.NicoPoints)
         {
-            var total = (ulong)Math.Max(0, session.User.NpsPoints);
+            var total = (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
         }
@@ -60,7 +60,7 @@ public sealed class AreaShopBuyHandler(
 
         if (mergedQuantities.Count == 0)
         {
-            var total = (ulong)Math.Max(0, session.User.NpsPoints);
+            var total = (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
         }
@@ -76,10 +76,16 @@ public sealed class AreaShopBuyHandler(
         foreach (var (itemId, quantity) in mergedQuantities)
             totalCost += (ulong)StarterShopCatalog.ResolvePrice(catalog[itemId], request.PriceType) * quantity;
 
-        var currentPoints = (ulong)Math.Max(0, user.NpsPoints);
-        if (currentPoints < totalCost)
+        ulong currentBalance = request.PriceType switch
         {
-            await session.SendAsync(ResponseType, new ShopBuyResponse(1, currentPoints).ToBytes(), ct);
+            ShopPriceType.AiPoints => (ulong)Math.Max(0, user.AiPoints),
+            ShopPriceType.NicoPoints => (ulong)Math.Max(0, user.NicoPoints),
+            _ => 0,
+        };
+
+        if (currentBalance < totalCost)
+        {
+            await session.SendAsync(ResponseType, new ShopBuyResponse(1, currentBalance).ToBytes(), ct);
             return;
         }
 
@@ -88,11 +94,33 @@ public sealed class AreaShopBuyHandler(
             await characterRepository.AddInventoryAsync((int)session.CharacterId, (int)itemId, checked((int)quantity), ct);
         }
 
-        user.NpsPoints = checked((long)(currentPoints - totalCost));
-        await db.SaveChangesAsync(ct);
+        var updatedBalance = checked((long)(currentBalance - totalCost));
+        switch (request.PriceType)
+        {
+            case ShopPriceType.AiPoints:
+                user.AiPoints = updatedBalance;
+                session.User.AiPoints = user.AiPoints;
+                break;
+            case ShopPriceType.NicoPoints:
+                user.NicoPoints = updatedBalance;
+                session.User.NicoPoints = user.NicoPoints;
+                break;
+        }
 
-        session.User.NpsPoints = user.NpsPoints;
-        await session.SendAsync(ResponseType, new ShopBuyResponse(0, (ulong)user.NpsPoints).ToBytes(), ct);
+        await db.SaveChangesAsync(ct);
+        await session.SendAsync(ResponseType, new ShopBuyResponse(0, (ulong)updatedBalance).ToBytes(), ct);
+        if (request.PriceType == ShopPriceType.AiPoints)
+        {
+            await session.SendAsync(PacketType.MoneyUpdatedAipoint, new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(), ct);
+        }
+        if (request.PriceType == ShopPriceType.NicoPoints)
+        {
+            await session.SendAsync(
+                PacketType.MoneyUpdatedNicopoint,
+                new MoneyUpdatedNicopointNotify((ulong)Math.Max(0, user.NicoPoints)).ToBytes(),
+                ct
+            );
+        }
 
         var refreshedCharacter = await characterRepository.GetByIdAsync((int)session.CharacterId, ct);
         if (refreshedCharacter is not null)

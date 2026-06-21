@@ -26,8 +26,14 @@ public class AreaMoneyNpsPointsHandler(IUserRepository userRepo, ILogger<AreaMon
             return;
         }
 
-        var total = (ulong)Math.Max(0, user.NpsPoints);
+        var total = (ulong)Math.Max(0, user.AiPoints);
         var responseOk = new MoneyNpsPointsResponse(0, total, NpsPointsLimit);
         await session.SendAsync(ResponseType, responseOk.ToBytes(), ct);
+
+        var aiPoints = (ulong)Math.Max(0, user.AiPoints);
+        await session.SendAsync(PacketType.MoneyUpdatedAipoint, new MoneyUpdatedAipointNotify(aiPoints).ToBytes(), ct);
+
+        var niconicoPoints = (ulong)Math.Max(0, user.NicoPoints);
+        await session.SendAsync(PacketType.MoneyUpdatedNicopoint, new MoneyUpdatedNicopointNotify(niconicoPoints).ToBytes(), ct);
     }
 }

@@ -4,7 +4,7 @@ namespace AISpace.Network.Packets.Area;
 
 public sealed class ShopItemNotify(IReadOnlyList<ShopItemNotify.ShopItem> items) : IOutgoingPacket
 {
-    public sealed record ShopItem(uint ItemId, ulong NpsPrice, ulong NicoPrice);
+    public sealed record ShopItem(uint ItemId, ulong AiPrice, ulong NicoPrice);
 
     public byte[] ToBytes()
     {
@@ -15,7 +15,7 @@ public sealed class ShopItemNotify(IReadOnlyList<ShopItemNotify.ShopItem> items)
         {
             // Decompiled parser (sub_799AF0) reads fixed 20-byte entries for recv_shop_item.
             // Layout: UInt64 + UInt64 + UInt32.
-            writer.Write(item.NpsPrice);
+            writer.Write(item.AiPrice);
             writer.Write(item.NicoPrice);
             writer.Write(item.ItemId);
         }

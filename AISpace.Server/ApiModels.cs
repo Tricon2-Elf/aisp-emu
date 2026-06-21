@@ -45,7 +45,8 @@ public record UserDetail
     public string? BanReason { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? BannedAt { get; init; }
-    public long NpsPoints { get; init; }
+    public long AiPoints { get; init; }
+    public long NicoPoints { get; init; }
     public int CharacterCount { get; init; }
     public List<CharacterSummary> Characters { get; init; } = [];
 }
