@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
@@ -5,7 +6,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaNpcGetDataHandler : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.NpcGetDataRequest;
 
@@ -18,18 +19,21 @@ public class AreaNpcGetDataHandler : IPacketHandler, IRequiresAuthenticatedSessi
         var response = new NpcGetDataResponse();
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        if (session.MapId != StarterShopNpc.StarterMapId)
-            return;
+        var npcs = await npcRepository.GetActiveByMapAsync(session.MapId, ct);
+        foreach (var npc in npcs)
+        {
+            var objectId = checked((uint)npc.NpcObjectId);
+            var modelId = checked((uint)npc.ModelId);
+            var pos = new MovementData(npc.X, npc.Y, npc.Z, checked((sbyte)npc.Rotation), MovementType.Stopped);
+            var npcChara = new CharaData(objectId, modelId, npc.Name) { moveData = pos };
+            npcChara.Visual.VisualId = objectId;
+            npcChara.AddEquip(
+                npc.Equipment.OrderBy(x => x.SortOrder).ThenBy(x => x.SlotIndex).Select(x => new CharacterEquipSlot(checked((byte)x.SlotIndex), checked((uint)x.ItemId))),
+                ItemEntityMapper.ResolveEquipSocket
+            );
 
-        var pos = new MovementData(StarterShopNpc.X, StarterShopNpc.Y, StarterShopNpc.Z, StarterShopNpc.Rotation, MovementType.Stopped);
-        var npcChara = new CharaData(StarterShopNpc.ObjectId, StarterShopNpc.ModelId, StarterShopNpc.Name) { moveData = pos };
-        npcChara.Visual.VisualId = StarterShopNpc.ObjectId;
-        npcChara.AddEquip(
-            DefaultClothingItems.Male.Select((itemId, slotIndex) => new CharacterEquipSlot((byte)slotIndex, (uint)itemId)),
-            ItemEntityMapper.ResolveEquipSocket
-        );
-
-        var npcPacket = new NpcNotifyData(0, StarterShopNpc.ObjectId, npcChara).ToBytes();
-        await session.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
+            var npcPacket = new NpcNotifyData(0, objectId, npcChara).ToBytes();
+            await session.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
+        }
     }
 }

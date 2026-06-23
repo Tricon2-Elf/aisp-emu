@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "shops": [
+    {
+      "code": "starter_clothing",
+      "displayName": "Starter Shop",
+      "bannerVisualId": 10110,
+      "isEnabled": true,
+      "items": [
+        { "itemId": 10100220, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 10, "isEnabled": true },
+        { "itemId": 10200100, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 20, "isEnabled": true },
+        { "itemId": 10400030, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 30, "isEnabled": true },
+        { "itemId": 10500070, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 40, "isEnabled": true },
+        { "itemId": 10100060, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 50, "isEnabled": true },
+        { "itemId": 10200090, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 60, "isEnabled": true },
+        { "itemId": 10400000, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 70, "isEnabled": true },
+        { "itemId": 10500010, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 80, "isEnabled": true }
+      ],
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177281,
+          "modelId": 1001021,
+          "name": "Starter Shop",
+          "x": -10587.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 0,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+          ]
+        }
+      ]
+    }
+  ]
+}

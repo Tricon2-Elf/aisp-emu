@@ -20,6 +20,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Circle> Circles { get; internal set; }
     public DbSet<Map> Maps { get; set; }
     public DbSet<MapLink> MapLinks { get; set; }
+    public DbSet<Npc> Npcs { get; set; }
+    public DbSet<NpcEquipment> NpcEquipments { get; set; }
+    public DbSet<Shop> Shops { get; set; }
+    public DbSet<ShopItem> ShopItems { get; set; }
     public DbSet<SessionPresence> SessionPresences { get; set; }
     public DbSet<PendingMapTransfer> PendingMapTransfers { get; set; }
 
@@ -122,6 +126,52 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.ChannelId,
                 x.SortOrder,
             });
+        });
+
+        b.Entity<Shop>(e =>
+        {
+            e.ToTable("Shops");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Code).HasMaxLength(128).IsRequired();
+            e.Property(x => x.DisplayName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.IsEnabled).HasDefaultValue(true);
+            e.HasIndex(x => x.Code).IsUnique();
+        });
+
+        b.Entity<ShopItem>(e =>
+        {
+            e.ToTable("ShopItems");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.AiPrice).HasDefaultValue(0L);
+            e.Property(x => x.NicoPrice).HasDefaultValue(0L);
+            e.Property(x => x.IsEnabled).HasDefaultValue(true);
+            e.HasIndex(x => new { x.ShopId, x.ItemId }).IsUnique();
+            e.HasIndex(x => new { x.ShopId, x.SortOrder });
+            e.HasOne(x => x.Shop).WithMany(x => x.Items).HasForeignKey(x => x.ShopId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<Npc>(e =>
+        {
+            e.ToTable("Npcs");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(128).IsRequired();
+            e.Property(x => x.ChannelId).HasDefaultValue(-1);
+            e.Property(x => x.DayPhase).HasDefaultValue(-1);
+            e.Property(x => x.DateStartUtc).HasDefaultValue(DateTime.UnixEpoch);
+            e.Property(x => x.DateEndUtc).HasDefaultValue(DateTime.MaxValue);
+            e.Property(x => x.InteractionType).HasConversion<int>();
+            e.Property(x => x.IsEnabled).HasDefaultValue(true);
+            e.HasIndex(x => x.NpcObjectId).IsUnique();
+            e.HasIndex(x => new { x.MapId, x.SortOrder });
+            e.HasOne(x => x.Shop).WithMany(x => x.Npcs).HasForeignKey(x => x.ShopId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<NpcEquipment>(e =>
+        {
+            e.ToTable("NpcEquipment");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.NpcId, x.SlotIndex }).IsUnique();
+            e.HasOne(x => x.Npc).WithMany(x => x.Equipment).HasForeignKey(x => x.NpcId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<GameChannel>(e =>

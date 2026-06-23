@@ -1,7 +1,6 @@
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
-using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
@@ -14,6 +13,9 @@ namespace AISpace.Common.Tests;
 
 public class AreaShopBuyHandlerTests
 {
+    private const uint StarterMapId = 10990100;
+    private const uint StarterNpcObjectId = 0x50000001;
+
     [Fact]
     public async Task HandleAsync_AiPointsPurchase_DeductsCurrency_AndAddsInventory()
     {
@@ -29,6 +31,7 @@ public class AreaShopBuyHandlerTests
             {
                 seed.Users.Add(user);
                 seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -39,9 +42,15 @@ public class AreaShopBuyHandlerTests
                 UserId = user.Id,
                 CharacterId = (uint)characterId,
                 Character = user.Characters.Single(),
-                MapId = StarterShopNpc.StarterMapId,
+                MapId = StarterMapId,
             };
-            var handler = new AreaShopBuyHandler(db, new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), NullLogger<AreaShopBuyHandler>.Instance);
+            var handler = new AreaShopBuyHandler(
+                db,
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new NpcRepository(db),
+                new ShopRepository(db),
+                NullLogger<AreaShopBuyHandler>.Instance
+            );
 
             var payload = BuildShopBuyPayload(
                 [
@@ -89,6 +98,7 @@ public class AreaShopBuyHandlerTests
             {
                 seed.Users.Add(user);
                 seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -99,9 +109,15 @@ public class AreaShopBuyHandlerTests
                 UserId = user.Id,
                 CharacterId = (uint)characterId,
                 Character = user.Characters.Single(),
-                MapId = StarterShopNpc.StarterMapId,
+                MapId = StarterMapId,
             };
-            var handler = new AreaShopBuyHandler(db, new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), NullLogger<AreaShopBuyHandler>.Instance);
+            var handler = new AreaShopBuyHandler(
+                db,
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new NpcRepository(db),
+                new ShopRepository(db),
+                NullLogger<AreaShopBuyHandler>.Instance
+            );
 
             var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0)], ShopPriceType.NicoPoints);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
@@ -140,6 +156,7 @@ public class AreaShopBuyHandlerTests
             {
                 seed.Users.Add(user);
                 seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -150,9 +167,15 @@ public class AreaShopBuyHandlerTests
                 UserId = user.Id,
                 CharacterId = (uint)characterId,
                 Character = user.Characters.Single(),
-                MapId = StarterShopNpc.StarterMapId,
+                MapId = StarterMapId,
             };
-            var handler = new AreaShopBuyHandler(db, new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), NullLogger<AreaShopBuyHandler>.Instance);
+            var handler = new AreaShopBuyHandler(
+                db,
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new NpcRepository(db),
+                new ShopRepository(db),
+                NullLogger<AreaShopBuyHandler>.Instance
+            );
 
             var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0)], ShopPriceType.AiPoints);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
@@ -190,6 +213,7 @@ public class AreaShopBuyHandlerTests
             {
                 seed.Users.Add(user);
                 seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -200,9 +224,15 @@ public class AreaShopBuyHandlerTests
                 UserId = user.Id,
                 CharacterId = (uint)characterId,
                 Character = user.Characters.Single(),
-                MapId = StarterShopNpc.StarterMapId,
+                MapId = StarterMapId,
             };
-            var handler = new AreaShopBuyHandler(db, new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), NullLogger<AreaShopBuyHandler>.Instance);
+            var handler = new AreaShopBuyHandler(
+                db,
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new NpcRepository(db),
+                new ShopRepository(db),
+                NullLogger<AreaShopBuyHandler>.Instance
+            );
 
             var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0)], (ShopPriceType)99);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
@@ -238,6 +268,8 @@ public class AreaShopBuyHandlerTests
             await using (var seed = new MainContext(options))
             {
                 seed.Users.Add(user);
+                seed.Items.Add(new Item { Id = 10100220, Name = "Shop Item", Socket = 8 });
+                await SeedShopDataAsync(seed, 10100220);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -248,9 +280,15 @@ public class AreaShopBuyHandlerTests
                 UserId = user.Id,
                 CharacterId = (uint)characterId,
                 Character = user.Characters.Single(),
-                MapId = StarterShopNpc.StarterMapId,
+                MapId = StarterMapId,
             };
-            var handler = new AreaShopBuyHandler(db, new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), NullLogger<AreaShopBuyHandler>.Instance);
+            var handler = new AreaShopBuyHandler(
+                db,
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new NpcRepository(db),
+                new ShopRepository(db),
+                NullLogger<AreaShopBuyHandler>.Instance
+            );
 
             var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(99999999, 0, 0, 0)], ShopPriceType.AiPoints);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
@@ -305,7 +343,7 @@ public class AreaShopBuyHandlerTests
                 Id = characterId,
                 Name = $"Shop Character {characterId}",
                 UserId = userId,
-                CurrentMapId = StarterShopNpc.StarterMapId,
+                CurrentMapId = StarterMapId,
                 ModelId = 100,
                 Birthdate = new DateTime(2000, 1, 2),
                 BloodType = BloodType.A,
@@ -315,5 +353,51 @@ public class AreaShopBuyHandlerTests
             }
         );
         return user;
+    }
+
+    private static async Task SeedShopDataAsync(MainContext db, uint itemId)
+    {
+        var shop = new Shop
+        {
+            Code = "test_shop",
+            DisplayName = "Test Shop",
+            BannerVisualId = 10110,
+            IsEnabled = true,
+        };
+        db.Shops.Add(shop);
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        db.ShopItems.Add(
+            new ShopItem
+            {
+                ShopId = shop.Id,
+                ItemId = (int)itemId,
+                AiPrice = 50,
+                NicoPrice = 50,
+                SortOrder = 0,
+                IsEnabled = true,
+            }
+        );
+        db.Npcs.Add(
+            new Npc
+            {
+                MapId = StarterMapId,
+                ChannelId = -1,
+                DayPhase = -1,
+                DateStartUtc = DateTime.UnixEpoch,
+                DateEndUtc = DateTime.MaxValue,
+                NpcObjectId = StarterNpcObjectId,
+                ModelId = 1001021,
+                Name = "Test Shop NPC",
+                X = -9000f,
+                Y = 2f,
+                Z = -17900f,
+                Rotation = 90,
+                ShopId = shop.Id,
+                InteractionType = NpcInteractionType.Shop,
+                IsEnabled = true,
+                SortOrder = 0,
+            }
+        );
     }
 }

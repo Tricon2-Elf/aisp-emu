@@ -11,6 +11,8 @@ namespace AISpace.Common.Handlers.Area;
 public sealed class AreaShopBuyHandler(
     MainContext db,
     ICharacterRepository characterRepository,
+    INpcRepository npcRepository,
+    IShopRepository shopRepository,
     ILogger<AreaShopBuyHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -20,7 +22,7 @@ public sealed class AreaShopBuyHandler(
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        if (session.MapId != StarterShopNpc.StarterMapId || session.CharacterId == 0 || session.User is null)
+        if (session.CharacterId == 0 || session.User is null)
         {
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, 0).ToBytes(), ct);
             return;
@@ -46,7 +48,16 @@ public sealed class AreaShopBuyHandler(
             return;
         }
 
-        var catalog = StarterShopCatalog.Items.ToDictionary(x => x.ItemId, x => x);
+        var shop = await npcRepository.GetSingleActiveShopForMapAsync(session.MapId, ct);
+        if (shop is null)
+        {
+            var total = request.PriceType == ShopPriceType.NicoPoints ? (ulong)Math.Max(0, session.User.NicoPoints) : (ulong)Math.Max(0, session.User.AiPoints);
+            await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
+            return;
+        }
+
+        var enabledShopItems = await shopRepository.GetEnabledItemsAsync(shop.Id, ct);
+        var catalog = enabledShopItems.ToDictionary(x => (uint)x.ItemId, x => x);
         // Client send_shop_buy entries do not include an explicit quantity field.
         // Treat repeated item ids as repeated single-unit purchases.
         var mergedQuantities = new Dictionary<uint, uint>();
@@ -75,7 +86,8 @@ public sealed class AreaShopBuyHandler(
         ulong totalCost = 0;
         foreach (var (itemId, quantity) in mergedQuantities)
         {
-            var unitPrice = StarterShopCatalog.ResolvePrice(catalog[itemId], request.PriceType);
+            var row = catalog[itemId];
+            var unitPrice = request.PriceType == ShopPriceType.NicoPoints ? row.NicoPrice : row.AiPrice;
             // Reject zero-priced entries so catalog/config mistakes cannot grant free items.
             if (unitPrice == 0)
             {
@@ -84,7 +96,7 @@ public sealed class AreaShopBuyHandler(
                 return;
             }
 
-            totalCost += (ulong)unitPrice * quantity;
+            totalCost += checked((ulong)unitPrice * quantity);
         }
 
         ulong currentBalance = request.PriceType switch
