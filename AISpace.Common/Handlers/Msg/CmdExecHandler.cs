@@ -1,10 +1,12 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
+using AISpace.Common.Services;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using AISpace.Network.Packets.Msg;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Character = AISpace.Common.DAL.Entities.Character;
 
@@ -14,6 +16,7 @@ public class CmdExecHandler(
     SharedState state,
     IMapRepository mapRepo,
     ICharacterRepository characterRepo,
+    IItemBaseListCache itemBaseListCache,
     DirectMapLinkTransitionService directMapLinkTransitionService,
     ILogger<CmdExecHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
@@ -31,7 +34,7 @@ public class CmdExecHandler(
 
         var response = new CmdExecResponse(request.MessageId, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
-        string cmd = request.Command.Trim().ToLower();
+        string cmd = request.Command.Trim().TrimStart('/').ToLowerInvariant();
         logger.LogInformation("CmdExecHandler: '{cmd}' with args: '{args}'", cmd, string.Join(", ", request.Arguments));
 
         if (cmd == "pos" || cmd == "coords")
@@ -143,6 +146,71 @@ public class CmdExecHandler(
             logger.LogInformation(
                 "CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client",
                 itemIds.Count,
+                characterId
+            );
+            return;
+        }
+
+        if (cmd is "give")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.CharacterId == 0)
+            {
+                logger.LogWarning("CmdExecHandler: give requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            if (request.Arguments.Count == 0 || !int.TryParse(request.Arguments[0], out var itemId) || itemId <= 0)
+            {
+                logger.LogWarning("CmdExecHandler: give requires a positive item id argument (user {UserId})", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            if (!await itemBaseListCache.ContainsItemAsync(itemId, ct))
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: give rejected unknown item {ItemId} for character {CharacterId}",
+                    itemId,
+                    areaClient.CharacterId
+                );
+                return;
+            }
+
+            var quantity = 1;
+            if (request.Arguments.Count > 1 && int.TryParse(request.Arguments[1], out var parsedQuantity) && parsedQuantity > 0)
+                quantity = parsedQuantity;
+
+            var characterId = (int)areaClient.CharacterId;
+            var character = await characterRepo.GetByIdAsync(characterId, ct);
+            if (character is null)
+            {
+                logger.LogWarning("CmdExecHandler: give could not resolve character {CharacterId}", characterId);
+                return;
+            }
+
+            var previousQuantity = character.Inventory.FirstOrDefault(i => i.ItemId == itemId)?.Quantity ?? 0;
+
+            try
+            {
+                await characterRepo.AddInventoryAsync(characterId, itemId, quantity, ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogWarning(ex, "CmdExecHandler: give failed to add item {ItemId} (qty {Quantity}) to character {CharacterId}", itemId, quantity, characterId);
+                return;
+            }
+
+            var totalQuantity = (ushort)Math.Clamp(previousQuantity + quantity, 0, ushort.MaxValue);
+            await CharacterItemSync.SendInventoryItemAsync(areaClient, itemId, totalQuantity, ct);
+
+            var refreshed = await characterRepo.GetByIdAsync(characterId, ct);
+            if (refreshed is not null)
+                areaClient.Character = refreshed;
+
+            logger.LogInformation(
+                "CmdExecHandler: gave item {ItemId} x{Quantity} to character {CharacterId} and sent inventory notify",
+                itemId,
+                quantity,
                 characterId
             );
             return;

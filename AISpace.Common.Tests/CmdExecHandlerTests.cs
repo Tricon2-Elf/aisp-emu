@@ -5,6 +5,7 @@ using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Handlers.Msg;
+using AISpace.Common.Services;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
 using AISpace.Network.Data;
@@ -79,6 +80,7 @@ public class CmdExecHandlerTests
                 state,
                 new MapRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -133,6 +135,7 @@ public class CmdExecHandlerTests
                 state,
                 new MapRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -193,6 +196,7 @@ public class CmdExecHandlerTests
                 state,
                 new MapRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -207,6 +211,122 @@ public class CmdExecHandlerTests
             Assert.Contains(areaSession.Sent, p => p.Type == PacketType.ItemGetListResponse);
             Assert.Equal(expectedItems.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
             Assert.Equal(expectedItems.Count, areaSession.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GiveCommand_AddsItemToInventoryAndSendsItemCreateNotify()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8005, "give-user", "Give User", 10990100);
+            const int itemId = 1201001;
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Items.Add(new Item { Id = itemId, Name = "Give Item", IconId = itemId, Socket = 0 });
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8005,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                new StubItemBaseListCache([itemId]),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(BuildCmdExecPayload("/give", itemId.ToString()), msgSession, TestContext.Current.CancellationToken);
+
+            await using var verifyDb = new MainContext(options);
+            var inventory = await verifyDb.CharacterInventories.SingleAsync(
+                i => i.CharacterId == 8005 && i.ItemId == itemId,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal(1, inventory.Quantity);
+
+            Assert.Equal(1, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
+            Assert.Equal(1, areaSession.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GiveCommand_RejectsItemNotInItemBaseListCache()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8006, "give-missing-user", "Give Missing User", 10990100);
+            const int itemId = 1201999;
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Items.Add(new Item { Id = itemId, Name = "Missing In Cache", IconId = itemId, Socket = 0 });
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8006,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(BuildCmdExecPayload("/give", itemId.ToString()), msgSession, TestContext.Current.CancellationToken);
+
+            await using var verifyDb = new MainContext(options);
+            var inventoryCount = await verifyDb.CharacterInventories.CountAsync(
+                i => i.CharacterId == 8006 && i.ItemId == itemId,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal(0, inventoryCount);
+            Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemCreateNotify);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
         finally
@@ -290,5 +410,16 @@ public class CmdExecHandlerTests
             state,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
+    }
+
+    private sealed class StubItemBaseListCache(IEnumerable<int>? itemIds = null) : IItemBaseListCache
+    {
+        private readonly HashSet<int> _itemIds = itemIds?.ToHashSet() ?? [];
+
+        public ReadOnlyMemory<byte> ResponsePayload => ReadOnlyMemory<byte>.Empty;
+
+        public Task WarmAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+        public Task<bool> ContainsItemAsync(int itemId, CancellationToken ct = default) => Task.FromResult(_itemIds.Contains(itemId));
     }
 }
