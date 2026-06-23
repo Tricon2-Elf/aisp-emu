@@ -71,7 +71,7 @@ public sealed class AreaShopBuyHandler(
 
         if (mergedQuantities.Count == 0)
         {
-            var total = (ulong)Math.Max(0, session.User.AiPoints);
+            var total = request.PriceType == ShopPriceType.NicoPoints ? (ulong)Math.Max(0, session.User.NicoPoints) : (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
         }
