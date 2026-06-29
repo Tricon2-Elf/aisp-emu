@@ -50,7 +50,6 @@ internal static class EquipSlotMapper
                 2 => (byte)CharacterEquipmentSlotIndex.Coat, // upper-body layer 1 (coat)
                 4 => (byte)CharacterEquipmentSlotIndex.Jacket, // upper-body layer 2 (jacket)
                 8 => (byte)CharacterEquipmentSlotIndex.Shirt, // upper-body layer 3 (shirt)
-                10 => (byte)CharacterEquipmentSlotIndex.Hat, // legacy compatibility for old server payloads
                 16 or 32 => (byte)CharacterEquipmentSlotIndex.LowerBody,
                 64 => (byte)CharacterEquipmentSlotIndex.Gloves,
                 128 => (byte)CharacterEquipmentSlotIndex.Socks,
