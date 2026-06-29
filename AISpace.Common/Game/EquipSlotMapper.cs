@@ -1,11 +1,23 @@
 namespace AISpace.Common.Game;
 
+internal enum CharacterEquipmentSlotIndex : byte
+{
+    Shirt = 0,
+    LowerBody = 1,
+    Socks = 2,
+    Shoes = 3,
+    LowerUnderwear = 4,
+    Bra = 5,
+    Hat = 6,
+    Gloves = 7,
+    Coat = 8,
+    Jacket = 9,
+}
+
 internal static class EquipSlotMapper
 {
-    /// <summary>
-    /// Maps a preview equip entry to a CharaData slot index for DB persistence.
-    /// Matches default male create slots: shirt=0, pants=1, socks=2, shoes=3, underwear=4.
-    /// </summary>
+    private const byte InvalidSlot = byte.MaxValue;
+
     public static bool TryResolveSlotIndex(uint itemId, uint socketBit, out byte slotIndex)
     {
         slotIndex = 0;
@@ -16,15 +28,17 @@ internal static class EquipSlotMapper
         {
             slotIndex = (itemId / 100_000) switch
             {
-                101 => 0,
-                102 => 1,
-                104 => 2,
-                105 => 3,
-                107 => 4,
-                106 => 5,
-                _ => byte.MaxValue,
+                100 => (byte)CharacterEquipmentSlotIndex.Hat,
+                101 => (byte)CharacterEquipmentSlotIndex.Shirt,
+                102 => (byte)CharacterEquipmentSlotIndex.LowerBody,
+                103 => (byte)CharacterEquipmentSlotIndex.Gloves,
+                104 => (byte)CharacterEquipmentSlotIndex.Socks,
+                105 => (byte)CharacterEquipmentSlotIndex.Shoes,
+                107 => (byte)CharacterEquipmentSlotIndex.LowerUnderwear,
+                106 => (byte)CharacterEquipmentSlotIndex.Bra,
+                _ => InvalidSlot,
             };
-            if (slotIndex != byte.MaxValue)
+            if (slotIndex != InvalidSlot)
                 return true;
         }
 
@@ -32,15 +46,20 @@ internal static class EquipSlotMapper
         {
             slotIndex = socketBit switch
             {
-                8 => 0,
-                16 or 32 => 1,
-                128 => 2,
-                256 or 512 => 3,
-                2048 => 4,
-                1024 => 5,
-                _ => byte.MaxValue,
+                1 => (byte)CharacterEquipmentSlotIndex.Hat, // hat/head
+                2 => (byte)CharacterEquipmentSlotIndex.Coat, // upper-body layer 1 (coat)
+                4 => (byte)CharacterEquipmentSlotIndex.Jacket, // upper-body layer 2 (jacket)
+                8 => (byte)CharacterEquipmentSlotIndex.Shirt, // upper-body layer 3 (shirt)
+                10 => (byte)CharacterEquipmentSlotIndex.Hat, // legacy compatibility for old server payloads
+                16 or 32 => (byte)CharacterEquipmentSlotIndex.LowerBody,
+                64 => (byte)CharacterEquipmentSlotIndex.Gloves,
+                128 => (byte)CharacterEquipmentSlotIndex.Socks,
+                256 or 512 => (byte)CharacterEquipmentSlotIndex.Shoes,
+                2048 => (byte)CharacterEquipmentSlotIndex.LowerUnderwear,
+                1024 => (byte)CharacterEquipmentSlotIndex.Bra,
+                _ => InvalidSlot,
             };
-            if (slotIndex != byte.MaxValue)
+            if (slotIndex != InvalidSlot)
                 return true;
         }
 
