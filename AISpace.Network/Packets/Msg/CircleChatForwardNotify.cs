@@ -9,7 +9,7 @@ public class CircleChatForwardNotify(uint circleId, uint fromAvatarId, string me
         var writer = new PacketWriter();
         writer.Write(circleId);
         writer.Write(fromAvatarId);
-        writer.Write(message, "Shift_JIS");
+        writer.Write(message, "utf-8");
         writer.Write(balloonId);
         return writer.ToBytes();
     }
