@@ -6,14 +6,14 @@ namespace AISpace.Common.DAL.Repositories;
 
 public interface INpcRepository
 {
-    Task<IReadOnlyList<Npc>> GetActiveByMapAsync(uint mapId, CancellationToken ct = default);
-    Task<Npc?> GetActiveByMapAndObjectIdAsync(uint mapId, uint npcObjectId, CancellationToken ct = default);
-    Task<Shop?> GetSingleActiveShopForMapAsync(uint mapId, CancellationToken ct = default);
+    Task<IReadOnlyList<Npc>> GetActiveByMapAsync(uint mapId, int channelId, CancellationToken ct = default);
+    Task<Npc?> GetActiveByMapAndObjectIdAsync(uint mapId, int channelId, uint npcObjectId, CancellationToken ct = default);
+    Task<Shop?> GetSingleActiveShopForMapAsync(uint mapId, int channelId, CancellationToken ct = default);
 }
 
 public sealed class NpcRepository(MainContext db) : INpcRepository
 {
-    public async Task<IReadOnlyList<Npc>> GetActiveByMapAsync(uint mapId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Npc>> GetActiveByMapAsync(uint mapId, int channelId, CancellationToken ct = default)
     {
         var activePhase = (int)TimeZoneService.GetServerTime().Phase;
         var nowUtc = DateTime.UtcNow;
@@ -24,6 +24,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             .Where(x =>
                 x.IsEnabled
                 && x.MapId == mapIdLong
+                && (x.ChannelId == -1 || x.ChannelId == channelId)
                 && (x.DayPhase == -1 || x.DayPhase == activePhase)
                 && x.DateStartUtc <= nowUtc
                 && x.DateEndUtc >= nowUtc
@@ -33,7 +34,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             .ToListAsync(ct);
     }
 
-    public async Task<Npc?> GetActiveByMapAndObjectIdAsync(uint mapId, uint npcObjectId, CancellationToken ct = default)
+    public async Task<Npc?> GetActiveByMapAndObjectIdAsync(uint mapId, int channelId, uint npcObjectId, CancellationToken ct = default)
     {
         var activePhase = (int)TimeZoneService.GetServerTime().Phase;
         var nowUtc = DateTime.UtcNow;
@@ -46,6 +47,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
                 x =>
                     x.IsEnabled
                     && x.MapId == mapIdLong
+                    && (x.ChannelId == -1 || x.ChannelId == channelId)
                     && x.NpcObjectId == npcObjectIdLong
                     && (x.DayPhase == -1 || x.DayPhase == activePhase)
                     && x.DateStartUtc <= nowUtc
@@ -54,7 +56,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             );
     }
 
-    public async Task<Shop?> GetSingleActiveShopForMapAsync(uint mapId, CancellationToken ct = default)
+    public async Task<Shop?> GetSingleActiveShopForMapAsync(uint mapId, int channelId, CancellationToken ct = default)
     {
         var activePhase = (int)TimeZoneService.GetServerTime().Phase;
         var nowUtc = DateTime.UtcNow;
@@ -65,6 +67,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
                 x.IsEnabled
                 && x.MapId == mapIdLong
                 && x.ShopId != null
+                && (x.ChannelId == -1 || x.ChannelId == channelId)
                 && (x.DayPhase == -1 || x.DayPhase == activePhase)
                 && x.DateStartUtc <= nowUtc
                 && x.DateEndUtc >= nowUtc
