@@ -8,7 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, ILogger<ItemTryEquipReplaceHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class ItemTryEquipReplaceHandler(
+    ICharacterRepository characterRepo,
+    SharedState state,
+    ILogger<ItemTryEquipReplaceHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemTryEquipReplaceRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipReplaceResponse;
@@ -51,6 +55,13 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, ILog
 
         if (replaceResult is not null)
             await CharacterItemSync.SendReplaceChangesAsync(session, replaceResult, ct);
+
+        if (session.Character is not null && session.CharacterId != 0)
+        {
+            var appearanceNotify = BuildAppearanceNotify(session, session.Character);
+            foreach (var peer in state.GetAreaPeers(session))
+                await peer.SendAsync(PacketType.AvatarNotifyData, appearanceNotify, ct);
+        }
     }
 
     private static IReadOnlyList<ItemEquipEntry> ResolveEquipsForPersistence(IReadOnlyList<ItemEquipEntry> equips, Character? character)
@@ -109,5 +120,11 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, ILog
             return (uint)((itemId / 1_000) % 100_000 + 1);
 
         return unchecked((uint)itemId + 1);
+    }
+
+    private static byte[] BuildAppearanceNotify(IPlayerSession session, Character character)
+    {
+        var pos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
+        return AreasvEnterHandler.CreateNotify(character, session.CharacterId, 1, pos);
     }
 }
