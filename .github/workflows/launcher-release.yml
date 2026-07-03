@@ -85,34 +85,8 @@ jobs:
           name: launcher-win-x86
           path: AISpace.Launcher/bin/publish/win-x86/aisp.launch.win-x86.bundle.zip
 
-  build-linux:
-    needs: calver
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "10.0.x"
-
-      - name: Publish linux-x64
-        run: >
-          dotnet publish AISpace.Launcher/AISpace.Launcher.csproj
-          -c Release
-          -p:PublishProfile=linux-x64
-          -p:InformationalVersion=${{ needs.calver.outputs.version }}
-          -p:Version=${{ needs.calver.outputs.version }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: launcher-linux-x64
-          path: AISpace.Launcher/bin/publish/linux-x64/aisp.launch
-
   release:
-    needs: [calver, build-windows, build-linux]
+    needs: [calver, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -128,8 +102,6 @@ jobs:
           VERSION: ${{ needs.calver.outputs.version }}
         run: |
           cp "dist/launcher-win-x86/aisp.launch.win-x86.bundle.zip" "dist/aisp.launch-${VERSION}-win-x86.zip"
-          cp "dist/launcher-linux-x64/aisp.launch" "dist/aisp.launch-${VERSION}-linux-x64"
-          chmod +x "dist/aisp.launch-${VERSION}-linux-x64"
           sha256sum dist/aisp.launch-* > dist/SHA256SUMS
 
       - name: Create GitHub Release
@@ -140,5 +112,4 @@ jobs:
           generate_release_notes: true
           files: |
             dist/aisp.launch-${{ needs.calver.outputs.version }}-win-x86.zip
-            dist/aisp.launch-${{ needs.calver.outputs.version }}-linux-x64
             dist/SHA256SUMS
