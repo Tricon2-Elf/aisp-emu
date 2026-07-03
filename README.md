@@ -2,6 +2,11 @@
 
 AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MMO **AISp@ce**. The goal of this project is to recreate the original experience for educational purposes and to keep the game playable after its shutdown.
 
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)](https://dotnet.microsoft.com/download)
+![GitHub License](https://img.shields.io/github/license/Tricon2-Elf/aisp-emu)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Tricon2-Elf/aisp-emu/build.yml?branch=master)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Tricon2-Elf/aisp-emu/docker-publish.yml?label=Docker%20Build)
+
 ## Project scope
 
 - Provides a replacement server stack for AISp@ce, implemented in .NET 10.0 with Entity Framework Core and NLog for persistence and logging.
