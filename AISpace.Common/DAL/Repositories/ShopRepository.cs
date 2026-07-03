@@ -53,7 +53,33 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
 
             await db.SaveChangesAsync(ct);
 
-            foreach (var itemRow in shopRow.Items)
+            var expandedItems = new List<ShopItemSeedRow>(shopRow.Items);
+            if (shopRow.ItemIds.Count > 0)
+            {
+                if (shopRow.DefaultAiPrice is null || shopRow.DefaultNicoPrice is null || shopRow.DefaultAiPrice <= 0 || shopRow.DefaultNicoPrice <= 0)
+                    throw new InvalidDataException($"Shop {shopRow.Code} using itemIds must define defaultAiPrice/defaultNicoPrice > 0.");
+
+                var seenItemIds = expandedItems.Select(x => x.ItemId).ToHashSet();
+                for (var i = 0; i < shopRow.ItemIds.Count; i++)
+                {
+                    var id = shopRow.ItemIds[i];
+                    if (!seenItemIds.Add(id))
+                        continue;
+
+                    expandedItems.Add(
+                        new ShopItemSeedRow
+                        {
+                            ItemId = id,
+                            AiPrice = shopRow.DefaultAiPrice.Value,
+                            NicoPrice = shopRow.DefaultNicoPrice.Value,
+                            SortOrder = (i + 1) * 10,
+                            IsEnabled = shopRow.DefaultItemEnabled ?? true,
+                        }
+                    );
+                }
+            }
+
+            foreach (var itemRow in expandedItems)
             {
                 if (itemRow.ItemId <= 0)
                     throw new InvalidDataException($"Shop {shopRow.Code} has invalid item id {itemRow.ItemId}.");
@@ -186,6 +212,10 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
         public long BannerVisualId { get; set; }
         public bool? IsEnabled { get; set; }
         public List<ShopItemSeedRow> Items { get; set; } = [];
+        public List<int> ItemIds { get; set; } = [];
+        public long? DefaultAiPrice { get; set; }
+        public long? DefaultNicoPrice { get; set; }
+        public bool? DefaultItemEnabled { get; set; }
         public List<NpcSeedRow> Npcs { get; set; } = [];
     }
 
