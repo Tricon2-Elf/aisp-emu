@@ -114,6 +114,7 @@ internal static class ItemEntityMapper
             Socket1 = socket1,
             Socket2 = socket2,
             Category = category,
+            Flags = ResolveItemFlags(item.Id),
             MaxPossessionCount = (ushort)short.MaxValue,
             PlacementTypeId = limitMapKey,
         };
@@ -191,6 +192,21 @@ internal static class ItemEntityMapper
         {
             101 or 102 or 103 or 104 or 105 or 106 or 107 => (uint)prefix,
             _ => 200u,
+        };
+    }
+
+    private static ItemFlags ResolveItemFlags(int itemId)
+    {
+        if (itemId is < 10_000_000 or >= 200_000_000)
+            return ItemFlags.None;
+
+        return (itemId / 100_000) switch
+        {
+            101 => ItemFlags.PermitsUnderwearTop,
+            102 => ItemFlags.PermitsUnderwearBottom,
+            106 => ItemFlags.PermitsUnderwearTop,
+            107 => ItemFlags.PermitsUnderwearBottom,
+            _ => ItemFlags.None,
         };
     }
 }

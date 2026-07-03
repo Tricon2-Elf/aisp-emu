@@ -108,4 +108,26 @@ public class ItemEntityMapperTests
         Assert.Equal(expectedSocket, data.Socket1);
         Assert.Equal(0u, data.Socket2);
     }
+
+    [Fact]
+    public void ToItemBaseListData_sets_modesty_coverage_flags_for_upper_and_lower_clothing()
+    {
+        var top = new Item { Id = 10100220, Socket = 0, Name = "テストシャツ" };
+        var bottom = new Item { Id = 10200100, Socket = 0, Name = "テストパンツ" };
+        var bra = new Item { Id = 10600000, Socket = 0, Name = "テストブラ" };
+        var underwear = new Item { Id = 10700020, Socket = 0, Name = "テスト下着" };
+        var hat = new Item { Id = 10000050, Socket = 10, Name = "保護帽" };
+
+        var topData = ItemEntityMapper.ToItemBaseListData(top);
+        var bottomData = ItemEntityMapper.ToItemBaseListData(bottom);
+        var braData = ItemEntityMapper.ToItemBaseListData(bra);
+        var underwearData = ItemEntityMapper.ToItemBaseListData(underwear);
+        var hatData = ItemEntityMapper.ToItemBaseListData(hat);
+
+        Assert.True((topData.Flags & ItemFlags.PermitsUnderwearTop) != 0);
+        Assert.True((bottomData.Flags & ItemFlags.PermitsUnderwearBottom) != 0);
+        Assert.True((braData.Flags & ItemFlags.PermitsUnderwearTop) != 0);
+        Assert.True((underwearData.Flags & ItemFlags.PermitsUnderwearBottom) != 0);
+        Assert.Equal(ItemFlags.None, hatData.Flags);
+    }
 }
