@@ -69,7 +69,26 @@ public abstract class GameServerBase<T> : BackgroundService
             };
             var channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
 
-            var listener = new VceListener(_loggerFactory.CreateLogger<VceListener>(), channel, ActiveServerType.ToString(), _port, _loggerFactory, id => State.UnregisterClient(ActiveServerType, id), (_, p) => HealthRegistry.MarkListening(ActiveServerType, p), _maxConcurrentClients, _maxReceiveFrameSize, _clientReadTimeoutSeconds);
+            var listener = new VceListener(
+                _loggerFactory.CreateLogger<VceListener>(),
+                channel,
+                ActiveServerType.ToString(),
+                _port,
+                _loggerFactory,
+                id => State.UnregisterClient(ActiveServerType, id),
+                (_, p) => HealthRegistry.MarkListening(ActiveServerType, p),
+                _maxConcurrentClients,
+                _maxReceiveFrameSize,
+                _clientReadTimeoutSeconds,
+                id =>
+                {
+                    if (!State.TryGetSession(id, out var session) || session is null)
+                        return null;
+
+                    var userId = session.User?.Id ?? session.UserId;
+                    return userId > 0 ? userId : null;
+                }
+            );
             HealthRegistry.SetAcceptCheck(ActiveServerType, () => listener.IsListening);
             HealthRegistry.SetClientLoadCheck(ActiveServerType, () => listener.GetClientLoad());
 
