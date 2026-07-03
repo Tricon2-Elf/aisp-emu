@@ -1,9 +1,12 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace AISpace.Launcher;
 
 public sealed class GameLauncher(LauncherSettings settings)
 {
+    private const string LocaleHookLibrary = "aisp.localehook.dll";
+
     public string SettingsPath { get; } = LauncherSettings.GetPath();
 
     public LauncherSettings Settings { get; } = settings;
@@ -29,6 +32,21 @@ public sealed class GameLauncher(LauncherSettings settings)
                 UseShellExecute = false,
                 WorkingDirectory = gameDirectory,
             };
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Settings.UseLocaleReplacer)
+            {
+                var hookDll = ResolveExecutablePath(LocaleHookLibrary);
+                if (hookDll is null)
+                {
+                    return GameLaunchResult.Failure(
+                        "Built-in locale hook DLL not found.",
+                        $"Expected '{LocaleHookLibrary}' next to launcher."
+                    );
+                }
+
+                var injected = WindowsLocaleInjector.TryLaunchWithHook(executable, gameArgs, gameDirectory, hookDll);
+                return injected;
+            }
 
             Process.Start(startInfo);
             return GameLaunchResult.Success(executable);

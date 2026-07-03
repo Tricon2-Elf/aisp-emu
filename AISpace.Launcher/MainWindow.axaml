@@ -29,6 +29,12 @@
                     <ComboBoxItem Content="Local" />
                 </ComboBox>
 
+                <CheckBox x:Name="LocaleReplacerCheckBox"
+                          Grid.Column="1"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Right"
+                          Content="Use Locale Replacer" />
+
                 <Button x:Name="StartGameButton"
                         Grid.Column="2"
                         MinWidth="120"
