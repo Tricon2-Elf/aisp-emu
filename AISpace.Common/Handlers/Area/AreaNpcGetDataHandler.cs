@@ -19,7 +19,7 @@ public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandle
         var response = new NpcGetDataResponse();
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        var npcs = await npcRepository.GetActiveByMapAsync(session.MapId, ct);
+        var npcs = await npcRepository.GetActiveByMapAsync(session.MapId, session.ChannelId, ct);
         foreach (var npc in npcs)
         {
             var objectId = checked((uint)npc.NpcObjectId);

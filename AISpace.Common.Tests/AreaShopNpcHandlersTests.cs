@@ -133,12 +133,55 @@ public class AreaShopNpcHandlersTests
         }
     }
 
+    [Fact]
+    public async Task NpcHandlers_RespectChannelRestrictions()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                await SeedShopNpcAsync(db, isNpcEnabled: true, isShopEnabled: true, isShopItemEnabled: true, channelId: 1);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var npcHandler = new AreaNpcGetDataHandler(new NpcRepository(runDb));
+            var accessHandler = new AreaEventAccessNpcHandler(
+                new NpcRepository(runDb),
+                new ShopRepository(runDb),
+                NullLogger<AreaEventAccessNpcHandler>.Instance
+            );
+
+            var offChannelSession = new CapturingPlayerSession
+            {
+                MapId = StarterMapId,
+                ChannelId = 2,
+                CharacterId = 9001,
+            };
+
+            await npcHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, offChannelSession, TestContext.Current.CancellationToken);
+            Assert.DoesNotContain(offChannelSession.Sent, p => p.Type == PacketType.NpcNotifyData);
+
+            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(StarterNpcObjectId), offChannelSession, TestContext.Current.CancellationToken);
+            var response = Assert.Single(offChannelSession.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            var reader = new PacketReader(response.Payload);
+            Assert.Equal(1u, reader.ReadUInt());
+            Assert.DoesNotContain(offChannelSession.Sent, p => p.Type == PacketType.ShopStartedNotify);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static async Task SeedShopNpcAsync(
         MainContext db,
         bool isNpcEnabled,
         bool isShopEnabled,
         bool isShopItemEnabled,
-        uint bannerVisualId = 10110
+        uint bannerVisualId = 10110,
+        int channelId = -1
     )
     {
         db.Items.Add(new Item { Id = StarterItemId, Name = "Starter Item", Socket = 8 });
@@ -169,7 +212,7 @@ public class AreaShopNpcHandlersTests
         var npc = new Npc
         {
             MapId = StarterMapId,
-            ChannelId = -1,
+            ChannelId = channelId,
             DayPhase = -1,
             DateStartUtc = DateTime.UnixEpoch,
             DateEndUtc = DateTime.MaxValue,

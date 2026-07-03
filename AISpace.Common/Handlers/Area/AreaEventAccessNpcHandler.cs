@@ -19,7 +19,7 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
 
         logger.LogInformation("EventAccessNpcRequest from {CharacterId}: npc={NpcId}, pos=({X},{Y},{Z})", session.CharacterId, request.NpcId, request.AvatarX, request.AvatarY, request.AvatarZ);
 
-        var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, request.NpcId, ct);
+        var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, session.ChannelId, request.NpcId, ct);
         if (npc is null || npc.InteractionType != NpcInteractionType.Shop || npc.ShopId is null || npc.Shop is null || !npc.Shop.IsEnabled)
         {
             session.ActiveShopId = null;

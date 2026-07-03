@@ -51,7 +51,7 @@ public sealed class AreaShopBuyHandler(
         var activeShopId = session.ActiveShopId;
         if (activeShopId is null)
         {
-            var inferredShop = await npcRepository.GetSingleActiveShopForMapAsync(session.MapId, ct);
+            var inferredShop = await npcRepository.GetSingleActiveShopForMapAsync(session.MapId, session.ChannelId, ct);
             activeShopId = inferredShop?.Id;
         }
 
