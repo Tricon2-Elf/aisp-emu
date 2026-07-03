@@ -246,10 +246,20 @@ public class GameServerHealthRegistryTests
         registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 1, AvailableSlots: 31, MaxHandlers: 32));
 
         registry.SampleProcessCpu();
-        var deadline = Environment.TickCount64 + 500;
-        while (Environment.TickCount64 < deadline)
-        { /* burn CPU on this thread */
-        }
+        // Burn CPU on all logical processors so normalized process CPU exceeds the idle threshold
+        // even on high-core CI runners.
+        var workerCount = Math.Max(1, Environment.ProcessorCount);
+        var deadline = Environment.TickCount64 + 700;
+        Parallel.For(
+            0,
+            workerCount,
+            _ =>
+            {
+                while (Environment.TickCount64 < deadline)
+                { /* busy spin */
+                }
+            }
+        );
 
         registry.SampleProcessCpu();
 
