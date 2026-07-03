@@ -75,7 +75,30 @@ public abstract class GameServerBase<T> : BackgroundService
                 ActiveServerType.ToString(),
                 _port,
                 _loggerFactory,
-                id => State.UnregisterClient(ActiveServerType, id),
+                id =>
+                {
+                    if (
+                        ActiveServerType == ServerType.Area
+                        && State.TryGetSession(id, out var disconnectedSession)
+                        && disconnectedSession is not null
+                    )
+                    {
+                        try
+                        {
+                            State.BroadcastAreaDisappearAsync(disconnectedSession).GetAwaiter().GetResult();
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogWarning(
+                                ex,
+                                "Failed broadcasting area disconnect disappear for client {ClientId}",
+                                id
+                            );
+                        }
+                    }
+
+                    State.UnregisterClient(ActiveServerType, id);
+                },
                 (_, p) => HealthRegistry.MarkListening(ActiveServerType, p),
                 _maxConcurrentClients,
                 _maxReceiveFrameSize,

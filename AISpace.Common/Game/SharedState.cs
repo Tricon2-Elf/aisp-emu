@@ -1,5 +1,7 @@
 using System.Threading.Channels;
 using AISpace.Common.DAL.Repositories;
+using AISpace.Network;
+using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Game;
 
@@ -108,6 +110,20 @@ public class SharedState
     {
         var peers = GetAreaSessions(session.MapId, session.ChannelId);
         return includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId).ToList();
+    }
+
+    public async Task BroadcastAreaDisappearAsync(IPlayerSession session, CancellationToken ct = default)
+    {
+        if (session.CharacterId == 0)
+            return;
+
+        var peers = GetAreaPeers(session);
+        if (peers.Count == 0)
+            return;
+
+        var payload = new NotifyDisappearChara(session.CharacterId).ToBytes();
+        foreach (var peer in peers)
+            await peer.SendAsync(PacketType.NotifyDisappearChara, payload, ct);
     }
 
     public IPlayerSession? GetAreaSessionByCharacterId(uint characterId, uint? mapId = null, int? channelId = null)

@@ -47,6 +47,39 @@ public class SharedStateTests
         Assert.DoesNotContain(state.AreaClients, client => client.ConnectionId == id);
     }
 
+    [Fact]
+    public async Task BroadcastAreaDisappearAsync_SendsNotifyDisappearToPeersInSameArea()
+    {
+        var state = new SharedState();
+        var source = new FakeSession(Guid.NewGuid())
+        {
+            CharacterId = 1001,
+            MapId = 10990100,
+            ChannelId = 1,
+        };
+        var sameAreaPeer = new FakeSession(Guid.NewGuid())
+        {
+            CharacterId = 1002,
+            MapId = 10990100,
+            ChannelId = 1,
+        };
+        var otherMapPeer = new FakeSession(Guid.NewGuid())
+        {
+            CharacterId = 1003,
+            MapId = 10990200,
+            ChannelId = 1,
+        };
+
+        state.RegisterClient(ServerType.Area, source);
+        state.RegisterClient(ServerType.Area, sameAreaPeer);
+        state.RegisterClient(ServerType.Area, otherMapPeer);
+
+        await state.BroadcastAreaDisappearAsync(source, TestContext.Current.CancellationToken);
+
+        Assert.Contains(sameAreaPeer.Sent, p => p.Type == PacketType.NotifyDisappearChara);
+        Assert.DoesNotContain(otherMapPeer.Sent, p => p.Type == PacketType.NotifyDisappearChara);
+    }
+
     private sealed class FakeSession(Guid connectionId) : IPlayerSession
     {
         public Guid ConnectionId { get; } = connectionId;
@@ -67,7 +100,12 @@ public class SharedStateTests
         public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
         public int? ActiveShopId { get; set; }
         public bool IsAuthenticated => User != null;
+        public List<(PacketType Type, byte[] Payload)> Sent { get; } = [];
 
-        public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) => Task.CompletedTask;
+        public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default)
+        {
+            Sent.Add((type, payload));
+            return Task.CompletedTask;
+        }
     }
 }
