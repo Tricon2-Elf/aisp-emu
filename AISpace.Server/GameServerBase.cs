@@ -137,7 +137,35 @@ public abstract class GameServerBase<T> : BackgroundService
             {
                 try
                 {
-                    var session = State.GetOrAddSession(packet.Client.Id, () => new PlayerSession(packet.Client.Id, packet.Client));
+                    if (packet.Client.IsClosed)
+                    {
+                        Logger.LogDebug(
+                            "Dropping packet {Type} for closed client {ClientId} on {ServerType}",
+                            packet.Type,
+                            packet.Client.Id,
+                            ActiveServerType
+                        );
+                        continue;
+                    }
+
+                    IPlayerSession? session;
+                    if (!State.TryGetSession(packet.Client.Id, out session) || session is null)
+                    {
+                        // Do not resurrect sessions for clients that disconnected while packets were still queued.
+                        if (packet.Client.IsClosed)
+                        {
+                            Logger.LogDebug(
+                                "Skipping stale queued packet {Type} after disconnect for client {ClientId} on {ServerType}",
+                                packet.Type,
+                                packet.Client.Id,
+                                ActiveServerType
+                            );
+                            continue;
+                        }
+
+                        session = State.GetOrAddSession(packet.Client.Id, () => new PlayerSession(packet.Client.Id, packet.Client));
+                    }
+
                     await Dispatcher.DispatchAsync(ActiveServerType, packet.Type, packet.Data, session, ct);
                 }
                 catch (OperationCanceledException)

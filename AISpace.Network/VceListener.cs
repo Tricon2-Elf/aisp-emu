@@ -191,6 +191,7 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
         {
             idleTimer?.Dispose();
             readCts?.Dispose();
+            context.Dispose();
 
             _clients.TryRemove(context.Id, out _);
             try
@@ -203,7 +204,6 @@ public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, s
             }
 
             logger.LogInformation("{Name} Client disconnected: {RemoteEndPoint} ({Id})", name, context.RemoteEndPoint, context.Id);
-            context.Dispose();
         }
     }
 

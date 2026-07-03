@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMoneyDataGetHandler : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMoneyDataGetHandler : IPacketHandler
 {
     public PacketType RequestType => PacketType.MoneyDataGetRequest;
 
