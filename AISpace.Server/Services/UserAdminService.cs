@@ -222,7 +222,8 @@ public class UserAdminService
             BanReason = user.BanReason,
             CreatedAt = user.CreatedAt,
             BannedAt = user.BannedAt,
-            NpsPoints = user.NpsPoints,
+            AiPoints = user.AiPoints,
+            NicoPoints = user.NicoPoints,
             CharacterCount = user.Characters.Count,
             Characters = user
                 .Characters.Select(c => new CharacterSummary

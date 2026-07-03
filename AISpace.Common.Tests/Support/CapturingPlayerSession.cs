@@ -24,6 +24,7 @@ internal sealed class CapturingPlayerSession : IPlayerSession
     public bool IsMapTransitionPending { get; set; }
     public bool NeedsPostLoadSelfAvatarNotify { get; set; }
     public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
+    public int? ActiveShopId { get; set; }
     public bool IsAuthenticated => User != null;
 
     public List<(PacketType Type, byte[] Payload)> Sent { get; } = new();

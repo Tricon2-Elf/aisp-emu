@@ -3,21 +3,48 @@ using AISpace.Network.Data;
 
 namespace AISpace.Common.Game;
 
+internal enum WardrobeSocketBit : uint
+{
+    None = 0,
+    Head = 1,
+    UpperBodyLayer1 = 2,
+    UpperBodyLayer2 = 4,
+    UpperBodyLayer3 = 8,
+    LowerBodyLayer1 = 16,
+    LowerBodyLayer2 = 32,
+    Hands = 64,
+    Socks = 128,
+    ShoesSecondary = 256,
+    ShoesPrimary = 512,
+    Bra = 1024,
+    LowerUnderwear = 2048,
+}
+
+internal enum WardrobeCategoryId : uint
+{
+    None = 0,
+    Hat = 0,
+    Coat = 1,
+    DressShirt = 2,
+    TShirt = 3,
+    Skirt = 4,
+    Pants = 5,
+    Gloves = 6,
+    Socks = 7,
+    Shoes = 8,
+    Bra = 9,
+    LowerUnderwear = 10,
+    Accessory = 11,
+}
+
 internal static class ItemEntityMapper
 {
-    private const uint ShoeSlotPrimary = 512;
-    private const uint ShoeSlotSecondary = 256;
-
-    /// <summary>
-    /// Returns the bodyspot bitmask for item catalog data (Socket1/Socket2).
-    /// Clothing categories (100–107) are always derived from item id/name.
-    /// </summary>
     public static uint ResolveBodyspot(int itemId, int storedSocket = 0, string? name = null)
     {
         if (itemId is >= 10_000_000 and < 200_000_000)
         {
             var derived = DeriveClothingBodyspot(itemId, name);
-            if (derived != 0)
+            if (derived != (uint)WardrobeSocketBit.None)
                 return derived;
         }
 
@@ -31,33 +58,22 @@ internal static class ItemEntityMapper
 
     public static uint ResolveBodyspot(uint itemId) => ResolveBodyspot((int)itemId);
 
-    /// <summary>
-    /// Socket sent in equip packets (CharaData / avatar notify). The client stores 0 for all
-    /// clothing and resolves the bodyspot from item_base_list Socket1 at equip time (see
-    /// AvatarGetCreateInfoResponse and CChara::SetEquipment). Non-zero values break wardrobe
-    /// preview mesh reload after remove/re-add.
-    /// </summary>
     public static uint ResolveEquipSocket(CharacterEquipSlot slot) =>
         slot.ItemId is >= 10_000_000 and < 200_000_000 ? 0 : ResolveBodyspot((int)slot.ItemId);
 
-    /// <summary>
-    /// UI slot dockets from the client wardrobe (CSV columns 6+ → bit index):
-    /// coat=1, hat=2, jacket=4, shirt=8, skirt=16, pants=32, gloves=64, socks=128,
-    /// shoe (primary)=512, shoe (secondary)=256.
-    /// </summary>
     private static uint DeriveClothingBodyspot(int itemId, string? name)
     {
         return (itemId / 100_000) switch
         {
-            100 => 2, // hat
-            101 => 8, // shirt
+            100 => (uint)WardrobeSocketBit.Head,
+            101 => (uint)WardrobeSocketBit.UpperBodyLayer3,
             102 => ResolveLowerBodyBodyspot(itemId, name),
-            103 => 64, // gloves
-            104 => 128, // socks
-            105 => ShoeSlotPrimary, // shoes (primary wardrobe slot)
-            106 => 1024, // bra
-            107 => 2048, // lower underwear
-            _ => 0,
+            103 => (uint)WardrobeSocketBit.Hands,
+            104 => (uint)WardrobeSocketBit.Socks,
+            105 => (uint)WardrobeSocketBit.ShoesPrimary,
+            106 => (uint)WardrobeSocketBit.Bra,
+            107 => (uint)WardrobeSocketBit.LowerUnderwear,
+            _ => (uint)WardrobeSocketBit.None,
         };
     }
 
@@ -66,7 +82,7 @@ internal static class ItemEntityMapper
         if (!string.IsNullOrEmpty(name))
         {
             if (name.Contains("スカート", StringComparison.Ordinal))
-                return 16;
+                return (uint)WardrobeSocketBit.LowerBodyLayer1;
             if (
                 name.Contains("パンツ", StringComparison.Ordinal)
                 || name.Contains("ズボン", StringComparison.Ordinal)
@@ -74,10 +90,10 @@ internal static class ItemEntityMapper
                 || name.Contains("ショートパンツ", StringComparison.Ordinal)
                 || name.Contains("カブリ", StringComparison.Ordinal)
             )
-                return 32;
+                return (uint)WardrobeSocketBit.LowerBodyLayer2;
         }
 
-        return itemId == 10200100 ? 32u : 16u;
+        return itemId == 10200100 ? (uint)WardrobeSocketBit.LowerBodyLayer2 : (uint)WardrobeSocketBit.LowerBodyLayer1;
     }
 
     public static ItemData ToItemBaseListData(Item item)
@@ -98,37 +114,45 @@ internal static class ItemEntityMapper
             Socket1 = socket1,
             Socket2 = socket2,
             Category = category,
+            Flags = ResolveItemFlags(item.Id),
             MaxPossessionCount = (ushort)short.MaxValue,
             PlacementTypeId = limitMapKey,
         };
     }
 
-    /// <summary>
-    /// Wardrobe inventory tab category (item_base_t dword_74 / category_skilleq20).
-    /// Matches client CSV clothing types: shirt=3, skirt=4, pants=5, socks=7, shoes=8, bra=9, gloves=10, hat=11.
-    /// </summary>
     public static uint ResolveInventoryTabCategory(int itemId, string? name = null) => ResolveCatalogCategory(itemId, name);
 
     private static uint ResolveCatalogCategory(int itemId, string? name)
     {
         if (itemId is < 10_000_000 or >= 200_000_000)
-            return 0;
+            return (uint)WardrobeCategoryId.None;
 
         if (!string.IsNullOrEmpty(name) && (name.Contains("コート", StringComparison.Ordinal) || name.Contains("アウター", StringComparison.Ordinal)))
-            return 1;
+            return (uint)WardrobeCategoryId.Coat;
 
         return (itemId / 100_000) switch
         {
-            100 => 11, // hat
-            101 => 3, // shirt
+            100 => (uint)WardrobeCategoryId.Hat,
+            101 => ResolveUpperBodyCategory(name),
             102 => ResolveLowerBodyCategory(itemId, name),
-            103 => 10, // gloves
-            104 => 7, // socks
-            105 => 8, // shoes
-            106 => 9, // bra
-            107 => 16, // lower underwear
-            _ => 0,
+            103 => (uint)WardrobeCategoryId.Gloves,
+            104 => (uint)WardrobeCategoryId.Socks,
+            105 => (uint)WardrobeCategoryId.Shoes,
+            106 => (uint)WardrobeCategoryId.Bra,
+            107 => (uint)WardrobeCategoryId.LowerUnderwear,
+            _ => (uint)WardrobeCategoryId.None,
         };
+    }
+
+    private static uint ResolveUpperBodyCategory(string? name)
+    {
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (name.Contains("Yシャツ", StringComparison.Ordinal) || name.Contains("ワイシャツ", StringComparison.Ordinal) || name.Contains("ブラウス", StringComparison.Ordinal))
+                return (uint)WardrobeCategoryId.DressShirt;
+        }
+
+        return (uint)WardrobeCategoryId.TShirt;
     }
 
     private static uint ResolveLowerBodyCategory(int itemId, string? name)
@@ -136,7 +160,7 @@ internal static class ItemEntityMapper
         if (!string.IsNullOrEmpty(name))
         {
             if (name.Contains("スカート", StringComparison.Ordinal))
-                return 4;
+                return (uint)WardrobeCategoryId.Skirt;
             if (
                 name.Contains("パンツ", StringComparison.Ordinal)
                 || name.Contains("ズボン", StringComparison.Ordinal)
@@ -144,25 +168,45 @@ internal static class ItemEntityMapper
                 || name.Contains("ショートパンツ", StringComparison.Ordinal)
                 || name.Contains("カブリ", StringComparison.Ordinal)
             )
-                return 5;
+                return (uint)WardrobeCategoryId.Pants;
         }
 
-        return itemId == 10200100 ? 5u : 4u;
+        return itemId == 10200100 ? (uint)WardrobeCategoryId.Pants : (uint)WardrobeCategoryId.Skirt;
     }
 
     private static (uint Socket1, uint Socket2) GetCatalogSockets(int itemId, uint socket)
     {
         if (itemId / 100_000 == 105)
-            return (ShoeSlotPrimary, ShoeSlotSecondary);
+            return ((uint)WardrobeSocketBit.ShoesPrimary, (uint)WardrobeSocketBit.ShoesSecondary);
 
-        // Socket2 is an alternate bodyspot; 0 means single-slot equip (no picker dialog).
         return (socket, 0);
     }
 
-    /// <summary>
-    /// Key into the client item-limit map (item_base_t dword_44c → dword_74_unk_map_idx).
-    /// Zero fails sub_406E60 and blocks wardrobe re-equip. Clothing prefixes match default client entries (101–106).
-    /// </summary>
-    private static uint ResolveLimitMapKey(int itemId) =>
-        itemId is >= 10_000_000 and < 200_000_000 ? (uint)(itemId / 100_000) : (uint)itemId;
+    private static uint ResolveLimitMapKey(int itemId)
+    {
+        if (itemId is < 10_000_000 or >= 200_000_000)
+            return (uint)itemId;
+
+        var prefix = itemId / 100_000;
+        return prefix switch
+        {
+            101 or 102 or 103 or 104 or 105 or 106 or 107 => (uint)prefix,
+            _ => 200u,
+        };
+    }
+
+    private static ItemFlags ResolveItemFlags(int itemId)
+    {
+        if (itemId is < 10_000_000 or >= 200_000_000)
+            return ItemFlags.None;
+
+        return (itemId / 100_000) switch
+        {
+            101 => ItemFlags.PermitsUnderwearTop,
+            102 => ItemFlags.PermitsUnderwearBottom,
+            106 => ItemFlags.PermitsUnderwearTop,
+            107 => ItemFlags.PermitsUnderwearBottom,
+            _ => ItemFlags.None,
+        };
+    }
 }

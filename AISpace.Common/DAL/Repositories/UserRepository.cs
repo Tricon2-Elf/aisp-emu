@@ -14,6 +14,7 @@ public interface IUserRepository
     Task DeleteAsync(int userId);
     Task<IReadOnlyList<User>> GetAllAsync(string? search = null, int? skip = null, int? take = null);
     Task<int> CountAsync(string? search = null);
+    Task<User?> AddMoneyAsync(int userId, long aiDelta, long nicoDelta, CancellationToken ct = default);
 }
 
 public class UserRepository(MainContext db) : IUserRepository
@@ -105,5 +106,17 @@ public class UserRepository(MainContext db) : IUserRepository
             query = query.Where(u => EF.Functions.Like(u.Username, $"%{search}%"));
 
         return await query.CountAsync();
+    }
+
+    public async Task<User?> AddMoneyAsync(int userId, long aiDelta, long nicoDelta, CancellationToken ct = default)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return null;
+
+        user.AiPoints = Math.Clamp(user.AiPoints + aiDelta, 0, long.MaxValue);
+        user.NicoPoints = Math.Clamp(user.NicoPoints + nicoDelta, 0, long.MaxValue);
+        await _db.SaveChangesAsync(ct);
+        return user;
     }
 }

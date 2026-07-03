@@ -52,6 +52,8 @@ internal class Program
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
         builder.Services.AddScoped<IItemRepository, ItemRepository>();
+        builder.Services.AddScoped<INpcRepository, NpcRepository>();
+        builder.Services.AddScoped<IShopRepository, ShopRepository>();
         builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
         builder.Services.AddSingleton<IPendingMapTransferRepository, PendingMapTransferRepository>();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
@@ -133,6 +135,7 @@ internal class Program
             await WorldRepository.SeedWorldsIfEmptyAsync(db, Path.Combine(seedDir, "worlds.json"), serverOptions.IPOverride, (ushort)serverOptions.MsgServer.Port);
             await ChannelRepository.SeedChannelsIfEmptyAsync(db, Path.Combine(seedDir, "channels.json"), serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
             await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(seedDir, "baseItems.json"));
+            await ShopRepository.SeedShopsFromJsonAsync(db, Path.Combine(seedDir, "starterShop.json"), app.Logger);
             await scope.ServiceProvider.GetRequiredService<IItemBaseListCache>().WarmAsync();
         }
 

@@ -1,0 +1,371 @@
+{
+  "version": 1,
+  "shops": [
+    {
+      "code": "starter_clothing",
+      "displayName": "Starter Shop",
+      "bannerVisualId": 10110,
+      "isEnabled": true,
+      "items": [
+        { "itemId": 10100220, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 10, "isEnabled": true },
+        { "itemId": 10200100, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 20, "isEnabled": true },
+        { "itemId": 10400030, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 30, "isEnabled": true },
+        { "itemId": 10500070, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 40, "isEnabled": true },
+        { "itemId": 10100060, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 50, "isEnabled": true },
+        { "itemId": 10200090, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 60, "isEnabled": true },
+        { "itemId": 10400000, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 70, "isEnabled": true },
+        { "itemId": 10500010, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 80, "isEnabled": true }
+      ],
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177281,
+          "modelId": 1001021,
+          "name": "Starter Shop",
+          "x": -10587.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 0,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "starter_hats",
+      "displayName": "Hat Shop",
+      "bannerVisualId": 10111,
+      "isEnabled": true,
+      "items": [
+        { "itemId": 10000000, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 10, "isEnabled": true },
+        { "itemId": 10000010, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 20, "isEnabled": true },
+        { "itemId": 10000011, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 30, "isEnabled": true },
+        { "itemId": 10000012, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 40, "isEnabled": true },
+        { "itemId": 10000013, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 50, "isEnabled": true },
+        { "itemId": 10000020, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 60, "isEnabled": true },
+        { "itemId": 10000021, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 70, "isEnabled": true },
+        { "itemId": 10000022, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 80, "isEnabled": true },
+        { "itemId": 10000030, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 90, "isEnabled": true },
+        { "itemId": 10000031, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 100, "isEnabled": true },
+        { "itemId": 10000032, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 110, "isEnabled": true },
+        { "itemId": 10000033, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 120, "isEnabled": true },
+        { "itemId": 10000034, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 130, "isEnabled": true },
+        { "itemId": 10000040, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 140, "isEnabled": true },
+        { "itemId": 10000050, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 150, "isEnabled": true },
+        { "itemId": 10000060, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 160, "isEnabled": true },
+        { "itemId": 10000061, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 170, "isEnabled": true },
+        { "itemId": 10000062, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 180, "isEnabled": true },
+        { "itemId": 10000063, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 190, "isEnabled": true },
+        { "itemId": 10000064, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 200, "isEnabled": true },
+        { "itemId": 10000070, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 210, "isEnabled": true },
+        { "itemId": 10000071, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 220, "isEnabled": true },
+        { "itemId": 10000072, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 230, "isEnabled": true },
+        { "itemId": 10000080, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 240, "isEnabled": true },
+        { "itemId": 10000090, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 250, "isEnabled": true },
+        { "itemId": 10000091, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 260, "isEnabled": true },
+        { "itemId": 10000100, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 270, "isEnabled": true },
+        { "itemId": 10000101, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 280, "isEnabled": true },
+        { "itemId": 10000102, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 290, "isEnabled": true },
+        { "itemId": 10000110, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 300, "isEnabled": true },
+        { "itemId": 10000111, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 310, "isEnabled": true },
+        { "itemId": 10000112, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 320, "isEnabled": true },
+        { "itemId": 10000120, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 330, "isEnabled": true },
+        { "itemId": 10000121, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 340, "isEnabled": true },
+        { "itemId": 10000130, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 350, "isEnabled": true },
+        { "itemId": 10000140, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 360, "isEnabled": true },
+        { "itemId": 10000150, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 370, "isEnabled": true },
+        { "itemId": 10000160, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 380, "isEnabled": true },
+        { "itemId": 10000170, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 390, "isEnabled": true },
+        { "itemId": 10000180, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 400, "isEnabled": true },
+        { "itemId": 10000181, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 410, "isEnabled": true },
+        { "itemId": 10000190, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 420, "isEnabled": true },
+        { "itemId": 10000200, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 430, "isEnabled": true },
+        { "itemId": 10000210, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 440, "isEnabled": true },
+        { "itemId": 10000220, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 450, "isEnabled": true },
+        { "itemId": 10000221, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 460, "isEnabled": true },
+        { "itemId": 10000230, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 470, "isEnabled": true },
+        { "itemId": 10000240, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 480, "isEnabled": true },
+        { "itemId": 10000250, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 490, "isEnabled": true },
+        { "itemId": 10000260, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 500, "isEnabled": true },
+        { "itemId": 10000261, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 510, "isEnabled": true },
+        { "itemId": 10000270, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 520, "isEnabled": true },
+        { "itemId": 10000280, "aiPrice": 50, "nicoPrice": 50, "sortOrder": 530, "isEnabled": true }
+      ],
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177282,
+          "modelId": 1001021,
+          "name": "Hat Shop",
+          "x": -10387.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 1,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 },
+            { "slotIndex": 6, "itemId": 10000050, "sortOrder": 4 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "starter_tops",
+      "displayName": "Tops Shop",
+      "bannerVisualId": 10112,
+      "isEnabled": true,
+      "items": [],
+      "itemIds": [
+        10100000, 10100010, 10100011, 10100012, 10100020, 10100030, 10100031, 10100032, 10100033, 10100034, 10100035, 10100036, 10100050, 10100051, 10100052, 10100053, 10100054, 10100060, 10100061, 10100062, 10100063, 10100064, 10100065, 10100066, 10100070, 10100071, 10100072, 10100073, 10100080, 10100081, 10100082, 10100083, 10100090, 10100091, 10100092, 10100093, 10100094, 10100100, 10100101, 10100102,
+        10100110, 10100111, 10100112, 10100113, 10100114, 10100115, 10100120, 10100121, 10100122, 10100123, 10100130, 10100131, 10100132, 10100135, 10100136, 10100137, 10100138, 10100139, 10100140, 10100141, 10100142, 10100143, 10100144, 10100160, 10100161, 10100162, 10100170, 10100171, 10100172, 10100173, 10100174, 10100175, 10100180, 10100190, 10100191, 10100192, 10100200, 10100201, 10100202, 10100203,
+        10100210, 10100211, 10100212, 10100220, 10100221, 10100222, 10100223, 10100224, 10100225, 10100226, 10100250, 10100251, 10100252, 10100260, 10100270, 10100280, 10100281, 10100282, 10100300, 10100310, 10100320, 10100340, 10100341, 10100342, 10100370, 10100380, 10100381, 10100385, 10100386, 10100390, 10100391, 10100392, 10100393, 10100394, 10100395, 10100400, 10100410, 10100411, 10100412, 10100420,
+        10100421, 10100422, 10100423, 10100424, 10100425, 10100430, 10100440, 10100450, 10100451, 10100452, 10100460, 10100461, 10100470, 10100480, 10100481, 10100482, 10100483, 10100500, 10100501, 10100503, 10100510, 10100520, 10100530, 10100531, 10100532, 10100540, 10100541, 10100550, 10100551, 10100570, 10100571, 10100580, 10100581, 10100582, 10100590, 10100591, 10100592, 10100600, 10100601, 10100602,
+        10100610, 10100611, 10100620, 10100621, 10100622, 10100623, 10100630, 10100631, 10100632, 10100633, 10100640, 10100641, 10100643, 10100650, 10100651, 10100660, 10100661, 10100670, 10100671, 10100672, 10100680, 10100681, 10100682, 10100683, 10100684, 10100690, 10100691, 10100692, 10100693, 10100694, 10100700, 10100710, 10100720, 10100721, 10100730, 10100740, 10100741, 10100750, 10100760, 10100761,
+        10100762, 10100770, 10100771, 10100780, 10100800, 10100810, 10100820, 10100830, 10100840, 10100850, 10100860, 10100861, 10100862, 10100880, 10100881, 10100890, 10100891, 10100900, 10100910, 10100920, 10100921, 10100922, 10100930, 10100940, 10100941, 10100950, 10100951, 10100960, 10100961, 10100962, 10100970, 10100990, 10101010, 10101011, 10101012, 10101013, 10101014, 10101020, 10101021, 10101030,
+        10101040, 10101050, 10101060, 10101061, 10101062, 10101063, 10101070, 10101071, 10101072, 10101080, 10101081, 10101090, 10101091, 10101092, 10101093, 10101094, 10101095, 10101100, 10101101, 10101102, 10101110, 10101120, 10101130, 10101131, 10101132, 10101140, 10101141, 10101142, 10101150, 10101151, 10101152, 10101160, 10101170, 10101180, 10101190, 10101191, 10101200, 10101210, 10101220, 10101230,
+        10101240, 10101241, 10101250, 10101270, 10101290, 10101300, 10101310, 10101320, 10101330, 10101331, 10101332, 10101340, 10101341, 10101342, 10101350, 10101360, 10101370, 10101380, 10101390, 10101400, 10101410, 10101411, 10101420, 10101421, 10101430, 10101440, 10101441, 10101442, 10101450, 10101460, 10101461, 10101462, 10101470, 10101480, 10101481, 10101490, 10101500, 10101510, 10101520, 10101530,
+        10101540, 10101541, 10101550, 10101560, 10101580, 10101581, 10101590, 10101591, 10101620, 10101621, 10101630, 10101631, 10101640, 10101660, 10101670, 10101672, 10101681, 10101690, 10101700, 10101710, 10101720, 10101730, 10101740, 10101750, 10101760, 10101770, 10101780, 10101790, 10101800, 10101801, 10101810, 10101811, 10101820, 10101821, 10101830, 10101840, 10101841, 10101850, 10101851, 10101860,
+        10101870, 10101880, 10101890, 10101900, 10101910, 10101920, 10101930, 10101940, 10101950, 10101960, 10101970, 10101980, 10101990, 10102000, 10102010, 10102020, 10102030, 10102040
+      ],
+      "defaultAiPrice": 50,
+      "defaultNicoPrice": 50,
+      "defaultItemEnabled": true,
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177283,
+          "modelId": 1001021,
+          "name": "Tops Shop",
+          "x": -10187.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 2,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "starter_bottoms",
+      "displayName": "Bottoms Shop",
+      "bannerVisualId": 10113,
+      "isEnabled": true,
+      "items": [],
+      "itemIds": [
+        10200000, 10200010, 10200013, 10200030, 10200040, 10200041, 10200042, 10200050, 10200051, 10200052,
+        10200053, 10200054, 10200060, 10200061, 10200062, 10200070, 10200071, 10200072, 10200073, 10200074,
+        10200080, 10200090, 10200091, 10200092, 10200093, 10200094, 10200100, 10200101, 10200102, 10200103,
+        10200104, 10200105, 10200106, 10200110, 10200111, 10200112, 10200130, 10200131, 10200132, 10200140,
+        10200150, 10200151, 10200152, 10200160, 10200170, 10200180, 10200190, 10200200, 10200210, 10200250,
+        10200260, 10200262, 10200270, 10200280, 10200283, 10200290, 10200300, 10200301, 10200302, 10200303,
+        10200304, 10200305, 10200306, 10200307, 10200310, 10200311, 10200312, 10200320, 10200330, 10200331,
+        10200340, 10200341, 10200350, 10200351, 10200360, 10200361, 10200362, 10200370, 10200380, 10200381,
+        10200382, 10200383, 10200400, 10200410, 10200420, 10200421, 10200422, 10200423, 10200424, 10200430,
+        10200431, 10200432, 10200433, 10200434, 10200440, 10200450, 10200480, 10200481, 10200482, 10200490,
+        10200500, 10200510, 10200520, 10200530, 10200540, 10200550, 10200560, 10200570, 10200580, 10200590,
+        10200600, 10200610, 10200611, 10200612, 10200620, 10200630, 10200640, 10200641, 10200650, 10200670,
+        10200671, 10200680, 10200700, 10200710, 10200712, 10200721, 10200730, 10200740, 10200750, 10200760,
+        10200761, 10200770, 10200771, 10200780, 10200790, 10200800, 10200810, 10200820, 10200830, 10200840,
+        10200850
+      ],
+      "defaultAiPrice": 50,
+      "defaultNicoPrice": 50,
+      "defaultItemEnabled": true,
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177284,
+          "modelId": 1001021,
+          "name": "Bottoms Shop",
+          "x": -9987.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 3,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "starter_socks",
+      "displayName": "Socks Shop",
+      "bannerVisualId": 10114,
+      "isEnabled": true,
+      "items": [],
+      "itemIds": [
+        10400000, 10400001, 10400002, 10400003, 10400004, 10400010, 10400011, 10400012, 10400013, 10400014,
+        10400015, 10400016, 10400017, 10400018, 10400019, 10400020, 10400021, 10400022, 10400023, 10400024,
+        10400030, 10400031, 10400032, 10400033, 10400034, 10400040, 10400041, 10400042, 10400043, 10400044,
+        10400045, 10400060, 10400061, 10400062, 10400070, 10400071, 10400080, 10400081, 10400090, 10400100,
+        10400110, 10400111, 10400112, 10400120, 10400121, 10400122, 10400130, 10400131, 10400132, 10400140,
+        10400150, 10400160, 10400161, 10400170, 10400180, 10400190, 10400200, 10400210, 10400220, 10400221,
+        10400230, 10400240, 10400250, 10400260, 10400270, 10400280, 10400300, 10400310, 10400320, 10400330,
+        10400340, 10499990, 10499991, 10499992, 10499999
+      ],
+      "defaultAiPrice": 50,
+      "defaultNicoPrice": 50,
+      "defaultItemEnabled": true,
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177285,
+          "modelId": 1001021,
+          "name": "Socks Shop",
+          "x": -9787.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 4,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "starter_shoes",
+      "displayName": "Shoes Shop",
+      "bannerVisualId": 10115,
+      "isEnabled": true,
+      "items": [],
+      "itemIds": [
+        10500000, 10500010, 10500011, 10500012, 10500013, 10500014, 10500020, 10500021, 10500022, 10500023,
+        10500024, 10500030, 10500040, 10500041, 10500045, 10500046, 10500047, 10500048, 10500050, 10500060,
+        10500070, 10500071, 10500072, 10500090, 10500091, 10500100, 10500101, 10500102, 10500110, 10500111,
+        10500112, 10500120, 10500130, 10500131, 10500132, 10500133, 10500134, 10500135, 10500150, 10500151,
+        10500152, 10500160, 10500180, 10500190, 10500191, 10500192, 10500200, 10500201, 10500210, 10500211,
+        10500212, 10500213, 10500214, 10500215, 10500220, 10500230, 10500231, 10500240, 10500241, 10500242,
+        10500250, 10500260, 10500261, 10500262, 10500263, 10500270, 10500271, 10500280, 10500281, 10500290,
+        10500291, 10500300, 10500310, 10500320, 10500330, 10500340, 10500360, 10500361, 10500370, 10500371,
+        10500372, 10500380, 10500390, 10500391, 10500400, 10500401, 10500402, 10500410, 10500420, 10500421,
+        10500430, 10500431, 10500440, 10500450, 10500451, 10500460, 10500470, 10500480, 10500481, 10500490,
+        10500510, 10500530, 10500540, 10500550, 10500560, 10500570, 10500580, 10500590, 10500600, 10500610,
+        10500611, 10500612, 10500620, 10500630, 10500631, 10500640, 10500650, 10500651, 10500652, 10500660,
+        10500670, 10500671, 10500680, 10500690, 10500700, 10500710, 10500720, 10500730, 10500740, 10500750,
+        10500760
+      ],
+      "defaultAiPrice": 50,
+      "defaultNicoPrice": 50,
+      "defaultItemEnabled": true,
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177286,
+          "modelId": 1001021,
+          "name": "Shoes Shop",
+          "x": -9587.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 5,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "starter_accessories",
+      "displayName": "Accessories Shop",
+      "bannerVisualId": 10116,
+      "isEnabled": true,
+      "items": [],
+      "itemIds": [
+        10800000, 10800010, 10800011, 10800012, 10800013, 10800014, 10800020, 10800021, 10800022, 10800023,
+        10800030, 10800031, 10800032, 10800040, 10800041, 10800042, 10800050, 10800060, 10800061, 10800062,
+        10800070, 10800080, 10800081, 10800082, 10800090, 10800091, 10800092, 10800093, 10800094, 10800095,
+        10800100, 10800101, 10800110, 10800120, 10800121, 10800130, 10800131, 10800150, 10800151, 10800152,
+        10800153, 10800160, 10800161, 10800190, 10800191, 10800192, 10800193, 10800200, 10800201, 10800202,
+        10800203, 10800210, 10800211, 10800212, 10800213, 10899999
+      ],
+      "defaultAiPrice": 50,
+      "defaultNicoPrice": 50,
+      "defaultItemEnabled": true,
+      "npcs": [
+        {
+          "mapId": 10990100,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177287,
+          "modelId": 1001021,
+          "name": "Accessories Shop",
+          "x": -9387.0,
+          "y": 0.0,
+          "z": -21051,
+          "rotation": 0,
+          "interactionType": "Shop",
+          "isEnabled": true,
+          "sortOrder": 6,
+          "equipment": [
+            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
+            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
+            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
+            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+          ]
+        }
+      ]
+    }
+  ]
+}

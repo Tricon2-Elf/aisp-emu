@@ -3,6 +3,7 @@ using System;
 using AISpace.Common.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AISpace.Common.DAL.Migrations
 {
     [DbContext(typeof(MainContext))]
-    partial class MainContextModelSnapshot : ModelSnapshot
+    [Migration("20260621000416_RenameUserCurrencyColumnsToAiNico")]
+    partial class RenameUserCurrencyColumnsToAiNico
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -295,110 +298,6 @@ namespace AISpace.Common.DAL.Migrations
                     b.ToTable("MapLinks", (string)null);
                 });
 
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.Npc", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ChannelId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(-1);
-
-                    b.Property<DateTime>("DateEndUtc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue(new DateTime(9999, 12, 31, 23, 59, 59, 999, DateTimeKind.Unspecified).AddTicks(9999));
-
-                    b.Property<DateTime>("DateStartUtc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc));
-
-                    b.Property<int>("DayPhase")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(-1);
-
-                    b.Property<int>("InteractionType")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
-
-                    b.Property<long>("MapId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("ModelId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("NpcObjectId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Rotation")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("ShopId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<float>("X")
-                        .HasColumnType("REAL");
-
-                    b.Property<float>("Y")
-                        .HasColumnType("REAL");
-
-                    b.Property<float>("Z")
-                        .HasColumnType("REAL");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NpcObjectId")
-                        .IsUnique();
-
-                    b.HasIndex("ShopId");
-
-                    b.HasIndex("MapId", "SortOrder");
-
-                    b.ToTable("Npcs", (string)null);
-                });
-
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.NpcEquipment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("NpcId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SlotIndex")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NpcId", "SlotIndex")
-                        .IsUnique();
-
-                    b.ToTable("NpcEquipment", (string)null);
-                });
-
             modelBuilder.Entity("AISpace.Common.DAL.Entities.PendingMapTransfer", b =>
                 {
                     b.Property<int>("UserId")
@@ -483,78 +382,6 @@ namespace AISpace.Common.DAL.Migrations
                     b.HasIndex("ServerType", "MapId", "ChannelId");
 
                     b.ToTable("SessionPresences", (string)null);
-                });
-
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.Shop", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("BannerVisualId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("Shops", (string)null);
-                });
-
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.ShopItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("AiPrice")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(0L);
-
-                    b.Property<bool>("IsEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("NicoPrice")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(0L);
-
-                    b.Property<int>("ShopId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ShopId", "ItemId")
-                        .IsUnique();
-
-                    b.HasIndex("ShopId", "SortOrder");
-
-                    b.ToTable("ShopItems", (string)null);
                 });
 
             modelBuilder.Entity("AISpace.Common.DAL.Entities.User", b =>
@@ -715,38 +542,6 @@ namespace AISpace.Common.DAL.Migrations
                     b.Navigation("Item");
                 });
 
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.Npc", b =>
-                {
-                    b.HasOne("AISpace.Common.DAL.Entities.Shop", "Shop")
-                        .WithMany("Npcs")
-                        .HasForeignKey("ShopId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Shop");
-                });
-
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.NpcEquipment", b =>
-                {
-                    b.HasOne("AISpace.Common.DAL.Entities.Npc", "Npc")
-                        .WithMany("Equipment")
-                        .HasForeignKey("NpcId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Npc");
-                });
-
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.ShopItem", b =>
-                {
-                    b.HasOne("AISpace.Common.DAL.Entities.Shop", "Shop")
-                        .WithMany("Items")
-                        .HasForeignKey("ShopId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Shop");
-                });
-
             modelBuilder.Entity("AISpace.Common.DAL.Entities.UserSession", b =>
                 {
                     b.HasOne("AISpace.Common.DAL.Entities.User", "User")
@@ -763,18 +558,6 @@ namespace AISpace.Common.DAL.Migrations
                     b.Navigation("Equipment");
 
                     b.Navigation("Inventory");
-                });
-
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.Npc", b =>
-                {
-                    b.Navigation("Equipment");
-                });
-
-            modelBuilder.Entity("AISpace.Common.DAL.Entities.Shop", b =>
-                {
-                    b.Navigation("Items");
-
-                    b.Navigation("Npcs");
                 });
 
             modelBuilder.Entity("AISpace.Common.DAL.Entities.User", b =>

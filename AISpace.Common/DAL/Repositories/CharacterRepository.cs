@@ -198,7 +198,11 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         {
             var equipItemId = (int)equip.ItemId;
             addedItemsById.TryGetValue(equipItemId, out var item);
-            var socket = equip.SocketBit != 0 ? equip.SocketBit : ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
+            // Treat incoming socket bits as advisory; derive canonical bodyspot from item metadata
+            // so mis-categorized UI tabs cannot force wrong slots (e.g. hats showing as coat).
+            var socket = ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
+            if (socket == 0)
+                socket = equip.SocketBit;
             added.Add(new EquippedItemChange(equipItemId, item?.Name, socket));
         }
 

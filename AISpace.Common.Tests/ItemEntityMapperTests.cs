@@ -12,7 +12,7 @@ public class ItemEntityMapperTests
     [InlineData(10200000, 16)] // skirt
     [InlineData(10400030, 128)] // socks
     [InlineData(10500070, 512)] // shoes (primary wardrobe slot)
-    [InlineData(10000010, 2)] // hat
+    [InlineData(10000010, 1)] // hat
     public void ResolveBodyspot_maps_clothing_to_client_slot_dockets(int itemId, uint expected)
     {
         Assert.Equal(expected, ItemEntityMapper.ResolveBodyspot(itemId));
@@ -55,9 +55,21 @@ public class ItemEntityMapperTests
         Assert.Equal(0u, data.Socket2);
     }
 
+    [Fact]
+    public void ToItemBaseListData_uses_runtime_head_bodyspot_for_hats()
+    {
+        var item = new Item { Id = 10000050, Socket = 10, Name = "保護帽" };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(1u, data.Socket1);
+        Assert.Equal(0u, data.Socket2);
+        Assert.Equal(0u, data.Category);
+    }
+
     [Theory]
     [InlineData(10100220, 101)]
     [InlineData(10500070, 105)]
+    [InlineData(10000050, 200)]
+    [InlineData(10800000, 200)]
     public void ToItemBaseListData_sets_limit_map_key_for_wardrobe_equip_checks(int itemId, uint expectedKey)
     {
         var item = new Item { Id = itemId, Socket = 0, Name = "test" };
@@ -95,5 +107,27 @@ public class ItemEntityMapperTests
         var data = ItemEntityMapper.ToItemBaseListData(item);
         Assert.Equal(expectedSocket, data.Socket1);
         Assert.Equal(0u, data.Socket2);
+    }
+
+    [Fact]
+    public void ToItemBaseListData_sets_modesty_coverage_flags_for_upper_and_lower_clothing()
+    {
+        var top = new Item { Id = 10100220, Socket = 0, Name = "テストシャツ" };
+        var bottom = new Item { Id = 10200100, Socket = 0, Name = "テストパンツ" };
+        var bra = new Item { Id = 10600000, Socket = 0, Name = "テストブラ" };
+        var underwear = new Item { Id = 10700020, Socket = 0, Name = "テスト下着" };
+        var hat = new Item { Id = 10000050, Socket = 10, Name = "保護帽" };
+
+        var topData = ItemEntityMapper.ToItemBaseListData(top);
+        var bottomData = ItemEntityMapper.ToItemBaseListData(bottom);
+        var braData = ItemEntityMapper.ToItemBaseListData(bra);
+        var underwearData = ItemEntityMapper.ToItemBaseListData(underwear);
+        var hatData = ItemEntityMapper.ToItemBaseListData(hat);
+
+        Assert.True((topData.Flags & ItemFlags.PermitsUnderwearTop) != 0);
+        Assert.True((bottomData.Flags & ItemFlags.PermitsUnderwearBottom) != 0);
+        Assert.True((braData.Flags & ItemFlags.PermitsUnderwearTop) != 0);
+        Assert.True((underwearData.Flags & ItemFlags.PermitsUnderwearBottom) != 0);
+        Assert.Equal(ItemFlags.None, hatData.Flags);
     }
 }
