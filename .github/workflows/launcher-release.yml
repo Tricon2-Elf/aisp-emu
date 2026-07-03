@@ -52,19 +52,38 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Publish win-x64
+      - name: Publish win-x86
         run: >
           dotnet publish AISpace.Launcher/AISpace.Launcher.csproj
           -c Release
-          -p:PublishProfile=win-x64
+          -p:PublishProfile=win-x86
           -p:InformationalVersion=${{ needs.calver.outputs.version }}
           -p:Version=${{ needs.calver.outputs.version }}
+
+      - name: Setup MSVC x86 toolchain
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+
+      - name: Build built-in locale hook DLL (x86)
+        shell: pwsh
+        run: |
+          cl /nologo /LD /O2 /EHsc AISpace.LocaleHook/aisp.localehook.cpp /link /OUT:AISpace.Launcher/bin/publish/win-x86/aisp.localehook.dll
+
+      - name: Package win-x86 launcher bundle
+        shell: pwsh
+        run: |
+          $bundleDir = "AISpace.Launcher/bin/publish/win-x86/launcher-bundle"
+          New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null
+          Copy-Item "AISpace.Launcher/bin/publish/win-x86/aisp.launch.exe" $bundleDir -Force
+          Copy-Item "AISpace.Launcher/bin/publish/win-x86/aisp.localehook.dll" $bundleDir -Force
+          Compress-Archive -Path "$bundleDir/*" -DestinationPath "AISpace.Launcher/bin/publish/win-x86/aisp.launch.win-x86.bundle.zip" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: launcher-win-x64
-          path: AISpace.Launcher/bin/publish/win-x64/aisp.launch.exe
+          name: launcher-win-x86
+          path: AISpace.Launcher/bin/publish/win-x86/aisp.launch.win-x86.bundle.zip
 
   build-linux:
     needs: calver
@@ -108,7 +127,7 @@ jobs:
         env:
           VERSION: ${{ needs.calver.outputs.version }}
         run: |
-          cp "dist/launcher-win-x64/aisp.launch.exe" "dist/aisp.launch-${VERSION}-win-x64.exe"
+          cp "dist/launcher-win-x86/aisp.launch.win-x86.bundle.zip" "dist/aisp.launch-${VERSION}-win-x86.zip"
           cp "dist/launcher-linux-x64/aisp.launch" "dist/aisp.launch-${VERSION}-linux-x64"
           chmod +x "dist/aisp.launch-${VERSION}-linux-x64"
           sha256sum dist/aisp.launch-* > dist/SHA256SUMS
@@ -120,6 +139,6 @@ jobs:
           name: Launcher ${{ needs.calver.outputs.version }}
           generate_release_notes: true
           files: |
-            dist/aisp.launch-${{ needs.calver.outputs.version }}-win-x64.exe
+            dist/aisp.launch-${{ needs.calver.outputs.version }}-win-x86.zip
             dist/aisp.launch-${{ needs.calver.outputs.version }}-linux-x64
             dist/SHA256SUMS
