@@ -6,7 +6,15 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, ILogger<ClientConnection> logger, TcpClient? _tcpClient = null) : IDisposable
+public class ClientConnection(
+    Guid _Id,
+    EndPoint _RemoteEndPoint,
+    NetworkStream _ns,
+    ILogger<ClientConnection> logger,
+    TcpClient? _tcpClient = null,
+    string? _serverType = null,
+    Func<Guid, int?>? _userIdResolver = null
+) : IDisposable
 {
     const int MaxChunkSize = 1392;
     const int BlockSize = 16;
@@ -24,6 +32,23 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
     private int _closed;
 
     public bool IsClosed => Volatile.Read(ref _closed) != 0;
+
+    private readonly string _serverType = _serverType ?? "Unknown";
+
+    private int? ResolveUserIdForLog()
+    {
+        if (_userIdResolver is null)
+            return null;
+
+        try
+        {
+            return _userIdResolver.Invoke(Id);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public async Task SendRawAsync(byte[] data, CancellationToken ct = default)
     {
@@ -69,7 +94,13 @@ public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream 
             return;
 
         if (type != PacketType.Ping && type != PacketType.TimeZoneGetResponse)
-            logger.LogInformation("Sending: {type}, {len}", type, payload.Length);
+            logger.LogInformation(
+                "Sending [{ServerType}] [UserId:{UserId}] {PacketType}, {Length}",
+                _serverType,
+                ResolveUserIdForLog()?.ToString() ?? "n/a",
+                type,
+                payload.Length
+            );
         try
         {
             var writer = new PacketWriter();
