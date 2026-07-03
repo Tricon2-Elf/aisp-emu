@@ -11,7 +11,7 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
-  <!-- Used when publishing with -p:PublishProfile=win-x64 or linux-x64 -->
+  <!-- Used when publishing with -p:PublishProfile=win-x86 -->
   <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
