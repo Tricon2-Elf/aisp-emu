@@ -15,6 +15,7 @@ namespace AISpace.Common.Handlers.Msg;
 public class CmdExecHandler(
     SharedState state,
     IMapRepository mapRepo,
+    IUserRepository userRepo,
     ICharacterRepository characterRepo,
     IItemBaseListCache itemBaseListCache,
     DirectMapLinkTransitionService directMapLinkTransitionService,
@@ -212,6 +213,80 @@ public class CmdExecHandler(
                 itemId,
                 quantity,
                 characterId
+            );
+            return;
+        }
+
+        if (cmd is "money")
+        {
+            var userId = session.User?.Id ?? session.UserId;
+            if (userId <= 0)
+            {
+                logger.LogWarning("CmdExecHandler: money requires an authenticated user");
+                return;
+            }
+
+            if (request.Arguments.Count == 0 || !long.TryParse(request.Arguments[0], out var amount) || amount <= 0)
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: money requires a positive amount argument (user {UserId})",
+                    userId
+                );
+                return;
+            }
+
+            var target = "both";
+            if (request.Arguments.Count > 1)
+                target = request.Arguments[1].Trim().ToLowerInvariant();
+
+            var addAiPoints = target is "both" or "all" or "ai" or "aipoints";
+            var addNicoPoints = target is "both" or "all" or "nico" or "nicopoints";
+            if (!addAiPoints && !addNicoPoints)
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: money unsupported target '{Target}' for user {UserId} (expected ai|nico|both)",
+                    target,
+                    userId
+                );
+                return;
+            }
+
+            var aiDelta = addAiPoints ? amount : 0;
+            var nicoDelta = addNicoPoints ? amount : 0;
+            var user = await userRepo.AddMoneyAsync(userId, aiDelta, nicoDelta, ct);
+            if (user is null)
+            {
+                logger.LogWarning("CmdExecHandler: money could not resolve user {UserId}", userId);
+                return;
+            }
+
+            session.User = user;
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient?.User != null)
+            {
+                areaClient.User.AiPoints = user.AiPoints;
+                areaClient.User.NicoPoints = user.NicoPoints;
+            }
+
+            var notifySession = areaClient ?? session;
+            await notifySession.SendAsync(
+                PacketType.MoneyUpdatedAipoint,
+                new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(),
+                ct
+            );
+            await notifySession.SendAsync(
+                PacketType.MoneyUpdatedNicopoint,
+                new MoneyUpdatedNicopointNotify((ulong)Math.Max(0, user.NicoPoints)).ToBytes(),
+                ct
+            );
+
+            logger.LogInformation(
+                "CmdExecHandler: added {Amount} points ({Target}) for user {UserId} => ai={AiPoints}, nico={NicoPoints}",
+                amount,
+                target,
+                userId,
+                user.AiPoints,
+                user.NicoPoints
             );
             return;
         }

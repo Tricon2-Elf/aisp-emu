@@ -79,6 +79,7 @@ public class CmdExecHandlerTests
             var handler = new CmdExecHandler(
                 state,
                 new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
@@ -134,6 +135,7 @@ public class CmdExecHandlerTests
             var handler = new CmdExecHandler(
                 state,
                 new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
@@ -195,6 +197,7 @@ public class CmdExecHandlerTests
             var handler = new CmdExecHandler(
                 state,
                 new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
                 new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
@@ -253,6 +256,7 @@ public class CmdExecHandlerTests
             var handler = new CmdExecHandler(
                 state,
                 new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
                 new StubItemBaseListCache([itemId]),
                 CreateDirectMapLinkTransitionService(options, state),
@@ -312,6 +316,7 @@ public class CmdExecHandlerTests
             var handler = new CmdExecHandler(
                 state,
                 new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
                 new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
@@ -327,6 +332,64 @@ public class CmdExecHandlerTests
             );
             Assert.Equal(0, inventoryCount);
             Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemCreateNotify);
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task MoneyCommand_AddsRequestedCurrencyAndSendsBalanceNotifies()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8007, "money-user", "Money User", 10990100);
+            user.AiPoints = 10;
+            user.NicoPoints = 20;
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8007,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(BuildCmdExecPayload("/money", "50", "nico"), msgSession, TestContext.Current.CancellationToken);
+
+            await using var verifyDb = new MainContext(options);
+            var updated = await verifyDb.Users.SingleAsync(u => u.Id == user.Id, TestContext.Current.CancellationToken);
+            Assert.Equal(10, updated.AiPoints);
+            Assert.Equal(70, updated.NicoPoints);
+
+            Assert.Contains(areaSession.Sent, p => p.Type == PacketType.MoneyUpdatedAipoint);
+            Assert.Contains(areaSession.Sent, p => p.Type == PacketType.MoneyUpdatedNicopoint);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
         finally
