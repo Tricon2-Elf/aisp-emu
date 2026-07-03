@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using System.Runtime.InteropServices;
 
 namespace AISpace.Launcher;
 
@@ -20,6 +21,10 @@ public partial class MainWindow : Window
 
         LauncherBootstrap.ConfigureWebViewEnvironment(WebsiteWebView);
         EnvironmentComboBox.SelectedIndex = Math.Clamp((int)LauncherBootstrap.Settings.SelectedEnvironment, 0, 2);
+        LocaleReplacerCheckBox.IsChecked = LauncherBootstrap.Settings.UseLocaleReplacer;
+        LocaleReplacerCheckBox.IsEnabled = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        if (!LocaleReplacerCheckBox.IsEnabled)
+            LocaleReplacerCheckBox.Content = "Use Locale Replacer (Windows only)";
         WebsiteWebView.Source = new Uri(_gameLauncher.Settings.WebsiteUrl);
     }
 
@@ -27,6 +32,7 @@ public partial class MainWindow : Window
     {
         var environment = (GameEnvironment)EnvironmentComboBox.SelectedIndex;
         LauncherBootstrap.Settings.SelectedEnvironment = environment;
+        LauncherBootstrap.Settings.UseLocaleReplacer = LocaleReplacerCheckBox.IsChecked is true;
         LauncherBootstrap.Settings.Save();
 
         var result = _gameLauncher.TryLaunch(environment);
