@@ -34,7 +34,7 @@ public ref struct PacketReader(ReadOnlySpan<byte> buffer)
 
     public ReadOnlySpan<byte> ReadBytes(int count) => ReadSpan(count);
 
-    public string ReadFixedString(int length, string encoderName = "UTF8")
+    public string ReadFixedString(int length, string encoderName = "utf-8")
     {
         var encoder = PacketEncoding.GetEncoding(encoderName);
         var span = ReadSpan(length);

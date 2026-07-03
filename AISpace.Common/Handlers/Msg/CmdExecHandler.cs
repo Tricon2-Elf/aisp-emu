@@ -1,16 +1,26 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
+using AISpace.Common.Services;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using AISpace.Network.Packets.Msg;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class CmdExecHandler(
+    SharedState state,
+    IMapRepository mapRepo,
+    IUserRepository userRepo,
+    ICharacterRepository characterRepo,
+    IItemBaseListCache itemBaseListCache,
+    DirectMapLinkTransitionService directMapLinkTransitionService,
+    ILogger<CmdExecHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
     private const float JumpDistance = 100f;
@@ -25,7 +35,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
 
         var response = new CmdExecResponse(request.MessageId, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
-        string cmd = request.Command.Trim().ToLower();
+        string cmd = request.Command.Trim().TrimStart('/').ToLowerInvariant();
         logger.LogInformation("CmdExecHandler: '{cmd}' with args: '{args}'", cmd, string.Join(", ", request.Arguments));
 
         if (cmd == "pos" || cmd == "coords")
@@ -105,6 +115,182 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
             return;
         }
 
+        if (cmd is "outfit" or "starter" or "starteroutfit")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.CharacterId == 0)
+            {
+                logger.LogWarning("CmdExecHandler: outfit requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            var characterId = (int)areaClient.CharacterId;
+            var character = await characterRepo.GetByIdAsync(characterId, ct);
+            if (character is null)
+            {
+                logger.LogWarning("CmdExecHandler: outfit could not resolve character {CharacterId}", characterId);
+                return;
+            }
+
+            var itemIds = DefaultClothingItems.WardrobeInventoryForGender(character.Gender).ToList();
+
+            foreach (var itemId in itemIds)
+                await characterRepo.AddInventoryAsync(characterId, itemId, 1, ct);
+
+            var refreshed = await characterRepo.GetByIdAsync(characterId, ct);
+            if (refreshed is null)
+                return;
+
+            areaClient.Character = refreshed;
+            await CharacterItemSync.SendInventoryBootstrapAsync(areaClient, refreshed, ct);
+
+            logger.LogInformation(
+                "CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client",
+                itemIds.Count,
+                characterId
+            );
+            return;
+        }
+
+        if (cmd is "give")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.CharacterId == 0)
+            {
+                logger.LogWarning("CmdExecHandler: give requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            if (request.Arguments.Count == 0 || !int.TryParse(request.Arguments[0], out var itemId) || itemId <= 0)
+            {
+                logger.LogWarning("CmdExecHandler: give requires a positive item id argument (user {UserId})", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            if (!await itemBaseListCache.ContainsItemAsync(itemId, ct))
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: give rejected unknown item {ItemId} for character {CharacterId}",
+                    itemId,
+                    areaClient.CharacterId
+                );
+                return;
+            }
+
+            var quantity = 1;
+            if (request.Arguments.Count > 1 && int.TryParse(request.Arguments[1], out var parsedQuantity) && parsedQuantity > 0)
+                quantity = parsedQuantity;
+
+            var characterId = (int)areaClient.CharacterId;
+            var character = await characterRepo.GetByIdAsync(characterId, ct);
+            if (character is null)
+            {
+                logger.LogWarning("CmdExecHandler: give could not resolve character {CharacterId}", characterId);
+                return;
+            }
+
+            var previousQuantity = character.Inventory.FirstOrDefault(i => i.ItemId == itemId)?.Quantity ?? 0;
+
+            try
+            {
+                await characterRepo.AddInventoryAsync(characterId, itemId, quantity, ct);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogWarning(ex, "CmdExecHandler: give failed to add item {ItemId} (qty {Quantity}) to character {CharacterId}", itemId, quantity, characterId);
+                return;
+            }
+
+            var totalQuantity = (ushort)Math.Clamp(previousQuantity + quantity, 0, ushort.MaxValue);
+            await CharacterItemSync.SendInventoryItemAsync(areaClient, itemId, totalQuantity, ct);
+
+            var refreshed = await characterRepo.GetByIdAsync(characterId, ct);
+            if (refreshed is not null)
+                areaClient.Character = refreshed;
+
+            logger.LogInformation(
+                "CmdExecHandler: gave item {ItemId} x{Quantity} to character {CharacterId} and sent inventory notify",
+                itemId,
+                quantity,
+                characterId
+            );
+            return;
+        }
+
+        if (cmd is "money")
+        {
+            var userId = session.User?.Id ?? session.UserId;
+            if (userId <= 0)
+            {
+                logger.LogWarning("CmdExecHandler: money requires an authenticated user");
+                return;
+            }
+
+            if (request.Arguments.Count == 0 || !long.TryParse(request.Arguments[0], out var amount) || amount <= 0)
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: money requires a positive amount argument (user {UserId})",
+                    userId
+                );
+                return;
+            }
+
+            var target = "both";
+            if (request.Arguments.Count > 1)
+                target = request.Arguments[1].Trim().ToLowerInvariant();
+
+            var addAiPoints = target is "both" or "all" or "ai" or "aipoints";
+            var addNicoPoints = target is "both" or "all" or "nico" or "nicopoints";
+            if (!addAiPoints && !addNicoPoints)
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: money unsupported target '{Target}' for user {UserId} (expected ai|nico|both)",
+                    target,
+                    userId
+                );
+                return;
+            }
+
+            var aiDelta = addAiPoints ? amount : 0;
+            var nicoDelta = addNicoPoints ? amount : 0;
+            var user = await userRepo.AddMoneyAsync(userId, aiDelta, nicoDelta, ct);
+            if (user is null)
+            {
+                logger.LogWarning("CmdExecHandler: money could not resolve user {UserId}", userId);
+                return;
+            }
+
+            session.User = user;
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient?.User != null)
+            {
+                areaClient.User.AiPoints = user.AiPoints;
+                areaClient.User.NicoPoints = user.NicoPoints;
+            }
+
+            var notifySession = areaClient ?? session;
+            await notifySession.SendAsync(
+                PacketType.MoneyUpdatedAipoint,
+                new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(),
+                ct
+            );
+            await notifySession.SendAsync(
+                PacketType.MoneyUpdatedNicopoint,
+                new MoneyUpdatedNicopointNotify((ulong)Math.Max(0, user.NicoPoints)).ToBytes(),
+                ct
+            );
+
+            logger.LogInformation(
+                "CmdExecHandler: added {Amount} points ({Target}) for user {UserId} => ai={AiPoints}, nico={NicoPoints}",
+                amount,
+                target,
+                userId,
+                user.AiPoints,
+                user.NicoPoints
+            );
+            return;
+        }
+
         if (cmd == "escape" || cmd == "reset")
         {
             var areaClient = ResolveAreaClient(session);
@@ -172,8 +358,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, DirectMap
         cd.Visual.Gender = (uint)cha.Gender;
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
-        foreach (var eq in cha.Equipment)
-            cd.AddEquip((uint)eq.ItemId, eq.SlotIndex);
+        cd.AddEquip(cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveEquipSocket);
         return new AvatarNotifyData(1, new AvatarData(objId, cd)).ToBytes();
     }
 }

@@ -3,23 +3,106 @@ using AISpace.Network.Data;
 
 namespace AISpace.Common.Game;
 
+internal enum WardrobeSocketBit : uint
+{
+    None = 0,
+    Head = 1,
+    UpperBodyLayer1 = 2,
+    UpperBodyLayer2 = 4,
+    UpperBodyLayer3 = 8,
+    LowerBodyLayer1 = 16,
+    LowerBodyLayer2 = 32,
+    Hands = 64,
+    Socks = 128,
+    ShoesSecondary = 256,
+    ShoesPrimary = 512,
+    Bra = 1024,
+    LowerUnderwear = 2048,
+}
+
+internal enum WardrobeCategoryId : uint
+{
+    None = 0,
+    Hat = 0,
+    Coat = 1,
+    DressShirt = 2,
+    TShirt = 3,
+    Skirt = 4,
+    Pants = 5,
+    Gloves = 6,
+    Socks = 7,
+    Shoes = 8,
+    Bra = 9,
+    LowerUnderwear = 10,
+    Accessory = 11,
+}
+
 internal static class ItemEntityMapper
 {
+    public static uint ResolveBodyspot(int itemId, int storedSocket = 0, string? name = null)
+    {
+        if (itemId is >= 10_000_000 and < 200_000_000)
+        {
+            var derived = DeriveClothingBodyspot(itemId, name);
+            if (derived != (uint)WardrobeSocketBit.None)
+                return derived;
+        }
+
+        if (storedSocket != 0)
+            return (uint)storedSocket;
+
+        return 0;
+    }
+
+    public static uint ResolveBodyspot(Item item) => ResolveBodyspot(item.Id, item.Socket, item.Name);
+
+    public static uint ResolveBodyspot(uint itemId) => ResolveBodyspot((int)itemId);
+
+    public static uint ResolveEquipSocket(CharacterEquipSlot slot) =>
+        slot.ItemId is >= 10_000_000 and < 200_000_000 ? 0 : ResolveBodyspot((int)slot.ItemId);
+
+    private static uint DeriveClothingBodyspot(int itemId, string? name)
+    {
+        return (itemId / 100_000) switch
+        {
+            100 => (uint)WardrobeSocketBit.Head,
+            101 => (uint)WardrobeSocketBit.UpperBodyLayer3,
+            102 => ResolveLowerBodyBodyspot(itemId, name),
+            103 => (uint)WardrobeSocketBit.Hands,
+            104 => (uint)WardrobeSocketBit.Socks,
+            105 => (uint)WardrobeSocketBit.ShoesPrimary,
+            106 => (uint)WardrobeSocketBit.Bra,
+            107 => (uint)WardrobeSocketBit.LowerUnderwear,
+            _ => (uint)WardrobeSocketBit.None,
+        };
+    }
+
+    private static uint ResolveLowerBodyBodyspot(int itemId, string? name)
+    {
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (name.Contains("スカート", StringComparison.Ordinal))
+                return (uint)WardrobeSocketBit.LowerBodyLayer1;
+            if (
+                name.Contains("パンツ", StringComparison.Ordinal)
+                || name.Contains("ズボン", StringComparison.Ordinal)
+                || name.Contains("男性用", StringComparison.Ordinal)
+                || name.Contains("ショートパンツ", StringComparison.Ordinal)
+                || name.Contains("カブリ", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeSocketBit.LowerBodyLayer2;
+        }
+
+        return itemId == 10200100 ? (uint)WardrobeSocketBit.LowerBodyLayer2 : (uint)WardrobeSocketBit.LowerBodyLayer1;
+    }
+
     public static ItemData ToItemBaseListData(Item item)
     {
         var id = (uint)item.Id;
-        var socket = (uint)item.Socket;
         var iconId = (uint)item.IconId;
-
-        uint category = 1;
-        if (socket == 2)
-            category = 2;
-        if (socket == 4)
-            category = 8;
-        if (socket == 8)
-            category = 8;
-        if (socket == 16)
-            category = 4;
+        var (socket1, socket2) = GetCatalogSockets(item.Id, ResolveBodyspot(item));
+        var category = ResolveCatalogCategory(item.Id, item.Name);
+        var limitMapKey = ResolveLimitMapKey(item.Id);
 
         return new ItemData
         {
@@ -28,9 +111,102 @@ internal static class ItemEntityMapper
             ItemId = id,
             IconId = iconId,
             Name = item.Name,
-            Socket1 = socket,
-            Socket2 = socket,
+            Socket1 = socket1,
+            Socket2 = socket2,
             Category = category,
+            Flags = ResolveItemFlags(item.Id),
+            MaxPossessionCount = (ushort)short.MaxValue,
+            PlacementTypeId = limitMapKey,
+        };
+    }
+
+    public static uint ResolveInventoryTabCategory(int itemId, string? name = null) => ResolveCatalogCategory(itemId, name);
+
+    private static uint ResolveCatalogCategory(int itemId, string? name)
+    {
+        if (itemId is < 10_000_000 or >= 200_000_000)
+            return (uint)WardrobeCategoryId.None;
+
+        if (!string.IsNullOrEmpty(name) && (name.Contains("コート", StringComparison.Ordinal) || name.Contains("アウター", StringComparison.Ordinal)))
+            return (uint)WardrobeCategoryId.Coat;
+
+        return (itemId / 100_000) switch
+        {
+            100 => (uint)WardrobeCategoryId.Hat,
+            101 => ResolveUpperBodyCategory(name),
+            102 => ResolveLowerBodyCategory(itemId, name),
+            103 => (uint)WardrobeCategoryId.Gloves,
+            104 => (uint)WardrobeCategoryId.Socks,
+            105 => (uint)WardrobeCategoryId.Shoes,
+            106 => (uint)WardrobeCategoryId.Bra,
+            107 => (uint)WardrobeCategoryId.LowerUnderwear,
+            _ => (uint)WardrobeCategoryId.None,
+        };
+    }
+
+    private static uint ResolveUpperBodyCategory(string? name)
+    {
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (name.Contains("Yシャツ", StringComparison.Ordinal) || name.Contains("ワイシャツ", StringComparison.Ordinal) || name.Contains("ブラウス", StringComparison.Ordinal))
+                return (uint)WardrobeCategoryId.DressShirt;
+        }
+
+        return (uint)WardrobeCategoryId.TShirt;
+    }
+
+    private static uint ResolveLowerBodyCategory(int itemId, string? name)
+    {
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (name.Contains("スカート", StringComparison.Ordinal))
+                return (uint)WardrobeCategoryId.Skirt;
+            if (
+                name.Contains("パンツ", StringComparison.Ordinal)
+                || name.Contains("ズボン", StringComparison.Ordinal)
+                || name.Contains("男性用", StringComparison.Ordinal)
+                || name.Contains("ショートパンツ", StringComparison.Ordinal)
+                || name.Contains("カブリ", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeCategoryId.Pants;
+        }
+
+        return itemId == 10200100 ? (uint)WardrobeCategoryId.Pants : (uint)WardrobeCategoryId.Skirt;
+    }
+
+    private static (uint Socket1, uint Socket2) GetCatalogSockets(int itemId, uint socket)
+    {
+        if (itemId / 100_000 == 105)
+            return ((uint)WardrobeSocketBit.ShoesPrimary, (uint)WardrobeSocketBit.ShoesSecondary);
+
+        return (socket, 0);
+    }
+
+    private static uint ResolveLimitMapKey(int itemId)
+    {
+        if (itemId is < 10_000_000 or >= 200_000_000)
+            return (uint)itemId;
+
+        var prefix = itemId / 100_000;
+        return prefix switch
+        {
+            101 or 102 or 103 or 104 or 105 or 106 or 107 => (uint)prefix,
+            _ => 200u,
+        };
+    }
+
+    private static ItemFlags ResolveItemFlags(int itemId)
+    {
+        if (itemId is < 10_000_000 or >= 200_000_000)
+            return ItemFlags.None;
+
+        return (itemId / 100_000) switch
+        {
+            101 => ItemFlags.PermitsUnderwearTop,
+            102 => ItemFlags.PermitsUnderwearBottom,
+            106 => ItemFlags.PermitsUnderwearTop,
+            107 => ItemFlags.PermitsUnderwearBottom,
+            _ => ItemFlags.None,
         };
     }
 }

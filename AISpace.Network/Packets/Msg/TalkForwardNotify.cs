@@ -14,7 +14,7 @@ public class TalkForwardNotify(uint fromId, uint distId, string message, uint ba
         var writer = new PacketWriter();
         writer.Write(FromId);
         writer.Write(DistId);
-        writer.Write(Message, "Shift_JIS");
+        writer.Write(Message, "utf-8");
         writer.Write(BalloonId);
         return writer.ToBytes();
     }

@@ -66,7 +66,8 @@ public class ItemData
 
     public ItemFlags Flags { get; set; } = ItemFlags.None;
 
-    // Maximum copies of this item a player can own (0 = unlimited)
+    // Maximum copies of this item a player can own.
+    // Client logic treats 0 as a hard zero-cap in several flows.
     public ushort MaxPossessionCount { get; set; } = 0;
 
     // Key for furniture/placement/item-box map lookup (cls_491020::m_UnkMap)
@@ -87,12 +88,12 @@ public class ItemData
         writer.Write(SortedListPriority);
         writer.Write(ItemId);
         writer.Write(IconId);
-        writer.WriteFixedString(Name, 97, "Shift_JIS");
+        writer.WriteFixedString(Name, 97, "utf-8");
         writer.Write(Category);
         writer.Write(Socket1);
         writer.Write(Socket2);
-        writer.WriteFixedString(Description, 769, "Shift_JIS");
-        writer.WriteFixedString(LimitDesc, 193, "Shift_JIS");
+        writer.WriteFixedString(Description, 769, "utf-8");
+        writer.WriteFixedString(LimitDesc, 193, "utf-8");
         writer.Write((uint)Flags);
         writer.Write(MaxPossessionCount);
         writer.Write(PlacementTypeId);

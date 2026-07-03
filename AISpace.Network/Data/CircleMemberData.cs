@@ -12,7 +12,7 @@ public class CircleMemberData
 
         writer.Write(AvatarId);
 
-        writer.WriteFixedString(Name, 37, "Shift_JIS");
+        writer.WriteFixedString(Name, 37, "utf-8");
         writer.Write(Role);
 
         return writer.ToBytes();

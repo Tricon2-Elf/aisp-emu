@@ -5,7 +5,8 @@ public class User
     public int Id { get; set; }
     public string Username { get; set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
-    public long NpsPoints { get; set; }
+    public long AiPoints { get; set; }
+    public long NicoPoints { get; set; }
     public bool IsBanned { get; set; }
     public string? BanReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

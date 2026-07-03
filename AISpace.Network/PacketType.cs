@@ -374,6 +374,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_start_r", ImplementationState.Implemented)]
     ItemEquipStartResponse = 0x6448,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_started", ImplementationState.Implemented)]
+    ItemEquipStarted = 0x0F60,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_force_started", ImplementationState.Implemented)]
     ItemEquipForceStarted = 0x7E82,
 
@@ -492,10 +495,10 @@ public enum PacketType : ushort
     MoneyNpsPointsResponse = 0x3CF5,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_money_updated_nicopoint", ImplementationState.NotImplemented)]
-    MoneyUpdatedNicopoint = 0xE100,
+    MoneyUpdatedNicopoint = 0x7B72,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_money_updated_aipoint", ImplementationState.NotImplemented)]
-    MoneyUpdatedAipoint = 0xE101,
+    MoneyUpdatedAipoint = 0x196F,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_myroom_furniture", ImplementationState.Implemented)]
     MyRoomGetFurnitureRequest = 0xE868,
@@ -1514,6 +1517,15 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_shop_item", ImplementationState.NotImplemented)]
     ShopItemNotify = 0x3C9A,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_shop_buy_r", ImplementationState.NotImplemented)]
+    ShopBuyResponse = 0x2467,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_shop_end_r", ImplementationState.NotImplemented)]
+    ShopEndResponse = 0x18CA,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_shop_ended", ImplementationState.NotImplemented)]
+    ShopEndedNotify = 0x73E2,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_shop_started", ImplementationState.NotImplemented)]
     ShopStartedNotify = 0x290F,
 
@@ -1594,6 +1606,12 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_adventure_shop_end", ImplementationState.NotImplemented)]
     AdventureShopEndRequest = 0xADB6,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_shop_buy", ImplementationState.NotImplemented)]
+    ShopBuyRequest = 0xADB6,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_shop_end", ImplementationState.NotImplemented)]
+    ShopEndRequest = 0x1C70,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_adventure_shop_ranking_search", ImplementationState.NotImplemented)]
     AdventureShopRankingSearchRequest = 0xD861,

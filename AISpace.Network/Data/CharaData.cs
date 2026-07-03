@@ -13,6 +13,15 @@ public class CharaData(uint slotId, uint modelId, string name)
         Equips.Add(new ItemSlotInfo(id, socket));
     }
 
+    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<CharacterEquipSlot, uint> resolveSocket)
+    {
+        for (byte slot = 0; slot < 30; slot++)
+        {
+            var eq = equipment.FirstOrDefault(e => e.SlotIndex == slot);
+            AddEquip(eq.ItemId, eq.ItemId != 0 ? resolveSocket(eq) : 0);
+        }
+    }
+
     public byte[] ToBytes()
     {
         while (Equips.Count < 30)
@@ -21,7 +30,7 @@ public class CharaData(uint slotId, uint modelId, string name)
         var writer = new PacketWriter();
         writer.Write(slotId); // m_SlotId (4)
         writer.Write(modelId); // m_Model (4)
-        writer.WriteFixedString(name, 37, "SHIFT_JIS");
+        writer.WriteFixedString(name, 37, "utf-8");
         writer.Write(Visual.ToBytes()); // ReadAvatarVisual (19)
         writer.Write(0u); // m_pCharacter (4)
         writer.Write(0f); //Quaternion X

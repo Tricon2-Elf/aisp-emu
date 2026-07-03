@@ -25,6 +25,7 @@ public interface IPlayerSession
     bool IsMapTransitionPending { get; set; }
     bool NeedsPostLoadSelfAvatarNotify { get; set; }
     PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
+    int? ActiveShopId { get; set; }
     bool IsAuthenticated { get; }
 
     Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default);

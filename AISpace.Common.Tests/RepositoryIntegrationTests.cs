@@ -1,5 +1,7 @@
 using AISpace.Common.DAL;
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
+using AISpace.Network.Data;
 using AISpace.Common.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -147,4 +149,69 @@ public class RepositoryIntegrationTests
             await connection.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task CharacterRepository_ReplaceEquipmentAsync_RejectsUnownedItem_WithoutPersistingChanges()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            const int characterId = 9001;
+            const int oldTopId = 10100060;
+            const int requestedTopId = 10100220;
+
+            await using (var db = new MainContext(options))
+            {
+                var user = new User { Id = 1, Username = "equip-owner-check" };
+                user.SetPassword("pw");
+                db.Users.Add(user);
+
+                db.Characters.Add(
+                    new Character
+                    {
+                        Id = characterId,
+                        UserId = user.Id,
+                        Name = "Equip Check",
+                        ModelId = 100,
+                        Birthdate = new DateTime(2000, 1, 1),
+                        BloodType = BloodType.A,
+                        Gender = 1,
+                        FaceType = 1,
+                        Hairstyle = 1,
+                        CurrentMapId = 10990100,
+                    }
+                );
+
+                db.Items.AddRange(new Item { Id = oldTopId, Name = "Old Top", Socket = 8 }, new Item { Id = requestedTopId, Name = "Requested Top", Socket = 8 });
+                db.CharacterEquipments.Add(new CharacterEquipment { CharacterId = characterId, SlotIndex = 1, ItemId = oldTopId });
+
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var repo = new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                repo.ReplaceEquipmentAsync(characterId, [new ItemEquipEntry((uint)requestedTopId, 8)], TestContext.Current.CancellationToken)
+            );
+
+            await using (var verifyDb = new MainContext(options))
+            {
+                var equips = await verifyDb
+                    .CharacterEquipments.Where(x => x.CharacterId == characterId)
+                    .OrderBy(x => x.SlotIndex)
+                    .ToListAsync(TestContext.Current.CancellationToken);
+
+                Assert.Single(equips);
+                Assert.Equal(oldTopId, equips[0].ItemId);
+
+                var inventories = await verifyDb.CharacterInventories.Where(x => x.CharacterId == characterId).ToListAsync(TestContext.Current.CancellationToken);
+                Assert.Empty(inventories);
+            }
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
 }

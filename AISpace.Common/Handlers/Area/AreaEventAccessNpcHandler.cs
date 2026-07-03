@@ -1,3 +1,5 @@
+using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -5,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventAccessNpcHandler(ILogger<AreaEventAccessNpcHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopRepository shopRepository, ILogger<AreaEventAccessNpcHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventAccessNpcRequest;
     public PacketType ResponseType => PacketType.EventAccessNpcResponse;
@@ -17,7 +19,38 @@ public class AreaEventAccessNpcHandler(ILogger<AreaEventAccessNpcHandler> logger
 
         logger.LogInformation("EventAccessNpcRequest from {CharacterId}: npc={NpcId}, pos=({X},{Y},{Z})", session.CharacterId, request.NpcId, request.AvatarX, request.AvatarY, request.AvatarZ);
 
+        var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, request.NpcId, ct);
+        if (npc is null || npc.InteractionType != NpcInteractionType.Shop || npc.ShopId is null || npc.Shop is null || !npc.Shop.IsEnabled)
+        {
+            session.ActiveShopId = null;
+            logger.LogWarning(
+                "Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}",
+                session.CharacterId,
+                session.MapId,
+                request.NpcId
+            );
+            await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
+            return;
+        }
+
+        var shopItems = await shopRepository.GetEnabledItemsAsync(npc.ShopId.Value, ct);
+        if (shopItems.Count == 0)
+        {
+            session.ActiveShopId = null;
+            logger.LogWarning("Rejecting EventAccessNpcRequest for character {CharacterId}: npc={NpcId} has no enabled shop items", session.CharacterId, request.NpcId);
+            await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
+            return;
+        }
+
+        session.ActiveShopId = npc.ShopId.Value;
+        var npcObjectId = checked((uint)npc.NpcObjectId);
         await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
-        await session.SendAsync(PacketType.NotifySupplyNpcExec, new NotifySupplyNpcExec(request.NpcId).ToBytes(), ct);
+        await session.SendAsync(PacketType.NotifySupplyNpcExec, new NotifySupplyNpcExec(npcObjectId).ToBytes(), ct);
+        await session.SendAsync(PacketType.ShopStartedNotify, new ShopStartedNotify(npcObjectId, npc.Shop.DisplayName, checked((uint)npc.Shop.BannerVisualId)).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.ShopItemNotify,
+            new ShopItemNotify(shopItems.Select(x => new ShopItemNotify.ShopItem((uint)x.ItemId, checked((ulong)x.AiPrice), checked((ulong)x.NicoPrice))).ToList()).ToBytes(),
+            ct
+        );
     }
 }

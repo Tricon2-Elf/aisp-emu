@@ -2,26 +2,29 @@ using AISpace.Network;
 
 namespace AISpace.Network.Data;
 
+public enum EmotionCategory : byte
+{
+    Passion = 0,
+    Action = 1,
+    Voice = 2,
+    Etc = 3,
+}
+
 public class EmotionData
 {
     public uint Id { get; set; }
     public string Name { get; set; } = "";
-    public byte Category { get; set; } = 0;
-    public byte Unk2 { get; set; } = 0;
-    public bool Flag1 { get; set; } = true;
-    public bool Flag2 { get; set; } = true;
-    public bool Flag3 { get; set; } = true;
-    public bool Flag4 { get; set; } = true;
+    public EmotionCategory Category { get; set; } = EmotionCategory.Passion;
 
     public void Write(PacketWriter writer)
     {
         writer.Write(Id);
-        writer.WriteFixedString(Name, 96, "Shift_JIS");
-        writer.Write(Category);
-        writer.Write(Unk2);
-        writer.Write((byte)(Flag1 ? 1 : 0));
-        writer.Write((byte)(Flag2 ? 1 : 0));
-        writer.Write((byte)(Flag3 ? 1 : 0));
-        writer.Write((byte)(Flag4 ? 1 : 0));
+        writer.WriteFixedString(Name, 96, "utf-8");
+        writer.Write((byte)Category);
+        writer.Write((byte)0);  // _0x65 — always 0
+        writer.Write((byte)1);  // Flag1 — always 1
+        writer.Write((byte)1);  // Flag2 — always 1
+        writer.Write((byte)1);  // Flag3 — always 1
+        writer.Write((byte)1);  // Flag4 — always 1
     }
 }
