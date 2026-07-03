@@ -12,6 +12,12 @@ public sealed class LauncherSettings
 
     public string GameExecutable { get; set; } = DefaultGameExecutable;
 
+    /// <summary>
+    /// When true on Windows, launcher injects aisp.localehook.dll into the game process
+    /// to emulate Japanese ACP/locale without external locale emulator tools.
+    /// </summary>
+    public bool UseLocaleReplacer { get; set; } = true;
+
     public GameEnvironment SelectedEnvironment { get; set; } = GameEnvironment.Stable;
 
     public Dictionary<string, EnvironmentSettings> Environments { get; set; } =
