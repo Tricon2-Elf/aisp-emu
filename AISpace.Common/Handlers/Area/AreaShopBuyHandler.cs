@@ -48,15 +48,21 @@ public sealed class AreaShopBuyHandler(
             return;
         }
 
-        var shop = await npcRepository.GetSingleActiveShopForMapAsync(session.MapId, ct);
-        if (shop is null)
+        var activeShopId = session.ActiveShopId;
+        if (activeShopId is null)
+        {
+            var inferredShop = await npcRepository.GetSingleActiveShopForMapAsync(session.MapId, ct);
+            activeShopId = inferredShop?.Id;
+        }
+
+        if (activeShopId is null)
         {
             var total = request.PriceType == ShopPriceType.NicoPoints ? (ulong)Math.Max(0, session.User.NicoPoints) : (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
         }
 
-        var enabledShopItems = await shopRepository.GetEnabledItemsAsync(shop.Id, ct);
+        var enabledShopItems = await shopRepository.GetEnabledItemsAsync(activeShopId.Value, ct);
         var catalog = enabledShopItems.ToDictionary(x => (uint)x.ItemId, x => x);
         // Client send_shop_buy entries do not include an explicit quantity field.
         // Treat repeated item ids as repeated single-unit purchases.

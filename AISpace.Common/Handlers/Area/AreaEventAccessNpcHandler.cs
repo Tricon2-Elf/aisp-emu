@@ -22,6 +22,7 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
         var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, request.NpcId, ct);
         if (npc is null || npc.InteractionType != NpcInteractionType.Shop || npc.ShopId is null || npc.Shop is null || !npc.Shop.IsEnabled)
         {
+            session.ActiveShopId = null;
             logger.LogWarning(
                 "Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}",
                 session.CharacterId,
@@ -35,11 +36,13 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
         var shopItems = await shopRepository.GetEnabledItemsAsync(npc.ShopId.Value, ct);
         if (shopItems.Count == 0)
         {
+            session.ActiveShopId = null;
             logger.LogWarning("Rejecting EventAccessNpcRequest for character {CharacterId}: npc={NpcId} has no enabled shop items", session.CharacterId, request.NpcId);
             await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
             return;
         }
 
+        session.ActiveShopId = npc.ShopId.Value;
         var npcObjectId = checked((uint)npc.NpcObjectId);
         await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
         await session.SendAsync(PacketType.NotifySupplyNpcExec, new NotifySupplyNpcExec(npcObjectId).ToBytes(), ct);
