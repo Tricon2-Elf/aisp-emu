@@ -25,10 +25,11 @@ public sealed class GameLauncher(LauncherSettings settings)
             var gameDirectory = Path.GetDirectoryName(executable) ?? AppContext.BaseDirectory;
             ConnectionFile.Write(gameDirectory, envSettings);
 
+            var gameArgs = "./data";
             var startInfo = new ProcessStartInfo
             {
                 FileName = executable,
-                Arguments = "./data",
+                Arguments = gameArgs,
                 UseShellExecute = false,
                 WorkingDirectory = gameDirectory,
             };
