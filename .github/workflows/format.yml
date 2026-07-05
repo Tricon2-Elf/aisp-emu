@@ -3,10 +3,12 @@ name: Format
 on:
   pull_request:
     branches:
-      - master
+      - main
+      - develop
   push:
     branches:
-      - master
+      - main
+      - develop
 
 permissions:
   contents: read
