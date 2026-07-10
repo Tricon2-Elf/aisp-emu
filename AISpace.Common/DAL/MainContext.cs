@@ -17,6 +17,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Item> Items { get; set; }
     public DbSet<CharacterInventory> CharacterInventories { get; set; }
     public DbSet<CharacterEquipment> CharacterEquipments { get; set; }
+    public DbSet<CharacterEventStatus> CharacterEventStatuses { get; set; }
     public DbSet<Circle> Circles { get; internal set; }
     public DbSet<Map> Maps { get; set; }
     public DbSet<MapLink> MapLinks { get; set; }
@@ -59,6 +60,15 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasIndex(x => x.Name).IsUnique();
 
             e.HasOne(x => x.User).WithMany(u => u.Characters).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CharacterEventStatus>(e =>
+        {
+            e.ToTable("CharacterEventStatuses");
+            e.HasKey(x => new { x.CharacterId, x.EventKey });
+            e.Property(x => x.EventKey).HasMaxLength(128).IsRequired();
+            e.HasOne(x => x.Character).WithMany().HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.CharacterId);
         });
 
         // Item

@@ -49,6 +49,7 @@ internal class Program
         builder.Services.AddScoped<IChannelRepository, ChannelRepository>();
         builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
+        builder.Services.AddScoped<ICharacterEventRepository, CharacterEventRepository>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
         builder.Services.AddScoped<IItemRepository, ItemRepository>();
