@@ -20,9 +20,37 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
         logger.LogInformation("EventAccessNpcRequest from {CharacterId}: npc={NpcId}, pos=({X},{Y},{Z})", session.CharacterId, request.NpcId, request.AvatarX, request.AvatarY, request.AvatarZ);
 
         var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, session.ChannelId, request.NpcId, ct);
-        if (npc is null || npc.InteractionType != NpcInteractionType.Shop || npc.ShopId is null || npc.Shop is null || !npc.Shop.IsEnabled)
+        if (npc is null || !npc.IsEnabled)
         {
             session.ActiveShopId = null;
+            logger.LogWarning(
+                "Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}",
+                session.CharacterId,
+                session.MapId,
+                request.NpcId
+            );
+            await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(npc.ScriptedEventKey))
+        {
+            logger.LogInformation("Starting non-persistent scripted event {EventKey} for character {CharacterId} via npc {NpcId}", npc.ScriptedEventKey, session.CharacterId, request.NpcId);
+            await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
+            await ScriptedEventLauncher.StartAsync(session, npc.ScriptedEventKey, persistCompletion: false, ct);
+            return;
+        }
+
+        if (npc.InteractionType != NpcInteractionType.Shop || npc.ShopId is null || npc.Shop is null || !npc.Shop.IsEnabled)
+        {
+            session.ActiveShopId = null;
+            if (npc.InteractionType == NpcInteractionType.Decorative)
+            {
+                logger.LogDebug("Acknowledging decorative NPC access for character {CharacterId}: npc={NpcId}", session.CharacterId, request.NpcId);
+                await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
+                return;
+            }
+
             logger.LogWarning(
                 "Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}",
                 session.CharacterId,

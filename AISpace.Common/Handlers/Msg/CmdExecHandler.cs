@@ -257,7 +257,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 return;
             }
 
-            await ScriptedEventLauncher.StartAsync(areaClient, ScriptedEvents.Keys.IntroductionRin01, ct);
+            await ScriptedEventLauncher.StartAsync(areaClient, ScriptedEvents.Keys.IntroductionRin01, ct: ct);
             logger.LogInformation("CmdExecHandler: started introdution_rin_01 for character {CharacterId} (user {UserId})", areaClient.CharacterId, session.User?.Id ?? session.UserId);
             return;
         }
