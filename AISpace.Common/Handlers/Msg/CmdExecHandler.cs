@@ -12,15 +12,7 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(
-    SharedState state,
-    IMapRepository mapRepo,
-    IUserRepository userRepo,
-    ICharacterRepository characterRepo,
-    IItemBaseListCache itemBaseListCache,
-    DirectMapLinkTransitionService directMapLinkTransitionService,
-    ILogger<CmdExecHandler> logger
-) : IPacketHandler, IRequiresAuthenticatedSession
+public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepository userRepo, ICharacterRepository characterRepo, IItemBaseListCache itemBaseListCache, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
     private const float JumpDistance = 100f;
@@ -144,11 +136,7 @@ public class CmdExecHandler(
             areaClient.Character = refreshed;
             await CharacterItemSync.SendInventoryBootstrapAsync(areaClient, refreshed, ct);
 
-            logger.LogInformation(
-                "CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client",
-                itemIds.Count,
-                characterId
-            );
+            logger.LogInformation("CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client", itemIds.Count, characterId);
             return;
         }
 
@@ -169,11 +157,7 @@ public class CmdExecHandler(
 
             if (!await itemBaseListCache.ContainsItemAsync(itemId, ct))
             {
-                logger.LogWarning(
-                    "CmdExecHandler: give rejected unknown item {ItemId} for character {CharacterId}",
-                    itemId,
-                    areaClient.CharacterId
-                );
+                logger.LogWarning("CmdExecHandler: give rejected unknown item {ItemId} for character {CharacterId}", itemId, areaClient.CharacterId);
                 return;
             }
 
@@ -208,12 +192,7 @@ public class CmdExecHandler(
             if (refreshed is not null)
                 areaClient.Character = refreshed;
 
-            logger.LogInformation(
-                "CmdExecHandler: gave item {ItemId} x{Quantity} to character {CharacterId} and sent inventory notify",
-                itemId,
-                quantity,
-                characterId
-            );
+            logger.LogInformation("CmdExecHandler: gave item {ItemId} x{Quantity} to character {CharacterId} and sent inventory notify", itemId, quantity, characterId);
             return;
         }
 
@@ -228,10 +207,7 @@ public class CmdExecHandler(
 
             if (request.Arguments.Count == 0 || !long.TryParse(request.Arguments[0], out var amount) || amount <= 0)
             {
-                logger.LogWarning(
-                    "CmdExecHandler: money requires a positive amount argument (user {UserId})",
-                    userId
-                );
+                logger.LogWarning("CmdExecHandler: money requires a positive amount argument (user {UserId})", userId);
                 return;
             }
 
@@ -243,11 +219,7 @@ public class CmdExecHandler(
             var addNicoPoints = target is "both" or "all" or "nico" or "nicopoints";
             if (!addAiPoints && !addNicoPoints)
             {
-                logger.LogWarning(
-                    "CmdExecHandler: money unsupported target '{Target}' for user {UserId} (expected ai|nico|both)",
-                    target,
-                    userId
-                );
+                logger.LogWarning("CmdExecHandler: money unsupported target '{Target}' for user {UserId} (expected ai|nico|both)", target, userId);
                 return;
             }
 
@@ -269,25 +241,26 @@ public class CmdExecHandler(
             }
 
             var notifySession = areaClient ?? session;
-            await notifySession.SendAsync(
-                PacketType.MoneyUpdatedAipoint,
-                new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(),
-                ct
-            );
-            await notifySession.SendAsync(
-                PacketType.MoneyUpdatedNicopoint,
-                new MoneyUpdatedNicopointNotify((ulong)Math.Max(0, user.NicoPoints)).ToBytes(),
-                ct
-            );
+            await notifySession.SendAsync(PacketType.MoneyUpdatedAipoint, new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(), ct);
+            await notifySession.SendAsync(PacketType.MoneyUpdatedNicopoint, new MoneyUpdatedNicopointNotify((ulong)Math.Max(0, user.NicoPoints)).ToBytes(), ct);
 
-            logger.LogInformation(
-                "CmdExecHandler: added {Amount} points ({Target}) for user {UserId} => ai={AiPoints}, nico={NicoPoints}",
-                amount,
-                target,
-                userId,
-                user.AiPoints,
-                user.NicoPoints
-            );
+            logger.LogInformation("CmdExecHandler: added {Amount} points ({Target}) for user {UserId} => ai={AiPoints}, nico={NicoPoints}", amount, target, userId, user.AiPoints, user.NicoPoints);
+            return;
+        }
+
+        if (cmd == "tut")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null)
+            {
+                logger.LogWarning("CmdExecHandler: tut requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            const string scriptLabel = "./script/event/introdution_rin_01.csv";
+            await areaClient.SendAsync(PacketType.EventStartNotify, new EventStartNotify().ToBytes(), ct);
+            await areaClient.SendAsync(PacketType.EventScriptPlayNotify, new EventScriptPlayNotify(scriptLabel).ToBytes(), ct);
+            logger.LogInformation("CmdExecHandler: started introdution_rin_01 for character {CharacterId} (user {UserId})", areaClient.CharacterId, session.User?.Id ?? session.UserId);
             return;
         }
 

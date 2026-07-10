@@ -9,6 +9,7 @@ using AISpace.Common.Services;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
 using AISpace.Network.Data;
+using AISpace.Network.Packets.Area;
 using AISpace.Network.Packets.Msg;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -76,15 +77,7 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                new UserRepository(new MainContext(options)),
-                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-                new StubItemBaseListCache(),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("tele", "10990110"), msgSession, TestContext.Current.CancellationToken);
 
@@ -132,15 +125,7 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                new UserRepository(new MainContext(options)),
-                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-                new StubItemBaseListCache(),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("jump"), msgSession, TestContext.Current.CancellationToken);
 
@@ -175,7 +160,15 @@ public class CmdExecHandlerTests
                 db.Users.Add(user);
                 foreach (var itemId in DefaultClothingItems.Male)
                 {
-                    db.Items.Add(new Item { Id = itemId, Name = $"item-{itemId}", IconId = itemId, Socket = 0 });
+                    db.Items.Add(
+                        new Item
+                        {
+                            Id = itemId,
+                            Name = $"item-{itemId}",
+                            IconId = itemId,
+                            Socket = 0,
+                        }
+                    );
                 }
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
@@ -194,15 +187,7 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                new UserRepository(new MainContext(options)),
-                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-                new StubItemBaseListCache(DefaultClothingItems.Male),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(DefaultClothingItems.Male), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("outfit"), msgSession, TestContext.Current.CancellationToken);
 
@@ -235,7 +220,15 @@ public class CmdExecHandlerTests
             await using (var db = new MainContext(options))
             {
                 db.Users.Add(user);
-                db.Items.Add(new Item { Id = itemId, Name = "Give Item", IconId = itemId, Socket = 0 });
+                db.Items.Add(
+                    new Item
+                    {
+                        Id = itemId,
+                        Name = "Give Item",
+                        IconId = itemId,
+                        Socket = 0,
+                    }
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -253,23 +246,12 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                new UserRepository(new MainContext(options)),
-                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-                new StubItemBaseListCache([itemId]),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache([itemId]), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("/give", itemId.ToString()), msgSession, TestContext.Current.CancellationToken);
 
             await using var verifyDb = new MainContext(options);
-            var inventory = await verifyDb.CharacterInventories.SingleAsync(
-                i => i.CharacterId == 8005 && i.ItemId == itemId,
-                TestContext.Current.CancellationToken
-            );
+            var inventory = await verifyDb.CharacterInventories.SingleAsync(i => i.CharacterId == 8005 && i.ItemId == itemId, TestContext.Current.CancellationToken);
             Assert.Equal(1, inventory.Quantity);
 
             Assert.Equal(1, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
@@ -295,7 +277,15 @@ public class CmdExecHandlerTests
             await using (var db = new MainContext(options))
             {
                 db.Users.Add(user);
-                db.Items.Add(new Item { Id = itemId, Name = "Missing In Cache", IconId = itemId, Socket = 0 });
+                db.Items.Add(
+                    new Item
+                    {
+                        Id = itemId,
+                        Name = "Missing In Cache",
+                        IconId = itemId,
+                        Socket = 0,
+                    }
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -313,23 +303,12 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                new UserRepository(new MainContext(options)),
-                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-                new StubItemBaseListCache(),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("/give", itemId.ToString()), msgSession, TestContext.Current.CancellationToken);
 
             await using var verifyDb = new MainContext(options);
-            var inventoryCount = await verifyDb.CharacterInventories.CountAsync(
-                i => i.CharacterId == 8006 && i.ItemId == itemId,
-                TestContext.Current.CancellationToken
-            );
+            var inventoryCount = await verifyDb.CharacterInventories.CountAsync(i => i.CharacterId == 8006 && i.ItemId == itemId, TestContext.Current.CancellationToken);
             Assert.Equal(0, inventoryCount);
             Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemCreateNotify);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
@@ -371,15 +350,7 @@ public class CmdExecHandlerTests
 
             var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
 
-            var handler = new CmdExecHandler(
-                state,
-                new MapRepository(new MainContext(options)),
-                new UserRepository(new MainContext(options)),
-                new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-                new StubItemBaseListCache(),
-                CreateDirectMapLinkTransitionService(options, state),
-                NullLogger<CmdExecHandler>.Instance
-            );
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
             await handler.HandleAsync(BuildCmdExecPayload("/money", "50", "nico"), msgSession, TestContext.Current.CancellationToken);
 
@@ -396,6 +367,41 @@ public class CmdExecHandlerTests
         {
             await connection.DisposeAsync();
         }
+    }
+
+    [Fact]
+    public async Task EventScriptPlayR_Success_SendsFadeInAndWaitsForAck()
+    {
+        var areaSession = new CapturingPlayerSession { CharacterId = 1, UserId = 2 };
+        var handler = new AreaEventScriptPlayHandler(NullLogger<AreaEventScriptPlayHandler>.Instance);
+
+        var writer = new PacketWriter();
+        writer.Write(0);
+        await handler.HandleAsync(writer.ToBytes(), areaSession, TestContext.Current.CancellationToken);
+
+        Assert.True(areaSession.PendingEventEndAfterFade);
+        var fade = Assert.Single(areaSession.Sent);
+        Assert.Equal(PacketType.EventFadeInNotify, fade.Type);
+        Assert.Equal(new EventFadeNotify(1f, 255, 255, 255).ToBytes(), fade.Payload);
+    }
+
+    [Fact]
+    public async Task EventFadeInR_AfterScriptPlay_SendsEventEnd()
+    {
+        var areaSession = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            UserId = 2,
+            PendingEventEndAfterFade = true,
+        };
+        var handler = new AreaEventFadeInHandler(NullLogger<AreaEventFadeInHandler>.Instance);
+
+        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);
+
+        Assert.False(areaSession.PendingEventEndAfterFade);
+        var end = Assert.Single(areaSession.Sent);
+        Assert.Equal(PacketType.EventEndNotify, end.Type);
+        Assert.Equal(new EventEndNotify(0).ToBytes(), end.Payload);
     }
 
     [Fact]
