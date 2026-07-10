@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventFadeInHandler(ILogger<AreaEventFadeInHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaEventFadeInHandler(ICharacterEventRepository eventRepository, ILogger<AreaEventFadeInHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventFadeInRequest;
     public PacketType ResponseType => PacketType.EventEndNotify;
@@ -22,5 +23,12 @@ public class AreaEventFadeInHandler(ILogger<AreaEventFadeInHandler> logger) : IP
         session.PendingEventEndAfterFade = false;
         logger.LogInformation("EventFadeIn from character {CharacterId}: ending pending event", session.CharacterId);
         await session.SendAsync(PacketType.EventEndNotify, new EventEndNotify(0).ToBytes(), ct);
+
+        if (session.ActiveScriptedEventKey is { } eventKey)
+        {
+            session.ActiveScriptedEventKey = null;
+            await eventRepository.MarkCompletedAsync((int)session.CharacterId, eventKey, ct);
+            logger.LogInformation("Marked scripted event {EventKey} complete for character {CharacterId}", eventKey, session.CharacterId);
+        }
     }
 }

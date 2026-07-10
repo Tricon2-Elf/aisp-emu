@@ -4,6 +4,7 @@ using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
+using AISpace.Common.Services;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
 using AISpace.Network.Data;
@@ -849,7 +850,8 @@ public class AreaMapHandlersTests
             }
 
             var session = new CapturingPlayerSession();
-            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new ChannelRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new SharedState(), NullLogger<AreasvEnterHandler>.Instance);
+            var handlerDb = new MainContext(options);
+            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), new SharedState(), NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
 
@@ -908,7 +910,8 @@ public class AreaMapHandlersTests
             state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
 
             var session = new CapturingPlayerSession();
-            var handler = new AreasvEnterHandler(new UserSessionRepository(new MainContext(options), NullLogger<UserSessionRepository>.Instance), new MapRepository(new MainContext(options)), new ChannelRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
+            var handlerDb = new MainContext(options);
+            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
 
@@ -940,7 +943,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, peer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
             var moves = new[]
             {
                 new MovementData(1f, 2f, 3f, 4, MovementType.Running),
@@ -983,7 +986,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, differentMapPeer);
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
             var move = new MovementData(9f, 8f, 7f, 6, MovementType.Running);
 
             await handler.HandleAsync(move.ToBytes(), mover, TestContext.Current.CancellationToken);
@@ -1067,7 +1070,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, oldPeer);
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
 
             await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1156,7 +1159,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, peer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
 
             await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1334,6 +1337,7 @@ public class AreaMapHandlersTests
                     }
                 );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+                await MarkIntroductionEventCompletedAsync(options, 4251, TestContext.Current.CancellationToken);
             }
 
             var state = new SharedState();
@@ -1343,7 +1347,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, sameAreaPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state));
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
 
             await handler.HandleAsync(new MovementData(-8918f, 2f, -18718f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1496,6 +1500,22 @@ public class AreaMapHandlersTests
         writer.Write(value);
         return writer.ToBytes();
     }
+
+    private static async Task MarkIntroductionEventCompletedAsync(DbContextOptions<MainContext> options, int characterId, CancellationToken ct)
+    {
+        await using var db = new MainContext(options);
+        db.CharacterEventStatuses.Add(
+            new CharacterEventStatus
+            {
+                CharacterId = characterId,
+                EventKey = ScriptedEvents.Keys.IntroductionRin01,
+                CompletedAtUtc = DateTime.UtcNow,
+            }
+        );
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static ScriptedEventTriggerService CreateScriptedEventTriggerService(DbContextOptions<MainContext> options) => new(new CharacterEventRepository(new MainContext(options)), NullLogger<ScriptedEventTriggerService>.Instance);
 
     private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(DbContextOptions<MainContext> options, SharedState state)
     {
