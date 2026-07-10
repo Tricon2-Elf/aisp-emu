@@ -138,6 +138,7 @@ internal class Program
             await ChannelRepository.SeedChannelsIfEmptyAsync(db, Path.Combine(seedDir, "channels.json"), serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
             await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(seedDir, "baseItems.json"));
             await ShopRepository.SeedShopsFromJsonAsync(db, Path.Combine(seedDir, "starterShop.json"), app.Logger);
+            await NpcRepository.SeedFromJsonAsync(db, Path.Combine(seedDir, "npcs.json"), app.Logger);
             await scope.ServiceProvider.GetRequiredService<IItemBaseListCache>().WarmAsync();
         }
 
