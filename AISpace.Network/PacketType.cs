@@ -884,13 +884,16 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_chara_hide", ImplementationState.NotImplemented)]
     EventCharaHideNotify = 0x239C,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_end", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_end", ImplementationState.Implemented)]
     EventEndNotify = 0x099D,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_in", ImplementationState.NotImplemented)]
-    EventFadeInNotify = 0x1011,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_in", ImplementationState.Implemented)]
+    EventFadeInNotify = 0x0F8E,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_out", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_start", ImplementationState.Implemented)]
+    EventStartNotify = 0x1B5C,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_out", ImplementationState.Implemented)]
     EventFadeOutNotify = 0x3925,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message", ImplementationState.Implemented)]
@@ -905,8 +908,8 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_quest_select_exec", ImplementationState.NotImplemented)]
     EventQuestSelectExecNotify = 0x7640,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_script_play", ImplementationState.NotImplemented)]
-    EventScriptPlayNotify = 0x912D,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_script_play", ImplementationState.Implemented)]
+    EventScriptPlayNotify = 0x8091,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_exec", ImplementationState.NotImplemented)]
     EventSelectExecNotify = 0x6A56,
@@ -1658,8 +1661,14 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_board_close", ImplementationState.NotImplemented)]
     EventBoardCloseRequest = 0xC290,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_fade_in_r", ImplementationState.NotImplemented)]
-    EventFadeInRRequest = 0xA3B5,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_fade_in_r", ImplementationState.Implemented)]
+    EventFadeInRequest = 0x2C4A,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_fade_out_r", ImplementationState.Implemented)]
+    EventFadeOutRequest = 0xF962,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_script_play_r", ImplementationState.Implemented)]
+    EventScriptPlayRequest = 0xA3B5,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_areamap_select_exec_r", ImplementationState.Implemented)]
     EventAreaMapSelectExecRRequest = 0xD8FD,
