@@ -3,6 +3,7 @@ namespace AISpace.Common.DAL.Entities;
 public enum NpcInteractionType
 {
     Shop = 0,
+    Decorative = 1,
 }
 
 public class Npc
@@ -24,6 +25,7 @@ public class Npc
     public NpcInteractionType InteractionType { get; set; } = NpcInteractionType.Shop;
     public bool IsEnabled { get; set; } = true;
     public int SortOrder { get; set; }
+    public string? ScriptedEventKey { get; set; }
 
     public Shop? Shop { get; set; }
     public ICollection<NpcEquipment> Equipment { get; set; } = new List<NpcEquipment>();

@@ -1,6 +1,7 @@
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
@@ -89,6 +90,64 @@ public class AreaShopNpcHandlersTests
             Assert.Equal(50UL, itemReader.ReadULong());
             Assert.Equal(50UL, itemReader.ReadULong());
             Assert.Equal((uint)StarterItemId, itemReader.ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EventAccessNpcHandler_StartsScriptedEvent_WhenNpcHasScriptedEventKey()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                db.Npcs.Add(
+                    new Npc
+                    {
+                        MapId = StarterMapId,
+                        ChannelId = -1,
+                        DayPhase = -1,
+                        DateStartUtc = DateTime.UnixEpoch,
+                        DateEndUtc = DateTime.MaxValue,
+                        NpcObjectId = 1342177288,
+                        ModelId = 3992011,
+                        Name = "Rin",
+                        X = -9200f,
+                        Y = 2f,
+                        Z = -16887f,
+                        Rotation = 90,
+                        InteractionType = NpcInteractionType.Decorative,
+                        ScriptedEventKey = ScriptedEvents.Keys.IntroductionRin02,
+                        IsEnabled = true,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var handler = new AreaEventAccessNpcHandler(
+                new NpcRepository(runDb),
+                new ShopRepository(runDb),
+                NullLogger<AreaEventAccessNpcHandler>.Instance
+            );
+            var session = new CapturingPlayerSession
+            {
+                MapId = StarterMapId,
+                CharacterId = 9001,
+            };
+
+            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177288), session, TestContext.Current.CancellationToken);
+
+            Assert.Null(session.ActiveScriptedEventKey);
+            Assert.Contains(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            Assert.Contains(session.Sent, p => p.Type == PacketType.EventStartNotify);
+            Assert.Contains(session.Sent, p => p.Type == PacketType.EventScriptPlayNotify);
+            var script = session.Sent.Single(p => p.Type == PacketType.EventScriptPlayNotify);
+            Assert.Equal(new EventScriptPlayNotify(ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.IntroductionRin02)).ToBytes(), script.Payload);
         }
         finally
         {

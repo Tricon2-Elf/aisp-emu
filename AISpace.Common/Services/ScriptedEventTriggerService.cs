@@ -25,7 +25,7 @@ public class ScriptedEventTriggerService(ICharacterEventRepository eventReposito
                 continue;
 
             logger.LogInformation("Starting scripted event {EventKey} for character {CharacterId} after entering marker on map {MapId}", trigger.EventKey, session.CharacterId, session.MapId);
-            await ScriptedEventLauncher.StartAsync(session, trigger.EventKey, ct);
+            await ScriptedEventLauncher.StartAsync(session, trigger.EventKey, ct: ct);
             return true;
         }
 

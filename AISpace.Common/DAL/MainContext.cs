@@ -171,6 +171,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.DateEndUtc).HasDefaultValue(DateTime.MaxValue);
             e.Property(x => x.InteractionType).HasConversion<int>();
             e.Property(x => x.IsEnabled).HasDefaultValue(true);
+            e.Property(x => x.ScriptedEventKey).HasMaxLength(128);
             e.HasIndex(x => x.NpcObjectId).IsUnique();
             e.HasIndex(x => new { x.MapId, x.SortOrder });
             e.HasOne(x => x.Shop).WithMany(x => x.Npcs).HasForeignKey(x => x.ShopId).OnDelete(DeleteBehavior.SetNull);
