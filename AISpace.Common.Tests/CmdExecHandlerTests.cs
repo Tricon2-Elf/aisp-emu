@@ -388,20 +388,31 @@ public class CmdExecHandlerTests
     [Fact]
     public async Task EventFadeInR_AfterScriptPlay_SendsEventEnd()
     {
-        var areaSession = new CapturingPlayerSession
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
         {
-            CharacterId = 1,
-            UserId = 2,
-            PendingEventEndAfterFade = true,
-        };
-        var handler = new AreaEventFadeInHandler(NullLogger<AreaEventFadeInHandler>.Instance);
+            var areaSession = new CapturingPlayerSession
+            {
+                CharacterId = 1,
+                UserId = 2,
+                PendingEventEndAfterFade = true,
+            };
+            var characterRepo = new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance);
+            var eventRepo = new CharacterEventRepository(new MainContext(options));
+            var handler = new AreaEventFadeInHandler(eventRepo, NullLogger<AreaEventFadeInHandler>.Instance);
 
-        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);
 
-        Assert.False(areaSession.PendingEventEndAfterFade);
-        var end = Assert.Single(areaSession.Sent);
-        Assert.Equal(PacketType.EventEndNotify, end.Type);
-        Assert.Equal(new EventEndNotify(0).ToBytes(), end.Payload);
+            Assert.False(areaSession.PendingEventEndAfterFade);
+            var end = Assert.Single(areaSession.Sent);
+            Assert.Equal(PacketType.EventEndNotify, end.Type);
+            Assert.Equal(new EventEndNotify(0).ToBytes(), end.Payload);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     [Fact]
