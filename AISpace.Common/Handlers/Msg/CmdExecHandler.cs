@@ -257,9 +257,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 return;
             }
 
-            const string scriptLabel = "./script/event/introdution_rin_01.csv";
-            await areaClient.SendAsync(PacketType.EventStartNotify, new EventStartNotify().ToBytes(), ct);
-            await areaClient.SendAsync(PacketType.EventScriptPlayNotify, new EventScriptPlayNotify(scriptLabel).ToBytes(), ct);
+            await ScriptedEventLauncher.StartAsync(areaClient, ScriptedEvents.Keys.IntroductionRin01, ct);
             logger.LogInformation("CmdExecHandler: started introdution_rin_01 for character {CharacterId} (user {UserId})", areaClient.CharacterId, session.User?.Id ?? session.UserId);
             return;
         }

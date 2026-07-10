@@ -27,6 +27,7 @@ public interface IPlayerSession
     PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     int? ActiveShopId { get; set; }
     bool PendingEventEndAfterFade { get; set; }
+    string? ActiveScriptedEventKey { get; set; }
     bool IsAuthenticated { get; }
 
     Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default);

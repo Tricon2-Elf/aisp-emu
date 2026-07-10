@@ -100,6 +100,7 @@ public class SharedStateTests
         public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
         public int? ActiveShopId { get; set; }
         public bool PendingEventEndAfterFade { get; set; }
+        public string? ActiveScriptedEventKey { get; set; }
         public bool IsAuthenticated => User != null;
         public List<(PacketType Type, byte[] Payload)> Sent { get; } = [];
 

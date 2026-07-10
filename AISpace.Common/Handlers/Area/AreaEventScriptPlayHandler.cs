@@ -18,6 +18,7 @@ public class AreaEventScriptPlayHandler(ILogger<AreaEventScriptPlayHandler> logg
         {
             logger.LogWarning("EventScriptPlay from character {CharacterId}: result={Result}", session.CharacterId, request.Result);
             session.PendingEventEndAfterFade = false;
+            session.ActiveScriptedEventKey = null;
             await session.SendAsync(PacketType.EventEndNotify, new EventEndNotify(unchecked((uint)request.Result)).ToBytes(), ct);
             return;
         }

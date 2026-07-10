@@ -1,4 +1,5 @@
 using AISpace.Common.Game;
+using AISpace.Common.Services;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransitionService directMapLinkTransitionService) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransitionService directMapLinkTransitionService, ScriptedEventTriggerService scriptedEventTriggerService) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarMoveRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyMove;
@@ -22,10 +23,12 @@ public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransi
             return;
 
         var samples = new List<DirectMapLinkTransitionService.PositionSample>(avatarMove.Moves.Length + 1) { new(session.X, session.Z) };
+        var scriptedEventSamples = new List<MovementPositionSample>(avatarMove.Moves.Length + 1) { new(session.X, session.Y, session.Z) };
 
         foreach (var movement in avatarMove.Moves)
         {
             samples.Add(new DirectMapLinkTransitionService.PositionSample(movement.X, movement.Z));
+            scriptedEventSamples.Add(new MovementPositionSample(movement.X, movement.Y, movement.Z));
         }
 
         var lastMovement = avatarMove.Moves[^1];
@@ -37,6 +40,9 @@ public class AreaAvatarMoveRequestHandler(SharedState state, DirectMapLinkTransi
         session.MovementTypeId = (int)lastMovement.Animation;
 
         if (await directMapLinkTransitionService.TryHandleMovementTriggerAsync(session, samples, ct))
+            return;
+
+        if (await scriptedEventTriggerService.TryStartOnMovementAsync(session, scriptedEventSamples, ct))
             return;
 
         session.HasMovedSinceMapLoad = true;
