@@ -9,6 +9,7 @@ global using Microsoft.Extensions.Options;
 using System.Text;
 using AISpace.Common;
 using AISpace.Common.Game;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Services;
 using AISpace.Server.Services;
@@ -59,6 +60,9 @@ internal class Program
         builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
         builder.Services.AddSingleton<IPendingMapTransferRepository, PendingMapTransferRepository>();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
+        builder.Services.AddScoped<ServerScriptSession>();
+        builder.Services.Scan(scan => scan.FromAssemblyOf<IServerScript>().AddClasses(classes => classes.AssignableTo<IServerScript>()).AsImplementedInterfaces().AsSelf().WithScopedLifetime());
+        builder.Services.AddScoped<ServerScriptDispatcher>();
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
 
         builder.Services.AddSingleton<SharedState>(sp =>

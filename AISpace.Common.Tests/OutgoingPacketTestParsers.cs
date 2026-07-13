@@ -80,6 +80,20 @@ internal static class OutgoingPacketTestParsers
         return new SelectInitIslandStartNotify { Islands = islands };
     }
 
+    public static EventIslandSelectExecNotify ParseEventIslandSelectExecNotify(ReadOnlySpan<byte> data)
+    {
+        var reader = new PacketReader(data);
+        var count = reader.ReadUInt();
+        if (count > 5)
+            throw new InvalidDataException($"Event island selection count {count} exceeds client maximum of 5.");
+
+        var islands = new List<EventIslandSelectEntry>((int)count);
+        for (var index = 0; index < count; index++)
+            islands.Add(EventIslandSelectEntry.FromBytes(reader.ReadBytes(EventIslandSelectEntry.PacketSize)));
+
+        return new EventIslandSelectExecNotify { Islands = islands };
+    }
+
     public static MapLinkNotifyData ParseMapLinkNotifyData(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);

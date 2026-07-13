@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
@@ -103,6 +104,10 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.IsMapTransitionPending = false;
         session.NeedsPostLoadSelfAvatarNotify = true;
         session.PendingAreaMapSelection = null;
+        session.ActiveEventKey = null;
+        session.ActiveEventKind = NpcEventKind.None;
+        session.ServerScriptState = null;
+        session.PendingEventEndAfterFade = false;
         session.Character = chara;
         session.CharacterId = charId;
         session.MapId = mapId;

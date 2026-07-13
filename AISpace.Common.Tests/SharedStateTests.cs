@@ -1,5 +1,6 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
 
 namespace AISpace.Common.Tests;
@@ -100,7 +101,9 @@ public class SharedStateTests
         public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
         public int? ActiveShopId { get; set; }
         public bool PendingEventEndAfterFade { get; set; }
-        public string? ActiveScriptedEventKey { get; set; }
+        public string? ActiveEventKey { get; set; }
+        public NpcEventKind ActiveEventKind { get; set; }
+        public ServerScriptState? ServerScriptState { get; set; }
         public bool IsAuthenticated => User != null;
         public List<(PacketType Type, byte[] Payload)> Sent { get; } = [];
 

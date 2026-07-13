@@ -342,6 +342,32 @@ public class AdditionalPacketParserTests
     }
 
     [Fact]
+    public void EventIslandSelectExecNotify_ToBytes_WritesExtraFieldPerIsland()
+    {
+        var packet = new EventIslandSelectExecNotify
+        {
+            Islands =
+            [
+                new EventIslandSelectEntry
+                {
+                    IslandId = 1,
+                    Title = "Da Capo",
+                    Description = "Kazami Academy",
+                    Extra = 0,
+                },
+            ],
+        };
+
+        var bytes = packet.ToBytes();
+        var parsed = OutgoingPacketTestParsers.ParseEventIslandSelectExecNotify(bytes);
+
+        Assert.Equal(4 + EventIslandSelectEntry.PacketSize, bytes.Length);
+        Assert.Equal(1u, parsed.Islands[0].IslandId);
+        Assert.Equal("Da Capo", parsed.Islands[0].Title);
+        Assert.Equal(0u, parsed.Islands[0].Extra);
+    }
+
+    [Fact]
     public void SelectInitIslandStartNotify_ToBytes_WritesIslandBootstrapEntries()
     {
         var packet = new SelectInitIslandStartNotify
