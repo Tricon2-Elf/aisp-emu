@@ -20,6 +20,13 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
 
         logger.LogInformation("EventAccessNpcRequest from {CharacterId}: npc={NpcId}, pos=({X},{Y},{Z})", session.CharacterId, request.NpcId, request.AvatarX, request.AvatarY, request.AvatarZ);
 
+        if (session.ActiveEventKey != null)
+        {
+            logger.LogWarning("Rejecting EventAccessNpcRequest for character {CharacterId}: already in event {EventKey}", session.CharacterId, session.ActiveEventKey);
+            await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
+            return;
+        }
+
         var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, session.ChannelId, request.NpcId, ct);
         if (npc is null || !npc.IsEnabled)
         {
@@ -31,17 +38,24 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
 
         if (npc.EventKind != NpcEventKind.None && !string.IsNullOrWhiteSpace(npc.EventKey))
         {
-            await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
-
             switch (npc.EventKind)
             {
                 case NpcEventKind.ClientScript:
+                    await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
                     logger.LogInformation("Starting client script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, request.NpcId);
-                    await ClientScriptLauncher.StartAsync(session, npc.EventKey, persistCompletion: false, ct);
+                    await ClientScriptLauncher.StartAsync(session, npc.EventKey, EventCompletionPolicy.Replayable, ct);
                     return;
                 case NpcEventKind.ServerScript:
+                    if (!serverScriptDispatcher.HasScript(npc.EventKey))
+                    {
+                        logger.LogWarning("Rejecting EventAccessNpcRequest for character {CharacterId}: unknown server script {EventKey}", session.CharacterId, npc.EventKey);
+                        await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
+                        return;
+                    }
+
+                    await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
                     logger.LogInformation("Starting server script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, request.NpcId);
-                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, new ServerScriptContext { Npc = npc }, ct);
+                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, new ServerScriptContext { Npc = npc }, EventCompletionPolicy.Once, ct);
                     return;
             }
         }

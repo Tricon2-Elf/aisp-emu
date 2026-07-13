@@ -106,6 +106,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.PendingAreaMapSelection = null;
         session.ActiveEventKey = null;
         session.ActiveEventKind = NpcEventKind.None;
+        session.ActiveEventCompletionPolicy = EventCompletionPolicy.Once;
         session.ServerScriptState = null;
         session.PendingEventEndAfterFade = false;
         session.Character = chara;

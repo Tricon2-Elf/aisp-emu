@@ -21,6 +21,7 @@ public class AreaEventScriptPlayHandler(ILogger<AreaEventScriptPlayHandler> logg
             session.PendingEventEndAfterFade = false;
             session.ActiveEventKey = null;
             session.ActiveEventKind = NpcEventKind.None;
+            session.ActiveEventCompletionPolicy = EventCompletionPolicy.Once;
             await session.SendAsync(PacketType.EventEndNotify, new EventEndNotify(unchecked((uint)request.Result)).ToBytes(), ct);
             return;
         }
