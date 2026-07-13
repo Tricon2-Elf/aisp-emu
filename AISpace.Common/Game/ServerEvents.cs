@@ -5,5 +5,6 @@ public static class ServerEvents
     public static class Keys
     {
         public const string ShinjuHomeIsland = "shinju_home_island";
+        public const string ShinjuCharadoll = "shinju_charadoll";
     }
 }
