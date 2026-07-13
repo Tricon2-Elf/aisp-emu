@@ -726,7 +726,7 @@ public enum PacketType : ushort
     AdventureShopRemoveAllBuyHistoryResponse = 0xB736,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_adventure_shop_remove_buy_history_r", ImplementationState.NotImplemented)]
-    AdventureShopRemoveBuyHistoryResponse = 0x25F1,
+    AdventureShopRemoveBuyHistoryResponse = 0x1915,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_adventure_shop_started", ImplementationState.NotImplemented)]
     AdventureShopStartedNotify = 0x0566,
@@ -899,8 +899,11 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message", ImplementationState.Implemented)]
     EventMessageNotify = 0x662F,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message_close", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_message_close", ImplementationState.Implemented)]
     EventMessageCloseNotify = 0x317C,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_island_select_exec", ImplementationState.Implemented)]
+    EventIslandSelectExecNotify = 0x25F1,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_notice", ImplementationState.NotImplemented)]
     EventNoticeNotify = 0xCD6F,
@@ -1672,6 +1675,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_areamap_select_exec_r", ImplementationState.Implemented)]
     EventAreaMapSelectExecRRequest = 0xD8FD,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_island_select_exec_r", ImplementationState.Implemented)]
+    EventIslandSelectExecRRequest = 0x0580,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_select_exec_r", ImplementationState.NotImplemented)]
     EventSelectExecRRequest = 0x701D,
