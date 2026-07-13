@@ -7,6 +7,7 @@ namespace AISpace.Common.DAL.Repositories;
 public interface IMapRepository
 {
     Task<Map?> GetByMapIdAsync(uint mapId, CancellationToken ct = default);
+    Task<IReadOnlyList<Map>> GetMapsByIslandAsync(string island, CancellationToken ct = default);
 }
 
 public class MapRepository(MainContext db) : IMapRepository
@@ -19,6 +20,11 @@ public class MapRepository(MainContext db) : IMapRepository
     {
         long id = mapId;
         return await _db.Maps.AsNoTracking().FirstOrDefaultAsync(m => m.MapId == id, ct);
+    }
+
+    public async Task<IReadOnlyList<Map>> GetMapsByIslandAsync(string island, CancellationToken ct = default)
+    {
+        return await _db.Maps.AsNoTracking().Where(map => map.Island == island).OrderBy(map => map.MapId).ToListAsync(ct);
     }
 
     public static async Task EnsureSeedMapsPresentAsync(MainContext db, string jsonPath, CancellationToken ct = default)

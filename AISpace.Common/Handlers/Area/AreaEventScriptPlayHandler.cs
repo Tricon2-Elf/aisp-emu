@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -18,7 +19,8 @@ public class AreaEventScriptPlayHandler(ILogger<AreaEventScriptPlayHandler> logg
         {
             logger.LogWarning("EventScriptPlay from character {CharacterId}: result={Result}", session.CharacterId, request.Result);
             session.PendingEventEndAfterFade = false;
-            session.ActiveScriptedEventKey = null;
+            session.ActiveEventKey = null;
+            session.ActiveEventKind = NpcEventKind.None;
             await session.SendAsync(PacketType.EventEndNotify, new EventEndNotify(unchecked((uint)request.Result)).ToBytes(), ct);
             return;
         }

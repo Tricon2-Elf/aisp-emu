@@ -8,7 +8,7 @@ public class ScriptedEventTriggerService(ICharacterEventRepository eventReposito
 {
     public async Task<bool> TryStartOnMovementAsync(IPlayerSession session, IReadOnlyList<MovementPositionSample> samples, CancellationToken ct = default)
     {
-        if (session.ActiveScriptedEventKey != null || session.CharacterId == 0 || session.MapId == 0 || samples.Count == 0)
+        if (session.ActiveEventKey != null || session.CharacterId == 0 || session.MapId == 0 || samples.Count == 0)
             return false;
 
         var characterId = (int)session.CharacterId;
@@ -25,7 +25,7 @@ public class ScriptedEventTriggerService(ICharacterEventRepository eventReposito
                 continue;
 
             logger.LogInformation("Starting scripted event {EventKey} for character {CharacterId} after entering marker on map {MapId}", trigger.EventKey, session.CharacterId, session.MapId);
-            await ScriptedEventLauncher.StartAsync(session, trigger.EventKey, ct: ct);
+            await ClientScriptLauncher.StartAsync(session, trigger.EventKey, ct: ct);
             return true;
         }
 

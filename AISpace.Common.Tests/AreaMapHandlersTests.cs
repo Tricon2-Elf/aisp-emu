@@ -3,6 +3,7 @@ using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Services;
 using AISpace.Common.Tests.Support;
@@ -592,7 +593,7 @@ public class AreaMapHandlersTests
                 },
             };
 
-            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaSelectInitIslandEndHandler>.Instance);
+            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(options, state), CreateServerScriptDispatcher(options), NullLogger<AreaSelectInitIslandEndHandler>.Instance);
 
             await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 1 }), session, TestContext.Current.CancellationToken);
 
@@ -944,11 +945,7 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, peer);
 
             var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
-            var moves = new[]
-            {
-                new MovementData(1f, 2f, 3f, 4, MovementType.Running),
-                new MovementData(5f, 6f, 7f, 8, MovementType.Walking),
-            };
+            var moves = new[] { new MovementData(1f, 2f, 3f, 4, MovementType.Running), new MovementData(5f, 6f, 7f, 8, MovementType.Walking) };
 
             await handler.HandleAsync(BuildAvatarMovePayload(moves), mover, TestContext.Current.CancellationToken);
 
@@ -1516,6 +1513,15 @@ public class AreaMapHandlersTests
     }
 
     private static ScriptedEventTriggerService CreateScriptedEventTriggerService(DbContextOptions<MainContext> options) => new(new CharacterEventRepository(new MainContext(options)), NullLogger<ScriptedEventTriggerService>.Instance);
+
+    private static ServerScriptDispatcher CreateServerScriptDispatcher(DbContextOptions<MainContext> options)
+    {
+        var db = new MainContext(options);
+        var eventRepository = new CharacterEventRepository(db);
+        var serverScriptSession = new ServerScriptSession(eventRepository, NullLogger<ServerScriptSession>.Instance);
+        var script = new ShinjuHomeIslandServerScript(new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), new MapRepository(db), serverScriptSession, NullLogger<ShinjuHomeIslandServerScript>.Instance);
+        return new ServerScriptDispatcher([script], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+    }
 
     private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(DbContextOptions<MainContext> options, SharedState state)
     {

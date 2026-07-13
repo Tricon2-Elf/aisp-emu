@@ -351,6 +351,7 @@ public class MsgHandlersTests
     private static GetChannelListMapHandler CreateHandler(DbContextOptions<MainContext> options, SharedState? state = null)
     {
         state ??= new SharedState();
+        var db = new MainContext(options);
         return new GetChannelListMapHandler(
             Options.Create(
                 new ServerOptions
@@ -360,7 +361,7 @@ public class MsgHandlersTests
                     IPOverride = "localhost",
                 }
             ),
-            new ChannelRepository(new MainContext(options)),
+            new ChannelRepository(db),
             state,
             CreateDirectMapLinkTransitionService(options, state),
             NullLogger<GetChannelListMapHandler>.Instance

@@ -53,7 +53,8 @@ public class ScriptedEventTests
             var started = await service.TryStartOnMovementAsync(session, [new MovementPositionSample(-9200f, 2f, -16887f)], TestContext.Current.CancellationToken);
 
             Assert.True(started);
-            Assert.Equal(ScriptedEvents.Keys.IntroductionRin01, session.ActiveScriptedEventKey);
+            Assert.Equal(ScriptedEvents.Keys.IntroductionRin01, session.ActiveEventKey);
+            Assert.Equal(NpcEventKind.ClientScript, session.ActiveEventKind);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventStartNotify);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventScriptPlayNotify);
         }
@@ -86,7 +87,7 @@ public class ScriptedEventTests
             var started = await service.TryStartOnMovementAsync(session, [new MovementPositionSample(-9200f, 2f, -16887f)], TestContext.Current.CancellationToken);
 
             Assert.False(started);
-            Assert.Null(session.ActiveScriptedEventKey);
+            Assert.Null(session.ActiveEventKey);
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventStartNotify);
         }
         finally
@@ -115,7 +116,7 @@ public class ScriptedEventTests
             var started = await service.TryStartOnMovementAsync(session, [new MovementPositionSample(0f, 2f, 0f)], TestContext.Current.CancellationToken);
 
             Assert.False(started);
-            Assert.Null(session.ActiveScriptedEventKey);
+            Assert.Null(session.ActiveEventKey);
         }
         finally
         {
@@ -137,13 +138,14 @@ public class ScriptedEventTests
                 CharacterId = 42,
                 UserId = 1,
                 PendingEventEndAfterFade = true,
-                ActiveScriptedEventKey = ScriptedEvents.Keys.IntroductionRin01,
+                ActiveEventKey = ScriptedEvents.Keys.IntroductionRin01,
+                ActiveEventKind = NpcEventKind.ClientScript,
             };
 
             var handler = new AreaEventFadeInHandler(eventRepo, NullLogger<AreaEventFadeInHandler>.Instance);
             await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);
 
-            Assert.Null(areaSession.ActiveScriptedEventKey);
+            Assert.Null(areaSession.ActiveEventKey);
             Assert.True(await eventRepo.HasCompletedAsync(42, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken));
         }
         finally
@@ -153,13 +155,14 @@ public class ScriptedEventTests
     }
 
     [Fact]
-    public async Task EventScriptPlayHandler_Failure_ClearsActiveScriptedEventKey()
+    public async Task EventScriptPlayHandler_Failure_ClearsActiveEventKey()
     {
         var areaSession = new CapturingPlayerSession
         {
             CharacterId = 1,
             UserId = 2,
-            ActiveScriptedEventKey = ScriptedEvents.Keys.IntroductionRin01,
+            ActiveEventKey = ScriptedEvents.Keys.IntroductionRin01,
+            ActiveEventKind = NpcEventKind.ClientScript,
         };
         var handler = new AreaEventScriptPlayHandler(NullLogger<AreaEventScriptPlayHandler>.Instance);
 
@@ -167,7 +170,7 @@ public class ScriptedEventTests
         writer.Write(1u);
         await handler.HandleAsync(writer.ToBytes(), areaSession, TestContext.Current.CancellationToken);
 
-        Assert.Null(areaSession.ActiveScriptedEventKey);
+        Assert.Null(areaSession.ActiveEventKey);
     }
 
     [Fact]
