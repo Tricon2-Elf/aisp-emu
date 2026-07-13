@@ -29,6 +29,7 @@ public class Character
     public int? CircleId { get; set; }
     public Circle? Circle { get; set; }
     public uint CurrentMapId { get; set; }
+    public uint HomeIslandId { get; set; }
 
     public ICollection<CharacterInventory> Inventory { get; set; } = new List<CharacterInventory>();
     public ICollection<CharacterEquipment> Equipment { get; set; } = new List<CharacterEquipment>();
