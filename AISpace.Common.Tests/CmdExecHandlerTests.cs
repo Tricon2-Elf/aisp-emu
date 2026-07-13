@@ -398,8 +398,8 @@ public class CmdExecHandlerTests
                 UserId = 2,
                 PendingEventEndAfterFade = true,
             };
-            var characterRepo = new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance);
-            var eventRepo = new CharacterEventRepository(new MainContext(options));
+            await using var db = new MainContext(options);
+            var eventRepo = new CharacterEventRepository(db);
             var handler = new AreaEventFadeInHandler(eventRepo, NullLogger<AreaEventFadeInHandler>.Instance);
 
             await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);

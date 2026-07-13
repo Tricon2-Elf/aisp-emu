@@ -105,10 +105,11 @@ public class AreaMapHandlersTests
 
             var session = CreateSession(CreateUserWithCharacter(1, 1001, "link-user", "Link Tester", 10990100), 10990100, 0);
             var logger = new ListLogger<AreaMapLinkGetDataHandler>();
+            await using var runDb = new MainContext(options);
             var handler = new AreaMapLinkGetDataHandler(
-                new MapLinkRepository(new MainContext(options)),
-                new MapRepository(new MainContext(options)),
-                new ChannelRepository(new MainContext(options)),
+                new MapLinkRepository(runDb),
+                new MapRepository(runDb),
+                new ChannelRepository(runDb),
                 Options.Create(
                     new ServerOptions
                     {
@@ -228,7 +229,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, differentChannelPeer);
             state.RegisterClient(ServerType.Area, destinationPeer);
 
-            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
+            await using var runDb = new MainContext(options);
+            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildUIntPairPayload(10990110, 1), session, TestContext.Current.CancellationToken);
 
@@ -325,7 +327,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, session);
             state.RegisterClient(ServerType.Area, oldPeer);
 
-            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
+            await using var runDb = new MainContext(options);
+            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
 
@@ -411,7 +414,8 @@ public class AreaMapHandlersTests
 
             state.RegisterClient(ServerType.Area, session);
 
-            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
+            await using var runDb = new MainContext(options);
+            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
 
@@ -494,7 +498,8 @@ public class AreaMapHandlersTests
 
             state.RegisterClient(ServerType.Area, session);
 
-            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
+            await using var runDb = new MainContext(options);
+            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
 
@@ -593,7 +598,8 @@ public class AreaMapHandlersTests
                 },
             };
 
-            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(options, state), CreateServerScriptDispatcher(options), NullLogger<AreaSelectInitIslandEndHandler>.Instance);
+            await using var runDb = new MainContext(options);
+            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(runDb, state), CreateServerScriptDispatcher(runDb), NullLogger<AreaSelectInitIslandEndHandler>.Instance);
 
             await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 1 }), session, TestContext.Current.CancellationToken);
 
@@ -705,7 +711,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, session);
             state.RegisterClient(ServerType.Area, oldPeer);
 
-            var handler = new AreaEventAreaMapSelectExecRHandler(CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaEventAreaMapSelectExecRHandler>.Instance);
+            await using var runDb = new MainContext(options);
+            var handler = new AreaEventAreaMapSelectExecRHandler(CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaEventAreaMapSelectExecRHandler>.Instance);
 
             await handler.HandleAsync(
                 OutgoingPacketTestParsers.EventAreaMapSelectExecRRequestToBytes(
@@ -851,7 +858,7 @@ public class AreaMapHandlersTests
             }
 
             var session = new CapturingPlayerSession();
-            var handlerDb = new MainContext(options);
+            await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), new SharedState(), NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
@@ -911,7 +918,7 @@ public class AreaMapHandlersTests
             state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
 
             var session = new CapturingPlayerSession();
-            var handlerDb = new MainContext(options);
+            await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
@@ -944,7 +951,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, peer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
+            await using var runDb = new MainContext(options);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
             var moves = new[] { new MovementData(1f, 2f, 3f, 4, MovementType.Running), new MovementData(5f, 6f, 7f, 8, MovementType.Walking) };
 
             await handler.HandleAsync(BuildAvatarMovePayload(moves), mover, TestContext.Current.CancellationToken);
@@ -983,7 +991,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, differentMapPeer);
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
+            await using var runDb = new MainContext(options);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
             var move = new MovementData(9f, 8f, 7f, 6, MovementType.Running);
 
             await handler.HandleAsync(move.ToBytes(), mover, TestContext.Current.CancellationToken);
@@ -1067,7 +1076,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, oldPeer);
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
+            await using var runDb = new MainContext(options);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
 
             await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1156,7 +1166,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, peer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
+            await using var runDb = new MainContext(options);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
 
             await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1266,7 +1277,8 @@ public class AreaMapHandlersTests
 
             state.RegisterClient(ServerType.Area, session);
 
-            var handler = new AreaMapEnterHandler(new MapRepository(new MainContext(options)), CreateDirectMapLinkTransitionService(options, state), NullLogger<AreaMapEnterHandler>.Instance);
+            await using var runDb = new MainContext(options);
+            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
 
@@ -1344,7 +1356,8 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, sameAreaPeer);
 
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(options, state), CreateScriptedEventTriggerService(options));
+            await using var runDb = new MainContext(options);
+            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
 
             await handler.HandleAsync(new MovementData(-8918f, 2f, -18718f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
 
@@ -1512,11 +1525,10 @@ public class AreaMapHandlersTests
         await db.SaveChangesAsync(ct);
     }
 
-    private static ScriptedEventTriggerService CreateScriptedEventTriggerService(DbContextOptions<MainContext> options) => new(new CharacterEventRepository(new MainContext(options)), NullLogger<ScriptedEventTriggerService>.Instance);
+    private static ScriptedEventTriggerService CreateScriptedEventTriggerService(MainContext db) => new(new CharacterEventRepository(db), NullLogger<ScriptedEventTriggerService>.Instance);
 
-    private static ServerScriptDispatcher CreateServerScriptDispatcher(DbContextOptions<MainContext> options)
+    private static ServerScriptDispatcher CreateServerScriptDispatcher(MainContext db)
     {
-        var db = new MainContext(options);
         var eventRepository = new CharacterEventRepository(db);
         var serverScriptSession = new ServerScriptSession(eventRepository, NullLogger<ServerScriptSession>.Instance);
         var characterRepository = new CharacterRepository(db, NullLogger<CharacterRepository>.Instance);
@@ -1535,13 +1547,13 @@ public class AreaMapHandlersTests
         return dispatcher;
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(DbContextOptions<MainContext> options, SharedState state)
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state)
     {
         return new DirectMapLinkTransitionService(
-            new MapRepository(new MainContext(options)),
-            new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-            new MapLinkRepository(new MainContext(options)),
-            new ChannelRepository(new MainContext(options)),
+            new MapRepository(db),
+            new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MapLinkRepository(db),
+            new ChannelRepository(db),
             Options.Create(
                 new ServerOptions
                 {
