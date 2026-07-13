@@ -474,7 +474,8 @@ public class AreaShopNpcHandlersTests
 
             var character = await runDb.Characters.SingleAsync(TestContext.Current.CancellationToken);
             Assert.Equal(3u, character.HomeIslandId);
-            Assert.Equal(3992021u, character.ModelId);
+            Assert.Equal(1u, character.ModelId);
+            Assert.Equal(CharadollPersonality.Quiet, character.CharadollPersonality);
             Assert.True(await runDb.CharacterEventStatuses.AnyAsync(x => x.CharacterId == characterId && x.EventKey == ServerEvents.Keys.ShinjuHomeIsland, TestContext.Current.CancellationToken));
         }
         finally

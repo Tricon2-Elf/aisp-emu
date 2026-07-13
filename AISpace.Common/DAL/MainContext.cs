@@ -58,6 +58,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.HasIndex(x => x.Name).IsUnique();
+            e.Property(x => x.CharadollPersonality).HasConversion<byte>().HasDefaultValue(CharadollPersonality.None);
 
             e.HasOne(x => x.User).WithMany(u => u.Characters).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
