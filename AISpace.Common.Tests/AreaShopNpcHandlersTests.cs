@@ -395,7 +395,7 @@ public class AreaShopNpcHandlersTests
             var characterId = runDb.Characters.Select(c => c.Id).Single();
             var shinjuNpc = runDb.Npcs.Single();
             var dispatcher = CreateServerScriptDispatcher(runDb);
-            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(options, new SharedState()), dispatcher, NullLogger<AreaSelectInitIslandEndHandler>.Instance);
+            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(runDb, new SharedState()), dispatcher, NullLogger<AreaSelectInitIslandEndHandler>.Instance);
             var session = new CapturingPlayerSession
             {
                 CharacterId = (uint)characterId,
@@ -514,12 +514,12 @@ public class AreaShopNpcHandlersTests
         return dispatcher;
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(DbContextOptions<MainContext> options, SharedState state) =>
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state) =>
         new(
-            new MapRepository(new MainContext(options)),
-            new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-            new MapLinkRepository(new MainContext(options)),
-            new ChannelRepository(new MainContext(options)),
+            new MapRepository(db),
+            new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MapLinkRepository(db),
+            new ChannelRepository(db),
             Options.Create(
                 new ServerOptions
                 {

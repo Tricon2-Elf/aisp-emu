@@ -41,7 +41,8 @@ public class ScriptedEventTests
         try
         {
             await SeedCharacterAsync(options, 9001);
-            var service = CreateTriggerService(options);
+            await using var db = new MainContext(options);
+            var service = CreateTriggerService(db);
             var session = new CapturingPlayerSession
             {
                 CharacterId = 9001,
@@ -72,10 +73,11 @@ public class ScriptedEventTests
         try
         {
             await SeedCharacterAsync(options, 9002);
-            var eventRepo = new CharacterEventRepository(new MainContext(options));
+            await using var db = new MainContext(options);
+            var eventRepo = new CharacterEventRepository(db);
             await eventRepo.MarkCompletedAsync(9002, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken);
 
-            var service = CreateTriggerService(options);
+            var service = CreateTriggerService(eventRepo);
             var session = new CapturingPlayerSession
             {
                 CharacterId = 9002,
@@ -104,7 +106,8 @@ public class ScriptedEventTests
         try
         {
             await SeedCharacterAsync(options, 9003);
-            var service = CreateTriggerService(options);
+            await using var db = new MainContext(options);
+            var service = CreateTriggerService(db);
             var session = new CapturingPlayerSession
             {
                 CharacterId = 9003,
@@ -132,7 +135,8 @@ public class ScriptedEventTests
         try
         {
             await SeedCharacterAsync(options, 42);
-            var eventRepo = new CharacterEventRepository(new MainContext(options));
+            await using var db = new MainContext(options);
+            var eventRepo = new CharacterEventRepository(db);
             var areaSession = new CapturingPlayerSession
             {
                 CharacterId = 42,
@@ -181,7 +185,8 @@ public class ScriptedEventTests
         try
         {
             await SeedCharacterAsync(options, 77);
-            var repo = new CharacterEventRepository(new MainContext(options));
+            await using var db = new MainContext(options);
+            var repo = new CharacterEventRepository(db);
 
             await repo.MarkCompletedAsync(77, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken);
             await repo.MarkCompletedAsync(77, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken);
@@ -195,7 +200,9 @@ public class ScriptedEventTests
         }
     }
 
-    private static ScriptedEventTriggerService CreateTriggerService(DbContextOptions<MainContext> options) => new(new CharacterEventRepository(new MainContext(options)), NullLogger<ScriptedEventTriggerService>.Instance);
+    private static ScriptedEventTriggerService CreateTriggerService(MainContext db) => CreateTriggerService(new CharacterEventRepository(db));
+
+    private static ScriptedEventTriggerService CreateTriggerService(CharacterEventRepository eventRepo) => new(eventRepo, NullLogger<ScriptedEventTriggerService>.Instance);
 
     private static async Task SeedCharacterAsync(DbContextOptions<MainContext> options, int characterId)
     {
