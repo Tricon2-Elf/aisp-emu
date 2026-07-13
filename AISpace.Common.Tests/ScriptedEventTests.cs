@@ -56,6 +56,7 @@ public class ScriptedEventTests
             Assert.True(started);
             Assert.Equal(ScriptedEvents.Keys.IntroductionRin01, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ClientScript, session.ActiveEventKind);
+            Assert.Equal(EventCompletionPolicy.Once, session.ActiveEventCompletionPolicy);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventStartNotify);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventScriptPlayNotify);
         }
@@ -144,6 +145,7 @@ public class ScriptedEventTests
                 PendingEventEndAfterFade = true,
                 ActiveEventKey = ScriptedEvents.Keys.IntroductionRin01,
                 ActiveEventKind = NpcEventKind.ClientScript,
+                ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
             };
 
             var handler = new AreaEventFadeInHandler(eventRepo, NullLogger<AreaEventFadeInHandler>.Instance);
@@ -151,6 +153,38 @@ public class ScriptedEventTests
 
             Assert.Null(areaSession.ActiveEventKey);
             Assert.True(await eventRepo.HasCompletedAsync(42, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EventFadeInHandler_DoesNotMarkComplete_WhenReplayable()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            await SeedCharacterAsync(options, 43);
+            await using var db = new MainContext(options);
+            var eventRepo = new CharacterEventRepository(db);
+            var areaSession = new CapturingPlayerSession
+            {
+                CharacterId = 43,
+                UserId = 1,
+                PendingEventEndAfterFade = true,
+                ActiveEventKey = ScriptedEvents.Keys.IntroductionRin02,
+                ActiveEventKind = NpcEventKind.ClientScript,
+                ActiveEventCompletionPolicy = EventCompletionPolicy.Replayable,
+            };
+
+            var handler = new AreaEventFadeInHandler(eventRepo, NullLogger<AreaEventFadeInHandler>.Instance);
+            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);
+
+            Assert.Null(areaSession.ActiveEventKey);
+            Assert.False(await eventRepo.HasCompletedAsync(43, ScriptedEvents.Keys.IntroductionRin02, TestContext.Current.CancellationToken));
         }
         finally
         {

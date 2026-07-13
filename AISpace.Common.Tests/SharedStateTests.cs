@@ -103,6 +103,7 @@ public class SharedStateTests
         public bool PendingEventEndAfterFade { get; set; }
         public string? ActiveEventKey { get; set; }
         public NpcEventKind ActiveEventKind { get; set; }
+        public EventCompletionPolicy ActiveEventCompletionPolicy { get; set; }
         public ServerScriptState? ServerScriptState { get; set; }
         public bool IsAuthenticated => User != null;
         public List<(PacketType Type, byte[] Payload)> Sent { get; } = [];

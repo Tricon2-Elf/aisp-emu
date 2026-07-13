@@ -25,12 +25,18 @@ public class AreaEventFadeInHandler(ICharacterEventRepository eventRepository, I
         logger.LogInformation("EventFadeIn from character {CharacterId}: ending pending event", session.CharacterId);
         await session.SendAsync(PacketType.EventEndNotify, new EventEndNotify(0).ToBytes(), ct);
 
-        if (session.ActiveEventKind == NpcEventKind.ClientScript && session.ActiveEventKey is { } eventKey)
-        {
-            session.ActiveEventKey = null;
-            session.ActiveEventKind = NpcEventKind.None;
-            await eventRepository.MarkCompletedAsync((int)session.CharacterId, eventKey, ct);
-            logger.LogInformation("Marked client script {EventKey} complete for character {CharacterId}", eventKey, session.CharacterId);
-        }
+        if (session.ActiveEventKind != NpcEventKind.ClientScript || session.ActiveEventKey is not { } eventKey)
+            return;
+
+        var shouldMarkComplete = session.ActiveEventCompletionPolicy == EventCompletionPolicy.Once;
+        session.ActiveEventKey = null;
+        session.ActiveEventKind = NpcEventKind.None;
+        session.ActiveEventCompletionPolicy = EventCompletionPolicy.Once;
+
+        if (!shouldMarkComplete)
+            return;
+
+        await eventRepository.MarkCompletedAsync((int)session.CharacterId, eventKey, ct);
+        logger.LogInformation("Marked client script {EventKey} complete for character {CharacterId}", eventKey, session.CharacterId);
     }
 }
