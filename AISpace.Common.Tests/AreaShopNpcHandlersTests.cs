@@ -356,7 +356,7 @@ public class AreaShopNpcHandlersTests
     }
 
     [Fact]
-    public async Task SelectInitIslandEndHandler_AdvancesServerScript_ToCharadollSelection()
+    public async Task SelectInitIslandEndHandler_CompletesServerScript_AfterIslandSelection()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -388,74 +388,20 @@ public class AreaShopNpcHandlersTests
                 ActiveEventKind = NpcEventKind.ServerScript,
                 ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuHomeIsland, Step = "IslandSelect" },
             };
-            session.ServerScriptState.Data["npcObjectId"] = 1342177291u;
-            session.ServerScriptState.Data["npcName"] = "Shinju";
 
-            await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 1 }), session, TestContext.Current.CancellationToken);
-
-            Assert.Equal(ServerEvents.Keys.ShinjuHomeIsland, session.ActiveEventKey);
-            Assert.Equal("CharadollSelect", session.ServerScriptState!.Step);
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSelectInitNotify);
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSelectExecNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-
-            var character = await runDb.Characters.SingleAsync(TestContext.Current.CancellationToken);
-            Assert.Equal(0u, character.HomeIslandId);
-        }
-        finally
-        {
-            await connection.DisposeAsync();
-        }
-    }
-
-    [Fact]
-    public async Task EventSelectExecRHandler_CompletesServerScript_AfterCharadollSelection()
-    {
-        var (connection, options) = TestDb.CreateInMemoryMainContext();
-        try
-        {
-            await using (var db = new MainContext(options))
-            {
-                await SeedFranchiseHubMapsAsync(db);
-                db.Users.Add(new User { Id = 1, Username = "tester" });
-                db.Characters.Add(
-                    new Character
-                    {
-                        Name = "Tester",
-                        UserId = 1,
-                        ModelId = 1,
-                        Birthdate = DateTime.UnixEpoch,
-                    }
-                );
-                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-            }
-
-            await using var runDb = new MainContext(options);
-            var characterId = runDb.Characters.Select(c => c.Id).Single();
-            var dispatcher = CreateServerScriptDispatcher(runDb);
-            var handler = new AreaEventSelectExecRHandler(dispatcher, NullLogger<AreaEventSelectExecRHandler>.Instance);
-            var session = new CapturingPlayerSession
-            {
-                CharacterId = (uint)characterId,
-                ActiveEventKey = ServerEvents.Keys.ShinjuHomeIsland,
-                ActiveEventKind = NpcEventKind.ServerScript,
-                ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuHomeIsland, Step = "CharadollSelect" },
-            };
-            session.ServerScriptState.Data["islandId"] = 1u;
-
-            var writer = new PacketWriter();
-            writer.Write(0u);
-            writer.Write((byte)1);
-            await handler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 3 }), session, TestContext.Current.CancellationToken);
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(NpcEventKind.None, session.ActiveEventKind);
             Assert.Null(session.ServerScriptState);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
+            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventSelectInitNotify);
+            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventSelectPushNotify);
+            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventSelectExecNotify);
 
             var character = await runDb.Characters.SingleAsync(TestContext.Current.CancellationToken);
-            Assert.Equal(1u, character.HomeIslandId);
-            Assert.Equal(3992021u, character.ModelId);
+            Assert.Equal(3u, character.HomeIslandId);
+            Assert.Equal(1u, character.ModelId);
             Assert.True(await runDb.CharacterEventStatuses.AnyAsync(x => x.CharacterId == characterId && x.EventKey == ServerEvents.Keys.ShinjuHomeIsland, TestContext.Current.CancellationToken));
         }
         finally
