@@ -15,7 +15,10 @@ public sealed class ServerScriptSession(ICharacterEventRepository eventRepositor
         session.ServerScriptState = new ServerScriptState { EventKey = eventKey, Step = string.Empty };
     }
 
-    public async Task CompleteAsync(IPlayerSession session, uint result, bool markComplete, CancellationToken ct = default)
+    public Task CompleteAsync(IPlayerSession session, uint result, bool markComplete, CancellationToken ct = default) =>
+        CompleteAsync(session, result, markComplete, completionEventKey: null, ct);
+
+    public async Task CompleteAsync(IPlayerSession session, uint result, bool markComplete, string? completionEventKey, CancellationToken ct = default)
     {
         var eventKey = session.ActiveEventKey;
         session.ActiveEventKey = null;
@@ -24,10 +27,14 @@ public sealed class ServerScriptSession(ICharacterEventRepository eventRepositor
 
         await session.SendAsync(PacketType.EventEndNotify, new EventEndNotify(result).ToBytes(), ct);
 
-        if (markComplete && eventKey is not null && session.CharacterId != 0)
+        if (markComplete && session.CharacterId != 0)
         {
-            await eventRepository.MarkCompletedAsync((int)session.CharacterId, eventKey, ct);
-            logger.LogInformation("Marked server script {EventKey} complete for character {CharacterId}", eventKey, session.CharacterId);
+            var keyToMark = completionEventKey ?? eventKey;
+            if (keyToMark is not null)
+            {
+                await eventRepository.MarkCompletedAsync((int)session.CharacterId, keyToMark, ct);
+                logger.LogInformation("Marked server script {EventKey} complete for character {CharacterId}", keyToMark, session.CharacterId);
+            }
         }
     }
 

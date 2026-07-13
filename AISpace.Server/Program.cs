@@ -63,6 +63,8 @@ internal class Program
         builder.Services.AddScoped<ServerScriptSession>();
         builder.Services.Scan(scan => scan.FromAssemblyOf<IServerScript>().AddClasses(classes => classes.AssignableTo<IServerScript>()).AsImplementedInterfaces().AsSelf().WithScopedLifetime());
         builder.Services.AddScoped<ServerScriptDispatcher>();
+        // Lazy break: ShinjuHomeIslandServerScript → dispatcher → IEnumerable<IServerScript>
+        builder.Services.AddScoped(sp => new Lazy<ServerScriptDispatcher>(sp.GetRequiredService<ServerScriptDispatcher>));
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
 
         builder.Services.AddSingleton<SharedState>(sp =>
