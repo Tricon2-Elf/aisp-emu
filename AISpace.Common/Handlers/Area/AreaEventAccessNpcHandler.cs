@@ -8,14 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventAccessNpcHandler(
-    INpcRepository npcRepository,
-    IShopRepository shopRepository,
-    ICharacterRepository characterRepository,
-    ICharacterEventRepository characterEventRepository,
-    ServerScriptDispatcher serverScriptDispatcher,
-    ILogger<AreaEventAccessNpcHandler> logger
-) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopRepository shopRepository, ServerScriptDispatcher serverScriptDispatcher, ILogger<AreaEventAccessNpcHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventAccessNpcRequest;
     public PacketType ResponseType => PacketType.EventAccessNpcResponse;
@@ -31,12 +24,7 @@ public class AreaEventAccessNpcHandler(
         if (npc is null || !npc.IsEnabled)
         {
             session.ActiveShopId = null;
-            logger.LogWarning(
-                "Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}",
-                session.CharacterId,
-                session.MapId,
-                request.NpcId
-            );
+            logger.LogWarning("Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}", session.CharacterId, session.MapId, request.NpcId);
             await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
             return;
         }
@@ -52,9 +40,9 @@ public class AreaEventAccessNpcHandler(
                     await ClientScriptLauncher.StartAsync(session, npc.EventKey, persistCompletion: false, ct);
                     return;
                 case NpcEventKind.ServerScript:
-                    if (await TryStartServerScriptAsync(session, npc, ct))
-                        return;
-                    break;
+                    logger.LogInformation("Starting server script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, request.NpcId);
+                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, new ServerScriptContext { Npc = npc }, ct);
+                    return;
             }
         }
 
@@ -68,12 +56,7 @@ public class AreaEventAccessNpcHandler(
                 return;
             }
 
-            logger.LogWarning(
-                "Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}",
-                session.CharacterId,
-                session.MapId,
-                request.NpcId
-            );
+            logger.LogWarning("Rejecting EventAccessNpcRequest for character {CharacterId}: map={MapId}, requestedNpc={NpcId}", session.CharacterId, session.MapId, request.NpcId);
             await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
             return;
         }
@@ -92,33 +75,6 @@ public class AreaEventAccessNpcHandler(
         await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
         await session.SendAsync(PacketType.NotifySupplyNpcExec, new NotifySupplyNpcExec(npcObjectId).ToBytes(), ct);
         await session.SendAsync(PacketType.ShopStartedNotify, new ShopStartedNotify(npcObjectId, npc.Shop.DisplayName, checked((uint)npc.Shop.BannerVisualId)).ToBytes(), ct);
-        await session.SendAsync(
-            PacketType.ShopItemNotify,
-            new ShopItemNotify(shopItems.Select(x => new ShopItemNotify.ShopItem((uint)x.ItemId, checked((ulong)x.AiPrice), checked((ulong)x.NicoPrice))).ToList()).ToBytes(),
-            ct
-        );
-    }
-
-    private async Task<bool> TryStartServerScriptAsync(IPlayerSession session, Npc npc, CancellationToken ct)
-    {
-        if (string.Equals(npc.EventKey, ServerEvents.Keys.ShinjuHomeIsland, StringComparison.Ordinal))
-        {
-            var character = await characterRepository.GetByIdAsync((int)session.CharacterId, ct);
-            if (character is not null && character.HomeIslandId > 0 && !await characterEventRepository.HasCompletedAsync((int)session.CharacterId, ServerEvents.Keys.ShinjuHomeIsland, ct))
-            {
-                logger.LogInformation("Resuming charadoll selection for character {CharacterId} via npc {NpcId}", session.CharacterId, npc.NpcObjectId);
-                await serverScriptDispatcher.StartAsync(
-                    session,
-                    ServerEvents.Keys.ShinjuCharadoll,
-                    new ServerScriptContext { Npc = npc, PendingIslandId = character.HomeIslandId },
-                    ct
-                );
-                return true;
-            }
-        }
-
-        logger.LogInformation("Starting server script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, npc.NpcObjectId);
-        await serverScriptDispatcher.StartAsync(session, npc.EventKey!, new ServerScriptContext { Npc = npc }, ct);
-        return true;
+        await session.SendAsync(PacketType.ShopItemNotify, new ShopItemNotify(shopItems.Select(x => new ShopItemNotify.ShopItem((uint)x.ItemId, checked((ulong)x.AiPrice), checked((ulong)x.NicoPrice))).ToList()).ToBytes(), ct);
     }
 }

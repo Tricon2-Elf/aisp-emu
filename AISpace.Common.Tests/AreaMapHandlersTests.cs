@@ -1533,18 +1533,8 @@ public class AreaMapHandlersTests
         var serverScriptSession = new ServerScriptSession(eventRepository, NullLogger<ServerScriptSession>.Instance);
         var characterRepository = new CharacterRepository(db, NullLogger<CharacterRepository>.Instance);
         var mapRepository = new MapRepository(db);
-        ServerScriptDispatcher dispatcher = null!;
-        var homeIslandScript = new ShinjuHomeIslandServerScript(
-            characterRepository,
-            eventRepository,
-            mapRepository,
-            serverScriptSession,
-            new Lazy<ServerScriptDispatcher>(() => dispatcher),
-            NullLogger<ShinjuHomeIslandServerScript>.Instance
-        );
-        var charadollScript = new ShinjuCharadollServerScript(characterRepository, serverScriptSession, NullLogger<ShinjuCharadollServerScript>.Instance);
-        dispatcher = new ServerScriptDispatcher([homeIslandScript, charadollScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
-        return dispatcher;
+        var shinjuRegistrationScript = new ShinjuRegistrationServerScript(characterRepository, eventRepository, mapRepository, serverScriptSession, NullLogger<ShinjuRegistrationServerScript>.Instance);
+        return new ServerScriptDispatcher([shinjuRegistrationScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
     }
 
     private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state)

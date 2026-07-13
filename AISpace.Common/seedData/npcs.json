@@ -98,7 +98,7 @@
       "rotation": 0,
       "interactionType": "Decorative",
       "eventKind": "ServerScript",
-      "eventKey": "shinju_home_island",
+      "eventKey": "shinju_registration",
       "isEnabled": true,
       "sortOrder": 103,
       "equipment": [
