@@ -51,7 +51,8 @@ public class MsgHandlersTests
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
-            var handler = CreateHandler(options);
+            await using var runDb = new MainContext(options);
+            var handler = CreateHandler(runDb);
             var session = new CapturingPlayerSession();
 
             await handler.HandleAsync(BuildUIntPayload(10990200), session, TestContext.Current.CancellationToken);
@@ -106,7 +107,8 @@ public class MsgHandlersTests
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
-            var handler = CreateHandler(options);
+            await using var runDb = new MainContext(options);
+            var handler = CreateHandler(runDb);
             var session = new CapturingPlayerSession();
 
             await handler.HandleAsync(BuildUIntPayload(10990200), session, TestContext.Current.CancellationToken);
@@ -161,7 +163,8 @@ public class MsgHandlersTests
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
-            var handler = CreateHandler(options);
+            await using var runDb = new MainContext(options);
+            var handler = CreateHandler(runDb);
             var session = new CapturingPlayerSession { ChannelId = 1 };
 
             await handler.HandleAsync(BuildUIntPayload(10990200), session, TestContext.Current.CancellationToken);
@@ -211,6 +214,7 @@ public class MsgHandlersTests
             var services = new ServiceCollection();
             services.AddDbContext<MainContext>(builder => builder.UseSqlite(connection));
             var scopeFactory = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+            await using var runDb = new MainContext(options);
             var handler = new ChannelSelectHandler(
                 NullLogger<ChannelSelectHandler>.Instance,
                 scopeFactory,
@@ -222,7 +226,7 @@ public class MsgHandlersTests
                         IPOverride = "localhost",
                     }
                 ),
-                new ChannelRepository(new MainContext(options))
+                new ChannelRepository(runDb)
             );
             var session = new CapturingPlayerSession { User = CreateUserWithCharacter(1, 5001, "msg-user", "Msg User", 10990100), UserId = 1 };
 
@@ -319,7 +323,8 @@ public class MsgHandlersTests
                 MapId = 10990100,
             };
 
-            var handler = CreateHandler(options, state);
+            await using var runDb = new MainContext(options);
+            var handler = CreateHandler(runDb, state);
 
             await handler.HandleAsync(BuildUIntPayload(10990200), msgSession, TestContext.Current.CancellationToken);
 
@@ -348,10 +353,9 @@ public class MsgHandlersTests
         }
     }
 
-    private static GetChannelListMapHandler CreateHandler(DbContextOptions<MainContext> options, SharedState? state = null)
+    private static GetChannelListMapHandler CreateHandler(MainContext db, SharedState? state = null)
     {
         state ??= new SharedState();
-        var db = new MainContext(options);
         return new GetChannelListMapHandler(
             Options.Create(
                 new ServerOptions
@@ -363,7 +367,7 @@ public class MsgHandlersTests
             ),
             new ChannelRepository(db),
             state,
-            CreateDirectMapLinkTransitionService(options, state),
+            CreateDirectMapLinkTransitionService(db, state),
             NullLogger<GetChannelListMapHandler>.Instance
         );
     }
@@ -404,13 +408,13 @@ public class MsgHandlersTests
         return user;
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(DbContextOptions<MainContext> options, SharedState state)
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state)
     {
         return new DirectMapLinkTransitionService(
-            new MapRepository(new MainContext(options)),
-            new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
-            new MapLinkRepository(new MainContext(options)),
-            new ChannelRepository(new MainContext(options)),
+            new MapRepository(db),
+            new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MapLinkRepository(db),
+            new ChannelRepository(db),
             Options.Create(
                 new ServerOptions
                 {
