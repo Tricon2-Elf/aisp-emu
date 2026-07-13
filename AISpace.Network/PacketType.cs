@@ -914,13 +914,13 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_script_play", ImplementationState.Implemented)]
     EventScriptPlayNotify = 0x8091,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_exec", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_exec", ImplementationState.Implemented)]
     EventSelectExecNotify = 0x6A56,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_init", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_init", ImplementationState.Implemented)]
     EventSelectInitNotify = 0xC265,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_push", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_push", ImplementationState.Implemented)]
     EventSelectPushNotify = 0x32F7,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_set_motion", ImplementationState.NotImplemented)]

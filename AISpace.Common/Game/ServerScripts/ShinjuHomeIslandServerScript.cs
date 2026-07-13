@@ -9,9 +9,8 @@ namespace AISpace.Common.Game.ServerScripts;
 public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterRepository, IMapRepository mapRepository, ServerScriptSession serverScriptSession, ILogger<ShinjuHomeIslandServerScript> logger) : IServerScript
 {
     private static readonly uint[] FranchiseHubMapIds = [10010100, 10020100, 10030100];
-    private static readonly uint[] CharadollModelIds = [3992011, 3992021, 3992031];
-    private const uint SelectTypeCharadoll = 0;
     private const uint SelectorFailure = 1;
+    private const string IslandSelectStep = "IslandSelect";
 
     public string EventKey => ServerEvents.Keys.ShinjuHomeIsland;
 
@@ -47,9 +46,7 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
             return;
         }
 
-        state.Step = Steps.IslandSelect;
-        state.Data["npcObjectId"] = npcObjectId;
-        state.Data["npcName"] = context.Npc.Name;
+        state.Step = IslandSelectStep;
         await session.SendAsync(PacketType.SelectInitIslandStart, new SelectInitIslandStartNotify { Islands = islands }.ToBytes(), ct);
     }
 
@@ -59,15 +56,13 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
         if (state is null || !string.Equals(state.EventKey, EventKey, StringComparison.Ordinal))
             return false;
 
-        return (packetType, state.Step) switch
-        {
-            (PacketType.SelectInitIslandEndRequest, Steps.IslandSelect) => await OnIslandSelectedAsync(payload, session, state, ct),
-            (PacketType.EventSelectExecRRequest, Steps.CharadollSelect) => await OnCharadollSelectedAsync(payload, session, state, ct),
-            _ => false,
-        };
+        if (packetType != PacketType.SelectInitIslandEndRequest || state.Step != IslandSelectStep)
+            return false;
+
+        return await OnIslandSelectedAsync(payload, session, ct);
     }
 
-    private async Task<bool> OnIslandSelectedAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, ServerScriptState state, CancellationToken ct)
+    private async Task<bool> OnIslandSelectedAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct)
     {
         var request = SelectInitIslandEndRequest.FromBytes(payload.Span);
         if (!IsAllowedIslandId(request.IslandId))
@@ -77,38 +72,7 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
             return true;
         }
 
-        state.Data["islandId"] = request.IslandId;
-        var npcObjectId = (uint)state.Data["npcObjectId"];
-        var npcName = (string)state.Data["npcName"];
-
-        await SendDialogueAsync(session, npcObjectId, npcName, "Which kind of Charadoll would you like?", ct);
-        await session.SendAsync(PacketType.EventSelectInitNotify, new EventSelectInitNotify { SelectType = SelectTypeCharadoll }.ToBytes(), ct);
-        await session.SendAsync(PacketType.EventSelectExecNotify, new EventSelectExecNotify { Text = "Plain\nCute\nOther" }.ToBytes(), ct);
-
-        state.Step = Steps.CharadollSelect;
-        return true;
-    }
-
-    private async Task<bool> OnCharadollSelectedAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, ServerScriptState state, CancellationToken ct)
-    {
-        var request = EventSelectExecRRequest.FromBytes(payload.Span);
-        if (request.Result != 0)
-        {
-            logger.LogInformation("Server script {EventKey} cancelled for character {CharacterId}: client result {Result}", EventKey, session.CharacterId, request.Result);
-            await serverScriptSession.AbortAsync(session, request.Result, ct);
-            return true;
-        }
-
-        if (request.SelectNo >= CharadollModelIds.Length)
-        {
-            logger.LogWarning("Rejecting server script {EventKey} for character {CharacterId}: invalid charadoll selection {SelectNo}", EventKey, session.CharacterId, request.SelectNo);
-            await serverScriptSession.AbortAsync(session, SelectorFailure, ct);
-            return true;
-        }
-
-        var islandId = (uint)state.Data["islandId"];
-        var modelId = CharadollModelIds[request.SelectNo];
-        var updated = await characterRepository.CompleteHomeRegistrationAsync((int)session.CharacterId, islandId, modelId, ct);
+        var updated = await characterRepository.UpdateHomeIslandAsync((int)session.CharacterId, request.IslandId, ct);
         if (updated is null)
         {
             logger.LogWarning("Rejecting server script {EventKey} for character {CharacterId}: character not found while saving", EventKey, session.CharacterId);
@@ -117,7 +81,7 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
         }
 
         session.Character = updated;
-        logger.LogInformation("Registered home island {IslandId} and charadoll model {ModelId} for character {CharacterId}", islandId, modelId, session.CharacterId);
+        logger.LogInformation("Registered home island {IslandId} for character {CharacterId}", request.IslandId, session.CharacterId);
         await serverScriptSession.CompleteAsync(session, 0, markComplete: true, ct);
         return true;
     }
@@ -184,11 +148,5 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
         }
 
         return null;
-    }
-
-    private static class Steps
-    {
-        public const string IslandSelect = "IslandSelect";
-        public const string CharadollSelect = "CharadollSelect";
     }
 }
