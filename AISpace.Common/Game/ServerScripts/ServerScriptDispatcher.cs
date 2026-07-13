@@ -9,7 +9,9 @@ public sealed class ServerScriptDispatcher(IEnumerable<IServerScript> scripts, S
 {
     private readonly IReadOnlyDictionary<string, IServerScript> _scripts = scripts.ToDictionary(script => script.EventKey, StringComparer.Ordinal);
 
-    public async Task StartAsync(IPlayerSession session, string eventKey, ServerScriptContext context, CancellationToken ct = default)
+    public bool HasScript(string eventKey) => _scripts.ContainsKey(eventKey);
+
+    public async Task StartAsync(IPlayerSession session, string eventKey, ServerScriptContext context, EventCompletionPolicy completionPolicy, CancellationToken ct = default)
     {
         if (!_scripts.TryGetValue(eventKey, out var script))
         {
@@ -17,7 +19,7 @@ public sealed class ServerScriptDispatcher(IEnumerable<IServerScript> scripts, S
             return;
         }
 
-        serverScriptSession.Begin(session, eventKey);
+        serverScriptSession.Begin(session, eventKey, completionPolicy);
         await session.SendAsync(PacketType.EventStartNotify, new EventStartNotify().ToBytes(), ct);
         await script.StartAsync(session, context, ct);
     }

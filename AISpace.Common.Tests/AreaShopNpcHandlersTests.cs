@@ -132,13 +132,111 @@ public class AreaShopNpcHandlersTests
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(1342177288), session, TestContext.Current.CancellationToken);
 
-            Assert.Null(session.ActiveEventKey);
-            Assert.Equal(NpcEventKind.None, session.ActiveEventKind);
+            Assert.Equal(ScriptedEvents.Keys.IntroductionRin02, session.ActiveEventKey);
+            Assert.Equal(NpcEventKind.ClientScript, session.ActiveEventKind);
+            Assert.Equal(EventCompletionPolicy.Replayable, session.ActiveEventCompletionPolicy);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventStartNotify);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventScriptPlayNotify);
             var script = session.Sent.Single(p => p.Type == PacketType.EventScriptPlayNotify);
             Assert.Equal(new EventScriptPlayNotify(ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.IntroductionRin02)).ToBytes(), script.Payload);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EventAccessNpcHandler_Rejects_WhenAlreadyInEvent()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                db.Npcs.Add(
+                    new Npc
+                    {
+                        MapId = StarterMapId,
+                        ChannelId = -1,
+                        DayPhase = -1,
+                        DateStartUtc = DateTime.UnixEpoch,
+                        DateEndUtc = DateTime.MaxValue,
+                        NpcObjectId = 1342177288,
+                        ModelId = 3992011,
+                        Name = "Rin",
+                        InteractionType = NpcInteractionType.Decorative,
+                        EventKind = NpcEventKind.ClientScript,
+                        EventKey = ScriptedEvents.Keys.IntroductionRin02,
+                        IsEnabled = true,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var handler = CreateEventAccessNpcHandler(runDb);
+            var session = new CapturingPlayerSession
+            {
+                MapId = StarterMapId,
+                CharacterId = 9001,
+                ActiveEventKey = ScriptedEvents.Keys.IntroductionRin01,
+                ActiveEventKind = NpcEventKind.ClientScript,
+                ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
+            };
+
+            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177288), session, TestContext.Current.CancellationToken);
+
+            Assert.Equal(ScriptedEvents.Keys.IntroductionRin01, session.ActiveEventKey);
+            var response = Assert.Single(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
+            Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventStartNotify);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EventAccessNpcHandler_RejectsUnknownServerScript()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                db.Npcs.Add(
+                    new Npc
+                    {
+                        MapId = StarterMapId,
+                        ChannelId = -1,
+                        DayPhase = -1,
+                        DateStartUtc = DateTime.UnixEpoch,
+                        DateEndUtc = DateTime.MaxValue,
+                        NpcObjectId = 1342177299,
+                        ModelId = 1,
+                        Name = "Broken",
+                        InteractionType = NpcInteractionType.Decorative,
+                        EventKind = NpcEventKind.ServerScript,
+                        EventKey = "missing_server_script",
+                        IsEnabled = true,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var handler = CreateEventAccessNpcHandler(runDb);
+            var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
+
+            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177299), session, TestContext.Current.CancellationToken);
+
+            Assert.Null(session.ActiveEventKey);
+            var response = Assert.Single(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
+            Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventStartNotify);
         }
         finally
         {
@@ -335,6 +433,7 @@ public class AreaShopNpcHandlersTests
 
             Assert.Equal(ServerEvents.Keys.ShinjuRegistration, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
+            Assert.Equal(EventCompletionPolicy.Once, session.ActiveEventCompletionPolicy);
             Assert.NotNull(session.ServerScriptState);
             Assert.Equal("IslandSelect", session.ServerScriptState!.Step);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
@@ -401,6 +500,7 @@ public class AreaShopNpcHandlersTests
                 CharacterId = (uint)characterId,
                 ActiveEventKey = ServerEvents.Keys.ShinjuRegistration,
                 ActiveEventKind = NpcEventKind.ServerScript,
+                ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
                 ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuRegistration, Step = "IslandSelect" },
             };
             session.ServerScriptState.Data["npc"] = shinjuNpc;
@@ -458,6 +558,7 @@ public class AreaShopNpcHandlersTests
                 CharacterId = (uint)characterId,
                 ActiveEventKey = ServerEvents.Keys.ShinjuRegistration,
                 ActiveEventKind = NpcEventKind.ServerScript,
+                ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
                 ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuRegistration, Step = "CharadollSelect" },
             };
             session.ServerScriptState.Data["islandId"] = 3u;

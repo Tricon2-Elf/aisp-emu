@@ -30,6 +30,7 @@ public interface IPlayerSession
     bool PendingEventEndAfterFade { get; set; }
     string? ActiveEventKey { get; set; }
     NpcEventKind ActiveEventKind { get; set; }
+    EventCompletionPolicy ActiveEventCompletionPolicy { get; set; }
     ServerScriptState? ServerScriptState { get; set; }
     bool IsAuthenticated { get; }
 
