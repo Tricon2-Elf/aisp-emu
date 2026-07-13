@@ -248,20 +248,6 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             return;
         }
 
-        if (cmd == "tut")
-        {
-            var areaClient = ResolveAreaClient(session);
-            if (areaClient == null)
-            {
-                logger.LogWarning("CmdExecHandler: tut requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
-                return;
-            }
-
-            await ClientScriptLauncher.StartAsync(areaClient, ScriptedEvents.Keys.IntroductionRin01, ct: ct);
-            logger.LogInformation("CmdExecHandler: started introdution_rin_01 for character {CharacterId} (user {UserId})", areaClient.CharacterId, session.User?.Id ?? session.UserId);
-            return;
-        }
-
         if (cmd == "escape" || cmd == "reset")
         {
             var areaClient = ResolveAreaClient(session);
