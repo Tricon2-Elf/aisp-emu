@@ -1,5 +1,4 @@
 using AISpace.Network;
-using AISpace.Network.Packets.Area;
 
 namespace AISpace.Network.Packets.Area;
 
@@ -8,12 +7,12 @@ namespace AISpace.Network.Packets.Area;
 /// </summary>
 public sealed class EventSelectInitNotify : IOutgoingPacket
 {
-    public uint SelectType { get; init; }
+    public EventSelectType SelectType { get; init; }
 
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write(SelectType);
+        writer.Write((uint)SelectType);
         return writer.ToBytes();
     }
 }

@@ -10,7 +10,6 @@ public sealed class ShinjuCharadollServerScript(ICharacterRepository characterRe
 {
     private static readonly uint[] CharadollModelIds = [3992011, 3992021, 3992031];
     private static readonly string[] CharadollOptions = ["Plain", "Cute", "Other"];
-    private const uint SelectTypeEvent = 2;
     private const uint SelectorFailure = 1;
     private const string SelectStep = "Select";
 
@@ -40,7 +39,7 @@ public sealed class ShinjuCharadollServerScript(ICharacterRepository characterRe
 
         var npcObjectId = checked((uint)context.Npc.NpcObjectId);
         await SendDialogueAsync(session, npcObjectId, context.Npc.Name, "Which kind of Charadoll would you like?", ct);
-        await session.SendAsync(PacketType.EventSelectInitNotify, new EventSelectInitNotify { SelectType = SelectTypeEvent }.ToBytes(), ct);
+        await session.SendAsync(PacketType.EventSelectInitNotify, new EventSelectInitNotify { SelectType = EventSelectType.Dialogue }.ToBytes(), ct);
         foreach (var option in CharadollOptions)
             await session.SendAsync(PacketType.EventSelectPushNotify, new EventSelectPushNotify { SelectName = option }.ToBytes(), ct);
         await session.SendAsync(PacketType.EventSelectExecNotify, new EventSelectExecNotify { Text = "Please choose your Charadoll type." }.ToBytes(), ct);
