@@ -1,4 +1,5 @@
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
 
 namespace AISpace.Common.Game;
@@ -27,7 +28,9 @@ public interface IPlayerSession
     PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     int? ActiveShopId { get; set; }
     bool PendingEventEndAfterFade { get; set; }
-    string? ActiveScriptedEventKey { get; set; }
+    string? ActiveEventKey { get; set; }
+    NpcEventKind ActiveEventKind { get; set; }
+    ServerScriptState? ServerScriptState { get; set; }
     bool IsAuthenticated { get; }
 
     Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default);

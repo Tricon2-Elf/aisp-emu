@@ -25,7 +25,8 @@ public class Npc
     public NpcInteractionType InteractionType { get; set; } = NpcInteractionType.Shop;
     public bool IsEnabled { get; set; } = true;
     public int SortOrder { get; set; }
-    public string? ScriptedEventKey { get; set; }
+    public NpcEventKind EventKind { get; set; }
+    public string? EventKey { get; set; }
 
     public Shop? Shop { get; set; }
     public ICollection<NpcEquipment> Equipment { get; set; } = new List<NpcEquipment>();

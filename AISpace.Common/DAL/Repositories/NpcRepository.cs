@@ -92,7 +92,8 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             npc.InteractionType = ParseInteractionType(npcRow.InteractionType);
             npc.IsEnabled = npcRow.IsEnabled ?? true;
             npc.SortOrder = npcRow.SortOrder ?? 0;
-            npc.ScriptedEventKey = string.IsNullOrWhiteSpace(npcRow.ScriptedEventKey) ? null : npcRow.ScriptedEventKey;
+            npc.EventKind = ParseEventKind(npcRow.EventKind, npcRow.ScriptedEventKey, npcRow.EventKey);
+            npc.EventKey = ResolveEventKey(npcRow.EventKey, npcRow.ScriptedEventKey);
 
             var equipmentRows = npcRow.Equipment ?? [];
             var seenSlots = new HashSet<int>();
@@ -136,7 +137,25 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
     {
         if (string.IsNullOrWhiteSpace(value))
             return NpcInteractionType.Decorative;
+        if (string.Equals(value, "HomeIslandRegistration", StringComparison.OrdinalIgnoreCase))
+            return NpcInteractionType.Decorative;
         return Enum.TryParse<NpcInteractionType>(value, ignoreCase: true, out var parsed) ? parsed : NpcInteractionType.Decorative;
+    }
+
+    private static NpcEventKind ParseEventKind(string? eventKind, string? legacyScriptedEventKey, string? eventKey)
+    {
+        if (!string.IsNullOrWhiteSpace(eventKind) && Enum.TryParse<NpcEventKind>(eventKind, ignoreCase: true, out var parsed))
+            return parsed;
+
+        var key = ResolveEventKey(eventKey, legacyScriptedEventKey);
+        return string.IsNullOrWhiteSpace(key) ? NpcEventKind.None : NpcEventKind.ClientScript;
+    }
+
+    private static string? ResolveEventKey(string? eventKey, string? legacyScriptedEventKey)
+    {
+        if (!string.IsNullOrWhiteSpace(eventKey))
+            return eventKey;
+        return string.IsNullOrWhiteSpace(legacyScriptedEventKey) ? null : legacyScriptedEventKey;
     }
 
     private static DateTime ParseUtc(string? value, DateTime fallback, string fieldName)
@@ -172,6 +191,8 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         public string? InteractionType { get; set; }
         public bool? IsEnabled { get; set; }
         public int? SortOrder { get; set; }
+        public string? EventKind { get; set; }
+        public string? EventKey { get; set; }
         public string? ScriptedEventKey { get; set; }
         public List<NpcEquipmentSeedRow>? Equipment { get; set; }
     }

@@ -15,7 +15,8 @@
       "z": -16887.0,
       "rotation": 90,
       "interactionType": "Decorative",
-      "scriptedEventKey": "introdution_rin_02",
+      "eventKind": "ClientScript",
+      "eventKey": "introdution_rin_02",
       "isEnabled": true,
       "sortOrder": 100,
       "equipment": [
@@ -41,7 +42,8 @@
       "z": -22225.0,
       "rotation": 90,
       "interactionType": "Decorative",
-      "scriptedEventKey": "introdution_hotaru_0",
+      "eventKind": "ClientScript",
+      "eventKey": "introdution_hotaru_0",
       "isEnabled": true,
       "sortOrder": 101,
       "equipment": [
@@ -67,7 +69,8 @@
       "z": -433.0,
       "rotation": 90,
       "interactionType": "Decorative",
-      "scriptedEventKey": "introdution_shinju_01",
+      "eventKind": "ClientScript",
+      "eventKey": "introdution_shinju_01",
       "isEnabled": true,
       "sortOrder": 102,
       "equipment": [
@@ -94,6 +97,8 @@
       "z": -327.27664,
       "rotation": 0,
       "interactionType": "Decorative",
+      "eventKind": "ServerScript",
+      "eventKey": "shinju_home_island",
       "isEnabled": true,
       "sortOrder": 103,
       "equipment": [

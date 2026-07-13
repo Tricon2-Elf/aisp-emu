@@ -1,13 +1,14 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopRepository shopRepository, ILogger<AreaEventAccessNpcHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopRepository shopRepository, ServerScriptDispatcher serverScriptDispatcher, ILogger<AreaEventAccessNpcHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventAccessNpcRequest;
     public PacketType ResponseType => PacketType.EventAccessNpcResponse;
@@ -33,12 +34,21 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(npc.ScriptedEventKey))
+        if (npc.EventKind != NpcEventKind.None && !string.IsNullOrWhiteSpace(npc.EventKey))
         {
-            logger.LogInformation("Starting non-persistent scripted event {EventKey} for character {CharacterId} via npc {NpcId}", npc.ScriptedEventKey, session.CharacterId, request.NpcId);
             await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
-            await ScriptedEventLauncher.StartAsync(session, npc.ScriptedEventKey, persistCompletion: false, ct);
-            return;
+
+            switch (npc.EventKind)
+            {
+                case NpcEventKind.ClientScript:
+                    logger.LogInformation("Starting client script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, request.NpcId);
+                    await ClientScriptLauncher.StartAsync(session, npc.EventKey, persistCompletion: false, ct);
+                    return;
+                case NpcEventKind.ServerScript:
+                    logger.LogInformation("Starting server script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, request.NpcId);
+                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, new ServerScriptContext { Npc = npc }, ct);
+                    return;
+            }
         }
 
         if (npc.InteractionType != NpcInteractionType.Shop || npc.ShopId is null || npc.Shop is null || !npc.Shop.IsEnabled)
