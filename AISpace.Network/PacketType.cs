@@ -918,7 +918,7 @@ public enum PacketType : ushort
     EventSelectExecNotify = 0x6A56,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_init", ImplementationState.Implemented)]
-    EventSelectInitNotify = 0xC265,
+    EventSelectInitNotify = 0xC0E7,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_select_push", ImplementationState.Implemented)]
     EventSelectPushNotify = 0x32F7,
@@ -1679,8 +1679,8 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_island_select_exec_r", ImplementationState.Implemented)]
     EventIslandSelectExecRRequest = 0x0580,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_select_exec_r", ImplementationState.NotImplemented)]
-    EventSelectExecRRequest = 0x701D,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_select_exec_r", ImplementationState.Implemented)]
+    EventSelectExecRRequest = 0x6439,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_set_motion_r", ImplementationState.NotImplemented)]
     EventSetMotionRRequest = 0x7221,

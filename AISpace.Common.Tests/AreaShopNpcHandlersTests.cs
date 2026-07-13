@@ -67,7 +67,7 @@ public class AreaShopNpcHandlersTests
             }
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaEventAccessNpcHandler(new NpcRepository(runDb), new ShopRepository(runDb), CreateServerScriptDispatcher(runDb), NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var handler = CreateEventAccessNpcHandler(runDb);
             var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(StarterNpcObjectId), session, TestContext.Current.CancellationToken);
@@ -127,7 +127,7 @@ public class AreaShopNpcHandlersTests
             }
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaEventAccessNpcHandler(new NpcRepository(runDb), new ShopRepository(runDb), CreateServerScriptDispatcher(runDb), NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var handler = CreateEventAccessNpcHandler(runDb);
             var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(1342177288), session, TestContext.Current.CancellationToken);
@@ -159,7 +159,7 @@ public class AreaShopNpcHandlersTests
             }
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaEventAccessNpcHandler(new NpcRepository(runDb), new ShopRepository(runDb), CreateServerScriptDispatcher(runDb), NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var handler = CreateEventAccessNpcHandler(runDb);
             var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(StarterNpcObjectId), session, TestContext.Current.CancellationToken);
@@ -189,7 +189,7 @@ public class AreaShopNpcHandlersTests
 
             await using var runDb = new MainContext(options);
             var npcHandler = new AreaNpcGetDataHandler(new NpcRepository(runDb));
-            var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(runDb), new ShopRepository(runDb), CreateServerScriptDispatcher(runDb), NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var accessHandler = CreateEventAccessNpcHandler(runDb);
 
             var offChannelSession = new CapturingPlayerSession
             {
@@ -328,7 +328,7 @@ public class AreaShopNpcHandlersTests
 
             await using var runDb = new MainContext(options);
             var characterId = runDb.Characters.Select(c => c.Id).Single();
-            var handler = new AreaEventAccessNpcHandler(new NpcRepository(runDb), new ShopRepository(runDb), CreateServerScriptDispatcher(runDb), NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var handler = CreateEventAccessNpcHandler(runDb);
             var session = new CapturingPlayerSession { MapId = 10990300, CharacterId = (uint)characterId };
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(1342177291), session, TestContext.Current.CancellationToken);
@@ -356,7 +356,7 @@ public class AreaShopNpcHandlersTests
     }
 
     [Fact]
-    public async Task SelectInitIslandEndHandler_CompletesServerScript_AfterIslandSelection()
+    public async Task SelectInitIslandEndHandler_ChainsCharadollEvent_AfterIslandSelection()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -365,6 +365,20 @@ public class AreaShopNpcHandlersTests
             {
                 await SeedFranchiseHubMapsAsync(db);
                 db.Users.Add(new User { Id = 1, Username = "tester" });
+                db.Npcs.Add(
+                    new Npc
+                    {
+                        MapId = 10990300,
+                        ChannelId = -1,
+                        DayPhase = -1,
+                        DateStartUtc = DateTime.UnixEpoch,
+                        DateEndUtc = DateTime.MaxValue,
+                        NpcObjectId = 1342177291,
+                        ModelId = 3992031,
+                        Name = "Shinju",
+                        IsEnabled = true,
+                    }
+                );
                 db.Characters.Add(
                     new Character
                     {
@@ -379,6 +393,7 @@ public class AreaShopNpcHandlersTests
 
             await using var runDb = new MainContext(options);
             var characterId = runDb.Characters.Select(c => c.Id).Single();
+            var shinjuNpc = runDb.Npcs.Single();
             var dispatcher = CreateServerScriptDispatcher(runDb);
             var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(options, new SharedState()), dispatcher, NullLogger<AreaSelectInitIslandEndHandler>.Instance);
             var session = new CapturingPlayerSession
@@ -388,20 +403,78 @@ public class AreaShopNpcHandlersTests
                 ActiveEventKind = NpcEventKind.ServerScript,
                 ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuHomeIsland, Step = "IslandSelect" },
             };
+            session.ServerScriptState.Data["npc"] = shinjuNpc;
 
             await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 3 }), session, TestContext.Current.CancellationToken);
+
+            Assert.Equal(ServerEvents.Keys.ShinjuCharadoll, session.ActiveEventKey);
+            Assert.Equal("Select", session.ServerScriptState!.Step);
+            Assert.Single(session.Sent, packet => packet.Type == PacketType.EventStartNotify);
+            Assert.Single(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSelectInitNotify);
+            Assert.Equal(3, session.Sent.Count(packet => packet.Type == PacketType.EventSelectPushNotify));
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSelectExecNotify);
+
+            var character = await runDb.Characters.SingleAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(3u, character.HomeIslandId);
+            Assert.Equal(1u, character.ModelId);
+            Assert.False(await runDb.CharacterEventStatuses.AnyAsync(x => x.CharacterId == characterId && x.EventKey == ServerEvents.Keys.ShinjuHomeIsland, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EventSelectExecRHandler_CompletesRegistration_AfterCharadollSelection()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                await SeedFranchiseHubMapsAsync(db);
+                db.Users.Add(new User { Id = 1, Username = "tester" });
+                db.Characters.Add(
+                    new Character
+                    {
+                        Name = "Tester",
+                        UserId = 1,
+                        ModelId = 1,
+                        HomeIslandId = 3,
+                        Birthdate = DateTime.UnixEpoch,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var characterId = runDb.Characters.Select(c => c.Id).Single();
+            var dispatcher = CreateServerScriptDispatcher(runDb);
+            var handler = new AreaEventSelectExecRHandler(dispatcher, NullLogger<AreaEventSelectExecRHandler>.Instance);
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = (uint)characterId,
+                ActiveEventKey = ServerEvents.Keys.ShinjuCharadoll,
+                ActiveEventKind = NpcEventKind.ServerScript,
+                ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuCharadoll, Step = "Select" },
+            };
+            session.ServerScriptState.Data["islandId"] = 3u;
+
+            var writer = new PacketWriter();
+            writer.Write(0u);
+            writer.Write((byte)1);
+            await handler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(NpcEventKind.None, session.ActiveEventKind);
             Assert.Null(session.ServerScriptState);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventSelectInitNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventSelectPushNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventSelectExecNotify);
 
             var character = await runDb.Characters.SingleAsync(TestContext.Current.CancellationToken);
             Assert.Equal(3u, character.HomeIslandId);
-            Assert.Equal(1u, character.ModelId);
+            Assert.Equal(3992021u, character.ModelId);
             Assert.True(await runDb.CharacterEventStatuses.AnyAsync(x => x.CharacterId == characterId && x.EventKey == ServerEvents.Keys.ShinjuHomeIsland, TestContext.Current.CancellationToken));
         }
         finally
@@ -410,12 +483,34 @@ public class AreaShopNpcHandlersTests
         }
     }
 
+    private static AreaEventAccessNpcHandler CreateEventAccessNpcHandler(MainContext db) =>
+        new(
+            new NpcRepository(db),
+            new ShopRepository(db),
+            new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new CharacterEventRepository(db),
+            CreateServerScriptDispatcher(db),
+            NullLogger<AreaEventAccessNpcHandler>.Instance
+        );
+
     private static ServerScriptDispatcher CreateServerScriptDispatcher(MainContext db)
     {
         var eventRepository = new CharacterEventRepository(db);
         var serverScriptSession = new ServerScriptSession(eventRepository, NullLogger<ServerScriptSession>.Instance);
-        var script = new ShinjuHomeIslandServerScript(new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), new MapRepository(db), serverScriptSession, NullLogger<ShinjuHomeIslandServerScript>.Instance);
-        return new ServerScriptDispatcher([script], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        var characterRepository = new CharacterRepository(db, NullLogger<CharacterRepository>.Instance);
+        var mapRepository = new MapRepository(db);
+        ServerScriptDispatcher dispatcher = null!;
+        var homeIslandScript = new ShinjuHomeIslandServerScript(
+            characterRepository,
+            eventRepository,
+            mapRepository,
+            serverScriptSession,
+            new Lazy<ServerScriptDispatcher>(() => dispatcher),
+            NullLogger<ShinjuHomeIslandServerScript>.Instance
+        );
+        var charadollScript = new ShinjuCharadollServerScript(characterRepository, serverScriptSession, NullLogger<ShinjuCharadollServerScript>.Instance);
+        dispatcher = new ServerScriptDispatcher([homeIslandScript, charadollScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        return dispatcher;
     }
 
     private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(DbContextOptions<MainContext> options, SharedState state) =>

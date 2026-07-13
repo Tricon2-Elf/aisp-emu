@@ -1,4 +1,6 @@
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
@@ -6,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Game.ServerScripts;
 
-public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterRepository, IMapRepository mapRepository, ServerScriptSession serverScriptSession, ILogger<ShinjuHomeIslandServerScript> logger) : IServerScript
+public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterRepository, ICharacterEventRepository characterEventRepository, IMapRepository mapRepository, ServerScriptSession serverScriptSession, Lazy<ServerScriptDispatcher> serverScriptDispatcher, ILogger<ShinjuHomeIslandServerScript> logger) : IServerScript
 {
     private static readonly uint[] FranchiseHubMapIds = [10010100, 10020100, 10030100];
     private const uint SelectorFailure = 1;
@@ -25,16 +27,17 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
         }
 
         session.Character = character;
-        var npcObjectId = checked((uint)context.Npc.NpcObjectId);
-        var state = session.ServerScriptState!;
 
-        if (character.HomeIslandId > 0)
+        if (await characterEventRepository.HasCompletedAsync((int)session.CharacterId, EventKey, ct))
         {
             var title = await ResolveIslandTitleAsync(character.HomeIslandId, ct);
-            await SendDialogueAsync(session, npcObjectId, context.Npc.Name, $"You're already registered to {title}.", ct);
+            await SendDialogueAsync(session, checked((uint)context.Npc.NpcObjectId), context.Npc.Name, $"You're already registered to {title}.", ct);
             await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
             return;
         }
+
+        var npcObjectId = checked((uint)context.Npc.NpcObjectId);
+        var state = session.ServerScriptState!;
 
         await SendDialogueAsync(session, npcObjectId, context.Npc.Name, "Welcome to AI-Space! I'm Shinju. Which island would you like to make your home?", ct);
 
@@ -47,6 +50,7 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
         }
 
         state.Step = IslandSelectStep;
+        state.Data["npc"] = context.Npc;
         await session.SendAsync(PacketType.SelectInitIslandStart, new SelectInitIslandStartNotify { Islands = islands }.ToBytes(), ct);
     }
 
@@ -59,10 +63,10 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
         if (packetType != PacketType.SelectInitIslandEndRequest || state.Step != IslandSelectStep)
             return false;
 
-        return await OnIslandSelectedAsync(payload, session, ct);
+        return await OnIslandSelectedAsync(payload, session, state, ct);
     }
 
-    private async Task<bool> OnIslandSelectedAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct)
+    private async Task<bool> OnIslandSelectedAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, ServerScriptState state, CancellationToken ct)
     {
         var request = SelectInitIslandEndRequest.FromBytes(payload.Span);
         if (!IsAllowedIslandId(request.IslandId))
@@ -81,8 +85,11 @@ public sealed class ShinjuHomeIslandServerScript(ICharacterRepository characterR
         }
 
         session.Character = updated;
-        logger.LogInformation("Registered home island {IslandId} for character {CharacterId}", request.IslandId, session.CharacterId);
-        await serverScriptSession.CompleteAsync(session, 0, markComplete: true, ct);
+        var npc = (Npc)state.Data["npc"];
+        logger.LogInformation("Saved home island {IslandId} for character {CharacterId}, starting charadoll event", request.IslandId, session.CharacterId);
+
+        await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
+        await serverScriptDispatcher.Value.StartAsync(session, ServerEvents.Keys.ShinjuCharadoll, new ServerScriptContext { Npc = npc, PendingIslandId = request.IslandId }, ct);
         return true;
     }
 
