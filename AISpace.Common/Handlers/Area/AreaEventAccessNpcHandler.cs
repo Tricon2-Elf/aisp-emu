@@ -38,6 +38,7 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
 
         if (npc.EventKind != NpcEventKind.None && !string.IsNullOrWhiteSpace(npc.EventKey))
         {
+            session.ActiveShopId = null;
             switch (npc.EventKind)
             {
                 case NpcEventKind.ClientScript:
