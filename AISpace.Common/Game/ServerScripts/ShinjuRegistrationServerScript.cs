@@ -14,6 +14,7 @@ public sealed class ShinjuRegistrationServerScript(ICharacterRepository characte
     private static readonly (CharadollPersonality Personality, string Label)[] CharadollOptions = [(CharadollPersonality.Active, "活発そうなタイプ (Active/Energetic)"), (CharadollPersonality.Quiet, "おとなし目なタイプ (Quiet/Reserved)"), (CharadollPersonality.None, "特に好みはない (No preference)")];
 
     private const uint SelectorFailure = 1;
+    private const string HelpPromptStep = "HelpPrompt";
     private const string IslandSelectStep = "IslandSelect";
     private const string CharadollSelectStep = "CharadollSelect";
 
@@ -33,8 +34,9 @@ public sealed class ShinjuRegistrationServerScript(ICharacterRepository characte
 
         if (await characterEventRepository.HasCompletedAsync((int)session.CharacterId, EventKey, ct))
         {
+            session.ServerScriptState!.Step = HelpPromptStep;
             await SendDialogueAsync(session, checked((uint)context.Npc.NpcObjectId), context.Npc.Name, "Can I help you?", ct);
-            await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
+            await session.SendAsync(PacketType.EventSyncNotify, new EventSyncNotify().ToBytes(), ct);
             return;
         }
 
@@ -59,10 +61,18 @@ public sealed class ShinjuRegistrationServerScript(ICharacterRepository characte
 
         return packetType switch
         {
+            PacketType.EventSyncRRequest when state.Step == HelpPromptStep => await OnHelpPromptClosedAsync(payload, session, ct),
             PacketType.SelectInitIslandEndRequest when state.Step == IslandSelectStep => await OnIslandSelectedAsync(payload, session, state, ct),
             PacketType.EventSelectExecRRequest when state.Step == CharadollSelectStep => await OnCharadollSelectedAsync(payload, session, state, ct),
             _ => false,
         };
+    }
+
+    private async Task<bool> OnHelpPromptClosedAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct)
+    {
+        var request = EventSyncRRequest.FromBytes(payload.Span);
+        await serverScriptSession.CompleteAsync(session, request.Result, markComplete: false, ct);
+        return true;
     }
 
     private async Task StartIslandSelectAsync(IPlayerSession session, Npc npc, CancellationToken ct)
@@ -156,9 +166,11 @@ public sealed class ShinjuRegistrationServerScript(ICharacterRepository characte
 
     private static async Task SendDialogueAsync(IPlayerSession session, uint npcObjectId, string npcName, string text, CancellationToken ct)
     {
-        await session.SendAsync(PacketType.EventMessageNotify, new EventMessageNotify(npcObjectId, npcName, text).ToBytes(), ct);
+        await SendMessageAsync(session, npcObjectId, npcName, text, ct);
         await session.SendAsync(PacketType.EventMessageCloseNotify, new EventMessageCloseNotify().ToBytes(), ct);
     }
+
+    private static Task SendMessageAsync(IPlayerSession session, uint npcObjectId, string npcName, string text, CancellationToken ct) => session.SendAsync(PacketType.EventMessageNotify, new EventMessageNotify(npcObjectId, npcName, text).ToBytes(), ct);
 
     private async Task<IReadOnlyList<SelectInitIslandEntry>> BuildSelectInitIslandEntriesAsync(CancellationToken ct)
     {
