@@ -128,10 +128,16 @@ public class AreaShopNpcHandlersTests
 
             await using var runDb = new MainContext(options);
             var handler = CreateEventAccessNpcHandler(runDb);
-            var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
+            var session = new CapturingPlayerSession
+            {
+                MapId = StarterMapId,
+                CharacterId = 9001,
+                ActiveShopId = 42,
+            };
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(1342177288), session, TestContext.Current.CancellationToken);
 
+            Assert.Null(session.ActiveShopId);
             Assert.Equal(ScriptedEvents.Keys.IntroductionRin02, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ClientScript, session.ActiveEventKind);
             Assert.Equal(EventCompletionPolicy.Replayable, session.ActiveEventCompletionPolicy);
@@ -229,10 +235,16 @@ public class AreaShopNpcHandlersTests
 
             await using var runDb = new MainContext(options);
             var handler = CreateEventAccessNpcHandler(runDb);
-            var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
+            var session = new CapturingPlayerSession
+            {
+                MapId = StarterMapId,
+                CharacterId = 9001,
+                ActiveShopId = 42,
+            };
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(1342177299), session, TestContext.Current.CancellationToken);
 
+            Assert.Null(session.ActiveShopId);
             Assert.Null(session.ActiveEventKey);
             var response = Assert.Single(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
             Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
