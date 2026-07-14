@@ -703,16 +703,20 @@ public class AreaShopNpcHandlersTests
 
             await using var runDb = new MainContext(options);
             var characterIdForSession = runDb.Characters.Select(c => c.Id).Single();
-            var handler = CreateEventAccessNpcHandler(runDb);
+            var dispatcher = CreateServerScriptDispatcher(runDb);
+            var handler = new AreaEventAccessNpcHandler(new NpcRepository(runDb), new ShopRepository(runDb), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var syncHandler = new AreaEventSyncRHandler(dispatcher, NullLogger<AreaEventSyncRHandler>.Instance);
             var session = new CapturingPlayerSession { MapId = 10990300, CharacterId = (uint)characterIdForSession };
 
             await handler.HandleAsync(BuildEventAccessNpcPayload(1342177291), session, TestContext.Current.CancellationToken);
 
-            Assert.Null(session.ActiveEventKey);
-            Assert.Equal(NpcEventKind.None, session.ActiveEventKind);
-            Assert.Null(session.ServerScriptState);
+            Assert.Equal(ServerEvents.Keys.ShinjuRegistration, session.ActiveEventKey);
+            Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
+            Assert.Equal("HelpPrompt", session.ServerScriptState?.Step);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventStartNotify);
-            Assert.Contains(session.Sent, p => p.Type == PacketType.EventEndNotify);
+            Assert.Contains(session.Sent, p => p.Type == PacketType.EventMessageCloseNotify);
+            Assert.Contains(session.Sent, p => p.Type == PacketType.EventSyncNotify);
+            Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventEndNotify);
             var messagePayload = session.Sent.Single(p => p.Type == PacketType.EventMessageNotify).Payload;
             var reader = new PacketReader(messagePayload);
             Assert.Equal(1342177291u, reader.ReadUInt());
@@ -720,6 +724,15 @@ public class AreaShopNpcHandlersTests
             Assert.Equal("Can I help you?", reader.ReadString());
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.SelectInitIslandStart);
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventSelectInitNotify);
+
+            var syncPayload = new PacketWriter();
+            syncPayload.Write(0u);
+            await syncHandler.HandleAsync(syncPayload.ToBytes(), session, TestContext.Current.CancellationToken);
+
+            Assert.Null(session.ActiveEventKey);
+            Assert.Equal(NpcEventKind.None, session.ActiveEventKind);
+            Assert.Null(session.ServerScriptState);
+            Assert.Contains(session.Sent, p => p.Type == PacketType.EventEndNotify);
         }
         finally
         {

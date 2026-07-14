@@ -893,6 +893,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_start", ImplementationState.Implemented)]
     EventStartNotify = 0x1B5C,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_sync", ImplementationState.Implemented)]
+    EventSyncNotify = 0x462E,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_out", ImplementationState.Implemented)]
     EventFadeOutNotify = 0x3925,
 
@@ -1681,6 +1684,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_select_exec_r", ImplementationState.Implemented)]
     EventSelectExecRRequest = 0x6439,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_sync_r", ImplementationState.Implemented)]
+    EventSyncRRequest = 0x701D,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_set_motion_r", ImplementationState.NotImplemented)]
     EventSetMotionRRequest = 0x7221,
