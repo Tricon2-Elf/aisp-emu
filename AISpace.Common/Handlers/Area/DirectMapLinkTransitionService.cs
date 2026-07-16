@@ -268,7 +268,39 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
             await session.SendAsync(PacketType.MapEnterResponse, new AreaMapEnterResponse(0).ToBytes(), ct);
 
         if (notifyChangeMap != null)
-            await session.SendAsync(PacketType.NotifyChangeMap, notifyChangeMap.ToBytes(), ct);
+        {
+            if (MyRoomInfo.IsMyRoomMap(destinationMapId))
+            {
+                // MyRoom maps must be entered through recv_notify_change_myroom: it flips the client's
+                // "in MyRoom" flag and stores the room owner info, without which the door/closet
+                // furniture notifies (recv_notify_myroom_furniture) are ignored by the client.
+                var notifyChangeMyRoom = new NotifyChangeMyRoom
+                {
+                    ChannelId = notifyChangeMap.ChannelId,
+                    MapId = notifyChangeMap.MapId,
+                    MapSerialId = notifyChangeMap.MapSerialId,
+                    RouteState = notifyChangeMap.RouteState,
+                    PositionX = notifyChangeMap.PositionX,
+                    PositionY = notifyChangeMap.PositionY,
+                    PositionZ = notifyChangeMap.PositionZ,
+                    Rotation = notifyChangeMap.Rotation,
+                    Animation = notifyChangeMap.Animation,
+                    Flag = notifyChangeMap.Flag,
+                    AreaServerInfo = notifyChangeMap.AreaServerInfo,
+                    OwnerId = session.CharacterId,
+                    OwnerCharacterId = session.CharacterId,
+                    RoomStage = MyRoomInfo.GetRoomStage(destinationMapId),
+                    FadeFlag = notifyChangeMap.FadeFlag,
+                };
+
+                logger.LogInformation("Sending NotifyChangeMyRoom for user {UserId} to MyRoom map {MapId} (stage {Stage}, owner {OwnerId})", session.User?.Id ?? session.UserId, destinationMapId, notifyChangeMyRoom.RoomStage, notifyChangeMyRoom.OwnerId);
+                await session.SendAsync(PacketType.NotifyChangeMyRoom, notifyChangeMyRoom.ToBytes(), ct);
+            }
+            else
+            {
+                await session.SendAsync(PacketType.NotifyChangeMap, notifyChangeMap.ToBytes(), ct);
+            }
+        }
     }
 
     private async Task<ServerInfo> ResolveAreaServerInfoAsync(int channelId, CancellationToken ct)
