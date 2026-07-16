@@ -1103,7 +1103,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_remove_furniture_r", ImplementationState.NotImplemented)]
     MyRoomRemoveFurnitureResponse = 0xFD30,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_start_furniture_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_start_furniture_r", ImplementationState.Implemented)]
     MyRoomStartFurnitureResponse = 0x19BC,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_furniture_r", ImplementationState.NotImplemented)]
@@ -1748,7 +1748,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_end_furniture", ImplementationState.NotImplemented)]
     MyRoomEndFurnitureRequest = 0xB739,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_start_furniture", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_start_furniture", ImplementationState.Implemented)]
     MyRoomStartFurnitureRequest = 0x6A58,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_update_name", ImplementationState.NotImplemented)]

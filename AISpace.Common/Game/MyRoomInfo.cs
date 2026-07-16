@@ -49,4 +49,12 @@ public static class MyRoomInfo
         var (x, z) = GetEntrancePosition(stage);
         return (-x, z);
     }
+
+    /// <summary>Maximum placed furniture count per stage, from settings/myroom.csv column 1.</summary>
+    public static uint GetMaxFurniturePlacement(byte stage) =>
+        stage switch
+        {
+            2 or 3 => 870,
+            _ => 700,
+        };
 }
