@@ -4,6 +4,7 @@ public static class ServerEvents
 {
     public static class Keys
     {
+        public const string IntroductionChineseCosplayer = "introdution_chinese_cosplayer";
         public const string ShinjuRegistration = "shinju_registration";
     }
 }
