@@ -55,6 +55,34 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
         }
     }
 
+    /// <summary>Adds any seed items that are missing from an existing Items table (idempotent).</summary>
+    public static async Task EnsureSeedItemsPresentAsync(MainContext db, string jsonPath, CancellationToken ct = default)
+    {
+        if (!File.Exists(jsonPath))
+            return;
+
+        var json = await File.ReadAllTextAsync(jsonPath, ct);
+        var rows = JsonSerializer.Deserialize<List<ItemSeedRow>>(json, JsonOptions) ?? [];
+
+        var existingIds = (await db.Items.Select(item => item.Id).ToListAsync(ct)).ToHashSet();
+        var missing = rows.DistinctBy(r => r.Id)
+            .Where(row => !existingIds.Contains(row.Id))
+            .Select(row => new Item
+            {
+                Id = row.Id,
+                Name = row.Name,
+                Socket = row.Socket,
+                IconId = row.IconId ?? 1,
+            })
+            .ToList();
+
+        if (missing.Count == 0)
+            return;
+
+        db.Items.AddRange(missing);
+        await db.SaveChangesAsync(ct);
+    }
+
     private sealed class ItemSeedRow
     {
         public int Id { get; set; }
