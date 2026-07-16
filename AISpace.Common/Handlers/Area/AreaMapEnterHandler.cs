@@ -19,7 +19,14 @@ public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTran
 
         if (session.IsMapTransitionPending)
         {
-            logger.LogInformation("Ignoring MapEnterRequest for user {UserId} because a map transition is already pending on this connection", session.User?.Id ?? session.UserId);
+            if (request.MapID != session.MapId || request.ChannelId != (uint)session.ChannelId)
+            {
+                logger.LogWarning("Rejecting MapEnterRequest for user {UserId} during pending transition: requested map {RequestedMapId}, channel {RequestedChannelId}, but session is on map {SessionMapId}, channel {SessionChannelId}", session.User?.Id ?? session.UserId, request.MapID, request.ChannelId, session.MapId, session.ChannelId);
+                await session.SendAsync(ResponseType, new AreaMapEnterResponse(1).ToBytes(), ct);
+                return;
+            }
+
+            logger.LogInformation("Acknowledging post-NotifyChangeMap MapEnterRequest for user {UserId} on map {MapId}, channel {ChannelId}", session.User?.Id ?? session.UserId, request.MapID, request.ChannelId);
             await session.SendAsync(ResponseType, new AreaMapEnterResponse(0).ToBytes(), ct);
             return;
         }
