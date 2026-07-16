@@ -13,6 +13,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 {
     private const uint SelectorSuccess = 0;
     private const uint SelectorFailure = 1;
+    private static readonly ServerInfo SameAreaServerInfo = new("", 0);
 
     public async Task<DAL.Entities.Character?> ResolveCharacterAsync(IPlayerSession session, CancellationToken ct = default)
     {
@@ -60,7 +61,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         if (resolvedLink == null)
             return false;
 
-        return await ExecuteTriggeredMapLinkAsync("movement-based", session.MapId, (uint)session.ChannelId, session, character, resolvedLink.Value, sendMapEnterResponseForDirect: true, sendMapEnterResponseForSelection: false, samplesCount: samples.Count, ct);
+        return await ExecuteTriggeredMapLinkAsync("movement-based", session.MapId, (uint)session.ChannelId, session, character, resolvedLink.Value, sendMapEnterResponseForDirect: false, sendMapEnterResponseForSelection: false, samplesCount: samples.Count, ct);
     }
 
     public async Task<bool> HandleAreaMapSelectionReplyAsync(EventAreaMapSelectExecRRequest request, IPlayerSession session, CancellationToken ct = default)
@@ -114,7 +115,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
         await session.SendAsync(PacketType.EventAreaMapSelectCloseNotify, new EventAreaMapSelectCloseNotify(SelectorSuccess).ToBytes(), ct);
 
-        var areaServerInfo = await ResolveAreaServerInfoAsync((int)selectedDestination.ChannelId, ct);
+        var areaServerInfo = await ResolveAreaServerInfoForNotifyAsync(session.ChannelId, (int)selectedDestination.ChannelId, ct);
         var notifyChangeMap = CreateNotifyChangeMap(selectedDestination.ChannelId, selectedDestination.MapId, destinationMap, areaServerInfo);
 
         logger.LogInformation(
@@ -203,11 +204,17 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         if (channelId == null)
             return false;
 
-        var areaServerInfo = await ResolveAreaServerInfoAsync(channelId.Value, ct);
+        var areaServerInfo = await ResolveAreaServerInfoForNotifyAsync(session.ChannelId, channelId.Value, ct);
         var notifyChangeMap = destinationMapId == session.MapId ? null : CreateNotifyChangeMap((uint)channelId.Value, destinationMapId, destinationMap, areaServerInfo);
 
         await CompleteMapTransitionAsync(session, character, destinationMapId, (uint)channelId.Value, destinationMap, notifyChangeMap, sendMapEnterResponse: notifyChangeMap == null, ct);
         return true;
+    }
+
+    public async Task<NotifyChangeMap> BuildNotifyChangeMapAsync(uint channelId, uint destinationMapId, DAL.Entities.Map destinationMap, int sourceChannelId = 0, CancellationToken ct = default)
+    {
+        var areaServerInfo = await ResolveAreaServerInfoForNotifyAsync(sourceChannelId, (int)channelId, ct);
+        return CreateNotifyChangeMap(channelId, destinationMapId, destinationMap, areaServerInfo);
     }
 
     private async Task<int?> ResolveChannelIdForMapAsync(uint destinationMapId, CancellationToken ct)
@@ -229,6 +236,8 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
     {
         if (notifyChangeMap != null)
             session.IsMapTransitionPending = true;
+
+        var sourceChannelId = session.ChannelId;
 
         var oldPeers = state.GetAreaPeers(session).ToList();
         var disappearPacket = new NotifyDisappearChara(session.CharacterId).ToBytes();
@@ -259,9 +268,14 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         if (userCharacter != null)
             userCharacter.CurrentMapId = destinationMapId;
 
-        if (notifyChangeMap != null && session.User != null)
+        if (notifyChangeMap != null)
         {
-            state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(session.User.Id, destinationMapId, (int)destinationChannelId, destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, (sbyte)destinationMap.SpawnRotation));
+            session.NeedsPostLoadSelfAvatarNotify = true;
+
+            if (session.User != null && await RequiresAreaServerReconnectAsync(sourceChannelId, (int)destinationChannelId, ct))
+            {
+                state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(session.User.Id, destinationMapId, (int)destinationChannelId, destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, (sbyte)destinationMap.SpawnRotation));
+            }
         }
 
         if (sendMapEnterResponse)
@@ -316,6 +330,24 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return new ServerInfo(serverOptions.Value.ResolveAddress(currentChannel.IP), currentChannel.Port);
     }
 
+    private async Task<bool> RequiresAreaServerReconnectAsync(int sourceChannelId, int destinationChannelId, CancellationToken ct)
+    {
+        if (sourceChannelId == 0)
+            return false;
+
+        var currentAreaServer = await ResolveAreaServerInfoAsync(sourceChannelId, ct);
+        var destinationAreaServer = await ResolveAreaServerInfoAsync(destinationChannelId, ct);
+        return !string.Equals(currentAreaServer.IP, destinationAreaServer.IP, StringComparison.OrdinalIgnoreCase) || currentAreaServer.Port != destinationAreaServer.Port;
+    }
+
+    private async Task<ServerInfo> ResolveAreaServerInfoForNotifyAsync(int sourceChannelId, int destinationChannelId, CancellationToken ct)
+    {
+        if (!await RequiresAreaServerReconnectAsync(sourceChannelId, destinationChannelId, ct))
+            return SameAreaServerInfo;
+
+        return await ResolveAreaServerInfoAsync(destinationChannelId, ct);
+    }
+
     private NotifyChangeMap CreateNotifyChangeMap(uint channelId, uint destinationMapId, DAL.Entities.Map destinationMap, ServerInfo areaServerInfo)
     {
         return new NotifyChangeMap
@@ -360,7 +392,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
     {
         if (resolvedLink.Kind == MapLinkResolutionKind.Direct)
         {
-            var areaServerInfo = await ResolveAreaServerInfoAsync((int)channelId, ct);
+            var areaServerInfo = await ResolveAreaServerInfoForNotifyAsync(session.ChannelId, (int)channelId, ct);
             var notifyChangeMap = CreateNotifyChangeMap(channelId, resolvedLink.DestinationMapId, resolvedLink.DestinationMap!, areaServerInfo);
 
             logger.LogInformation(
