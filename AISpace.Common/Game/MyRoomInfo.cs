@@ -4,25 +4,37 @@ namespace AISpace.Common.Game;
 /// MyRoom constants derived from client data (localDocs).
 /// Map ids: settings/tps_map.csv lines 72-83 (20000000/10/20/30 = 6/8/10/12.5 tatami, field R01_01..04).
 /// Entrance (door) positions per expansion stage: settings/myroom.csv columns 8-9.
-/// The door/closet are NOT map geometry; the client spawns them from recv_notify_myroom_furniture
-/// entries with action type 1 (door -> UI control 141) and 2 (closet/wardrobe -> UI control 142).
-/// See decompiled handler sub_48AC50 (aisp-decompiled.c:107151) and click dispatch sub_419BC0 (:22612).
+/// Door/closet visuals+collision come from recv_notify_myroom_furniture (not map geometry).
+/// Click UI for placed furniture uses furniture.csv アクション on ItemId (sub_419BC0), NOT the wire ActionType:
+///   1 → CHL 141 drama playback (PC 11000220)
+///   2 → CHL 142 adventure/drama work list (notebook 11000160) → send_get_adventure_work_list (13000)
+///   3 → Nico TV
+///   4 → send_myroom_use_furniture (0x2231); server may push recv_storage_opened (0x2CA5) for 倉庫
+/// Builtin closet uses an action-4 catalog ItemId so the client asks the server; 倉庫 is not csv action 2.
 /// </summary>
 public static class MyRoomInfo
 {
     public const uint BaseMapId = 20_000_000;
 
-    /// <summary>Furniture action types (dword at offset +8 of the furniture wire struct).</summary>
+    /// <summary>
+    /// Wire ActionType (dword at +8). Spawn (sub_48AC50) does not use this for click routing;
+    /// kept for packet layout / possible builtin semantics. Do not confuse with furniture.csv アクション.
+    /// </summary>
     public const uint ActionDoor = 1;
     public const uint ActionCloset = 2;
     public const uint ActionNicoTv = 3;
     public const uint ActionUseFurniture = 4;
 
-    /// <summary>和風三連衝立 (folding screen) - stand-in model for the room door; asset item/1/10/01010 exists.</summary>
+    /// <summary>和風三連衝立 (folding screen) - stand-in door model; csv アクション empty (not drama).</summary>
     public const uint DoorItemId = 11_001_010;
 
-    /// <summary>カントリーなタンス (country dresser) - wardrobe model; asset item/1/10/00250 exists.</summary>
-    public const uint ClosetItemId = 11_000_250;
+    /// <summary>
+    /// Christmas tree — only live furniture.csv rows with アクション=4 (send_myroom_use_furniture).
+    /// Real closet models 11000240–242 are commented out with empty アクション; dresser 11000250 is also
+    /// action-empty (collision/visual only). Action 4 is required for the client to ask the server,
+    /// which then pushes recv_storage_opened for 倉庫. Visual is wrong until a better action-4 asset exists.
+    /// </summary>
+    public const uint ClosetItemId = 11_001_170;
 
     /// <summary>Fixed furniture serial ids used for the built-in room objects.</summary>
     public const uint DoorSerialId = 1;

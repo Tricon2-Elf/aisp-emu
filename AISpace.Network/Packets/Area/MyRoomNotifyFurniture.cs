@@ -7,8 +7,8 @@ namespace AISpace.Network.Packets.Area;
 /// furniture reader (sub_7989B0, aisp-decompiled.c:679210) and consumed by sub_48AC50 (:107151):
 ///   UInt  OwnerId       - must match dword 0 of the myroom info sent in NotifyChangeMyRoom, otherwise ignored
 ///   UInt  SerialId      - furniture serial (echoed by send_myroom_use_furniture)
-///   UInt  ActionType    - 1 = door (opens UI 141), 2 = closet/wardrobe (UI 142), 3 = nico TV, 4 = use_furniture
-///   UInt  ItemId        - furniture item id (model resolved through the client item table)
+///   UInt  ActionType    - wire field; spawn ignores it for click UI (see furniture.csv アクション on ItemId)
+///   UInt  ItemId        - model + click via furniture.csv (1=drama play, 2=drama work list/13000, 3=TV, 4=use_furniture→server)
 ///   Float X, Y, Z
 ///   Byte  Yaw           - degrees / 2 (client: rad = byte * PI/180 * 2)
 ///   Byte  Pitch         - degrees / 2
