@@ -30,7 +30,8 @@ public class AreaMyRoomGetFurnitureHandler(ILogger<AreaMyRoomGetFurnitureHandler
         var (closetX, closetZ) = MyRoomInfo.GetClosetPosition(stage);
 
         var door = new MyRoomNotifyFurniture(ownerId, MyRoomInfo.DoorSerialId, MyRoomInfo.ActionDoor, MyRoomInfo.DoorItemId, doorX, 0f, doorZ);
-        var closet = new MyRoomNotifyFurniture(ownerId, MyRoomInfo.ClosetSerialId, MyRoomInfo.ActionCloset, MyRoomInfo.ClosetItemId, closetX, 0f, closetZ);
+        // Wire ActionType is ignored for click routing; ItemId must have furniture.csv アクション=4.
+        var closet = new MyRoomNotifyFurniture(ownerId, MyRoomInfo.ClosetSerialId, MyRoomInfo.ActionUseFurniture, MyRoomInfo.ClosetItemId, closetX, 0f, closetZ);
 
         await session.SendAsync(PacketType.MyRoomNotifyFurniture, door.ToBytes(), ct);
         await session.SendAsync(PacketType.MyRoomNotifyFurniture, closet.ToBytes(), ct);

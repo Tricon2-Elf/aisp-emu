@@ -1115,6 +1115,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_security_r", ImplementationState.NotImplemented)]
     MyRoomUpdateSecurityResponse = 0xCE31,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_use_furniture_r", ImplementationState.Implemented)]
+    MyRoomUseFurnitureResponse = 0xC437,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_niconi_commons_shop_buy_r", ImplementationState.NotImplemented)]
     NiconiCommonsShopBuyResponse = 0x96BE,
 
@@ -1562,7 +1565,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_storage_deposit_r", ImplementationState.NotImplemented)]
     StorageDepositResponse = 0x541C,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_storage_opened", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_storage_opened", ImplementationState.Implemented)]
     StorageOpenedNotify = 0x2CA5,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_storage_updated_deposit", ImplementationState.NotImplemented)]
@@ -1750,6 +1753,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_start_furniture", ImplementationState.Implemented)]
     MyRoomStartFurnitureRequest = 0x6A58,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_use_furniture", ImplementationState.Implemented)]
+    MyRoomUseFurnitureRequest = 0x2231,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_update_name", ImplementationState.NotImplemented)]
     MyRoomUpdateNameRequest = 0x9A24,
