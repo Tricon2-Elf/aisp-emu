@@ -1,13 +1,14 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventFadeInHandler(ICharacterEventRepository eventRepository, ILogger<AreaEventFadeInHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaEventFadeInHandler(ICharacterEventRepository eventRepository, ILogger<AreaEventFadeInHandler> logger, ServerScriptDispatcher? serverScriptDispatcher = null) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventFadeInRequest;
     public PacketType ResponseType => PacketType.EventEndNotify;
@@ -15,6 +16,9 @@ public class AreaEventFadeInHandler(ICharacterEventRepository eventRepository, I
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
+        if (serverScriptDispatcher is not null && await serverScriptDispatcher.TryHandlePacketAsync(RequestType, payload, session, ct))
+            return;
+
         if (!session.PendingEventEndAfterFade)
         {
             logger.LogDebug("EventFadeIn from character {CharacterId}", session.CharacterId);

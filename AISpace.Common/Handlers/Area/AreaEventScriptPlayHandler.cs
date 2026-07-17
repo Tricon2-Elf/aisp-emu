@@ -1,12 +1,13 @@
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.Game;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEventScriptPlayHandler(ILogger<AreaEventScriptPlayHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaEventScriptPlayHandler(ILogger<AreaEventScriptPlayHandler> logger, ServerScriptDispatcher? serverScriptDispatcher = null) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventScriptPlayRequest;
     public PacketType ResponseType => (PacketType)0;
@@ -14,6 +15,9 @@ public class AreaEventScriptPlayHandler(ILogger<AreaEventScriptPlayHandler> logg
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
+        if (serverScriptDispatcher is not null && await serverScriptDispatcher.TryHandlePacketAsync(RequestType, payload, session, ct))
+            return;
+
         var request = EventScriptPlayRequest.FromBytes(payload.Span);
         if (request.Result != 0)
         {
