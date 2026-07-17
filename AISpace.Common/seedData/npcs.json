@@ -122,8 +122,8 @@
       "z": -16730.0,
       "rotation": 0,
       "interactionType": "Decorative",
-      "eventKind": "ClientScript",
-      "eventKey": "introdution_myroom_sh",
+      "eventKind": "ServerScript",
+      "eventKey": "station_staff_departure",
       "isEnabled": true,
       "sortOrder": 105,
       "equipment": [
