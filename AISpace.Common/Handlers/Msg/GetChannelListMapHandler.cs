@@ -23,31 +23,11 @@ public class GetChannelListMapHandler(IOptions<ServerOptions> serverOptions, ICh
         var request = GetChannelListMapRequest.FromBytes(payload.Span);
         var dbChannels = await channelRepo.GetAllAsync(ct);
 
-        var matchingChannels = dbChannels.Where(channel => channel.MapId == request.MapId).OrderBy(channel => channel.ChannelNum).ToList();
+        // Always advertise the player's current channel. Destination maps (e.g. My Room) often have no
+        // channel rows of their own; returning an empty list leaves the client stuck in the selector.
+        var matchingChannels = session.ChannelId == 0 ? [] : dbChannels.Where(channel => channel.ChannelNum == session.ChannelId).OrderBy(channel => channel.ChannelNum).ToList();
 
-        if (matchingChannels.Count == 0)
-        {
-            var requestedGroup = request.MapId / 10_000u;
-            matchingChannels = dbChannels.Where(channel => channel.MapId / 10_000u == requestedGroup).OrderBy(channel => channel.ChannelNum).ToList();
-
-            if (matchingChannels.Count > 1 && session.ChannelId != 0)
-            {
-                var currentChannelMatches = matchingChannels.Where(channel => channel.ChannelNum == session.ChannelId).ToList();
-
-                if (currentChannelMatches.Count != 0)
-                {
-                    logger.LogInformation("GetChannelListMapRequest for map {MapId} narrowed fallback channel list from {OriginalCount} to current channel {ChannelId}", request.MapId, matchingChannels.Count, session.ChannelId);
-                    matchingChannels = currentChannelMatches;
-                }
-            }
-
-            if (matchingChannels.Count > 0)
-            {
-                logger.LogInformation("GetChannelListMapRequest for map {MapId} matched {Count} channel(s) by map group fallback {MapGroup}", request.MapId, matchingChannels.Count, requestedGroup);
-            }
-        }
-
-        logger.LogInformation("GetChannelListMapRequest from user {UserId}: map {MapId}, returning {Count} channel(s)", session.User?.Id ?? session.UserId, request.MapId, matchingChannels.Count);
+        logger.LogInformation("GetChannelListMapRequest from user {UserId}: map {MapId}, returning {Count} channel(s) (current channel {ChannelId})", session.User?.Id ?? session.UserId, request.MapId, matchingChannels.Count, session.ChannelId);
 
         var channels = matchingChannels.Select(channel => ToChannelInfo(channel, serverOptions.Value)).ToList();
 

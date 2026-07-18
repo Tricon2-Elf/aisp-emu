@@ -149,7 +149,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
             return true;
         }
 
-        var allowedIslandIds = selection.Destinations.Select(destination => ResolveIslandId(destination.MapId)).Append(selection.IslandId).Distinct().ToList();
+        var allowedIslandIds = selection.Destinations.Select(destination => ResolveIslandId(destination.MapId, selection.IslandId)).Append(selection.IslandId).Distinct().ToList();
         var resolvedIslandId = allowedIslandIds.Contains(selectedIslandId) ? selectedIslandId : selection.IslandId;
         if (resolvedIslandId != selectedIslandId)
         {
@@ -498,13 +498,14 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
     private async Task<SelectInitIslandStartNotify> CreateSelectInitIslandStartAsync(PendingAreaMapSelection selection, CancellationToken ct)
     {
-        var islandIds = selection.Destinations.Select(destination => ResolveIslandId(destination.MapId)).Append(selection.IslandId).Distinct().OrderBy(islandId => islandId).ToList();
+        // Non-franchise maps (My Room, Akihabara, …) inherit the source map's island so the selector chrome matches the area you opened it from.
+        var islandIds = selection.Destinations.Select(destination => ResolveIslandId(destination.MapId, selection.IslandId)).Append(selection.IslandId).Distinct().OrderBy(islandId => islandId).ToList();
 
         var islands = new List<SelectInitIslandEntry>(islandIds.Count);
         foreach (var islandId in islandIds)
         {
             var destinationMaps = new List<DAL.Entities.Map>();
-            foreach (var destination in selection.Destinations.Where(destination => ResolveIslandId(destination.MapId) == islandId))
+            foreach (var destination in selection.Destinations.Where(destination => ResolveIslandId(destination.MapId, selection.IslandId) == islandId))
             {
                 var destinationMap = await mapRepository.GetByMapIdAsync(destination.MapId, ct);
                 if (destinationMap != null)
@@ -625,14 +626,14 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return link.Behavior == DAL.Entities.MapLinkBehavior.ForceSelection || destinations.Count != 1;
     }
 
-    private static uint ResolveIslandId(uint mapId)
+    /// <summary>
+    /// Franchise island from map id (same encoding as shinju registration): 1001xxxx → 1 Da Capo, 1002xxxx → 2 Clannad, 1003xxxx → 3 Shuffle.
+    /// Non-franchise maps (My Room, Akihabara, …) use <paramref name="fallbackIslandId"/>.
+    /// </summary>
+    private static uint ResolveIslandId(uint mapId, uint fallbackIslandId = 1u)
     {
-        var derivedIsland = (mapId / 100) % 10;
-        return derivedIsland switch
-        {
-            >= 1 and <= 3 => derivedIsland,
-            _ => 1u,
-        };
+        var derivedIsland = (mapId / 10_000u) % 100u;
+        return derivedIsland is >= 1 and <= 3 ? derivedIsland : fallbackIslandId;
     }
 
     private static string ResolveIslandTitle(uint islandId, IReadOnlyList<DAL.Entities.Map> destinationMaps)
