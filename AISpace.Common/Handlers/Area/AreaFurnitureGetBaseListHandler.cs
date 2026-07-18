@@ -6,6 +6,8 @@ namespace AISpace.Common.Handlers.Area;
 
 public class AreaFurnitureGetBaseListHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
+    private const uint FlagYawSnap = 0x10;
+
     public PacketType RequestType => PacketType.FurnitureGetBaseListRequest;
 
     public PacketType ResponseType => PacketType.FurnitureGetBaseListResponse;
@@ -14,7 +16,8 @@ public class AreaFurnitureGetBaseListHandler : IPacketHandler, IRequiresAuthenti
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        var response = new FurnitureGetBaseListResponse();
-        await session.SendAsync(ResponseType, response.ToBytes(), ct);
+        var entries = new FurnitureBaseEntry[] { new(MyRoomInfo.ClosetItemId, FlagYawSnap, 0) };
+
+        await session.SendAsync(ResponseType, new FurnitureGetBaseListResponse(0, entries).ToBytes(), ct);
     }
 }
