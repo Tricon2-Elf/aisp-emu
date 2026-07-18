@@ -10,17 +10,16 @@ namespace AISpace.Common.Tests;
 public class AreaMyRoomUseFurnitureHandlerTests
 {
     [Fact]
-    public async Task ClosetUse_OpensStorage()
+    public async Task CatalogFurnitureUse_IsAcknowledgedWithoutOpeningStorage()
     {
         var handler = new AreaMyRoomUseFurnitureHandler(NullLogger<AreaMyRoomUseFurnitureHandler>.Instance);
         var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
 
-        await handler.HandleAsync(BuildRequest(42, MyRoomInfo.ClosetSerialId, 1), session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(BuildRequest(42, 77, 1), session, TestContext.Current.CancellationToken);
 
-        Assert.Equal(PacketType.MyRoomUseFurnitureResponse, session.Sent[0].Type);
-        Assert.Equal(0u, new PacketReader(session.Sent[0].Payload).ReadUInt());
-        Assert.Equal(PacketType.StorageOpenedNotify, session.Sent[1].Type);
-        Assert.Equal(0ul, new PacketReader(session.Sent[1].Payload).ReadULong());
+        var packet = Assert.Single(session.Sent);
+        Assert.Equal(PacketType.MyRoomUseFurnitureResponse, packet.Type);
+        Assert.Equal(0u, new PacketReader(packet.Payload).ReadUInt());
     }
 
     [Fact]
@@ -29,7 +28,7 @@ public class AreaMyRoomUseFurnitureHandlerTests
         var handler = new AreaMyRoomUseFurnitureHandler(NullLogger<AreaMyRoomUseFurnitureHandler>.Instance);
         var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
 
-        await handler.HandleAsync(BuildRequest(99, MyRoomInfo.ClosetSerialId, 1), session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(BuildRequest(99, 77, 1), session, TestContext.Current.CancellationToken);
 
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.MyRoomUseFurnitureResponse, session.Sent[0].Type);

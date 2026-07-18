@@ -11,6 +11,8 @@ public sealed class ServerScriptDispatcher(IEnumerable<IServerScript> scripts, S
 
     public bool HasScript(string eventKey) => _scripts.ContainsKey(eventKey);
 
+    public EventCompletionPolicy GetCompletionPolicy(string eventKey) => _scripts.TryGetValue(eventKey, out var script) ? script.CompletionPolicy : EventCompletionPolicy.Once;
+
     public async Task StartAsync(IPlayerSession session, string eventKey, ServerScriptContext context, EventCompletionPolicy completionPolicy, CancellationToken ct = default)
     {
         if (!_scripts.TryGetValue(eventKey, out var script))
