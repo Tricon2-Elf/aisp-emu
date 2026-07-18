@@ -21,21 +21,13 @@ public class AreaMyRoomGetFurnitureHandler(ILogger<AreaMyRoomGetFurnitureHandler
         if (!MyRoomInfo.IsMyRoomMap(session.MapId))
             return;
 
-        // Built-in room objects: the retail client expects the door and closet/wardrobe to arrive
-        // as furniture notifies (they are not part of the map geometry). The owner id must match
-        // the OwnerId sent in NotifyChangeMyRoom (we use the character id for both).
         var ownerId = session.CharacterId;
         var stage = MyRoomInfo.GetRoomStage(session.MapId);
-        var (doorX, doorZ) = MyRoomInfo.GetEntrancePosition(stage);
         var (closetX, closetZ) = MyRoomInfo.GetClosetPosition(stage);
 
-        var door = new MyRoomNotifyFurniture(ownerId, MyRoomInfo.DoorSerialId, MyRoomInfo.ActionDoor, MyRoomInfo.DoorItemId, doorX, 0f, doorZ);
-        // Wire ActionType is ignored for click routing; ItemId must have furniture.csv アクション=4.
-        var closet = new MyRoomNotifyFurniture(ownerId, MyRoomInfo.ClosetSerialId, MyRoomInfo.ActionUseFurniture, MyRoomInfo.ClosetItemId, closetX, 0f, closetZ);
-
-        await session.SendAsync(PacketType.MyRoomNotifyFurniture, door.ToBytes(), ct);
+        var closet = new MyRoomNotifyFurniture(ownerId, MyRoomInfo.ClosetSerialId, MyRoomInfo.ActionCloset, MyRoomInfo.ClosetItemId, closetX, 0f, closetZ);
         await session.SendAsync(PacketType.MyRoomNotifyFurniture, closet.ToBytes(), ct);
 
-        logger.LogInformation("Sent MyRoom door/closet furniture to character {CharacterId} on map {MapId} (stage {Stage}: door at ({DoorX}, {DoorZ}), closet at ({ClosetX}, {ClosetZ}))", ownerId, session.MapId, stage, doorX, doorZ, closetX, closetZ);
+        logger.LogInformation("Sent MyRoom closet furniture to character {CharacterId} on map {MapId} (stage {Stage}: {ClosetItemId} at ({ClosetX}, {ClosetZ}))", ownerId, session.MapId, stage, MyRoomInfo.ClosetItemId, closetX, closetZ);
     }
 }

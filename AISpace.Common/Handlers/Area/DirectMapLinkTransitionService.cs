@@ -301,13 +301,11 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
                     Animation = notifyChangeMap.Animation,
                     Flag = notifyChangeMap.Flag,
                     AreaServerInfo = notifyChangeMap.AreaServerInfo,
-                    OwnerId = session.CharacterId,
-                    OwnerCharacterId = session.CharacterId,
-                    RoomStage = MyRoomInfo.GetRoomStage(destinationMapId),
+                    Room = new MyRoomData(session.CharacterId, session.CharacterId, MyRoomInfo.GetRoomStage(destinationMapId)),
                     FadeFlag = notifyChangeMap.FadeFlag,
                 };
 
-                logger.LogInformation("Sending NotifyChangeMyRoom for user {UserId} to MyRoom map {MapId} (stage {Stage}, owner {OwnerId})", session.User?.Id ?? session.UserId, destinationMapId, notifyChangeMyRoom.RoomStage, notifyChangeMyRoom.OwnerId);
+                logger.LogInformation("Sending NotifyChangeMyRoom for user {UserId} to MyRoom map {MapId} (stage {Stage}, owner {OwnerId})", session.User?.Id ?? session.UserId, destinationMapId, notifyChangeMyRoom.Room.RoomStage, notifyChangeMyRoom.Room.OwnerId);
                 await session.SendAsync(PacketType.NotifyChangeMyRoom, notifyChangeMyRoom.ToBytes(), ct);
             }
             else
