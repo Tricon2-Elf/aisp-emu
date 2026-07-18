@@ -353,14 +353,19 @@
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0xA0D1
 - **Packet ID (int):** 41169
-- **Packet Size:** 8
-- **Description:** Furniture base list result.
+- **Packet Size:** 8 + Count×12 (Count ≤ 300)
+- **Description:** Furniture placement base list (g_pFurnitureMaybe). Flags affect snap/LOD only — not furniture.csv アクション / click routing.
 
 **Layout:**
 
 ```text
     UInt {Result}
     UInt {Count}
+    Count × {
+        UInt {ItemId}
+        UInt {Flags}
+        UInt {Unknown}
+    }
 ```
 
 ## send_heroine_ticket_get_base (HeroineGetTicketBaseRequest)
