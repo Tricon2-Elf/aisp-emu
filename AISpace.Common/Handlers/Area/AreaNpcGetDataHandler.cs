@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
@@ -21,19 +22,22 @@ public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandle
 
         var npcs = await npcRepository.GetActiveByMapAsync(session.MapId, session.ChannelId, ct);
         foreach (var npc in npcs)
-        {
-            var objectId = checked((uint)npc.NpcObjectId);
-            var modelId = checked((uint)npc.ModelId);
-            var pos = new MovementData(npc.X, npc.Y, npc.Z, checked((sbyte)npc.Rotation), MovementType.Stopped);
-            var npcChara = new CharaData(objectId, modelId, npc.Name) { moveData = pos };
-            npcChara.Visual.VisualId = objectId;
-            npcChara.AddEquip(
-                npc.Equipment.OrderBy(x => x.SortOrder).ThenBy(x => x.SlotIndex).Select(x => new CharacterEquipSlot(checked((byte)x.SlotIndex), checked((uint)x.ItemId))),
-                ItemEntityMapper.ResolveEquipSocket
-            );
+            await SendNpcAsync(npc, session, ct);
 
-            var npcPacket = new NpcNotifyData(0, objectId, npcChara).ToBytes();
-            await session.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
-        }
+        foreach (var actor in MyRoomSystemActors.GetForMap(session.MapId))
+            await SendNpcAsync(actor, session, ct);
+    }
+
+    private static Task SendNpcAsync(Npc npc, IPlayerSession session, CancellationToken ct)
+    {
+        var objectId = checked((uint)npc.NpcObjectId);
+        var modelId = checked((uint)npc.ModelId);
+        var pos = new MovementData(npc.X, npc.Y, npc.Z, checked((sbyte)npc.Rotation), MovementType.Stopped);
+        var npcChara = new CharaData(objectId, modelId, npc.Name) { moveData = pos };
+        npcChara.Visual.VisualId = objectId;
+        npcChara.AddEquip(npc.Equipment.OrderBy(x => x.SortOrder).ThenBy(x => x.SlotIndex).Select(x => new CharacterEquipSlot(checked((byte)x.SlotIndex), checked((uint)x.ItemId))), ItemEntityMapper.ResolveEquipSocket);
+
+        var npcPacket = new NpcNotifyData(0, objectId, npcChara).ToBytes();
+        return session.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
     }
 }
