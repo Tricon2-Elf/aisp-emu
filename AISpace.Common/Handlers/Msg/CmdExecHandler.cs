@@ -30,7 +30,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
         string cmd = request.Command.Trim().TrimStart('/').ToLowerInvariant();
         logger.LogInformation("CmdExecHandler: '{cmd}' with args: '{args}'", cmd, string.Join(", ", request.Arguments));
 
-        if (cmd == "pos" || cmd == "coords")
+        if (cmd is "pos" or "coords")
         {
             var areaClient = ResolveAreaClient(session);
             if (areaClient != null)
@@ -44,7 +44,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             return;
         }
 
-        if (cmd == "tele" || cmd == "tp" || cmd == "teleport")
+        if (cmd is "tele" or "tp" or "teleport")
         {
             var destinationMapId = 10990100u;
             if (request.Arguments.Count == 0 || !uint.TryParse(request.Arguments[0], out destinationMapId))
@@ -71,7 +71,29 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             return;
         }
 
-        if (cmd == "jump")
+        if (cmd is "myroom" or "room")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null)
+            {
+                logger.LogWarning("CmdExecHandler: myroom requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                return;
+            }
+
+            var destinationMapId = MyRoomInfo.BaseMapId;
+            if (!await directMapLinkTransitionService.TryTeleportToMapAsync(areaClient, destinationMapId, ct))
+            {
+                logger.LogWarning("CmdExecHandler: myroom teleport to map {MapId} failed for user {UserId} (character {CharacterId})", destinationMapId, session.User?.Id ?? session.UserId, areaClient.CharacterId);
+            }
+            else
+            {
+                logger.LogInformation("CmdExecHandler: teleported user {UserId} (character {CharacterId}) to MyRoom map {MapId}", session.User?.Id ?? session.UserId, areaClient.CharacterId, destinationMapId);
+            }
+
+            return;
+        }
+
+        if (cmd is "jump")
         {
             var areaClient = ResolveAreaClient(session);
             if (areaClient == null || areaClient.User == null || areaClient.User.Characters.Count == 0)
@@ -248,7 +270,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             return;
         }
 
-        if (cmd == "escape" || cmd == "reset")
+        if (cmd is "escape" or "reset")
         {
             var areaClient = ResolveAreaClient(session);
 

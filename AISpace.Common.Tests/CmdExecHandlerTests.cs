@@ -100,6 +100,86 @@ public class CmdExecHandlerTests
     }
 
     [Fact]
+    public async Task MyRoomCommand_TeleportsAreaSessionToBaseMyRoomMap()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8008, "myroom-user", "MyRoom User", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                db.Maps.AddRange(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = -9100f,
+                        SpawnY = 2f,
+                        SpawnZ = -18000f,
+                        SpawnRotation = 90,
+                    },
+                    new Map
+                    {
+                        MapId = MyRoomInfo.BaseMapId,
+                        Name = "My Room (6 tatami mats)",
+                        SpawnX = 0f,
+                        SpawnY = 0.1f,
+                        SpawnZ = 0f,
+                        SpawnRotation = 0,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8008,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
+
+            await handler.HandleAsync(BuildCmdExecPayload("/room"), msgSession, TestContext.Current.CancellationToken);
+
+            Assert.Equal(MyRoomInfo.BaseMapId, areaSession.MapId);
+            Assert.Equal(0f, areaSession.X);
+            Assert.Equal(0.1f, areaSession.Y);
+            Assert.Equal(0f, areaSession.Z);
+            Assert.Equal(MyRoomInfo.BaseMapId, areaSession.Character!.CurrentMapId);
+            Assert.Contains(areaSession.Sent, packet => packet.Type == PacketType.NotifyChangeMyRoom);
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+
+            await using var verifyDb = new MainContext(options);
+            var persisted = await verifyDb.Characters.SingleAsync(c => c.Id == 8008, TestContext.Current.CancellationToken);
+            Assert.Equal(MyRoomInfo.BaseMapId, persisted.CurrentMapId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task JumpCommand_MovesAreaSessionForwardAlongRotation()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
