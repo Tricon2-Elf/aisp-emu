@@ -27,7 +27,7 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
             return;
         }
 
-        var npc = MyRoomSystemActors.Find(session.MapId, request.NpcId) ?? await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, session.ChannelId, request.NpcId, ct);
+        var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, session.ChannelId, request.NpcId, ct);
         if (npc is null || !npc.IsEnabled)
         {
             session.ActiveShopId = null;

@@ -41,18 +41,6 @@ public static class MyRoomInfo
             _ => (73f, -170f),
         };
 
-    public static (float X, float Z) GetDoorPosition(MyRoomStage stage)
-    {
-        var (x, z) = GetEntrancePosition(stage);
-        return (x + 7, z - 88);
-    }
-
-    public static (float X, float Z) GetClosetPosition(MyRoomStage stage)
-    {
-        var (x, z) = GetEntrancePosition(stage);
-        return (x, z - 27);
-    }
-
     public static uint GetMaxFurniturePlacement(MyRoomStage stage) =>
         stage switch
         {
