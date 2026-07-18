@@ -27,7 +27,7 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
             return;
         }
 
-        var npc = await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, session.ChannelId, request.NpcId, ct);
+        var npc = MyRoomSystemActors.Find(session.MapId, request.NpcId) ?? await npcRepository.GetActiveByMapAndObjectIdAsync(session.MapId, session.ChannelId, request.NpcId, ct);
         if (npc is null || !npc.IsEnabled)
         {
             session.ActiveShopId = null;
@@ -56,7 +56,7 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
 
                     await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
                     logger.LogInformation("Starting server script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, request.NpcId);
-                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, new ServerScriptContext { Npc = npc }, EventCompletionPolicy.Once, ct);
+                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, new ServerScriptContext { Npc = npc }, serverScriptDispatcher.GetCompletionPolicy(npc.EventKey), ct);
                     return;
             }
         }

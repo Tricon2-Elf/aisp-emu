@@ -5,10 +5,6 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-/// <summary>
-/// Handles send_myroom_use_furniture. Builtin closet (serial 2) opens account storage via
-/// recv_storage_opened; other furnids are acknowledged only for now.
-/// </summary>
 public class AreaMyRoomUseFurnitureHandler(ILogger<AreaMyRoomUseFurnitureHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyRoomUseFurnitureRequest;
@@ -23,37 +19,13 @@ public class AreaMyRoomUseFurnitureHandler(ILogger<AreaMyRoomUseFurnitureHandler
 
         if (!MyRoomInfo.IsMyRoomMap(session.MapId) || request.RoomId != session.CharacterId)
         {
-            logger.LogWarning(
-                "Rejected MyRoomUseFurniture for character {CharacterId} on map {MapId}: roomId {RoomId} furnId {FurnId}",
-                session.CharacterId,
-                session.MapId,
-                request.RoomId,
-                request.FurnId
-            );
+            logger.LogWarning("Rejected MyRoomUseFurniture for character {CharacterId} on map {MapId}: roomId {RoomId} furnId {FurnId}", session.CharacterId, session.MapId, request.RoomId, request.FurnId);
             await session.SendAsync(ResponseType, new MyRoomUseFurnitureResponse(1).ToBytes(), ct);
             return;
         }
 
         await session.SendAsync(ResponseType, new MyRoomUseFurnitureResponse(0).ToBytes(), ct);
 
-        if (request.FurnId == MyRoomInfo.ClosetSerialId)
-        {
-            // Client opens 倉庫 on recv_storage_opened (aipoint balance). Deposit/withdraw not wired yet.
-            await session.SendAsync(PacketType.StorageOpenedNotify, new StorageOpenedNotify(0).ToBytes(), ct);
-            logger.LogInformation(
-                "Opened storage for character {CharacterId} via MyRoom closet (furnId {FurnId})",
-                session.CharacterId,
-                request.FurnId
-            );
-        }
-        else
-        {
-            logger.LogInformation(
-                "MyRoomUseFurniture ack for character {CharacterId} furnId {FurnId} reason {Reason} (no storage open)",
-                session.CharacterId,
-                request.FurnId,
-                request.Reason
-            );
-        }
+        logger.LogInformation("MyRoomUseFurniture ack for character {CharacterId} furnId {FurnId} reason {Reason}", session.CharacterId, request.FurnId, request.Reason);
     }
 }

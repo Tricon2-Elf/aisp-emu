@@ -12,17 +12,6 @@ public static class MyRoomInfo
     /// <summary>Alias for the base (6-tatami) MyRoom map.</summary>
     public const uint BaseMapId = SixTatamiMapId;
 
-    /// <summary>Wire ActionType (dword +8). Spawn does not use this for click routing.</summary>
-    public const uint ActionDoor = 1;
-    public const uint ActionCloset = 2;
-    public const uint ActionNicoTv = 3;
-    public const uint ActionUseFurniture = 4;
-
-    public const uint ClosetItemId = 11_000_250;
-
-    public const uint DoorSerialId = 1;
-    public const uint ClosetSerialId = 2;
-
     public static bool IsMyRoomMap(uint mapId) => mapId is SixTatamiMapId or EightTatamiMapId or TenTatamiMapId or TwelveTatamiMapId;
 
     public static MyRoomStage GetRoomStage(uint mapId) =>
@@ -52,10 +41,16 @@ public static class MyRoomInfo
             _ => (73f, -170f),
         };
 
+    public static (float X, float Z) GetDoorPosition(MyRoomStage stage)
+    {
+        var (x, z) = GetEntrancePosition(stage);
+        return (x + 7, z - 88);
+    }
+
     public static (float X, float Z) GetClosetPosition(MyRoomStage stage)
     {
         var (x, z) = GetEntrancePosition(stage);
-        return (-x, z);
+        return (x, z - 27);
     }
 
     public static uint GetMaxFurniturePlacement(MyRoomStage stage) =>
