@@ -710,13 +710,7 @@ public class AreaMapHandlersTests
                 {
                     Assert.Equal(1u, island.IslandId);
                     Assert.Equal("Destination One Island 1", island.Title);
-                    Assert.Equal("Destination One", island.Description);
-                },
-                island =>
-                {
-                    Assert.Equal(2u, island.IslandId);
-                    Assert.Equal("Destination Two Island 2", island.Title);
-                    Assert.Equal("Destination Two", island.Description);
+                    Assert.Equal("Destination One\nDestination Two", island.Description);
                 }
             );
 
@@ -731,6 +725,93 @@ public class AreaMapHandlersTests
             Assert.True(session.PendingAreaMapSelection.AwaitingIslandBootstrapAck);
             Assert.True(session.PendingAreaMapSelection.SelectorOpened);
             Assert.Equal(10990100u, session.MapId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task MapEnterHandler_ShuffleSelector_UsesFranchiseIslandIdNotAreaDigit()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 7301, "shuffle-selector-user", "Shuffle Selector", 10030100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Maps.AddRange(
+                    new Map
+                    {
+                        MapId = 10030100,
+                        Name = "Verbena Academy",
+                        SpawnX = 10800f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -1200f,
+                        SpawnRotation = 0,
+                    },
+                    new Map
+                    {
+                        MapId = 10030200,
+                        Name = "Shuffle Shopping Street",
+                        SpawnX = 0f,
+                        SpawnY = 0f,
+                        SpawnZ = 0f,
+                        SpawnRotation = 0,
+                    },
+                    new Map
+                    {
+                        MapId = 20000000,
+                        Name = "My Room",
+                        SpawnX = 0f,
+                        SpawnY = 0f,
+                        SpawnZ = 0f,
+                        SpawnRotation = 0,
+                    }
+                );
+                db.MapLinks.Add(
+                    new MapLink
+                    {
+                        SourceMapId = 10030100,
+                        ChannelId = 1,
+                        PositionX = 11220f,
+                        PositionY = 0f,
+                        PositionZ = -10260f,
+                        Yaw = 0,
+                        Length = 100f,
+                        Depth = 10f,
+                        DestinationMapIds = "10030100,10030200,20000000",
+                        Behavior = MapLinkBehavior.ForceSelection,
+                        SortOrder = 10,
+                        IsEnabled = true,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var session = CreateSession(user, 10030100, 1, x: 11220f, y: 0f, z: -10260f, rotation: 0);
+            session.HasMovedSinceMapLoad = true;
+            state.RegisterClient(ServerType.Area, session);
+
+            await using var runDb = new MainContext(options);
+            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
+
+            await handler.HandleAsync(BuildUIntPairPayload(10030100, 1), session, TestContext.Current.CancellationToken);
+
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.SelectInitIslandStart);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventAreaMapSelectExec);
+
+            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(session.Sent.First(packet => packet.Type == PacketType.SelectInitIslandStart).Payload);
+            Assert.Collection(islandStart.Islands, island => Assert.Equal(3u, island.IslandId));
+
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(session.Sent.First(packet => packet.Type == PacketType.EventAreaMapSelectExec).Payload);
+            Assert.Equal(3u, selector.IslandId);
+            Assert.Equal(3u, session.PendingAreaMapSelection!.IslandId);
         }
         finally
         {
@@ -1381,13 +1462,7 @@ public class AreaMapHandlersTests
                 {
                     Assert.Equal(1u, island.IslandId);
                     Assert.Equal("Destination One Island 1", island.Title);
-                    Assert.Equal("Destination One", island.Description);
-                },
-                island =>
-                {
-                    Assert.Equal(2u, island.IslandId);
-                    Assert.Equal("Destination Two Island 2", island.Title);
-                    Assert.Equal("Destination Two", island.Description);
+                    Assert.Equal("Destination One\nDestination Two", island.Description);
                 }
             );
 

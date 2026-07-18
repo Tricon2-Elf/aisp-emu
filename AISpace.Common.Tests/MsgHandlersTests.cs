@@ -20,7 +20,7 @@ namespace AISpace.Common.Tests;
 public class MsgHandlersTests
 {
     [Fact]
-    public async Task GetChannelListMapHandler_ReturnsExactMapChannels_WhenPresent()
+    public async Task GetChannelListMapHandler_ReturnsCurrentChannel_RegardlessOfRequestedMap()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
 
@@ -53,121 +53,10 @@ public class MsgHandlersTests
 
             await using var runDb = new MainContext(options);
             var handler = CreateHandler(runDb);
-            var session = new CapturingPlayerSession();
-
-            await handler.HandleAsync(BuildUIntPayload(10990200), session, TestContext.Current.CancellationToken);
-
-            Assert.Single(session.Sent);
-            Assert.Equal(PacketType.GetChannelListMapResponse, session.Sent[0].Type);
-
-            var reader = new PacketReader(session.Sent[0].Payload);
-            Assert.Equal(0u, reader.ReadUInt());
-            Assert.Equal(1u, reader.ReadUInt());
-            Assert.Equal(2u, reader.ReadUInt());
-            Assert.Equal(4f, reader.ReadFloat());
-            Assert.Equal(1000u, reader.ReadUInt());
-            Assert.Equal((ushort)50055, reader.ReadUShort());
-            Assert.Equal("localhost", reader.ReadFixedString(65, "ASCII"));
-        }
-        finally
-        {
-            await connection.DisposeAsync();
-        }
-    }
-
-    [Fact]
-    public async Task GetChannelListMapHandler_FallsBackToMapGroupChannels_WhenExactMapMissing()
-    {
-        var (connection, options) = TestDb.CreateInMemoryMainContext();
-
-        try
-        {
-            await using (var db = new MainContext(options))
-            {
-                db.Channels.AddRange(
-                    new GameChannel
-                    {
-                        ChannelNum = 1,
-                        IP = "localhost",
-                        Port = 50054,
-                        CurrentUsers = 0,
-                        MaxUsers = 1000,
-                        MapId = 10990100,
-                    },
-                    new GameChannel
-                    {
-                        ChannelNum = 2,
-                        IP = "localhost",
-                        Port = 50055,
-                        CurrentUsers = 0,
-                        MaxUsers = 1000,
-                        MapId = 10010100,
-                    }
-                );
-                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-            }
-
-            await using var runDb = new MainContext(options);
-            var handler = CreateHandler(runDb);
-            var session = new CapturingPlayerSession();
-
-            await handler.HandleAsync(BuildUIntPayload(10990200), session, TestContext.Current.CancellationToken);
-
-            Assert.Single(session.Sent);
-            Assert.Equal(PacketType.GetChannelListMapResponse, session.Sent[0].Type);
-
-            var reader = new PacketReader(session.Sent[0].Payload);
-            Assert.Equal(0u, reader.ReadUInt());
-            Assert.Equal(1u, reader.ReadUInt());
-            Assert.Equal(1u, reader.ReadUInt());
-            Assert.Equal(0f, reader.ReadFloat());
-            Assert.Equal(1000u, reader.ReadUInt());
-            Assert.Equal((ushort)50054, reader.ReadUShort());
-            Assert.Equal("localhost", reader.ReadFixedString(65, "ASCII"));
-        }
-        finally
-        {
-            await connection.DisposeAsync();
-        }
-    }
-
-    [Fact]
-    public async Task GetChannelListMapHandler_FallbackPrefersCurrentSessionChannel_WhenMultipleGroupMatchesExist()
-    {
-        var (connection, options) = TestDb.CreateInMemoryMainContext();
-
-        try
-        {
-            await using (var db = new MainContext(options))
-            {
-                db.Channels.AddRange(
-                    new GameChannel
-                    {
-                        ChannelNum = 1,
-                        IP = "localhost",
-                        Port = 50054,
-                        CurrentUsers = 0,
-                        MaxUsers = 1000,
-                        MapId = 10990100,
-                    },
-                    new GameChannel
-                    {
-                        ChannelNum = 2,
-                        IP = "localhost",
-                        Port = 50055,
-                        CurrentUsers = 0,
-                        MaxUsers = 1000,
-                        MapId = 10990110,
-                    }
-                );
-                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-            }
-
-            await using var runDb = new MainContext(options);
-            var handler = CreateHandler(runDb);
             var session = new CapturingPlayerSession { ChannelId = 1 };
 
-            await handler.HandleAsync(BuildUIntPayload(10990200), session, TestContext.Current.CancellationToken);
+            // Request My Room (no channel rows) — still get the player's current channel.
+            await handler.HandleAsync(BuildUIntPayload(20000000), session, TestContext.Current.CancellationToken);
 
             Assert.Single(session.Sent);
             Assert.Equal(PacketType.GetChannelListMapResponse, session.Sent[0].Type);
@@ -176,10 +65,52 @@ public class MsgHandlersTests
             Assert.Equal(0u, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
-            Assert.Equal(0f, reader.ReadFloat());
+            Assert.Equal(3f, reader.ReadFloat());
             Assert.Equal(1000u, reader.ReadUInt());
             Assert.Equal((ushort)50054, reader.ReadUShort());
             Assert.Equal("localhost", reader.ReadFixedString(65, "ASCII"));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GetChannelListMapHandler_ReturnsEmpty_WhenSessionHasNoChannel()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        CurrentUsers = 0,
+                        MaxUsers = 1000,
+                        MapId = 10990100,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var handler = CreateHandler(runDb);
+            var session = new CapturingPlayerSession { ChannelId = 0 };
+
+            await handler.HandleAsync(BuildUIntPayload(10990100), session, TestContext.Current.CancellationToken);
+
+            Assert.Single(session.Sent);
+            Assert.Equal(PacketType.GetChannelListMapResponse, session.Sent[0].Type);
+
+            var reader = new PacketReader(session.Sent[0].Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
         }
         finally
         {
