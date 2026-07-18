@@ -23,9 +23,6 @@ public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandle
         var npcs = await npcRepository.GetActiveByMapAsync(session.MapId, session.ChannelId, ct);
         foreach (var npc in npcs)
             await SendNpcAsync(npc, session, ct);
-
-        foreach (var actor in MyRoomSystemActors.GetForMap(session.MapId))
-            await SendNpcAsync(actor, session, ct);
     }
 
     private static Task SendNpcAsync(Npc npc, IPlayerSession session, CancellationToken ct)

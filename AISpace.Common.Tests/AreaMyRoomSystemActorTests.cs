@@ -12,17 +12,37 @@ namespace AISpace.Common.Tests;
 
 public class AreaMyRoomSystemActorTests
 {
+    private const uint DoorModelId = 8_000_990;
+    private const uint WardrobeModelId = 8_000_030;
+
+    private static readonly (uint MapId, uint DoorObjectId, float DoorX, float DoorZ, uint WardrobeObjectId, float WardrobeX, float WardrobeZ)[] RoomActorDefs =
+    [
+        (MyRoomInfo.SixTatamiMapId, 0x5FFF_FF01, 80f, -258f, 0x5FFF_FF02, -73f, -197f),
+        (MyRoomInfo.EightTatamiMapId, 0x5FFF_FF11, 130f, -258f, 0x5FFF_FF12, -123f, -197f),
+        (MyRoomInfo.TenTatamiMapId, 0x5FFF_FF21, 130f, -308f, 0x5FFF_FF22, -123f, -247f),
+        (MyRoomInfo.TwelveTatamiMapId, 0x5FFF_FF31, 180f, -308f, 0x5FFF_FF32, -173f, -247f),
+    ];
+
+    public static TheoryData<uint, uint, float, float, uint, float, float> RoomActors
+    {
+        get
+        {
+            var data = new TheoryData<uint, uint, float, float, uint, float, float>();
+            foreach (var row in RoomActorDefs)
+                data.Add(row.MapId, row.DoorObjectId, row.DoorX, row.DoorZ, row.WardrobeObjectId, row.WardrobeX, row.WardrobeZ);
+            return data;
+        }
+    }
+
     [Theory]
-    [InlineData(MyRoomInfo.SixTatamiMapId, 73f, -170f)]
-    [InlineData(MyRoomInfo.EightTatamiMapId, 123f, -170f)]
-    [InlineData(MyRoomInfo.TenTatamiMapId, 123f, -220f)]
-    [InlineData(MyRoomInfo.TwelveTatamiMapId, 173f, -220f)]
-    public async Task NpcGetData_SendsNativeDoorAndWardrobeForEveryRoomSize(uint mapId, float entranceX, float entranceZ)
+    [MemberData(nameof(RoomActors))]
+    public async Task NpcGetData_SendsNativeDoorAndWardrobeForEveryRoomSize(uint mapId, uint doorObjectId, float doorX, float doorZ, uint wardrobeObjectId, float wardrobeX, float wardrobeZ)
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
             await using var db = new MainContext(options);
+            await SeedMyRoomActorsAsync(db);
             var handler = new AreaNpcGetDataHandler(new NpcRepository(db));
             var session = new CapturingPlayerSession { MapId = mapId };
 
@@ -32,20 +52,20 @@ public class AreaMyRoomSystemActorTests
             var actors = session.Sent.Where(packet => packet.Type == PacketType.NpcNotifyData).Select(packet => ReadActor(packet.Payload)).ToDictionary(actor => actor.ObjectId);
             Assert.Equal(2, actors.Count);
 
-            var door = actors[MyRoomSystemActors.DoorObjectId];
-            Assert.Equal(MyRoomSystemActors.DoorObjectId, door.SlotId);
-            Assert.Equal(MyRoomSystemActors.DoorModelId, door.ModelId);
-            Assert.Equal(entranceX, door.X);
+            var door = actors[doorObjectId];
+            Assert.Equal(doorObjectId, door.SlotId);
+            Assert.Equal(DoorModelId, door.ModelId);
+            Assert.Equal(doorX, door.X);
             Assert.Equal(0f, door.Y);
-            Assert.Equal(entranceZ, door.Z);
+            Assert.Equal(doorZ, door.Z);
             Assert.Equal(0, door.Rotation);
 
-            var wardrobe = actors[MyRoomSystemActors.WardrobeObjectId];
-            Assert.Equal(MyRoomSystemActors.WardrobeObjectId, wardrobe.SlotId);
-            Assert.Equal(MyRoomSystemActors.WardrobeModelId, wardrobe.ModelId);
-            Assert.Equal(-entranceX, wardrobe.X);
+            var wardrobe = actors[wardrobeObjectId];
+            Assert.Equal(wardrobeObjectId, wardrobe.SlotId);
+            Assert.Equal(WardrobeModelId, wardrobe.ModelId);
+            Assert.Equal(wardrobeX, wardrobe.X);
             Assert.Equal(0f, wardrobe.Y);
-            Assert.Equal(entranceZ, wardrobe.Z);
+            Assert.Equal(wardrobeZ, wardrobe.Z);
             Assert.Equal(0, wardrobe.Rotation);
         }
         finally
@@ -61,6 +81,7 @@ public class AreaMyRoomSystemActorTests
         try
         {
             await using var db = new MainContext(options);
+            await SeedMyRoomActorsAsync(db);
             var dispatcher = CreateDispatcher(db);
             var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(db), new ShopRepository(db), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
             var selectHandler = new AreaEventSelectExecRHandler(dispatcher, NullLogger<AreaEventSelectExecRHandler>.Instance);
@@ -71,7 +92,7 @@ public class AreaMyRoomSystemActorTests
                 User = new User { AiPoints = 12_345 },
             };
 
-            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(MyRoomSystemActors.WardrobeObjectId), session, TestContext.Current.CancellationToken);
+            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF02), session, TestContext.Current.CancellationToken);
 
             Assert.Equal(ServerEvents.Keys.MyRoomWardrobe, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
@@ -109,6 +130,38 @@ public class AreaMyRoomSystemActorTests
         Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type);
         Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.MyRoomNotifyFurniture);
     }
+
+    private static async Task SeedMyRoomActorsAsync(MainContext db)
+    {
+        foreach (var row in RoomActorDefs)
+        {
+            db.Npcs.Add(CreateActor(row.MapId, row.DoorObjectId, DoorModelId, row.DoorX, row.DoorZ));
+            db.Npcs.Add(CreateActor(row.MapId, row.WardrobeObjectId, WardrobeModelId, row.WardrobeX, row.WardrobeZ, ServerEvents.Keys.MyRoomWardrobe));
+        }
+
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static Npc CreateActor(uint mapId, uint objectId, uint modelId, float x, float z, string? eventKey = null) =>
+        new()
+        {
+            MapId = mapId,
+            ChannelId = -1,
+            DayPhase = -1,
+            DateStartUtc = DateTime.UnixEpoch,
+            DateEndUtc = DateTime.MaxValue,
+            NpcObjectId = objectId,
+            ModelId = modelId,
+            Name = string.Empty,
+            X = x,
+            Y = 0f,
+            Z = z,
+            Rotation = 0,
+            InteractionType = NpcInteractionType.Decorative,
+            EventKind = eventKey is null ? NpcEventKind.None : NpcEventKind.ServerScript,
+            EventKey = eventKey,
+            IsEnabled = true,
+        };
 
     private static ServerScriptDispatcher CreateDispatcher(MainContext db)
     {
