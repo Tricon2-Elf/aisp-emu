@@ -62,8 +62,6 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         {
             if (npcRow.DayPhase is < -1 or > 4)
                 throw new InvalidDataException($"NPC {npcRow.NpcObjectId} dayPhase must be -1 or 0..4.");
-            if (string.IsNullOrWhiteSpace(npcRow.Name))
-                throw new InvalidDataException($"NPC {npcRow.NpcObjectId} name is required.");
 
             var dateStartUtc = ParseUtc(npcRow.DateStartUtc, DateTime.UnixEpoch, "dateStartUtc");
             var dateEndUtc = ParseUtc(npcRow.DateEndUtc, DateTime.MaxValue, "dateEndUtc");
