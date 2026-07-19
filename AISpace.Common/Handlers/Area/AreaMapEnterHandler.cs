@@ -1,12 +1,13 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
+using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaMapEnterHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<AreaMapEnterHandler> logger, ServerScriptDispatcher? serverScriptDispatcher = null) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapEnterRequest;
     public PacketType ResponseType => PacketType.MapEnterResponse;
@@ -28,6 +29,7 @@ public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTran
 
             logger.LogInformation("Acknowledging post-NotifyChangeMap MapEnterRequest for user {UserId} on map {MapId}, channel {ChannelId}", session.User?.Id ?? session.UserId, request.MapID, request.ChannelId);
             await session.SendAsync(ResponseType, new AreaMapEnterResponse(0).ToBytes(), ct);
+            await TryNotifyServerScriptsAsync(payload, session, ct);
             return;
         }
 
@@ -45,6 +47,7 @@ public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTran
             {
                 logger.LogInformation("Treating MapEnterRequest for current map {MapId} and channel {ChannelId} as a post-load acknowledgement for user {UserId}; no movement has been observed on this map yet", request.MapID, request.ChannelId, session.User?.Id ?? session.UserId);
                 await session.SendAsync(ResponseType, new AreaMapEnterResponse(0).ToBytes(), ct);
+                await TryNotifyServerScriptsAsync(payload, session, ct);
                 return;
             }
 
@@ -53,6 +56,7 @@ public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTran
 
             logger.LogInformation("No direct MapLink matched current-map MapEnterRequest for user {UserId} on map {MapId}, channel {ChannelId}, position ({X}, {Y}, {Z}); treating as no-op acknowledgement", session.User?.Id ?? session.UserId, request.MapID, request.ChannelId, session.X, session.Y, session.Z);
             await session.SendAsync(ResponseType, new AreaMapEnterResponse(0).ToBytes(), ct);
+            await TryNotifyServerScriptsAsync(payload, session, ct);
             return;
         }
 
@@ -65,5 +69,12 @@ public class AreaMapEnterHandler(IMapRepository mapRepository, DirectMapLinkTran
         }
 
         await directMapLinkTransitionService.CompleteMapTransitionAsync(session, character, request.MapID, request.ChannelId, map, notifyChangeMap: null, sendMapEnterResponse: true, ct);
+        await TryNotifyServerScriptsAsync(payload, session, ct);
+    }
+
+    private async Task TryNotifyServerScriptsAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct)
+    {
+        if (serverScriptDispatcher is not null)
+            await serverScriptDispatcher.TryHandlePacketAsync(RequestType, payload, session, ct);
     }
 }

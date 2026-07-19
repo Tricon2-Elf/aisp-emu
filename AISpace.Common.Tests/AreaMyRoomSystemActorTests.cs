@@ -1,3 +1,4 @@
+using AISpace.Common.Config;
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
@@ -8,6 +9,7 @@ using AISpace.Common.Tests.Support;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Tests;
 
@@ -76,27 +78,91 @@ public class AreaMyRoomSystemActorTests
     }
 
     [Fact]
-    public async Task DoorAccess_StartsSysEvent002ClientScript()
+    public async Task DoorAccess_ChainsScriptsTeleportsToUdxThenPlaysBat0101021()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
             await using var db = new MainContext(options);
             await SeedMyRoomActorsAsync(db);
-            var dispatcher = CreateDispatcher(db);
+            await SeedUdxDestinationAsync(db);
+
+            var user = new User { Username = "myroom-door-user" };
+            var character = new Character
+            {
+                Name = "Door Tester",
+                User = user,
+                ModelId = 1,
+                Birthdate = DateTime.UnixEpoch,
+                CurrentMapId = MyRoomInfo.BaseMapId,
+            };
+            db.Users.Add(user);
+            db.Characters.Add(character);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var eventRepository = new CharacterEventRepository(db);
+            var state = new SharedState();
+            var dispatcher = CreateDispatcher(db, state);
             var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(db), new ShopRepository(db), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
-            var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
+            var scriptPlayHandler = new AreaEventScriptPlayHandler(NullLogger<AreaEventScriptPlayHandler>.Instance, dispatcher);
+            var fadeInHandler = new AreaEventFadeInHandler(eventRepository, NullLogger<AreaEventFadeInHandler>.Instance, dispatcher);
+            var mapEnterHandler = new AreaMapEnterHandler(new MapRepository(db), CreateDirectMapLinkTransitionService(db, state), NullLogger<AreaMapEnterHandler>.Instance, dispatcher);
+            var mapDataEnterEndHandler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance, dispatcher);
+            var session = new CapturingPlayerSession
+            {
+                MapId = MyRoomInfo.BaseMapId,
+                ChannelId = 1,
+                CharacterId = (uint)character.Id,
+                User = user,
+                NeedsPostLoadSelfAvatarNotify = true,
+            };
+            session.User!.Characters.Add(character);
+            session.Character = character;
 
             await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
 
-            Assert.Equal(ScriptedEvents.Keys.SysEvent002, session.ActiveEventKey);
-            Assert.Equal(NpcEventKind.ClientScript, session.ActiveEventKind);
-            Assert.Equal(EventCompletionPolicy.Replayable, session.ActiveEventCompletionPolicy);
-            Assert.Equal(0u, ReadResult(session.Sent.Single(packet => packet.Type == PacketType.EventAccessNpcResponse).Payload));
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventStartNotify);
-            var scriptPlay = Assert.Single(session.Sent, packet => packet.Type == PacketType.EventScriptPlayNotify);
-            Assert.Equal(new EventScriptPlayNotify(ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.SysEvent002)).ToBytes(), scriptPlay.Payload);
-            Assert.Equal("./script/sys_event/002.csv", ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.SysEvent002));
+            Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
+            Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
+            Assert.Equal(EventCompletionPolicy.Once, session.ActiveEventCompletionPolicy);
+            Assert.Equal("./script/sys_event/002.csv", ReadScriptLabel(Assert.Single(session.Sent, packet => packet.Type == PacketType.EventScriptPlayNotify).Payload));
+
+            await CompleteClientScriptSegmentAsync(scriptPlayHandler, fadeInHandler, session);
+            Assert.Equal("./script/tps_event/bat_01_01_01_1.csv", ReadLastScriptLabel(session));
+
+            await CompleteClientScriptSegmentAsync(scriptPlayHandler, fadeInHandler, session);
+            Assert.Equal("./script/tps_event/bat_01_01_01_2.csv", ReadLastScriptLabel(session));
+
+            await CompleteClientScriptSegmentAsync(scriptPlayHandler, fadeInHandler, session);
+
+            Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
+            Assert.Equal(MyRoomDoorServerScript.AkihabaraUdxMapId, session.MapId);
+            Assert.True(session.IsMapTransitionPending);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
+            Assert.Equal(3, session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify));
+
+            // The real client sends MapDataEnterEnd before MapEnter. Loading the assets alone is not enough:
+            // EventScriptPlayNotify would be ignored while the client is still in its map-entry state machine.
+            await mapDataEnterEndHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            Assert.False(session.IsMapTransitionPending);
+            Assert.Equal(3, session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify));
+
+            await mapEnterHandler.HandleAsync(BuildMapEnterPayload(MyRoomDoorServerScript.AkihabaraUdxMapId, (uint)session.ChannelId), session, TestContext.Current.CancellationToken);
+
+            Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
+            Assert.Equal("./script/tps_event/bat_01_01_02_1.csv", ReadLastScriptLabel(session));
+            Assert.Equal(4, session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify));
+            Assert.Equal(2, session.Sent.Count(packet => packet.Type == PacketType.EventStartNotify));
+            var mapEnterResponseIndex = session.Sent.FindLastIndex(packet => packet.Type == PacketType.MapEnterResponse);
+            var restartedEventIndex = session.Sent.FindLastIndex(packet => packet.Type == PacketType.EventStartNotify);
+            var finalScriptIndex = session.Sent.FindLastIndex(packet => packet.Type == PacketType.EventScriptPlayNotify);
+            Assert.True(mapEnterResponseIndex < restartedEventIndex);
+            Assert.True(restartedEventIndex < finalScriptIndex);
+
+            await CompleteClientScriptSegmentAsync(scriptPlayHandler, fadeInHandler, session);
+
+            Assert.Null(session.ActiveEventKey);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
+            Assert.True(await eventRepository.HasCompletedAsync(character.Id, ServerEvents.Keys.MyRoomDoor, TestContext.Current.CancellationToken));
         }
         finally
         {
@@ -165,10 +231,35 @@ public class AreaMyRoomSystemActorTests
     {
         foreach (var row in RoomActorDefs)
         {
-            db.Npcs.Add(CreateActor(row.MapId, row.DoorObjectId, DoorModelId, row.DoorX, row.DoorZ, ScriptedEvents.Keys.SysEvent002, NpcEventKind.ClientScript));
+            db.Npcs.Add(CreateActor(row.MapId, row.DoorObjectId, DoorModelId, row.DoorX, row.DoorZ, ServerEvents.Keys.MyRoomDoor, NpcEventKind.ServerScript));
             db.Npcs.Add(CreateActor(row.MapId, row.WardrobeObjectId, WardrobeModelId, row.WardrobeX, row.WardrobeZ, ServerEvents.Keys.MyRoomWardrobe, NpcEventKind.ServerScript));
         }
 
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static async Task SeedUdxDestinationAsync(MainContext db)
+    {
+        db.Maps.Add(
+            new Map
+            {
+                MapId = MyRoomDoorServerScript.AkihabaraUdxMapId,
+                Name = "TPS(UDX)",
+                SpawnX = -8696,
+                SpawnY = 0.1f,
+                SpawnZ = -15219,
+                SpawnRotation = 90,
+            }
+        );
+        db.Channels.Add(
+            new GameChannel
+            {
+                ChannelNum = 1,
+                IP = "localhost",
+                Port = 50054,
+                MapId = 10990100,
+            }
+        );
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
@@ -193,11 +284,60 @@ public class AreaMyRoomSystemActorTests
             IsEnabled = true,
         };
 
-    private static ServerScriptDispatcher CreateDispatcher(MainContext db)
+    private static ServerScriptDispatcher CreateDispatcher(MainContext db, SharedState? state = null)
     {
+        state ??= new SharedState();
         var serverScriptSession = new ServerScriptSession(new CharacterEventRepository(db), NullLogger<ServerScriptSession>.Instance);
+        var doorScript = new MyRoomDoorServerScript(new ClientScriptSegmentRunner(), serverScriptSession, CreateDirectMapLinkTransitionService(db, state), NullLogger<MyRoomDoorServerScript>.Instance);
         var wardrobeScript = new MyRoomWardrobeServerScript(serverScriptSession);
-        return new ServerScriptDispatcher([wardrobeScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        return new ServerScriptDispatcher([doorScript, wardrobeScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+    }
+
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state) =>
+        new(
+            new MapRepository(db),
+            new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MapLinkRepository(db),
+            new ChannelRepository(db),
+            Options.Create(
+                new ServerOptions
+                {
+                    NetworkOptions = new NetworkOptions(),
+                    DbOptions = new DbOptions(),
+                    IPOverride = "localhost",
+                }
+            ),
+            state,
+            NullLogger<DirectMapLinkTransitionService>.Instance
+        );
+
+    private static async Task CompleteClientScriptSegmentAsync(AreaEventScriptPlayHandler scriptPlayHandler, AreaEventFadeInHandler fadeInHandler, CapturingPlayerSession session)
+    {
+        await scriptPlayHandler.HandleAsync(BuildUIntPayload(0), session, TestContext.Current.CancellationToken);
+        await fadeInHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+    }
+
+    private static byte[] BuildUIntPayload(uint value)
+    {
+        var writer = new PacketWriter();
+        writer.Write(value);
+        return writer.ToBytes();
+    }
+
+    private static byte[] BuildMapEnterPayload(uint mapId, uint channelId)
+    {
+        var writer = new PacketWriter();
+        writer.Write(mapId);
+        writer.Write(channelId);
+        return writer.ToBytes();
+    }
+
+    private static string ReadScriptLabel(byte[] payload) => new PacketReader(payload).ReadString("utf-8");
+
+    private static string ReadLastScriptLabel(CapturingPlayerSession session)
+    {
+        var scriptPlay = session.Sent.Last(packet => packet.Type == PacketType.EventScriptPlayNotify);
+        return ReadScriptLabel(scriptPlay.Payload);
     }
 
     private static byte[] BuildEventAccessNpcPayload(uint objectId)
