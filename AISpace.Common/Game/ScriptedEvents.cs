@@ -11,6 +11,7 @@ public static class ScriptedEvents
         public const string IntroductionMyRoomDaCapo = "introdution_myroom_dc";
         public const string IntroductionMyRoomClannad = "introdution_myroom_cl";
         public const string IntroductionMyRoomShuffle = "introdution_myroom_sh";
+        public const string SysEvent002 = "sys_event_002";
     }
 
     private static readonly Dictionary<string, string> ScriptLabels = new(StringComparer.OrdinalIgnoreCase)
@@ -22,6 +23,7 @@ public static class ScriptedEvents
         [Keys.IntroductionMyRoomDaCapo] = "./script/event/introdution_myroom_dc.csv",
         [Keys.IntroductionMyRoomClannad] = "./script/event/introdution_myroom_cl.csv",
         [Keys.IntroductionMyRoomShuffle] = "./script/event/introdution_myroom_sh.csv",
+        [Keys.SysEvent002] = "./script/sys_event/002.csv",
     };
 
     public static string GetScriptLabel(string eventKey) => ScriptLabels.TryGetValue(eventKey, out var label) ? label : $"./script/event/{eventKey}.csv";

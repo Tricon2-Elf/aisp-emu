@@ -6,6 +6,7 @@ using AISpace.Common.Game.ServerScripts;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
+using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AISpace.Common.Tests;
@@ -75,6 +76,35 @@ public class AreaMyRoomSystemActorTests
     }
 
     [Fact]
+    public async Task DoorAccess_StartsSysEvent002ClientScript()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            await SeedMyRoomActorsAsync(db);
+            var dispatcher = CreateDispatcher(db);
+            var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(db), new ShopRepository(db), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
+
+            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
+
+            Assert.Equal(ScriptedEvents.Keys.SysEvent002, session.ActiveEventKey);
+            Assert.Equal(NpcEventKind.ClientScript, session.ActiveEventKind);
+            Assert.Equal(EventCompletionPolicy.Replayable, session.ActiveEventCompletionPolicy);
+            Assert.Equal(0u, ReadResult(session.Sent.Single(packet => packet.Type == PacketType.EventAccessNpcResponse).Payload));
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventStartNotify);
+            var scriptPlay = Assert.Single(session.Sent, packet => packet.Type == PacketType.EventScriptPlayNotify);
+            Assert.Equal(new EventScriptPlayNotify(ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.SysEvent002)).ToBytes(), scriptPlay.Payload);
+            Assert.Equal("./script/sys_event/002.csv", ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.SysEvent002));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task WardrobeSelection_OpensStorageWithCurrentAiPointBalance()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
@@ -135,14 +165,14 @@ public class AreaMyRoomSystemActorTests
     {
         foreach (var row in RoomActorDefs)
         {
-            db.Npcs.Add(CreateActor(row.MapId, row.DoorObjectId, DoorModelId, row.DoorX, row.DoorZ));
-            db.Npcs.Add(CreateActor(row.MapId, row.WardrobeObjectId, WardrobeModelId, row.WardrobeX, row.WardrobeZ, ServerEvents.Keys.MyRoomWardrobe));
+            db.Npcs.Add(CreateActor(row.MapId, row.DoorObjectId, DoorModelId, row.DoorX, row.DoorZ, ScriptedEvents.Keys.SysEvent002, NpcEventKind.ClientScript));
+            db.Npcs.Add(CreateActor(row.MapId, row.WardrobeObjectId, WardrobeModelId, row.WardrobeX, row.WardrobeZ, ServerEvents.Keys.MyRoomWardrobe, NpcEventKind.ServerScript));
         }
 
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private static Npc CreateActor(uint mapId, uint objectId, uint modelId, float x, float z, string? eventKey = null) =>
+    private static Npc CreateActor(uint mapId, uint objectId, uint modelId, float x, float z, string? eventKey = null, NpcEventKind eventKind = NpcEventKind.None) =>
         new()
         {
             MapId = mapId,
@@ -158,7 +188,7 @@ public class AreaMyRoomSystemActorTests
             Z = z,
             Rotation = 0,
             InteractionType = NpcInteractionType.Decorative,
-            EventKind = eventKey is null ? NpcEventKind.None : NpcEventKind.ServerScript,
+            EventKind = eventKey is null ? NpcEventKind.None : eventKind,
             EventKey = eventKey,
             IsEnabled = true,
         };

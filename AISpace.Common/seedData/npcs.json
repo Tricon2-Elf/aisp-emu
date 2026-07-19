@@ -266,7 +266,8 @@
       "z": -258.0,
       "rotation": 0,
       "interactionType": "Decorative",
-      "eventKind": "None",
+      "eventKind": "ClientScript",
+      "eventKey": "sys_event_002",
       "isEnabled": true,
       "sortOrder": 200
     },
@@ -303,7 +304,8 @@
       "z": -258.0,
       "rotation": 0,
       "interactionType": "Decorative",
-      "eventKind": "None",
+      "eventKind": "ClientScript",
+      "eventKey": "sys_event_002",
       "isEnabled": true,
       "sortOrder": 200
     },
@@ -340,7 +342,8 @@
       "z": -308.0,
       "rotation": 0,
       "interactionType": "Decorative",
-      "eventKind": "None",
+      "eventKind": "ClientScript",
+      "eventKey": "sys_event_002",
       "isEnabled": true,
       "sortOrder": 200
     },
@@ -377,7 +380,8 @@
       "z": -308.0,
       "rotation": 0,
       "interactionType": "Decorative",
-      "eventKind": "None",
+      "eventKind": "ClientScript",
+      "eventKey": "sys_event_002",
       "isEnabled": true,
       "sortOrder": 200
     },
