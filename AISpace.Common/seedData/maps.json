@@ -291,10 +291,10 @@
     "mapId": 40990200,
     "island": "",
     "name": "TPS(UDX)",
-    "spawnX": 0,
+    "spawnX": -8696,
     "spawnY": 0.1,
-    "spawnZ": 0,
-    "spawnRotation": 0
+    "spawnZ": -15219,
+    "spawnRotation": 90
   },
   {
     "mapId": 40010100,
