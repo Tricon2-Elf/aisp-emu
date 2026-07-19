@@ -4,7 +4,7 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaRoboGetListHandler : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaRoboGetListHandler(RoboInventoryStore roboStore) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.RoboGetListRequest;
 
@@ -14,7 +14,7 @@ public class AreaRoboGetListHandler : IPacketHandler, IRequiresAuthenticatedSess
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
-        var response = new RoboGetListResponse();
-        await session.SendAsync(ResponseType, response.ToBytes(), ct);
+        var robos = roboStore.GetAll(session.CharacterId);
+        await session.SendAsync(ResponseType, new RoboGetListResponse(robos).ToBytes(), ct);
     }
 }

@@ -65,6 +65,7 @@ internal class Program
         builder.Services.Scan(scan => scan.FromAssemblyOf<IServerScript>().AddClasses(classes => classes.AssignableTo<IServerScript>()).AsImplementedInterfaces().AsSelf().WithScopedLifetime());
         builder.Services.AddScoped<ServerScriptDispatcher>();
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
+        builder.Services.AddSingleton<RoboInventoryStore>();
 
         builder.Services.AddSingleton<SharedState>(sp =>
         {
