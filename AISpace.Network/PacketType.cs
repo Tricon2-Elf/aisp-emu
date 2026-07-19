@@ -557,6 +557,30 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_robo_list_r", ImplementationState.Implemented)]
     RoboGetListResponse = 0xF606,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_robo_create_info", ImplementationState.Implemented)]
+    GetRoboCreateInfoRequest = 0x252C,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_robo_create_info_r", ImplementationState.Implemented)]
+    GetRoboCreateInfoResponse = 0xAE5B,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_create", ImplementationState.Implemented)]
+    RoboCreateRequest = 0x39EF,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_create_r", ImplementationState.Implemented)]
+    RoboCreateResponse = 0xB4AD,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_call", ImplementationState.Implemented)]
+    RoboCallRequest = 0xFA6E,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_call_r", ImplementationState.Implemented)]
+    RoboCallResponse = 0x70CA,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_aiscript_start_r", ImplementationState.Implemented)]
+    RoboAiscriptStartResponse = 0xF3BC,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_throwout_others_r", ImplementationState.NotImplemented)]
+    MyRoomThrowoutOthersResponse = 0xB05A,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_obtained_skill_list", ImplementationState.NotImplemented)]
     RoboGetObtainedSkillListRequest = 0xDCBF,
 
@@ -986,14 +1010,14 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_upload_list_r", ImplementationState.NotImplemented)]
     GetAdventureUploadListResponse = 0x49B5,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_ai_palette_list_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_ai_palette_list_r", ImplementationState.Implemented)]
     GetAiPaletteListResponse = 0x87C7,
 
     [PacketMetadata(PacketServerType.Msg, PacketDirection.ServerToClient, "recv_get_channellist_map_r", ImplementationState.NotImplemented)]
     GetChannelListMapResponse = 0x5203,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_cosplay_list_r", ImplementationState.NotImplemented)]
-    GetCosplayListResponse = 0x1619,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_cosplay_list_r", ImplementationState.Implemented)]
+    GetCosplayListResponse = 0x13CF,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_free_friend_link_tag_r", ImplementationState.NotImplemented)]
     GetFreeFriendLinkTagResponse = 0x9865,
@@ -1012,9 +1036,6 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Msg, PacketDirection.ServerToClient, "recv_get_placard_comment_log_r", ImplementationState.NotImplemented)]
     GetPlacardCommentLogResponse = 0x511B,
-
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_robo_create_info_r", ImplementationState.NotImplemented)]
-    GetRoboCreateInfoResponse = 0xB05A,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_robo_job_list_r", ImplementationState.NotImplemented)]
     GetRoboJobListResponse = 0x8DE2,
@@ -1415,8 +1436,8 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_update_robo_equip", ImplementationState.NotImplemented)]
     NotifyUpdateRoboEquip = 0x372D,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_update_robo_state", ImplementationState.NotImplemented)]
-    NotifyUpdateRoboState = 0x2B5E,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_update_robo_state", ImplementationState.Implemented)]
+    NotifyUpdateRoboState = 0x2666,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_update_status_point", ImplementationState.NotImplemented)]
     NotifyUpdateStatusPoint = 0xE943,
@@ -1486,12 +1507,6 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_attach_request", ImplementationState.NotImplemented)]
     RoboAttachRequestNotify = 0x51CE,
-
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_call_r", ImplementationState.NotImplemented)]
-    RoboCallResponse = 0x70CA,
-
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_create_r", ImplementationState.NotImplemented)]
-    RoboCreateResponse = 0xB4AD,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_destroy_r", ImplementationState.NotImplemented)]
     RoboDestroyResponse = 0x1EAF,
@@ -1706,13 +1721,13 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_gachaticket_exchange_close", ImplementationState.NotImplemented)]
     GachaTicketExchangeCloseRequest = 0x953B,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_ai_palette_list", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_ai_palette_list", ImplementationState.Implemented)]
     GetAiPaletteListRequest = 0xA628,
 
     [PacketMetadata(PacketServerType.Msg, PacketDirection.ClientToServer, "send_get_channellist_map", ImplementationState.NotImplemented)]
     GetChannelListMapRequest = 0x23BF,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_cosplay_list", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_cosplay_list", ImplementationState.Implemented)]
     GetCosplayListRequest = 0x14D0,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_other_robo_myprofile_data", ImplementationState.NotImplemented)]
@@ -1745,7 +1760,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_mission_shop_choice_open_r", ImplementationState.NotImplemented)]
     MissionShopChoiceOpenRRequest = 0x53B2,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_move_robo", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_move_robo", ImplementationState.Implemented)]
     MoveRoboRequest = 0x8DB1,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_end_furniture", ImplementationState.Implemented)]
@@ -1775,17 +1790,14 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_request_mission_party_breakup", ImplementationState.NotImplemented)]
     RequestMissionPartyBreakupRequest = 0x0061,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_aiscript_end", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_aiscript_end", ImplementationState.Implemented)]
     RoboAiscriptEndRequest = 0xBDC0,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_aiscript_start", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_aiscript_start", ImplementationState.Implemented)]
     RoboAiscriptStartRequest = 0xF522,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_attach", ImplementationState.NotImplemented)]
     RoboAttachRequest = 0xA595,
-
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_call", ImplementationState.NotImplemented)]
-    RoboCallRequest = 0xFA6E,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_destroy", ImplementationState.NotImplemented)]
     RoboDestroyRequest = 0x6652,
