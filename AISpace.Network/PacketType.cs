@@ -482,6 +482,12 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_mission_data_r", ImplementationState.Implemented)]
     MissionDataResponse = 0x47F9,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_monster_data", ImplementationState.Implemented)]
+    MonsterGetDataRequest = 0x0466,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_monster_data_r", ImplementationState.Implemented)]
+    MonsterGetDataResponse = 0xD094,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_money_data", ImplementationState.Implemented)]
     MoneyDataGetRequest = 0x61E7,
 
@@ -621,7 +627,7 @@ public enum PacketType : ushort
     NotifyChangeMap = 0xB315,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_map_failed", ImplementationState.Implemented)]
-    NotifyChangeMapFailed = 0x59A5,
+    NotifyChangeMapFailed = 0x6648,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_myroom", ImplementationState.Implemented)]
     NotifyChangeMyRoom = 0x0FA0,
@@ -726,7 +732,7 @@ public enum PacketType : ushort
     AdventureShopBuyResponse = 0xFAA8,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_adventure_shop_buys_r", ImplementationState.NotImplemented)]
-    AdventureShopBuysResponse = 0xF1A0,
+    AdventureShopBuysResponse = 0xB95B,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_adventure_shop_download_request_r", ImplementationState.NotImplemented)]
     AdventureShopDownloadRequestResponse = 0x46BC,
@@ -839,22 +845,28 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_aipower_data", ImplementationState.NotImplemented)]
     AiPowerDataNotify = 0x59C3,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_attack_blaze_r", ImplementationState.NotImplemented)]
-    BattleAttackBlazeResponse = 0x2EEF,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_attack_blaze_r", ImplementationState.Implemented)]
+    BattleAttackBlazeResponse = 0x2176,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_attack_cancel_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_attack_cancel_r", ImplementationState.Implemented)]
     BattleAttackCancelResponse = 0x9666,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_dash_exec_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_attack_exec_r", ImplementationState.Implemented)]
+    BattleAttackExecResponse = 0xF1A0,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_attack_start_r", ImplementationState.Implemented)]
+    BattleAttackStartResponse = 0xD752,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_dash_exec_r", ImplementationState.Implemented)]
     BattleDashExecResponse = 0xBCD9,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_dash_finish_r", ImplementationState.NotImplemented)]
-    BattleDashFinishResponse = 0xFF7A,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_dash_finish_r", ImplementationState.Implemented)]
+    BattleDashFinishResponse = 0xF93A,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_kill_shot_ready_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_kill_shot_ready_r", ImplementationState.Implemented)]
     BattleKillShotReadyResponse = 0xFD13,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_target_lock_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_battle_target_lock_r", ImplementationState.Implemented)]
     BattleTargetLockResponse = 0x8AB2,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_catalog_list", ImplementationState.NotImplemented)]
@@ -913,6 +925,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_fade_in", ImplementationState.Implemented)]
     EventFadeInNotify = 0x0F8E,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_get_tps_mode", ImplementationState.Implemented)]
+    EventGetTpsModeNotify = 0xD758,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_start", ImplementationState.Implemented)]
     EventStartNotify = 0x1B5C,
@@ -1187,14 +1202,20 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_battle_raise_start", ImplementationState.NotImplemented)]
     NotifyBattleRaiseStart = 0x1CC8,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_battle_kill_shot_ready_end", ImplementationState.Implemented)]
+    NotifyBattleKillShotReadyEnd = 0xFF7A,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_battle_report_target_obj", ImplementationState.NotImplemented)]
     NotifyBattleReportTargetObj = 0x733E,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_battle_report_target_pos", ImplementationState.NotImplemented)]
     NotifyBattleReportTargetPos = 0x58A2,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_battle_target_lock", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_battle_target_lock", ImplementationState.Implemented)]
     NotifyBattleTargetLock = 0x7E96,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_battle_target_unlock", ImplementationState.Implemented)]
+    NotifyBattleTargetUnlock = 0x4CA2,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_change_avatar_job", ImplementationState.NotImplemented)]
     NotifyChangeAvatarJob = 0xBE37,
@@ -1222,6 +1243,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_hide_chara", ImplementationState.NotImplemented)]
     NotifyHideChara = 0x2E43,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_show_chara", ImplementationState.Implemented)]
+    NotifyShowChara = 0xD1AE,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_item_base", ImplementationState.NotImplemented)]
     NotifyItemBase = 0x737F,
@@ -1292,8 +1316,8 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_mission_situation_message", ImplementationState.NotImplemented)]
     NotifyMissionSituationMessage = 0x39C6,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_monster_data", ImplementationState.NotImplemented)]
-    NotifyMonsterData = 0x6648,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_monster_data", ImplementationState.Implemented)]
+    NotifyMonsterData = 0x63FB,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_appear", ImplementationState.NotImplemented)]
     NotifyMyHouseAppear = 0x701C,
@@ -1667,8 +1691,32 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_ai_upload_delete_request", ImplementationState.NotImplemented)]
     AiUploadDeleteRequestRequest = 0x81FC,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_target_lock", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_attack_blaze", ImplementationState.Implemented)]
+    BattleAttackBlazeRequest = 0x5095,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_attack_cancel", ImplementationState.Implemented)]
+    BattleAttackCancelRequest = 0x8355,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_attack_exec", ImplementationState.Implemented)]
+    BattleAttackExecRequest = 0xC395,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_attack_start", ImplementationState.Implemented)]
+    BattleAttackStartRequest = 0x3B2D,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_dash_exec", ImplementationState.Implemented)]
+    BattleDashExecRequest = 0x90F0,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_dash_finish", ImplementationState.Implemented)]
+    BattleDashFinishRequest = 0xE046,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_kill_shot_ready", ImplementationState.Implemented)]
+    BattleKillShotReadyRequest = 0x0F3D,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_target_lock", ImplementationState.Implemented)]
     BattleTargetLockRequest = 0xC11A,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_battle_target_unlock", ImplementationState.Implemented)]
+    BattleTargetUnlockRequest = 0x99E4,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_delete_friend_list", ImplementationState.NotImplemented)]
     DeleteFriendListRequest = 0x343B,
@@ -1683,10 +1731,13 @@ public enum PacketType : ushort
     EditRoboMyProfileRequest = 0x5AA9,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_board_close", ImplementationState.NotImplemented)]
-    EventBoardCloseRequest = 0xC290,
+    EventBoardCloseRequest = 0x4A90,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_fade_in_r", ImplementationState.Implemented)]
     EventFadeInRequest = 0x2C4A,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_get_tps_mode_r", ImplementationState.Implemented)]
+    EventGetTpsModeRequest = 0xC290,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_event_fade_out_r", ImplementationState.Implemented)]
     EventFadeOutRequest = 0xF962,
