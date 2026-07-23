@@ -107,8 +107,9 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 jumpDistance = parsedDistance;
 
             var angle = areaClient.Rotation * (MathF.PI / 180f);
-            areaClient.X += MathF.Cos(angle) * jumpDistance;
-            areaClient.Z += -MathF.Sin(angle) * jumpDistance;
+            // Character forward matches maplink normal: (Sin, Cos). (Cos, -Sin) is strafe/right.
+            areaClient.X += MathF.Sin(angle) * jumpDistance;
+            areaClient.Z += MathF.Cos(angle) * jumpDistance;
             areaClient.MovementTypeId = (int)MovementType.Stopped;
 
             var chara = areaClient.Character ?? areaClient.User.Characters.First();
@@ -287,7 +288,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 areaClient.X = (map?.SpawnX ?? 0f) + offsetX;
                 areaClient.Y = map?.SpawnY ?? 0.1f;
                 areaClient.Z = (map?.SpawnZ ?? 0f) + offsetZ;
-                areaClient.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+                areaClient.Rotation = map?.SpawnRotation ?? 0;
                 areaClient.MovementTypeId = (int)MovementType.Stopped;
 
                 var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);

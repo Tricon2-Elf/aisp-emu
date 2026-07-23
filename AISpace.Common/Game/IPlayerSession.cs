@@ -20,7 +20,7 @@ public interface IPlayerSession
     float X { get; set; }
     float Y { get; set; }
     float Z { get; set; }
-    sbyte Rotation { get; set; }
+    int Rotation { get; set; }
     int MovementTypeId { get; set; }
     bool HasMovedSinceMapLoad { get; set; }
     bool IsMapTransitionPending { get; set; }

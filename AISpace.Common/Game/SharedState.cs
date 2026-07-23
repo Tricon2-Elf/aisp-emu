@@ -190,5 +190,5 @@ public class SharedState
         return sessions;
     }
 
-    public readonly record struct PendingMapTransfer(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, sbyte Rotation);
+    public readonly record struct PendingMapTransfer(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, int Rotation);
 }

@@ -5,19 +5,7 @@ namespace AISpace.Network.Packets.Area;
 
 /// <summary>
 /// Server-to-client map change command (recv_notify_change_map).
-/// Packet body:
-/// UInt ChannelId
-/// UInt MapId
-/// UInt MapSerialId
-/// UInt RouteState
-/// Float SpawnX
-/// Float SpawnY
-/// Float SpawnZ
-/// SByte Rotation
-/// Byte Animation
-/// Byte Flag
-/// MessageServerInfo (UShort Port + Ascii[65] IP)
-/// Byte FadeFlag
+/// <see cref="Rotation"/> is degrees; written as wire half-degrees.
 /// </summary>
 public sealed class NotifyChangeMap : IOutgoingPacket
 {
@@ -30,7 +18,10 @@ public sealed class NotifyChangeMap : IOutgoingPacket
     public float PositionX { get; init; }
     public float PositionY { get; init; }
     public float PositionZ { get; init; }
-    public sbyte Rotation { get; init; }
+
+    /// <summary>Facing in degrees.</summary>
+    public int Rotation { get; init; }
+
     public byte Animation { get; init; }
     public byte Flag { get; init; }
     public ServerInfo AreaServerInfo { get; init; } = new("0.0.0.0", 0);
@@ -46,7 +37,7 @@ public sealed class NotifyChangeMap : IOutgoingPacket
         writer.Write(PositionX);
         writer.Write(PositionY);
         writer.Write(PositionZ);
-        writer.Write(Rotation);
+        writer.Write(YawEncoding.ToWireSByte(Rotation));
         writer.Write(Animation);
         writer.Write(Flag);
         writer.Write(AreaServerInfo.Port);

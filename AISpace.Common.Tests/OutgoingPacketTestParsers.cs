@@ -17,7 +17,7 @@ internal static class OutgoingPacketTestParsers
         var positionX = reader.ReadFloat();
         var positionY = reader.ReadFloat();
         var positionZ = reader.ReadFloat();
-        var rotation = reader.ReadSByte();
+        var rotation = YawEncoding.FromWireSByte(reader.ReadSByte());
         var animation = reader.ReadByte();
         var flag = reader.ReadByte();
         var port = reader.ReadUShort();
@@ -103,7 +103,7 @@ internal static class OutgoingPacketTestParsers
             PositionX = reader.ReadFloat(),
             PositionY = reader.ReadFloat(),
             PositionZ = reader.ReadFloat(),
-            Yaw = reader.ReadByte(),
+            Yaw = YawEncoding.FromWireByte(reader.ReadByte()),
             Length = reader.ReadFloat(),
             Depth = reader.ReadFloat(),
         };
