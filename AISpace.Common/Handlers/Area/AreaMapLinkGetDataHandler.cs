@@ -63,6 +63,8 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
                 logger.LogWarning("Destination map {DestinationMapId} for MapLink {MapLinkId} on map {SourceMapId} was not found; falling back to zeroed route data", destinationMapId, link.Id, request.MapId);
             }
 
+            var (spawnX, spawnY, spawnZ, spawnRotation) = destinationMap is null ? (0f, 0f, 0f, 0) : link.ResolveDestinationSpawn(destinationMap);
+
             selectEntries.Add(
                 new NotifySelectMapEntry
                 {
@@ -72,10 +74,10 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
                     RouteMapId = destinationMapId,
                     MapSerialId = destinationMapId,
                     RouteState = 0,
-                    PositionX = destinationMap?.SpawnX ?? 0f,
-                    PositionY = destinationMap?.SpawnY ?? 0f,
-                    PositionZ = destinationMap?.SpawnZ ?? 0f,
-                    Yaw = (byte)(destinationMap?.SpawnRotation ?? 0),
+                    PositionX = spawnX,
+                    PositionY = spawnY,
+                    PositionZ = spawnZ,
+                    Yaw = (byte)(sbyte)spawnRotation,
                     Animation = 0,
                     Unknown1 = 0,
                     Unknown2 = 0,
@@ -90,10 +92,10 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
                 areaServerInfo.IP,
                 areaServerInfo.Port,
                 request.ChannelId,
-                destinationMap?.SpawnX ?? 0f,
-                destinationMap?.SpawnY ?? 0f,
-                destinationMap?.SpawnZ ?? 0f,
-                destinationMap?.SpawnRotation ?? 0,
+                spawnX,
+                spawnY,
+                spawnZ,
+                spawnRotation,
                 lane.StartX,
                 lane.StartZ,
                 lane.EndX,
