@@ -35,7 +35,7 @@ public class AreaRoboCreateHandler(RoboInventoryStore roboStore, ILogger<AreaRob
         chara.AddEquip(DefaultClothingItems.Female.Select((itemId, slot) => new CharacterEquipSlot((byte)slot, (uint)itemId)), _ => 0);
 
         // state=0 (resting) so dollmake UI issues RoboCall; call handler then notifies state=1.
-        var robo = new RoboData(roboId, chara, state: 0);
+        var robo = new RoboData(roboId, chara, state: 0) { OwnerAvatarId = session.CharacterId };
         roboStore.Upsert(session.CharacterId, robo);
 
         var response = new RoboCreateResponse(0, robo);

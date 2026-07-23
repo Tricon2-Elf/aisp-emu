@@ -48,9 +48,10 @@ public class AreaRoboCreateHandlerTests
         var reader = new PacketReader(sent.Payload);
         Assert.Equal(0u, reader.ReadUInt()); // result
         Assert.Equal(1u, reader.ReadUInt()); // roboId
-        reader.ReadUInt(); // dword_4
+        Assert.Equal(42u, reader.ReadUInt()); // ownerAvatarId
         Assert.Equal(0u, reader.ReadUInt()); // state resting
         Assert.True(store.TryGet(42, 1, out var stored));
+        Assert.Equal(42u, stored!.OwnerAvatarId);
         Assert.Equal(RoboInventoryStore.ObjectIdFor(1), stored!.Chara.Visual.VisualId);
     }
 }

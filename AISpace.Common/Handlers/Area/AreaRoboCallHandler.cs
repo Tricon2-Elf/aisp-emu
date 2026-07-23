@@ -20,7 +20,10 @@ public class AreaRoboCallHandler(RoboInventoryStore roboStore, ILogger<AreaRoboC
         // Keep state=0 (resting). state=1 spawns a SelfRobo with AI-script sync that start/ends in a ~500ms loop
         // until aiscript upload is implemented. Unique object ids already make the resting cleanup path safe.
         if (roboStore.TryGet(session.CharacterId, request.RoboId, out var existing) && existing != null)
-            roboStore.Upsert(session.CharacterId, new RoboData(existing.RoboId, existing.Chara, state: 0));
+        {
+            existing.State = 0;
+            roboStore.Upsert(session.CharacterId, existing);
+        }
 
         await session.SendAsync(ResponseType, new RoboCallResponse(request.RoboId, 0).ToBytes(), ct);
     }

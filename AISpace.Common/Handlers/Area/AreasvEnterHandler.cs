@@ -147,7 +147,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
 
     public static byte[] CreateNotify(DAL.Entities.Character cha, uint objId, uint res, MovementData pos)
     {
-        var cd = new CharaData(objId, cha.ModelId, cha.Name) { moveData = pos };
+        var cd = new CharaData(objId, cha.ModelId, cha.Name) { Movement = pos };
         cd.Visual.VisualId = (uint)cha.Id;
         cd.Visual.BloodType = cha.BloodType;
         cd.Visual.Month = (byte)cha.Birthdate.Month;

@@ -16,7 +16,15 @@ public class AreaRoboCallHandlerTests
         var store = new RoboInventoryStore();
         var objectId = RoboInventoryStore.ObjectIdFor(1);
         var chara = new CharaData(objectId, 1002011, "Robot") { Visual = new CharaVisual(BloodType.A, 1, 1, 0, objectId, 0, 10930010) };
-        store.Upsert(1, new RoboData(1, chara, state: 0));
+        store.Upsert(
+            1,
+            new RoboData(1, chara, state: 1)
+            {
+                OwnerAvatarId = 1,
+                EmotionId = 17,
+                AvailableStatusPoints = 3,
+            }
+        );
 
         var handler = new AreaRoboCallHandler(store, NullLogger<AreaRoboCallHandler>.Instance);
         var session = new CapturingPlayerSession { CharacterId = 1 };
@@ -33,5 +41,8 @@ public class AreaRoboCallHandlerTests
 
         Assert.True(store.TryGet(1, 1, out var stored));
         Assert.Equal(0u, stored!.State);
+        Assert.Equal(1u, stored.OwnerAvatarId);
+        Assert.Equal(17u, stored.EmotionId);
+        Assert.Equal(3u, stored.AvailableStatusPoints);
     }
 }
