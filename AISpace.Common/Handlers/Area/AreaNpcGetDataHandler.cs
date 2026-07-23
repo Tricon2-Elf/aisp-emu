@@ -29,7 +29,7 @@ public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandle
     {
         var objectId = checked((uint)npc.NpcObjectId);
         var modelId = checked((uint)npc.ModelId);
-        var pos = new MovementData(npc.X, npc.Y, npc.Z, checked((sbyte)npc.Rotation), MovementType.Stopped);
+        var pos = new MovementData(npc.X, npc.Y, npc.Z, npc.Rotation, MovementType.Stopped);
         var npcChara = new CharaData(objectId, modelId, npc.Name) { Movement = pos };
         npcChara.Visual.VisualId = objectId;
         npcChara.AddEquip(npc.Equipment.OrderBy(x => x.SortOrder).ThenBy(x => x.SlotIndex).Select(x => new CharacterEquipSlot(checked((byte)x.SlotIndex), checked((uint)x.ItemId))), ItemEntityMapper.ResolveEquipSocket);

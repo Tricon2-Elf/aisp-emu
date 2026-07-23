@@ -202,7 +202,7 @@ public class AdditionalPacketParserTests
             PositionX = -11000f,
             PositionY = 0.1f,
             PositionZ = -19200f,
-            Rotation = -12,
+            Rotation = 24,
             Animation = (byte)MovementType.Stopped,
             Flag = 0,
             AreaServerInfo = new ServerInfo("localhost", 50054),
@@ -220,7 +220,7 @@ public class AdditionalPacketParserTests
         Assert.Equal(-11000f, parsed.PositionX);
         Assert.Equal(0.1f, parsed.PositionY);
         Assert.Equal(-19200f, parsed.PositionZ);
-        Assert.Equal((sbyte)-12, parsed.Rotation);
+        Assert.Equal(24, parsed.Rotation);
         Assert.Equal((byte)MovementType.Stopped, parsed.Animation);
         Assert.Equal((byte)0, parsed.Flag);
         Assert.Equal((ushort)50054, parsed.AreaServerInfo.Port);

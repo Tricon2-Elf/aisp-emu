@@ -248,7 +248,7 @@ public class AreaMyRoomSystemActorTests
                 SpawnX = -8696,
                 SpawnY = 0.1f,
                 SpawnZ = -15219,
-                SpawnRotation = 90,
+                SpawnRotation = 180,
             }
         );
         db.Channels.Add(
@@ -381,5 +381,5 @@ public class AreaMyRoomSystemActorTests
         return new ActorPacket(objectId, slotId, modelId, x, y, z, rotation);
     }
 
-    private sealed record ActorPacket(uint ObjectId, uint SlotId, uint ModelId, float X, float Y, float Z, sbyte Rotation);
+    private sealed record ActorPacket(uint ObjectId, uint SlotId, uint ModelId, float X, float Y, float Z, int Rotation);
 }

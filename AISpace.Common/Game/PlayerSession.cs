@@ -27,7 +27,7 @@ public class PlayerSession : IPlayerSession
     public float X { get; set; }
     public float Y { get; set; }
     public float Z { get; set; }
-    public sbyte Rotation { get; set; }
+    public int Rotation { get; set; }
     public int MovementTypeId { get; set; }
     public bool HasMovedSinceMapLoad { get; set; }
     public bool IsMapTransitionPending { get; set; }

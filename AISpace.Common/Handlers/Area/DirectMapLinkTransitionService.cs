@@ -252,7 +252,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         var spawnX = notifyChangeMap?.PositionX ?? destinationMap.SpawnX;
         var spawnY = notifyChangeMap?.PositionY ?? destinationMap.SpawnY;
         var spawnZ = notifyChangeMap?.PositionZ ?? destinationMap.SpawnZ;
-        var spawnRotation = notifyChangeMap?.Rotation ?? (sbyte)destinationMap.SpawnRotation;
+        var spawnRotation = notifyChangeMap?.Rotation ?? destinationMap.SpawnRotation;
 
         session.Character = updatedCharacter;
         session.CharacterId = (uint)updatedCharacter.Id;
@@ -364,7 +364,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
             PositionX = spawnX,
             PositionY = spawnY,
             PositionZ = spawnZ,
-            Rotation = (sbyte)spawnRotation,
+            Rotation = spawnRotation,
             Animation = (byte)MovementType.Stopped,
             // Decompiled transition handling checks bit 0x2 on both flag bytes.
             Flag = 0,
@@ -388,7 +388,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
             PositionX = spawnX,
             PositionY = spawnY,
             PositionZ = spawnZ,
-            Yaw = (byte)(sbyte)spawnRotation,
+            Yaw = spawnRotation,
             Animation = (byte)MovementType.Stopped,
             Unknown1 = 0,
             Unknown2 = 0,

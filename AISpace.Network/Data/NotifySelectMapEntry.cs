@@ -20,7 +20,10 @@ public sealed class NotifySelectMapEntry
     public float PositionX { get; init; }
     public float PositionY { get; init; }
     public float PositionZ { get; init; }
-    public byte Yaw { get; init; }
+
+    /// <summary>Facing in degrees; written as wire half-degrees.</summary>
+    public int Yaw { get; init; }
+
     public byte Animation { get; init; }
     public uint Unknown1 { get; init; }
     public uint Unknown2 { get; init; }
@@ -38,7 +41,7 @@ public sealed class NotifySelectMapEntry
         writer.Write(PositionX);
         writer.Write(PositionY);
         writer.Write(PositionZ);
-        writer.Write(Yaw);
+        writer.Write(YawEncoding.ToWireByte(Yaw));
         writer.Write(Animation);
 
         writer.Write(Unknown1);
@@ -63,7 +66,7 @@ public sealed class NotifySelectMapEntry
             PositionX = reader.ReadFloat(),
             PositionY = reader.ReadFloat(),
             PositionZ = reader.ReadFloat(),
-            Yaw = reader.ReadByte(),
+            Yaw = YawEncoding.FromWireByte(reader.ReadByte()),
             Animation = reader.ReadByte(),
             Unknown1 = reader.ReadUInt(),
             Unknown2 = reader.ReadUInt(),

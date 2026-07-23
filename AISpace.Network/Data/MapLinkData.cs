@@ -7,7 +7,10 @@ public class MapLinkData
     public float PositionX { get; set; }
     public float PositionY { get; set; }
     public float PositionZ { get; set; }
-    public byte Yaw { get; set; }
+
+    /// <summary>Trigger orientation in degrees; written as wire half-degrees.</summary>
+    public int Yaw { get; set; }
+
     public float Length { get; set; }
 
     //Depth of the maplink. Maplink only shows as a link so the depth is actually invisible
@@ -15,7 +18,7 @@ public class MapLinkData
 
     public MapLinkData() { }
 
-    public MapLinkData(float positionX, float positionY, float positionZ, byte yaw, float length, float depth)
+    public MapLinkData(float positionX, float positionY, float positionZ, int yaw, float length, float depth)
     {
         PositionX = positionX;
         PositionY = positionY;
@@ -30,7 +33,7 @@ public class MapLinkData
         writer.Write(PositionX);
         writer.Write(PositionY);
         writer.Write(PositionZ);
-        writer.Write(Yaw);
+        writer.Write(YawEncoding.ToWireByte(Yaw));
         writer.Write(Length);
         writer.Write(Depth);
     }

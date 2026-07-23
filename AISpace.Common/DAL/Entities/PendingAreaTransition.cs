@@ -8,7 +8,7 @@ public class PendingMapTransfer
     public float X { get; set; }
     public float Y { get; set; }
     public float Z { get; set; }
-    public sbyte Rotation { get; set; }
+    public int Rotation { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime ExpiresAtUtc { get; set; }
 }

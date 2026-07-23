@@ -24,7 +24,7 @@
     "spawnX": 0,
     "spawnY": 0,
     "spawnZ": 3402.0,
-    "spawnRotation": 0
+    "spawnRotation": 180
   },
   {
     "mapId": 10010210,
@@ -33,7 +33,7 @@
     "spawnX": 0,
     "spawnY": 0,
     "spawnZ": 3402.0,
-    "spawnRotation": 0
+    "spawnRotation": 180
   },
   {
     "mapId": 10010300,
@@ -87,7 +87,7 @@
     "spawnX": 0,
     "spawnY": 0,
     "spawnZ": 3402.0,
-    "spawnRotation": 0
+    "spawnRotation": 180
   },
   {
     "mapId": 10020210,
@@ -96,7 +96,7 @@
     "spawnX": 0,
     "spawnY": 0,
     "spawnZ": 3402.0,
-    "spawnRotation": 0
+    "spawnRotation": 180
   },
   {
     "mapId": 10020300,
@@ -129,19 +129,19 @@
     "mapId": 10030100,
     "island": "Shuffle",
     "name": "Verbena Academy",
-    "spawnX": 10800,
+    "spawnX": 10163,
     "spawnY": 0.1,
-    "spawnZ": -1200,
-    "spawnRotation": 0
+    "spawnZ": -5861,
+    "spawnRotation": 180
   },
   {
     "mapId": 10030110,
     "island": "Shuffle",
     "name": "Verbena Academy Event Area",
-    "spawnX": 10800,
+    "spawnX": 10163,
     "spawnY": 0.1,
-    "spawnZ": -1200,
-    "spawnRotation": 0
+    "spawnZ": -5861,
+    "spawnRotation": 180
   },
   {
     "mapId": 10030200,
@@ -150,7 +150,7 @@
     "spawnX": 0,
     "spawnY": 0,
     "spawnZ": 3402.0,
-    "spawnRotation": 0
+    "spawnRotation": 180
   },
   {
     "mapId": 10030210,
@@ -159,7 +159,7 @@
     "spawnX": 0,
     "spawnY": 0,
     "spawnZ": 3402.0,
-    "spawnRotation": 0
+    "spawnRotation": 180
   },
   {
     "mapId": 10030300,
@@ -195,7 +195,7 @@
     "spawnX": -9100,
     "spawnY": 2,
     "spawnZ": -18000,
-    "spawnRotation": 90
+    "spawnRotation": 180
   },
   {
     "mapId": 10990110,
@@ -213,7 +213,7 @@
     "spawnX": -8696,
     "spawnY": 0.1,
     "spawnZ": -15219,
-    "spawnRotation": 90
+    "spawnRotation": 180
   },
   {
     "mapId": 10990210,
@@ -276,7 +276,7 @@
     "spawnX": 500,
     "spawnY": 0.1,
     "spawnZ": -200,
-    "spawnRotation": -120
+    "spawnRotation": 270
   },
   {
     "mapId": 10990300,
@@ -285,7 +285,7 @@
     "spawnX": -900,
     "spawnY": 0.1,
     "spawnZ": 1300,
-    "spawnRotation": 90
+    "spawnRotation": 180
   },
   {
     "mapId": 40990200,
@@ -294,7 +294,7 @@
     "spawnX": -8696,
     "spawnY": 0.1,
     "spawnZ": -15219,
-    "spawnRotation": 90
+    "spawnRotation": 180
   },
   {
     "mapId": 40010100,

@@ -66,7 +66,7 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
         public float PositionX { get; set; }
         public float PositionY { get; set; }
         public float PositionZ { get; set; }
-        public byte Yaw { get; set; }
+        public int Yaw { get; set; }
         public float Length { get; set; }
         public float Depth { get; set; }
         public string? DestinationMapIds { get; set; }

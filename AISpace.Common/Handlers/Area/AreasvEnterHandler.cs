@@ -97,7 +97,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
             session.X = (map?.SpawnX ?? 0f) + offsetX;
             session.Y = map?.SpawnY ?? 0.1f;
             session.Z = (map?.SpawnZ ?? 0f) + offsetZ;
-            session.Rotation = (sbyte)(map?.SpawnRotation ?? 0);
+            session.Rotation = map?.SpawnRotation ?? 0;
         }
 
         session.HasMovedSinceMapLoad = false;
