@@ -193,7 +193,7 @@ public class MsgHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -202,7 +202,7 @@ public class MsgHandlersTests
                         SpawnX = -9600f,
                         SpawnY = 0.1f,
                         SpawnZ = -8400f,
-                        SpawnRotation = 45,
+                        SpawnRotation = 90,
                     }
                 );
                 db.Channels.Add(
@@ -274,7 +274,7 @@ public class MsgHandlersTests
             Assert.Equal(-9600f, areaSession.X);
             Assert.Equal(0.1f, areaSession.Y);
             Assert.Equal(-8400f, areaSession.Z);
-            Assert.Equal((sbyte)45, areaSession.Rotation);
+            Assert.Equal(90, areaSession.Rotation);
             Assert.True(areaSession.IsMapTransitionPending);
             Assert.Null(areaSession.PendingAreaMapSelection);
         }

@@ -37,7 +37,7 @@ public class AreaMapHandlersTests
                         PositionX = 10f,
                         PositionY = 1f,
                         PositionZ = 20f,
-                        Yaw = 5,
+                        Yaw = 10,
                         Length = 100f,
                         Depth = 200f,
                         DestinationMapIds = "10990110",
@@ -50,7 +50,7 @@ public class AreaMapHandlersTests
                         PositionX = 30f,
                         PositionY = 1f,
                         PositionZ = 40f,
-                        Yaw = 15,
+                        Yaw = 30,
                         Length = 300f,
                         Depth = 400f,
                         DestinationMapIds = "10990110,10990200",
@@ -64,7 +64,7 @@ public class AreaMapHandlersTests
                         PositionX = 50f,
                         PositionY = 2f,
                         PositionZ = 60f,
-                        Yaw = 25,
+                        Yaw = 50,
                         Length = 500f,
                         Depth = 600f,
                         DestinationMapIds = "10990210",
@@ -88,7 +88,7 @@ public class AreaMapHandlersTests
                         SpawnX = -11000f,
                         SpawnY = 0.1f,
                         SpawnZ = -19200f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -97,7 +97,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9600f,
                         SpawnY = 0.1f,
                         SpawnZ = -8400f,
-                        SpawnRotation = 45,
+                        SpawnRotation = 90,
                     }
                 );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -128,17 +128,17 @@ public class AreaMapHandlersTests
             var firstLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[1].Payload);
             Assert.Equal(10f, firstLink.Data.PositionX);
             Assert.Equal(20f, firstLink.Data.PositionZ);
-            Assert.Equal((byte)5, firstLink.Data.Yaw);
+            Assert.Equal(10, firstLink.Data.Yaw);
 
             var selectorLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[2].Payload);
             Assert.Equal(30f, selectorLink.Data.PositionX);
             Assert.Equal(40f, selectorLink.Data.PositionZ);
-            Assert.Equal((byte)15, selectorLink.Data.Yaw);
+            Assert.Equal(30, selectorLink.Data.Yaw);
 
             var thirdLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[3].Payload);
             Assert.Equal(50f, thirdLink.Data.PositionX);
             Assert.Equal(60f, thirdLink.Data.PositionZ);
-            Assert.Equal((byte)25, thirdLink.Data.Yaw);
+            Assert.Equal(50, thirdLink.Data.Yaw);
 
             Assert.Collection(
                 ReadSelectMapEntries(session.Sent[4].Payload),
@@ -154,7 +154,7 @@ public class AreaMapHandlersTests
                     Assert.Equal(-11000f, entry.PositionX);
                     Assert.Equal(0.1f, entry.PositionY);
                     Assert.Equal(-19200f, entry.PositionZ);
-                    Assert.Equal((byte)90, entry.Yaw);
+                    Assert.Equal(180, entry.Yaw);
                     Assert.Equal((byte)0, entry.Animation);
                 },
                 entry =>
@@ -169,7 +169,7 @@ public class AreaMapHandlersTests
                     Assert.Equal(-9600f, entry.PositionX);
                     Assert.Equal(0.1f, entry.PositionY);
                     Assert.Equal(-8400f, entry.PositionZ);
-                    Assert.Equal((byte)45, entry.Yaw);
+                    Assert.Equal(90, entry.Yaw);
                     Assert.Equal((byte)0, entry.Animation);
                 }
             );
@@ -200,7 +200,7 @@ public class AreaMapHandlersTests
                         PositionX = 10f,
                         PositionY = 1f,
                         PositionZ = 20f,
-                        Yaw = 5,
+                        Yaw = 10,
                         Length = 100f,
                         Depth = 200f,
                         DestinationMapIds = "10990110",
@@ -228,7 +228,7 @@ public class AreaMapHandlersTests
                         SpawnX = -11000f,
                         SpawnY = 0.1f,
                         SpawnZ = -19200f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     }
                 );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -263,7 +263,7 @@ public class AreaMapHandlersTests
                     Assert.Equal(-8500f, entry.PositionX);
                     Assert.Equal(2f, entry.PositionY);
                     Assert.Equal(-15850f, entry.PositionZ);
-                    Assert.Equal((byte)180, entry.Yaw);
+                    Assert.Equal(180, entry.Yaw);
                 }
             );
         }
@@ -293,7 +293,7 @@ public class AreaMapHandlersTests
                         SpawnX = 1f,
                         SpawnY = 2f,
                         SpawnZ = 3f,
-                        SpawnRotation = 4,
+                        SpawnRotation = 8,
                     },
                     new Map
                     {
@@ -302,7 +302,7 @@ public class AreaMapHandlersTests
                         SpawnX = 11f,
                         SpawnY = 12f,
                         SpawnZ = 13f,
-                        SpawnRotation = 14,
+                        SpawnRotation = 28,
                     }
                 );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -332,7 +332,7 @@ public class AreaMapHandlersTests
             Assert.Equal(11f, session.X);
             Assert.Equal(12f, session.Y);
             Assert.Equal(13f, session.Z);
-            Assert.Equal((sbyte)14, session.Rotation);
+            Assert.Equal(28, session.Rotation);
             Assert.Equal(10990110u, session.Character!.CurrentMapId);
 
             Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
@@ -369,7 +369,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -451,7 +451,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -513,7 +513,7 @@ public class AreaMapHandlersTests
             Assert.Equal(-11000f, notify.PositionX);
             Assert.Equal(0.1f, notify.PositionY);
             Assert.Equal(-19200f, notify.PositionZ);
-            Assert.Equal((sbyte)0, notify.Rotation);
+            Assert.Equal(0, notify.Rotation);
             Assert.Equal((byte)MovementType.Stopped, notify.Animation);
             Assert.Equal((byte)0, notify.Flag);
             Assert.Equal((ushort)0, notify.AreaServerInfo.Port);
@@ -557,7 +557,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -618,13 +618,13 @@ public class AreaMapHandlersTests
             Assert.Equal(-8500f, notify.PositionX);
             Assert.Equal(2f, notify.PositionY);
             Assert.Equal(-15850f, notify.PositionZ);
-            Assert.Equal(unchecked((sbyte)180), notify.Rotation);
+            Assert.Equal(180, notify.Rotation);
 
             Assert.Equal(10990110u, session.MapId);
             Assert.Equal(-8500f, session.X);
             Assert.Equal(2f, session.Y);
             Assert.Equal(-15850f, session.Z);
-            Assert.Equal(unchecked((sbyte)180), session.Rotation);
+            Assert.Equal(180, session.Rotation);
         }
         finally
         {
@@ -652,7 +652,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -787,7 +787,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -857,7 +857,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -933,7 +933,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     }
                 );
                 db.MapLinks.Add(
@@ -998,7 +998,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -1193,7 +1193,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9600f,
                         SpawnY = 0.1f,
                         SpawnZ = -8400f,
-                        SpawnRotation = 45,
+                        SpawnRotation = 90,
                     }
                 );
                 db.Channels.Add(
@@ -1289,7 +1289,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -1307,7 +1307,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9600f,
                         SpawnY = 0.1f,
                         SpawnZ = -8400f,
-                        SpawnRotation = 45,
+                        SpawnRotation = 90,
                     }
                 );
                 db.Channels.Add(
@@ -1370,7 +1370,7 @@ public class AreaMapHandlersTests
             Assert.Equal(-9600f, session.X);
             Assert.Equal(0.1f, session.Y);
             Assert.Equal(-8400f, session.Z);
-            Assert.Equal((sbyte)45, session.Rotation);
+            Assert.Equal(90, session.Rotation);
             Assert.True(session.IsMapTransitionPending);
             Assert.Null(session.PendingAreaMapSelection);
             Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
@@ -1478,7 +1478,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     }
                 );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -1555,7 +1555,7 @@ public class AreaMapHandlersTests
             Assert.Equal(-11000f, session.X);
             Assert.Equal(0.1f, session.Y);
             Assert.Equal(-19200f, session.Z);
-            Assert.Equal((sbyte)0, session.Rotation);
+            Assert.Equal(0, session.Rotation);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.AreasvEnterResponse);
         }
         finally
@@ -1654,7 +1654,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -1748,7 +1748,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -1766,7 +1766,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9600f,
                         SpawnY = 0.1f,
                         SpawnZ = -8400f,
-                        SpawnRotation = 45,
+                        SpawnRotation = 90,
                     }
                 );
                 db.MapLinks.Add(
@@ -1854,7 +1854,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -1940,7 +1940,7 @@ public class AreaMapHandlersTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -2053,7 +2053,7 @@ public class AreaMapHandlersTests
         Assert.Equal(string.Empty, hiddenReader.ReadFixedString(31, "shift_jis"));
     }
 
-    private static CapturingPlayerSession CreateSession(User user, uint mapId, int channelId, float x = 0f, float y = 0f, float z = 0f, sbyte rotation = 0)
+    private static CapturingPlayerSession CreateSession(User user, uint mapId, int channelId, float x = 0f, float y = 0f, float z = 0f, int rotation = 0)
     {
         var character = user.Characters.Single();
 
@@ -2180,11 +2180,11 @@ public class AreaMapHandlersTests
         );
     }
 
-    private static IReadOnlyList<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, byte Yaw, byte Animation)> ReadSelectMapEntries(byte[] payload)
+    private static IReadOnlyList<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, int Yaw, byte Animation)> ReadSelectMapEntries(byte[] payload)
     {
         var reader = new PacketReader(payload);
         var count = reader.ReadUInt();
-        var entries = new List<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, byte Yaw, byte Animation)>((int)count);
+        var entries = new List<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, int Yaw, byte Animation)>((int)count);
         for (var index = 0; index < count; index++)
         {
             var entry = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));

@@ -48,7 +48,7 @@ public class CmdExecHandlerTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -128,7 +128,7 @@ public class CmdExecHandlerTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     },
                     new Map
                     {
@@ -209,14 +209,15 @@ public class CmdExecHandlerTests
 
             await handler.HandleAsync(BuildCmdExecPayload("jump"), msgSession, TestContext.Current.CancellationToken);
 
-            Assert.Equal(100f, areaSession.X, precision: 3);
+            // Rotation 90° faces +X, so a default jump moves along X.
+            Assert.Equal(200f, areaSession.X, precision: 3);
             Assert.Equal(2f, areaSession.Y, precision: 3);
-            Assert.Equal(100f, areaSession.Z, precision: 3);
+            Assert.Equal(200f, areaSession.Z, precision: 3);
 
-            areaSession.Z = 200f;
             await handler.HandleAsync(BuildCmdExecPayload("jump", "50"), msgSession, TestContext.Current.CancellationToken);
 
-            Assert.Equal(150f, areaSession.Z, precision: 3);
+            Assert.Equal(250f, areaSession.X, precision: 3);
+            Assert.Equal(200f, areaSession.Z, precision: 3);
             Assert.Contains(areaSession.Sent, packet => packet.Type == PacketType.AvatarNotifyMove);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }

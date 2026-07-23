@@ -77,7 +77,7 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
                     PositionX = spawnX,
                     PositionY = spawnY,
                     PositionZ = spawnZ,
-                    Yaw = (byte)(sbyte)spawnRotation,
+                    Yaw = spawnRotation,
                     Animation = 0,
                     Unknown1 = 0,
                     Unknown2 = 0,

@@ -1,3 +1,4 @@
+using AISpace.Network;
 using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
@@ -11,7 +12,10 @@ public class NotifyChangeMyRoom : IOutgoingPacket
     public float PositionX { get; init; }
     public float PositionY { get; init; }
     public float PositionZ { get; init; }
-    public sbyte Rotation { get; init; }
+
+    /// <summary>Facing in degrees; written as wire half-degrees.</summary>
+    public int Rotation { get; init; }
+
     public byte Animation { get; init; }
     public byte Flag { get; init; }
     public ServerInfo AreaServerInfo { get; init; } = new("0.0.0.0", 0);
@@ -29,7 +33,7 @@ public class NotifyChangeMyRoom : IOutgoingPacket
         writer.Write(PositionX);
         writer.Write(PositionY);
         writer.Write(PositionZ);
-        writer.Write(Rotation);
+        writer.Write(YawEncoding.ToWireSByte(Rotation));
         writer.Write(Animation);
 
         writer.Write(Flag);

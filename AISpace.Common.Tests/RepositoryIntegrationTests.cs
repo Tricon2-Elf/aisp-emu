@@ -127,7 +127,7 @@ public class RepositoryIntegrationTests
                         SpawnX = -9100f,
                         SpawnY = 2f,
                         SpawnZ = -18000f,
-                        SpawnRotation = 90,
+                        SpawnRotation = 180,
                     }
                 );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
