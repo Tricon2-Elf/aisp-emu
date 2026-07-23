@@ -19,7 +19,7 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger) 
         var cha = session.User!.Characters.First();
         var pos = new MovementData(session.X, session.Y, session.Z, session.Rotation, (MovementType)session.MovementTypeId);
 
-        var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name) { moveData = pos };
+        var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name) { Movement = pos };
         cd.Visual.VisualId = (uint)cha.Id;
         cd.Visual.BloodType = cha.BloodType;
         cd.Visual.Month = (byte)cha.Birthdate.Month;

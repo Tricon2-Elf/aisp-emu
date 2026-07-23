@@ -329,7 +329,7 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
 
     private static byte[] CreateTeleportNotify(Character cha, uint objId, MovementData pos)
     {
-        var cd = new CharaData(objId, cha.ModelId, cha.Name) { moveData = pos };
+        var cd = new CharaData(objId, cha.ModelId, cha.Name) { Movement = pos };
         cd.Visual.VisualId = objId;
         cd.Visual.BloodType = cha.BloodType;
         cd.Visual.Month = (byte)cha.Birthdate.Month;

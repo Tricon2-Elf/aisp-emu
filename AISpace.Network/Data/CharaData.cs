@@ -2,11 +2,32 @@ namespace AISpace.Network.Data;
 
 public class CharaData(uint slotId, uint modelId, string name)
 {
-    public CharaVisual Visual = new(BloodType.A, 1, 1, 1, 2, 0, 0);
-    public MovementData moveData = new(0, 0, 0, 0, 0);
+    public const int WireSize = 566;
+    public const int EquipmentSlotCount = 30;
 
-    //X-4069.790 Y-0.043 Z-2813.927
-    public List<ItemSlotInfo> Equips = new(30);
+    public uint SlotId { get; set; } = slotId;
+    public uint ModelId { get; set; } = modelId;
+    public string Name { get; set; } = name;
+    public CharaVisual Visual = new(BloodType.A, 1, 1, 1, 2, 0, 0);
+    public uint CharacterParameterId { get; set; }
+    public CharacterMapData Map { get; set; } = new();
+    public float TpsActionReferenceX { get; set; }
+    public float TpsActionReferenceY { get; set; }
+    public uint ClientReserved { get; set; }
+    public uint JobId { get; set; }
+    public uint TpsActionProfileId { get; set; }
+    public float CollisionRadius { get; set; }
+    public float TpsActionVerticalRange { get; set; }
+    public TpsBattleData Battle { get; set; } = new();
+    public LevelProgressData Progress { get; set; } = new();
+
+    public MovementData Movement
+    {
+        get => Map.Movement;
+        set => Map.Movement = value;
+    }
+
+    public List<ItemSlotInfo> Equips = new(EquipmentSlotCount);
 
     public void AddEquip(uint id, uint socket)
     {
@@ -15,7 +36,7 @@ public class CharaData(uint slotId, uint modelId, string name)
 
     public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<CharacterEquipSlot, uint> resolveSocket)
     {
-        for (byte slot = 0; slot < 30; slot++)
+        for (byte slot = 0; slot < EquipmentSlotCount; slot++)
         {
             var eq = equipment.FirstOrDefault(e => e.SlotIndex == slot);
             AddEquip(eq.ItemId, eq.ItemId != 0 ? resolveSocket(eq) : 0);
@@ -24,33 +45,55 @@ public class CharaData(uint slotId, uint modelId, string name)
 
     public byte[] ToBytes()
     {
-        while (Equips.Count < 30)
+        while (Equips.Count < EquipmentSlotCount)
             AddEquip(0, 0);
 
         var writer = new PacketWriter();
-        writer.Write(slotId); // m_SlotId (4)
-        writer.Write(modelId); // m_Model (4)
-        writer.WriteFixedString(name, 37, "utf-8");
-        writer.Write(Visual.ToBytes()); // ReadAvatarVisual (19)
-        writer.Write(0u); // m_pCharacter (4)
-        writer.Write(0f); //Quaternion X
-        writer.Write(0f); //Quaternion Y
-        writer.Write(0f); //Quaternion Z
-        writer.Write(0f); //Quaternion W
-        writer.Write(moveData.ToBytes()); // ReadMoveData (14)
-        writer.Write(0f); // Vec2 float_6c (8)
-        writer.Write(0f);
-        for (int i = 0; i < 30; i++) // m_Equipment 30×(id,socket) - no count
+        writer.Write(SlotId);
+        writer.Write(ModelId);
+        writer.WriteFixedString(Name, 37, "utf-8");
+        writer.Write(Visual.ToBytes());
+        writer.Write(CharacterParameterId);
+        writer.Write(Map.ToBytes());
+        writer.Write(TpsActionReferenceX);
+        writer.Write(TpsActionReferenceY);
+        for (var i = 0; i < EquipmentSlotCount; i++)
             writer.Write(Equips[i].ToBytes());
-        writer.Write(0u); // dword_164 (4)
-        writer.Write(0u); // dword_168 (4)
-        writer.Write(0u); // dword_16c (4)
-        writer.Write(0f); // Vec2 float_170 (8)
-        writer.Write(0f);
-        // field_178 (sub_798D80): 0 bytes padding so total CharaData = 383
-        writer.Write((byte)0); // field_240: byte_0 (1)
-        writer.Write(0L); // field_240: dword_8 (8)
-        writer.Write(0L); // field_240: dword_10 (8)
-        return writer.ToBytes(); // 383 bytes
+        writer.Write(ClientReserved);
+        writer.Write(JobId);
+        writer.Write(TpsActionProfileId);
+        writer.Write(CollisionRadius);
+        writer.Write(TpsActionVerticalRange);
+        writer.Write(Battle.ToBytes());
+        writer.Write(Progress.ToBytes());
+        return writer.ToBytes();
+    }
+
+    public static CharaData FromBytes(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < WireSize)
+            throw new ArgumentException($"CharaData requires at least {WireSize} bytes.", nameof(data));
+
+        var reader = new PacketReader(data);
+        var result = new CharaData(reader.ReadUInt(), reader.ReadUInt(), reader.ReadFixedString(37, "utf-8"))
+        {
+            Visual = CharaVisual.FromBytes(reader.ReadBytes(19)),
+            CharacterParameterId = reader.ReadUInt(),
+            Map = CharacterMapData.FromBytes(reader.ReadBytes(CharacterMapData.WireSize)),
+            TpsActionReferenceX = reader.ReadFloat(),
+            TpsActionReferenceY = reader.ReadFloat(),
+        };
+
+        for (var i = 0; i < EquipmentSlotCount; i++)
+            result.Equips.Add(new ItemSlotInfo(reader.ReadUInt(), reader.ReadUInt()));
+
+        result.ClientReserved = reader.ReadUInt();
+        result.JobId = reader.ReadUInt();
+        result.TpsActionProfileId = reader.ReadUInt();
+        result.CollisionRadius = reader.ReadFloat();
+        result.TpsActionVerticalRange = reader.ReadFloat();
+        result.Battle = TpsBattleData.FromBytes(reader.ReadBytes(TpsBattleData.WireSize));
+        result.Progress = LevelProgressData.FromBytes(reader.ReadBytes(LevelProgressData.WireSize));
+        return result;
     }
 }
