@@ -45,6 +45,10 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
                 Length = r.Length,
                 Depth = r.Depth,
                 DestinationMapIds = r.DestinationMapIds ?? "",
+                DestinationSpawnX = r.DestinationSpawnX,
+                DestinationSpawnY = r.DestinationSpawnY,
+                DestinationSpawnZ = r.DestinationSpawnZ,
+                DestinationSpawnRotation = r.DestinationSpawnRotation,
                 Behavior = r.Behavior,
                 SortOrder = r.SortOrder,
                 IsEnabled = r.IsEnabled,
@@ -66,6 +70,10 @@ public class MapLinkRepository(MainContext db) : IMapLinkRepository
         public float Length { get; set; }
         public float Depth { get; set; }
         public string? DestinationMapIds { get; set; }
+        public float? DestinationSpawnX { get; set; }
+        public float? DestinationSpawnY { get; set; }
+        public float? DestinationSpawnZ { get; set; }
+        public int? DestinationSpawnRotation { get; set; }
         public MapLinkBehavior Behavior { get; set; }
         public int SortOrder { get; set; }
         public bool IsEnabled { get; set; } = true;

@@ -39,7 +39,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         if (character == null)
             return false;
 
-        var resolvedLink = await ResolveTriggeredMapLinkAsync(request.MapID, request.ChannelId, [new PositionSample(session.X, session.Z)], allowSingleLinkFallback: true, ct);
+        var resolvedLink = await ResolveTriggeredMapLinkAsync(request.MapID, request.ChannelId, [new PositionSample(session.X, session.Z)], ct);
 
         if (resolvedLink == null)
             return false;
@@ -56,7 +56,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         if (character == null)
             return false;
 
-        var resolvedLink = await ResolveTriggeredMapLinkAsync(session.MapId, (uint)session.ChannelId, samples, allowSingleLinkFallback: false, ct);
+        var resolvedLink = await ResolveTriggeredMapLinkAsync(session.MapId, (uint)session.ChannelId, samples, ct);
 
         if (resolvedLink == null)
             return false;
@@ -249,14 +249,19 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         var updatedCharacter = await characterRepository.UpdateCurrentMapAsync(character.Id, destinationMapId, ct) ?? character;
         updatedCharacter.CurrentMapId = destinationMapId;
 
+        var spawnX = notifyChangeMap?.PositionX ?? destinationMap.SpawnX;
+        var spawnY = notifyChangeMap?.PositionY ?? destinationMap.SpawnY;
+        var spawnZ = notifyChangeMap?.PositionZ ?? destinationMap.SpawnZ;
+        var spawnRotation = notifyChangeMap?.Rotation ?? (sbyte)destinationMap.SpawnRotation;
+
         session.Character = updatedCharacter;
         session.CharacterId = (uint)updatedCharacter.Id;
         session.MapId = destinationMapId;
         session.ChannelId = (int)destinationChannelId;
-        session.X = destinationMap.SpawnX;
-        session.Y = destinationMap.SpawnY;
-        session.Z = destinationMap.SpawnZ;
-        session.Rotation = (sbyte)destinationMap.SpawnRotation;
+        session.X = spawnX;
+        session.Y = spawnY;
+        session.Z = spawnZ;
+        session.Rotation = spawnRotation;
         session.MovementTypeId = (int)MovementType.Stopped;
         session.HasMovedSinceMapLoad = false;
         session.IsMapTransitionPending = notifyChangeMap != null;
@@ -274,7 +279,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
             if (session.User != null && await RequiresAreaServerReconnectAsync(sourceChannelId, (int)destinationChannelId, ct))
             {
-                state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(session.User.Id, destinationMapId, (int)destinationChannelId, destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, (sbyte)destinationMap.SpawnRotation));
+                state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(session.User.Id, destinationMapId, (int)destinationChannelId, spawnX, spawnY, spawnZ, spawnRotation));
             }
         }
 
@@ -346,18 +351,20 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return await ResolveAreaServerInfoAsync(destinationChannelId, ct);
     }
 
-    private NotifyChangeMap CreateNotifyChangeMap(uint channelId, uint destinationMapId, DAL.Entities.Map destinationMap, ServerInfo areaServerInfo)
+    private NotifyChangeMap CreateNotifyChangeMap(uint channelId, uint destinationMapId, DAL.Entities.Map destinationMap, ServerInfo areaServerInfo, DAL.Entities.MapLink? link = null)
     {
+        var (spawnX, spawnY, spawnZ, spawnRotation) = link?.ResolveDestinationSpawn(destinationMap) ?? (destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, destinationMap.SpawnRotation);
+
         return new NotifyChangeMap
         {
             ChannelId = channelId,
             MapId = destinationMapId,
             MapSerialId = destinationMapId,
             RouteState = 0,
-            PositionX = destinationMap.SpawnX,
-            PositionY = destinationMap.SpawnY,
-            PositionZ = destinationMap.SpawnZ,
-            Rotation = (sbyte)destinationMap.SpawnRotation,
+            PositionX = spawnX,
+            PositionY = spawnY,
+            PositionZ = spawnZ,
+            Rotation = (sbyte)spawnRotation,
             Animation = (byte)MovementType.Stopped,
             // Decompiled transition handling checks bit 0x2 on both flag bytes.
             Flag = 0,
@@ -366,8 +373,10 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         };
     }
 
-    private NotifySelectMapEntry CreateSelectMapEntry(uint channelId, uint destinationMapId, DAL.Entities.Map destinationMap, ServerInfo areaServerInfo)
+    private NotifySelectMapEntry CreateSelectMapEntry(uint channelId, uint destinationMapId, DAL.Entities.Map destinationMap, ServerInfo areaServerInfo, DAL.Entities.MapLink? link = null)
     {
+        var (spawnX, spawnY, spawnZ, spawnRotation) = link?.ResolveDestinationSpawn(destinationMap) ?? (destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, destinationMap.SpawnRotation);
+
         return new NotifySelectMapEntry
         {
             MapId = destinationMapId,
@@ -376,10 +385,10 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
             RouteMapId = destinationMapId,
             MapSerialId = destinationMapId,
             RouteState = 0,
-            PositionX = destinationMap.SpawnX,
-            PositionY = destinationMap.SpawnY,
-            PositionZ = destinationMap.SpawnZ,
-            Yaw = (byte)(sbyte)destinationMap.SpawnRotation,
+            PositionX = spawnX,
+            PositionY = spawnY,
+            PositionZ = spawnZ,
+            Yaw = (byte)(sbyte)spawnRotation,
             Animation = (byte)MovementType.Stopped,
             Unknown1 = 0,
             Unknown2 = 0,
@@ -391,10 +400,10 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         if (resolvedLink.Kind == MapLinkResolutionKind.Direct)
         {
             var areaServerInfo = await ResolveAreaServerInfoForNotifyAsync(session.ChannelId, (int)channelId, ct);
-            var notifyChangeMap = CreateNotifyChangeMap(channelId, resolvedLink.DestinationMapId, resolvedLink.DestinationMap!, areaServerInfo);
+            var notifyChangeMap = CreateNotifyChangeMap(channelId, resolvedLink.DestinationMapId, resolvedLink.DestinationMap!, areaServerInfo, resolvedLink.Link);
 
             logger.LogInformation(
-                "Resolved {TriggerName} MapLink trigger on map {SourceMapId} at position ({X}, {Y}, {Z}) to MapLink {MapLinkId} -> destination map {DestinationMapId} via {Ip}:{Port} (channel {ChannelId}, flag {Flag}, fade {FadeFlag}){SampleSuffix}{FallbackSuffix}",
+                "Resolved {TriggerName} MapLink trigger on map {SourceMapId} at position ({X}, {Y}, {Z}) to MapLink {MapLinkId} -> destination map {DestinationMapId} at ({DestX}, {DestY}, {DestZ}) via {Ip}:{Port} (channel {ChannelId}, flag {Flag}, fade {FadeFlag}){SampleSuffix}{FallbackSuffix}",
                 triggerName,
                 sourceMapId,
                 session.X,
@@ -402,6 +411,9 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
                 session.Z,
                 resolvedLink.Link.Id,
                 resolvedLink.DestinationMapId,
+                notifyChangeMap.PositionX,
+                notifyChangeMap.PositionY,
+                notifyChangeMap.PositionZ,
                 areaServerInfo.IP,
                 areaServerInfo.Port,
                 channelId,
@@ -531,10 +543,9 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return new SelectInitIslandStartNotify { Islands = islands };
     }
 
-    private async Task<ResolvedMapLink?> ResolveTriggeredMapLinkAsync(uint sourceMapId, uint channelId, IReadOnlyList<PositionSample> samples, bool allowSingleLinkFallback, CancellationToken ct)
+    private async Task<ResolvedMapLink?> ResolveTriggeredMapLinkAsync(uint sourceMapId, uint channelId, IReadOnlyList<PositionSample> samples, CancellationToken ct)
     {
         var links = await mapLinkRepository.GetBySourceMapAsync(sourceMapId, channelId, ct);
-        var candidates = new List<ResolvedMapLink>();
         ResolvedMapLink? insideMatch = null;
         ResolvedMapLink? nearbyMatch = null;
 
@@ -591,7 +602,6 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
                 route = new ResolvedMapLink(link, MapLinkResolutionKind.Direct, destinationMapId, destinationMap, [], UsedFallback: false, DistanceSquared: 0f);
             }
-            candidates.Add(route.Value);
 
             var match = ScoreMapLink(link, samples);
             if (match.IsInside)
@@ -614,9 +624,6 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
         if (nearbyMatch != null)
             return nearbyMatch;
-
-        if (allowSingleLinkFallback && candidates.Count == 1)
-            return candidates[0] with { UsedFallback = true };
 
         return null;
     }
@@ -652,40 +659,38 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return $"Island {islandId}";
     }
 
+    /// <summary>
+    /// Matches only on an outside→inside entry (or a movement segment that crosses the volume).
+    /// Standing/spawning inside without an entry edge does not trigger, which prevents portal bounce-back.
+    /// </summary>
     private static MapLinkMatch ScoreMapLink(DAL.Entities.MapLink link, IReadOnlyList<PositionSample> samples)
     {
         var bestDistanceSquared = float.MaxValue;
-        var inside = false;
 
         foreach (var sample in samples)
         {
             var distanceSquared = MapLinkGeometry.DistanceSquaredToRectangle(link, sample.X, sample.Z);
             if (distanceSquared < bestDistanceSquared)
                 bestDistanceSquared = distanceSquared;
-
-            if (MapLinkGeometry.ContainsPoint(link, sample.X, sample.Z))
-            {
-                inside = true;
-                bestDistanceSquared = 0f;
-            }
         }
 
-        if (!inside)
+        for (var index = 1; index < samples.Count; index++)
         {
-            for (var index = 1; index < samples.Count; index++)
-            {
-                var previous = samples[index - 1];
-                var current = samples[index];
-                if (!MapLinkGeometry.IntersectsSegment(link, previous.X, previous.Z, current.X, current.Z))
-                    continue;
+            var previous = samples[index - 1];
+            var current = samples[index];
+            var previousInside = MapLinkGeometry.ContainsPoint(link, previous.X, previous.Z);
+            var currentInside = MapLinkGeometry.ContainsPoint(link, current.X, current.Z);
 
-                inside = true;
-                bestDistanceSquared = 0f;
-                break;
-            }
+            if (!previousInside && currentInside)
+                return new MapLinkMatch(true, false, 0f);
+
+            // Large steps from outside can skip the interior while still crossing the volume.
+            // Do not treat inside→outside exits (or inside→inside walks) as entries.
+            if (!previousInside && MapLinkGeometry.IntersectsSegment(link, previous.X, previous.Z, current.X, current.Z))
+                return new MapLinkMatch(true, false, 0f);
         }
 
-        return new MapLinkMatch(inside, false, bestDistanceSquared);
+        return new MapLinkMatch(false, false, bestDistanceSquared);
     }
 
     public readonly record struct PositionSample(float X, float Z);
