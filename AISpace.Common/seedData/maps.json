@@ -66,10 +66,10 @@
     "mapId": 10020100,
     "island": "Clannad",
     "name": "Hikarizaka High School",
-    "spawnX": 22800,
-    "spawnY": 0.1,
-    "spawnZ": -2400,
-    "spawnRotation": 0
+    "spawnX": 16935,
+    "spawnY": 2200,
+    "spawnZ": 1163,
+    "spawnRotation": 90
   },
   {
     "mapId": 10020110,
