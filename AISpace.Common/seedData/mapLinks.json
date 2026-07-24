@@ -291,5 +291,50 @@
     "behavior": 1,
     "sortOrder": 10,
     "isEnabled": true
+  },
+  {
+    "sourceMapId": 10020100,
+    "Name": "Hikarizaka High School South",
+    "channelId": 0,
+    "positionX": 17593,
+    "positionY": 2200,
+    "positionZ": -14234,
+    "yaw": 180,
+    "length": 1000,
+    "depth": 10,
+    "destinationMapIds": "10020100,10020200,20000000",
+    "behavior": 1,
+    "sortOrder": 10,
+    "isEnabled": true
+  },
+  {
+    "sourceMapId": 10020100,
+    "Name": "Hikarizaka High School West",
+    "channelId": 0,
+    "positionX": 645,
+    "positionY": 59,
+    "positionZ": 1185,
+    "yaw": 260,
+    "length": 1000,
+    "depth": 10,
+    "destinationMapIds": "10020100,10020200,20000000",
+    "behavior": 1,
+    "sortOrder": 10,
+    "isEnabled": true
+  },
+  {
+    "sourceMapId": 10020100,
+    "Name": "Hikarizaka High School South-East",
+    "channelId": 0,
+    "positionX": 43356,
+    "positionY": 2200,
+    "positionZ": -8875,
+    "yaw": 180,
+    "length": 1000,
+    "depth": 10,
+    "destinationMapIds": "10020100,10020200,20000000",
+    "behavior": 1,
+    "sortOrder": 10,
+    "isEnabled": true
   }
 ]
