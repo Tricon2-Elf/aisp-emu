@@ -6,16 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class ClientConnection(
-    Guid _Id,
-    EndPoint _RemoteEndPoint,
-    NetworkStream _ns,
-    ILogger<ClientConnection> logger,
-    TcpClient? _tcpClient = null,
-    string? _serverType = null,
-    Func<Guid, int?>? _userIdResolver = null
-) : IDisposable
+public class ClientConnection(Guid _Id, EndPoint _RemoteEndPoint, NetworkStream _ns, ILogger<ClientConnection> logger, TcpClient? _tcpClient = null, string? _serverType = null, Func<Guid, int?>? _userIdResolver = null) : IDisposable
 {
+    private static readonly HashSet<PacketType> DebugSendLogs = [PacketType.RoboAiscriptStartResponse];
     const int MaxChunkSize = 1392;
     const int BlockSize = 16;
     private const byte HeaderPrefix = 0x03;
@@ -94,13 +87,10 @@ public class ClientConnection(
             return;
 
         if (type != PacketType.Ping && type != PacketType.TimeZoneGetResponse)
-            logger.LogInformation(
-                "Sending [{ServerType}] [UserId:{UserId}] {PacketType}, {Length}",
-                _serverType,
-                ResolveUserIdForLog()?.ToString() ?? "n/a",
-                type,
-                payload.Length
-            );
+        {
+            var logLevel = DebugSendLogs.Contains(type) ? LogLevel.Debug : LogLevel.Information;
+            logger.Log(logLevel, "Sending [{ServerType}] [UserId:{UserId}] {PacketType}, {Length}", _serverType, ResolveUserIdForLog()?.ToString() ?? "n/a", type, payload.Length);
+        }
         try
         {
             var writer = new PacketWriter();
