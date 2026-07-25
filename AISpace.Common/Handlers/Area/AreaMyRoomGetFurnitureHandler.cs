@@ -27,7 +27,7 @@ public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository) : IPa
                     MapId = session.MapId,
                     Movement = new MovementData(session.X, session.Y, session.Z - 50f, session.Rotation, MovementType.Stopped),
                 };
-                var notify = new NotifyUpdateRoboState(robo.RoboId, robo.Character.SlotId, state: 1, map);
+                var notify = new NotifyUpdateRoboState(robo.RoboId, robo.Character.SlotId, (uint)RoboState.InMyRoom, map);
                 await session.SendAsync(PacketType.NotifyUpdateRoboState, notify.ToBytes(), ct);
             }
         }
