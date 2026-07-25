@@ -7,6 +7,7 @@ using AISpace.Common.Game.ServerScripts;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -217,14 +218,83 @@ public class AreaMyRoomSystemActorTests
     [Fact]
     public async Task MyRoomFurnitureResponse_DoesNotInjectBuiltinFixtures()
     {
-        var handler = new AreaMyRoomGetFurnitureHandler();
-        var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(db));
+            var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
 
-        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
 
-        var response = Assert.Single(session.Sent);
-        Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type);
-        Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.MyRoomNotifyFurniture);
+            var response = Assert.Single(session.Sent);
+            Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type);
+            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.MyRoomNotifyFurniture);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task MyRoomFurnitureResponse_ActivatesPersistedRoboBeforeSceneLoad()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            var objectId = RoboObjectIds.For(1);
+            var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Room Robo"), state: 0) { OwnerAvatarId = 42 };
+
+            await using (var writeDb = new MainContext(options))
+                await new RoboRepository(writeDb).UpsertAsync(42, robo, TestContext.Current.CancellationToken);
+
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(handlerDb));
+            var session = new CapturingPlayerSession
+            {
+                MapId = MyRoomInfo.TwelveTatamiMapId,
+                ChannelId = 3,
+                CharacterId = 42,
+                X = 173f,
+                Y = 0f,
+                Z = -220f,
+                Rotation = 180,
+            };
+
+            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+
+            Assert.Collection(
+                session.Sent,
+                packet =>
+                {
+                    Assert.Equal(PacketType.NotifyUpdateRoboState, packet.Type);
+                    var reader = new PacketReader(packet.Payload);
+                    Assert.Equal(1u, reader.ReadUInt());
+                    Assert.Equal(objectId, reader.ReadUInt());
+                    Assert.Equal(1u, reader.ReadUInt());
+                    var map = CharacterMapData.FromBytes(reader.ReadBytes(CharacterMapData.WireSize));
+                    Assert.Equal(3u, map.ChannelId);
+                    Assert.Equal(MyRoomInfo.TwelveTatamiMapId, map.MapId);
+                    Assert.Equal(173f, map.Movement.X);
+                    Assert.Equal(0f, map.Movement.Y);
+                    Assert.Equal(-270f, map.Movement.Z);
+                    Assert.Equal(180, map.Movement.Rotation);
+                    Assert.Equal(MovementType.Stopped, map.Movement.Animation);
+                },
+                packet => Assert.Equal(PacketType.MyRoomGetFurnitureResponse, packet.Type)
+            );
+
+            await using var verifyDb = new MainContext(options);
+            var stored = await new RoboRepository(verifyDb).GetAsync(42, 1, TestContext.Current.CancellationToken);
+            Assert.NotNull(stored);
+            Assert.Equal(0u, stored.State);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     private static async Task SeedMyRoomActorsAsync(MainContext db)

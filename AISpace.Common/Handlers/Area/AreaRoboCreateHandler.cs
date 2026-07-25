@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaRoboCreateHandler(RoboInventoryStore roboStore, ILogger<AreaRoboCreateHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaRoboCreateHandler(IRoboRepository roboRepository, ILogger<AreaRoboCreateHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const uint DefaultHairItemId = 10930010;
     private const uint DefaultRoboId = 1;
@@ -17,10 +18,11 @@ public class AreaRoboCreateHandler(RoboInventoryStore roboStore, ILogger<AreaRob
 
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
+        var characterId = checked((int)session.CharacterId);
         var request = RoboCreateRequest.FromBytes(payload.Span);
         // Client always calls the first doll as id 1 after create; keep ids stable.
         var roboId = DefaultRoboId;
-        var objectId = RoboInventoryStore.ObjectIdFor(roboId);
+        var objectId = RoboObjectIds.For(roboId);
 
         logger.LogInformation("RoboCreateRequest from character {CharacterId}: name={Name}, model={ModelId}, visual={Visual}, objectId={ObjectId}", session.CharacterId, request.Name, request.ModelId, request.Visual, objectId);
 
@@ -36,7 +38,7 @@ public class AreaRoboCreateHandler(RoboInventoryStore roboStore, ILogger<AreaRob
 
         // state=0 (resting) so dollmake UI issues RoboCall; call handler then notifies state=1.
         var robo = new RoboData(roboId, chara, state: 0) { OwnerAvatarId = session.CharacterId };
-        roboStore.Upsert(session.CharacterId, robo);
+        await roboRepository.UpsertAsync(characterId, robo, ct);
 
         var response = new RoboCreateResponse(0, robo);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
