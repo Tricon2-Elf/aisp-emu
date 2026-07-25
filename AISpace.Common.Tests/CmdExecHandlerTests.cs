@@ -497,27 +497,53 @@ public class CmdExecHandlerTests
     }
 
     [Fact]
-    public async Task PosCommand_ResolvesLiveAreaSession_NotPersistedPresenceSnapshot()
+    public async Task PosCommand_SendsLocationAsSystemTalkForwardToMsgClient()
     {
-        var user = CreateUserWithCharacter(1, 8002, "pos-user", "Pos User", 10990100);
-        var state = new SharedState();
-        var areaSession = new CapturingPlayerSession
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
         {
-            User = user,
-            UserId = user.Id,
-            CharacterId = 8002,
-            X = -9100f,
-            Z = -18000f,
-        };
-        state.RegisterClient(ServerType.Area, areaSession);
+            var user = CreateUserWithCharacter(1, 8002, "pos-user", "Pos User", 10990100);
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8002,
+                MapId = 10990100,
+                ChannelId = 1,
+                X = -9055.5f,
+                Y = 2f,
+                Z = -17988.75f,
+                Rotation = 180,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
 
-        areaSession.X = -9055.5f;
-        areaSession.Z = -17988.75f;
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
-        var resolved = state.GetAreaSessionByUserId(user.Id);
-        Assert.Same(areaSession, resolved);
-        Assert.Equal(-9055.5f, resolved!.X);
-        Assert.Equal(-17988.75f, resolved.Z);
+            await handler.HandleAsync(BuildCmdExecPayload("/pos"), msgSession, TestContext.Current.CancellationToken);
+
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+            var message = Assert.Single(msgSession.Sent, packet => packet.Type == PacketType.TalkForwardNotify);
+            var reader = new PacketReader(message.Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(unchecked((uint)-5), reader.ReadUInt());
+            var text = reader.ReadString("utf-8");
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Contains("Char: 8002", text);
+            Assert.Contains("Map: 10990100", text);
+            Assert.Contains("Ch: 1", text);
+            Assert.Contains("X: -9055.5f", text);
+            Assert.Contains("Y: 2f", text);
+            Assert.Contains("Z: -17988.75f", text);
+            Assert.Contains("Rot: 180", text);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     private static byte[] BuildCmdExecPayload(string command, params string[] args)

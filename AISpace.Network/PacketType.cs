@@ -947,8 +947,11 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_island_select_exec", ImplementationState.Implemented)]
     EventIslandSelectExecNotify = 0x25F1,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_notice", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_notice", ImplementationState.Implemented)]
     EventNoticeNotify = 0xCD6F,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_notice_close", ImplementationState.Implemented)]
+    EventNoticeCloseNotify = 0xF477,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_quest_select_exec", ImplementationState.NotImplemented)]
     EventQuestSelectExecNotify = 0x7640,
