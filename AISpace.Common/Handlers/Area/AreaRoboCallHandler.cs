@@ -19,8 +19,6 @@ public class AreaRoboCallHandler(IRoboRepository roboRepository, ILogger<AreaRob
         var request = RoboCallRequest.FromBytes(payload.Span);
         logger.LogInformation("RoboCallRequest from character {CharacterId}: roboId={RoboId}", session.CharacterId, request.RoboId);
 
-        // Keep state=0 (resting). state=1 spawns a SelfRobo with AI-script sync that start/ends in a ~500ms loop
-        // until aiscript upload is implemented. Unique object ids already make the resting cleanup path safe.
         await roboRepository.UpdateStateAsync(characterId, request.RoboId, 0, ct);
 
         await session.SendAsync(ResponseType, new RoboCallResponse(request.RoboId, 0).ToBytes(), ct);

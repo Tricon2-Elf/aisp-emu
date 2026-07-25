@@ -7,6 +7,7 @@ namespace AISpace.Common.DAL.Repositories;
 
 public interface IRoboRepository
 {
+    Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<IReadOnlyList<RoboData>> GetAllAsync(int characterId, CancellationToken ct = default);
     Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default);
@@ -15,6 +16,11 @@ public interface IRoboRepository
 
 public sealed class RoboRepository(MainContext db) : IRoboRepository
 {
+    public Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default)
+    {
+        return db.Robos.AsNoTracking().AnyAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+    }
+
     public async Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default)
     {
         var entity = await WithDetails(db.Robos.AsNoTracking()).SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
