@@ -164,6 +164,15 @@ public class AreaMyRoomSystemActorTests
             Assert.Null(session.ActiveEventKey);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
             Assert.True(await eventRepository.HasCompletedAsync(character.Id, ServerEvents.Keys.MyRoomDoor, TestContext.Current.CancellationToken));
+
+            session.MapId = MyRoomInfo.BaseMapId;
+            session.Sent.Clear();
+            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
+
+            Assert.Null(session.ActiveEventKey);
+            var replayResponse = Assert.Single(session.Sent);
+            Assert.Equal(PacketType.EventAccessNpcResponse, replayResponse.Type);
+            Assert.Equal(1u, ReadResult(replayResponse.Payload));
         }
         finally
         {
@@ -358,7 +367,7 @@ public class AreaMyRoomSystemActorTests
     {
         state ??= new SharedState();
         var serverScriptSession = new ServerScriptSession(new CharacterEventRepository(db), NullLogger<ServerScriptSession>.Instance);
-        var doorScript = new MyRoomDoorServerScript(new ClientScriptSegmentRunner(), serverScriptSession, CreateDirectMapLinkTransitionService(db, state), NullLogger<MyRoomDoorServerScript>.Instance);
+        var doorScript = new MyRoomDoorServerScript(new ClientScriptSegmentRunner(), serverScriptSession, CreateDirectMapLinkTransitionService(db, state), new CharacterEventRepository(db), NullLogger<MyRoomDoorServerScript>.Instance);
         var wardrobeScript = new MyRoomWardrobeServerScript(serverScriptSession);
         return new ServerScriptDispatcher([doorScript, wardrobeScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
     }

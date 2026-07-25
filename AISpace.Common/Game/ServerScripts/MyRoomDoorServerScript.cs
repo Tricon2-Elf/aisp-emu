@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Handlers.Area;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Game.ServerScripts;
 
-public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScriptSegmentRunner, ServerScriptSession serverScriptSession, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<MyRoomDoorServerScript> logger) : IServerScript
+public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScriptSegmentRunner, ServerScriptSession serverScriptSession, DirectMapLinkTransitionService directMapLinkTransitionService, ICharacterEventRepository characterEventRepository, ILogger<MyRoomDoorServerScript> logger) : IServerScript
 {
     public const uint AkihabaraUdxMapId = 40_990_200;
 
@@ -20,6 +21,18 @@ public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScrip
     private const string PhaseTpsBat0101021 = "tpsBat0101021";
 
     public string EventKey => ServerEvents.Keys.MyRoomDoor;
+
+    public async Task<bool> CanStartAsync(IPlayerSession session, ServerScriptContext context, CancellationToken ct = default)
+    {
+        if (session.CharacterId == 0)
+            return false;
+
+        var completed = await characterEventRepository.HasCompletedAsync(checked((int)session.CharacterId), EventKey, ct);
+        if (completed)
+            logger.LogInformation("Ignoring completed My Room door quest for character {CharacterId}", session.CharacterId);
+
+        return !completed;
+    }
 
     public async Task StartAsync(IPlayerSession session, ServerScriptContext context, CancellationToken ct = default)
     {

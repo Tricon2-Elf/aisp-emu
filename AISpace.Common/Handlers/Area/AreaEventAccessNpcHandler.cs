@@ -54,9 +54,17 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
                         return;
                     }
 
+                    var context = new ServerScriptContext { Npc = npc };
+                    if (!await serverScriptDispatcher.CanStartAsync(session, npc.EventKey, context, ct))
+                    {
+                        logger.LogInformation("Rejecting EventAccessNpcRequest for character {CharacterId}: server script {EventKey} is not currently available", session.CharacterId, npc.EventKey);
+                        await session.SendAsync(ResponseType, new EventAccessNpcResponse(1).ToBytes(), ct);
+                        return;
+                    }
+
                     await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
                     logger.LogInformation("Starting server script {EventKey} for character {CharacterId} via npc {NpcId}", npc.EventKey, session.CharacterId, request.NpcId);
-                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, new ServerScriptContext { Npc = npc }, serverScriptDispatcher.GetCompletionPolicy(npc.EventKey), ct);
+                    await serverScriptDispatcher.StartAsync(session, npc.EventKey, context, serverScriptDispatcher.GetCompletionPolicy(npc.EventKey), ct);
                     return;
             }
         }
