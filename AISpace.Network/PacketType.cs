@@ -1550,7 +1550,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_rest_r", ImplementationState.NotImplemented)]
     RoboRestResponse = 0xB235,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_squire_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_squire_r", ImplementationState.Implemented)]
     RoboSquireResponse = 0x899D,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_room_list_close_r", ImplementationState.NotImplemented)]
@@ -1868,7 +1868,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_rest", ImplementationState.NotImplemented)]
     RoboRestRequest = 0xF480,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_squire", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_robo_squire", ImplementationState.Implemented)]
     RoboSquireRequest = 0xE005,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_set_ai_palette", ImplementationState.NotImplemented)]

@@ -36,8 +36,8 @@ public class AreaRoboCreateHandler(IRoboRepository roboRepository, ILogger<AreaR
         var chara = new CharaData(objectId, request.ModelId, request.Name) { Visual = visual };
         chara.AddEquip(DefaultClothingItems.Female.Select((itemId, slot) => new CharacterEquipSlot((byte)slot, (uint)itemId)), _ => 0);
 
-        // state=0 (resting) so dollmake UI issues RoboCall; call handler then notifies state=1.
-        var robo = new RoboData(roboId, chara, state: 0) { OwnerAvatarId = session.CharacterId };
+        // The doll-making UI calls the newly created Robo after this response.
+        var robo = new RoboData(roboId, chara, state: (uint)RoboState.Resting) { OwnerAvatarId = session.CharacterId };
         await roboRepository.UpsertAsync(characterId, robo, ct);
 
         var response = new RoboCreateResponse(0, robo);
