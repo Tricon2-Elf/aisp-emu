@@ -35,7 +35,10 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             var areaClient = ResolveAreaClient(session);
             if (areaClient != null)
             {
-                logger.LogCritical("\n" + "==========================================\n" + $"  LOCATION DATA for Char: {areaClient.CharacterId}\n" + $"  Map: {areaClient.MapId}\n" + $"  Channel: {areaClient.ChannelId}\n" + $"  X: {areaClient.X}f\n" + $"  Y: {areaClient.Y}f\n" + $"  Z: {areaClient.Z}f\n" + $"  Rotation: {areaClient.Rotation}\n" + "==========================================");
+                // DistID -5 is the client "System" / Notice chat filter (see sub_428B10 / sub_428BB0).
+                const uint systemDistId = unchecked((uint)-5);
+                var text = $"Char: {areaClient.CharacterId} | Map: {areaClient.MapId} | Ch: {areaClient.ChannelId} | X: {areaClient.X}f | Y: {areaClient.Y}f | Z: {areaClient.Z}f | Rot: {areaClient.Rotation}";
+                await session.SendAsync(PacketType.TalkForwardNotify, new TalkForwardNotify(0, systemDistId, text, 0).ToBytes(), ct);
             }
             else
             {
