@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AISpace.Network.Tests;
@@ -47,14 +48,52 @@ public class VceListenerParserTests
         }
     }
 
-    private static byte[] BuildSinglePacketFrame(PacketType packetType)
+    [Theory]
+    [InlineData(PacketType.RoboAiscriptStartRequest)]
+    [InlineData(PacketType.RoboAiscriptEndRequest)]
+    public async Task ParseAndDispatchFrameAsync_RoboAiLifecyclePacket_LogsAtDebug(PacketType packetType)
     {
+        var logger = new RecordingLogger<VceListener>();
+        var channel = Channel.CreateUnbounded<Packet>();
+        var listener = new VceListener(logger, channel, "Area", 0, NullLoggerFactory.Instance, _ => { });
+        var (context, peer) = await CreateClientContextAsync();
+        using (peer)
+        using (context)
+        {
+            context.CurrentState = ClientState.Connected;
+            var frame = BuildSinglePacketFrame(packetType, [1, 0, 0, 0]);
+            await InvokeParseAndDispatchFrameAsync(listener, context, frame, frame.Length);
+
+            Assert.Contains(logger.Entries, entry => entry.Level == LogLevel.Debug && entry.Message.Contains(packetType.ToString()));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Level == LogLevel.Information && entry.Message.Contains(packetType.ToString()));
+        }
+    }
+
+    [Fact]
+    public async Task SendAsync_RoboAiStartResponse_LogsAtDebug()
+    {
+        var logger = new RecordingLogger<ClientConnection>();
+        var (context, peer) = await CreateClientContextAsync(logger);
+        using (peer)
+        using (context)
+        {
+            context.encrypted = false;
+            await context.SendAsync(PacketType.RoboAiscriptStartResponse, new byte[8], TestContext.Current.CancellationToken);
+
+            Assert.Contains(logger.Entries, entry => entry.Level == LogLevel.Debug && entry.Message.Contains(nameof(PacketType.RoboAiscriptStartResponse)));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Level == LogLevel.Information && entry.Message.Contains(nameof(PacketType.RoboAiscriptStartResponse)));
+        }
+    }
+
+    private static byte[] BuildSinglePacketFrame(PacketType packetType, byte[]? payload = null)
+    {
+        payload ??= [];
         // PacketData header with headerParam=0 => payload size is one byte at offset+1.
-        // payload size 2 means packet contains only PacketType and no body.
-        var frame = new byte[4];
+        var frame = new byte[4 + payload.Length];
         frame[0] = 0x00; // PacketData, headerParam=0
-        frame[1] = 0x02; // payload length
+        frame[1] = checked((byte)(2 + payload.Length));
         BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(2, 2), (ushort)packetType);
+        payload.CopyTo(frame.AsSpan(4));
         return frame;
     }
 
@@ -74,12 +113,7 @@ public class VceListenerParserTests
         return frame;
     }
 
-    private static async Task InvokeParseAndDispatchFrameAsync(
-        VceListener listener,
-        ClientConnection context,
-        byte[] cipher,
-        int msgSize
-    )
+    private static async Task InvokeParseAndDispatchFrameAsync(VceListener listener, ClientConnection context, byte[] cipher, int msgSize)
     {
         var method = typeof(VceListener).GetMethod("ParseAndDispatchFrameAsync", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(method);
@@ -90,7 +124,7 @@ public class VceListenerParserTests
         await (Task)taskObj!;
     }
 
-    private static async Task<(ClientConnection context, TcpClient peer)> CreateClientContextAsync()
+    private static async Task<(ClientConnection context, TcpClient peer)> CreateClientContextAsync(ILogger<ClientConnection>? logger = null)
     {
         var acceptor = new TcpListener(IPAddress.Loopback, 0);
         acceptor.Start();
@@ -99,12 +133,27 @@ public class VceListenerParserTests
             var peer = new TcpClient();
             await peer.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)acceptor.LocalEndpoint).Port);
             var serverSide = await acceptor.AcceptTcpClientAsync(TestContext.Current.CancellationToken);
-            var context = new ClientConnection(Guid.NewGuid(), serverSide.Client.RemoteEndPoint!, serverSide.GetStream(), NullLogger<ClientConnection>.Instance, serverSide);
+            var context = new ClientConnection(Guid.NewGuid(), serverSide.Client.RemoteEndPoint!, serverSide.GetStream(), logger ?? NullLogger<ClientConnection>.Instance, serverSide);
             return (context, peer);
         }
         finally
         {
             acceptor.Stop();
+        }
+    }
+
+    private sealed class RecordingLogger<T> : ILogger<T>
+    {
+        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            Entries.Add((logLevel, formatter(state, exception)));
         }
     }
 }

@@ -9,21 +9,10 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Network;
 
-public class VceListener(
-    ILogger<VceListener> logger,
-    Channel<Packet> channel,
-    string name,
-    int port,
-    ILoggerFactory loggerFactory,
-    Action<Guid>? onDisconnect,
-    Action<string, int>? onListeningStarted = null,
-    int maxConcurrentClients = 1024,
-    int maxReceiveFrameSize = 4096,
-    int clientReadTimeoutSeconds = 300,
-    Func<Guid, int?>? resolveUserId = null
-)
+public class VceListener(ILogger<VceListener> logger, Channel<Packet> channel, string name, int port, ILoggerFactory loggerFactory, Action<Guid>? onDisconnect, Action<string, int>? onListeningStarted = null, int maxConcurrentClients = 1024, int maxReceiveFrameSize = 4096, int clientReadTimeoutSeconds = 300, Func<Guid, int?>? resolveUserId = null)
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs = [PacketType.Ping, PacketType.AvatarMoveRequest];
+    private static readonly HashSet<PacketType> DebugReceiveLogs = [PacketType.RoboAiscriptStartRequest, PacketType.RoboAiscriptEndRequest];
     private static readonly TimeSpan IdleTimerRearmMinInterval = TimeSpan.FromMilliseconds(250);
     private readonly int _maxConcurrentClients = Math.Max(1, maxConcurrentClients);
     private readonly SemaphoreSlim _clientGate = new(Math.Max(1, maxConcurrentClients), Math.Max(1, maxConcurrentClients));
@@ -87,15 +76,7 @@ public class VceListener(
 
                     try
                     {
-                        var context = new ClientConnection(
-                            Guid.NewGuid(),
-                            tcpClient.Client.RemoteEndPoint!,
-                            tcpClient.GetStream(),
-                            loggerFactory.CreateLogger<ClientConnection>(),
-                            tcpClient,
-                            name,
-                            resolveUserId
-                        );
+                        var context = new ClientConnection(Guid.NewGuid(), tcpClient.Client.RemoteEndPoint!, tcpClient.GetStream(), loggerFactory.CreateLogger<ClientConnection>(), tcpClient, name, resolveUserId);
                         _clients[context.Id] = context;
                         _ = RunClientWithGateAsync(context, ct);
                     }
@@ -193,15 +174,7 @@ public class VceListener(
         try
         {
             var remote = (IPEndPoint)context.RemoteEndPoint;
-            logger.LogInformation(
-                "{Name} Handling new Encrypted client {Id} [ServerType:{ServerType}] [UserId:{UserId}] from {RemoteAddress}:{RemotePort}",
-                name,
-                context.Id,
-                name,
-                ResolveUserIdForLog(context),
-                remote.Address,
-                remote.Port
-            );
+            logger.LogInformation("{Name} Handling new Encrypted client {Id} [ServerType:{ServerType}] [UserId:{UserId}] from {RemoteAddress}:{RemotePort}", name, context.Id, name, ResolveUserIdForLog(context), remote.Address, remote.Port);
             context.CurrentState = ClientState.WaitingForHandshake;
             if (!await HandshakeAsync(context, ct))
                 return;
@@ -246,14 +219,7 @@ public class VceListener(
                 logger.LogWarning(ex, "{Name} onDisconnect failed for {Id}", name, context.Id);
             }
 
-            logger.LogInformation(
-                "{Name} Client disconnected [ServerType:{ServerType}] [UserId:{UserId}]: {RemoteEndPoint} ({Id})",
-                name,
-                name,
-                ResolveUserIdForLog(context),
-                context.RemoteEndPoint,
-                context.Id
-            );
+            logger.LogInformation("{Name} Client disconnected [ServerType:{ServerType}] [UserId:{UserId}]: {RemoteEndPoint} ({Id})", name, name, ResolveUserIdForLog(context), context.RemoteEndPoint, context.Id);
         }
     }
 
@@ -380,15 +346,7 @@ public class VceListener(
 
                     if (context.CurrentState == ClientState.WaitingForVersionCheck)
                         context.CurrentState = ClientState.Connected;
-                    if (!SuppressedReceiveLogs.Contains(singleType))
-                        logger.LogInformation(
-                            "Recieving packet [{ServerType}] [UserId:{UserId}] {PacketType} ({Length} bytes): {Hex}",
-                            name,
-                            ResolveUserIdForLog(context),
-                            singleType,
-                            singlePayload.Length,
-                            BitConverter.ToString(singlePayload.ToArray())
-                        );
+                    LogReceivedPacket(context, singleType, singlePayload);
                     await channel.Writer.WriteAsync(new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw), ct);
                     break;
                 }
@@ -411,19 +369,20 @@ public class VceListener(
             if (context.CurrentState == ClientState.WaitingForVersionCheck)
                 context.CurrentState = ClientState.Connected;
             ReadOnlySpan<byte> payload = bodyLen > 0 ? decryptedFrame.AsSpan(payloadStart + 2, bodyLen) : [];
-            if (!SuppressedReceiveLogs.Contains(type))
-                logger.LogInformation(
-                    "Recieving packet [{ServerType}] [UserId:{UserId}] {PacketType} ({Length} bytes): {Hex}",
-                    name,
-                    ResolveUserIdForLog(context),
-                    type,
-                    payload.Length,
-                    BitConverter.ToString(payload.ToArray())
-                );
+            LogReceivedPacket(context, type, payload);
             await channel.Writer.WriteAsync(new Packet(context, type, payload.ToArray(), typeRaw), ct);
 
             offset = payloadEnd;
         }
+    }
+
+    private void LogReceivedPacket(ClientConnection context, PacketType type, ReadOnlySpan<byte> payload)
+    {
+        if (SuppressedReceiveLogs.Contains(type))
+            return;
+
+        var logLevel = DebugReceiveLogs.Contains(type) ? LogLevel.Debug : LogLevel.Information;
+        logger.Log(logLevel, "Recieving packet [{ServerType}] [UserId:{UserId}] {PacketType} ({Length} bytes): {Hex}", name, ResolveUserIdForLog(context), type, payload.Length, BitConverter.ToString(payload.ToArray()));
     }
 
     static int CalculatePayloadLength(ReadOnlySpan<byte> buffer, int offset, int headerParam)
