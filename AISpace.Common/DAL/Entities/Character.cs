@@ -34,4 +34,5 @@ public class Character
 
     public ICollection<CharacterInventory> Inventory { get; set; } = new List<CharacterInventory>();
     public ICollection<CharacterEquipment> Equipment { get; set; } = new List<CharacterEquipment>();
+    public ICollection<Robo> Robos { get; set; } = new List<Robo>();
 }

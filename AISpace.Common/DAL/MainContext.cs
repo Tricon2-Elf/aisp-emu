@@ -1,5 +1,6 @@
 using AISpace.Common.Config;
 using AISpace.Common.DAL.Entities;
+using AISpace.Network.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.DAL;
@@ -17,6 +18,12 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Item> Items { get; set; }
     public DbSet<CharacterInventory> CharacterInventories { get; set; }
     public DbSet<CharacterEquipment> CharacterEquipments { get; set; }
+    public DbSet<Robo> Robos { get; set; }
+    public DbSet<RoboTpsBattleData> RoboTpsBattleData { get; set; }
+    public DbSet<RoboEquipment> RoboEquipment { get; set; }
+    public DbSet<RoboItemUseEffect> RoboItemUseEffects { get; set; }
+    public DbSet<RoboBattleAbility> RoboBattleAbilities { get; set; }
+    public DbSet<RoboDistributedStatusPoint> RoboDistributedStatusPoints { get; set; }
     public DbSet<CharacterEventStatus> CharacterEventStatuses { get; set; }
     public DbSet<Circle> Circles { get; internal set; }
     public DbSet<Map> Maps { get; set; }
@@ -98,6 +105,75 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => new { x.CharacterId, x.SlotIndex });
 
             e.HasOne(x => x.Character).WithMany(c => c.Equipment).HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<Robo>(e =>
+        {
+            e.ToTable("Robos");
+            e.HasKey(x => new { x.CharacterId, x.RoboId });
+            e.Property(x => x.Name).HasMaxLength(37).IsRequired();
+            e.Property(x => x.BloodType).HasConversion<uint>();
+            e.Property(x => x.UserStatusText).HasMaxLength(UserStatusData.StatusTextLength).IsRequired();
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.Character).WithMany(c => c.Robos).HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.TpsBattleData).WithOne(x => x.Robo).HasForeignKey<RoboTpsBattleData>(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RoboTpsBattleData>(e =>
+        {
+            e.ToTable("RoboTpsBattleData");
+            e.HasKey(x => new { x.CharacterId, x.RoboId });
+        });
+
+        b.Entity<RoboEquipment>(e =>
+        {
+            e.ToTable("RoboEquipment");
+            e.HasKey(x => new
+            {
+                x.CharacterId,
+                x.RoboId,
+                x.SlotIndex,
+            });
+            e.HasOne(x => x.Robo).WithMany(x => x.Equipment).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RoboItemUseEffect>(e =>
+        {
+            e.ToTable("RoboItemUseEffects");
+            e.HasKey(x => new
+            {
+                x.CharacterId,
+                x.RoboId,
+                x.SlotIndex,
+            });
+            e.HasOne(x => x.Robo).WithMany(x => x.ItemUseEffects).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RoboBattleAbility>(e =>
+        {
+            e.ToTable("RoboBattleAbilities");
+            e.HasKey(x => new
+            {
+                x.CharacterId,
+                x.RoboId,
+                x.AbilitySet,
+                x.AbilityIndex,
+            });
+            e.Property(x => x.AbilitySet).HasConversion<byte>();
+            e.HasOne(x => x.TpsBattleData).WithMany(x => x.BattleAbilities).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RoboDistributedStatusPoint>(e =>
+        {
+            e.ToTable("RoboDistributedStatusPoints");
+            e.HasKey(x => new
+            {
+                x.CharacterId,
+                x.RoboId,
+                x.StatusIndex,
+            });
+            e.HasOne(x => x.Robo).WithMany(x => x.DistributedStatusPoints).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<UserSession>(e =>

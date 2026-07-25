@@ -1,4 +1,5 @@
 using AISpace.Common.DAL;
+using AISpace.Common.DAL.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,9 +19,27 @@ internal static class TestDb
         }
         return (connection, options);
     }
+
+    public static async Task SeedCharacterAsync(DbContextOptions<MainContext> options, int characterId, CancellationToken ct = default)
+    {
+        await using var db = new MainContext(options);
+        var user = new User { Id = characterId, Username = $"user-{characterId}" };
+        user.SetPassword("pw");
+        user.Characters.Add(
+            new Character
+            {
+                Id = characterId,
+                Name = $"character-{characterId}",
+                UserId = characterId,
+                Birthdate = new DateTime(2000, 1, 1),
+            }
+        );
+        db.Users.Add(user);
+        await db.SaveChangesAsync(ct);
+    }
 }
 
 internal sealed class TestMainContextFactory(DbContextOptions<MainContext> options) : IDbContextFactory<MainContext>
 {
-    public MainContext CreateDbContext() => new MainContext(options);
+    public MainContext CreateDbContext() => new(options);
 }

@@ -51,6 +51,7 @@ internal class Program
         builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<ICharacterEventRepository, CharacterEventRepository>();
+        builder.Services.AddScoped<IRoboRepository, RoboRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
@@ -65,8 +66,6 @@ internal class Program
         builder.Services.Scan(scan => scan.FromAssemblyOf<IServerScript>().AddClasses(classes => classes.AssignableTo<IServerScript>()).AsImplementedInterfaces().AsSelf().WithScopedLifetime());
         builder.Services.AddScoped<ServerScriptDispatcher>();
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
-        builder.Services.AddSingleton<RoboInventoryStore>();
-
         builder.Services.AddSingleton<SharedState>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
