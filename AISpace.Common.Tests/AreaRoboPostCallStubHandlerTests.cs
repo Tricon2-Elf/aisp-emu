@@ -1,6 +1,10 @@
+using AISpace.Common.DAL;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Tests;
@@ -45,15 +49,56 @@ public class AreaRoboPostCallStubHandlerTests
     }
 
     [Fact]
-    public async Task MoveRobo_ParsesWithoutResponse()
+    public async Task MoveRobo_BroadcastsMovementToAreaPeers()
     {
-        var handler = new AreaMoveRoboHandler();
-        var session = new CapturingPlayerSession { CharacterId = 1 };
-        // Payload from client log
-        byte[] payload = [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF6, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A, 0xC3, 0x51, 0x04, 0x00, 0x00, 0xF6, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A, 0xC3, 0x51, 0x04];
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+            await using (var seedDb = new MainContext(options))
+            {
+                var objectId = RoboRepository.GetObjectId(1, 1);
+                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Moving Robo"), (uint)RoboState.Accompanying) { OwnerAvatarId = 1 };
+                await new RoboRepository(seedDb).UpsertAsync(1, robo, TestContext.Current.CancellationToken);
+            }
 
-        await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
-        Assert.Empty(session.Sent);
+            var state = new SharedState();
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = 1,
+                MapId = 40990200,
+                ChannelId = 1,
+            };
+            var peer = new CapturingPlayerSession
+            {
+                CharacterId = 2,
+                MapId = 40990200,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, session);
+            state.RegisterClient(ServerType.Area, peer);
+            session.AccompanyingRoboIds.Add(1);
+
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreaMoveRoboHandler(new RoboRepository(handlerDb), state);
+            var payloadWriter = new PacketWriter();
+            payloadWriter.Write(1u);
+            payloadWriter.Write(new MovementData(123, 0, -170, 180, MovementType.Running).ToBytes());
+            payloadWriter.Write(new MovementData(124, 0, -171, 180, MovementType.Running).ToBytes());
+
+            await handler.HandleAsync(payloadWriter.ToBytes(), session, TestContext.Current.CancellationToken);
+
+            Assert.Empty(session.Sent);
+            var sent = Assert.Single(peer.Sent);
+            Assert.Equal(PacketType.AvatarNotifyMove, sent.Type);
+            var reader = new PacketReader(sent.Payload);
+            Assert.Equal(2u, reader.ReadUInt());
+            Assert.Equal(RoboRepository.GetObjectId(1, 1), reader.ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     [Fact]

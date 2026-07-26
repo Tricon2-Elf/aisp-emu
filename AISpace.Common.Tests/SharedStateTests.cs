@@ -1,4 +1,5 @@
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
@@ -74,10 +75,15 @@ public class SharedStateTests
         state.RegisterClient(ServerType.Area, source);
         state.RegisterClient(ServerType.Area, sameAreaPeer);
         state.RegisterClient(ServerType.Area, otherMapPeer);
+        source.AccompanyingRoboIds.Add(1);
+        var remoteRoboId = RoboRepository.GetObjectId(source.CharacterId, 1);
+        sameAreaPeer.VisibleRemoteRoboObjectIds.Add(remoteRoboId);
 
         await state.BroadcastAreaDisappearAsync(source, TestContext.Current.CancellationToken);
 
-        Assert.Contains(sameAreaPeer.Sent, p => p.Type == PacketType.NotifyDisappearChara);
+        var disappearedObjectIds = sameAreaPeer.Sent.Where(p => p.Type == PacketType.NotifyDisappearChara).Select(p => new PacketReader(p.Payload).ReadUInt()).ToArray();
+        Assert.Equal([source.CharacterId, remoteRoboId], disappearedObjectIds);
+        Assert.DoesNotContain(remoteRoboId, sameAreaPeer.VisibleRemoteRoboObjectIds);
         Assert.DoesNotContain(otherMapPeer.Sent, p => p.Type == PacketType.NotifyDisappearChara);
     }
 
@@ -105,6 +111,8 @@ public class SharedStateTests
         public NpcEventKind ActiveEventKind { get; set; }
         public EventCompletionPolicy ActiveEventCompletionPolicy { get; set; }
         public ServerScriptState? ServerScriptState { get; set; }
+        public ISet<uint> AccompanyingRoboIds { get; } = new HashSet<uint>();
+        public ISet<uint> VisibleRemoteRoboObjectIds { get; } = new HashSet<uint>();
         public bool IsAuthenticated => User != null;
         public List<(PacketType Type, byte[] Payload)> Sent { get; } = [];
 

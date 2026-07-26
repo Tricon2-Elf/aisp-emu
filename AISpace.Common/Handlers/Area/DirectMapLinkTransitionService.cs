@@ -239,12 +239,8 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
         var sourceChannelId = session.ChannelId;
 
-        var oldPeers = state.GetAreaPeers(session).ToList();
-        var disappearPacket = new NotifyDisappearChara(session.CharacterId).ToBytes();
-        foreach (var other in oldPeers)
-        {
-            await other.SendAsync(PacketType.NotifyDisappearChara, disappearPacket, ct);
-        }
+        await state.BroadcastAreaDisappearAsync(session, ct);
+        await state.ClearRemoteRobosAsync(session, ct);
 
         var updatedCharacter = await characterRepository.UpdateCurrentMapAsync(character.Id, destinationMapId, ct) ?? character;
         updatedCharacter.CurrentMapId = destinationMapId;

@@ -253,7 +253,7 @@ public class AreaMyRoomSystemActorTests
         try
         {
             await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
-            var objectId = RoboObjectIds.For(1);
+            var objectId = RoboRepository.GetObjectId(42, 1);
             var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Room Robo"), state: 0) { OwnerAvatarId = 42 };
 
             await using (var writeDb = new MainContext(options))
@@ -271,9 +271,11 @@ public class AreaMyRoomSystemActorTests
                 Z = -220f,
                 Rotation = 180,
             };
+            session.AccompanyingRoboIds.Add(1);
 
             await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
 
+            Assert.Empty(session.AccompanyingRoboIds);
             Assert.Collection(
                 session.Sent,
                 packet =>

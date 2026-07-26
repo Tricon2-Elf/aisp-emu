@@ -1,0 +1,109 @@
+using AISpace.Common.DAL;
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
+using AISpace.Common.Handlers.Area;
+using AISpace.Common.Tests.Support;
+using AISpace.Network;
+using AISpace.Network.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace AISpace.Common.Tests;
+
+public class AreaRoboPresenceTests
+{
+    [Fact]
+    public async Task MapDataEnterEnd_SynchronizesAccompanyingRobosInBothDirections()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+            await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+            await using (var seedDb = new MainContext(options))
+            {
+                var objectId = RoboRepository.GetObjectId(1, 1);
+                var robo = new RoboData(1, new CharaData(objectId, 1002011, "Following Robo"), (uint)RoboState.Accompanying) { OwnerAvatarId = 1 };
+                await new RoboRepository(seedDb).UpsertAsync(1, robo, TestContext.Current.CancellationToken);
+
+                var peerObjectId = RoboRepository.GetObjectId(2, 1);
+                var peerRobo = new RoboData(1, new CharaData(peerObjectId, 1002011, "Peer Robo"), (uint)RoboState.Accompanying) { OwnerAvatarId = 2 };
+                await new RoboRepository(seedDb).UpsertAsync(2, peerRobo, TestContext.Current.CancellationToken);
+            }
+
+            AISpace.Common.DAL.Entities.Character ownerCharacter;
+            AISpace.Common.DAL.Entities.Character peerCharacter;
+            await using (var characterDb = new MainContext(options))
+            {
+                ownerCharacter = await characterDb.Characters.AsNoTracking().SingleAsync(x => x.Id == 1, TestContext.Current.CancellationToken);
+                peerCharacter = await characterDb.Characters.AsNoTracking().SingleAsync(x => x.Id == 2, TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var owner = new CapturingPlayerSession
+            {
+                CharacterId = 1,
+                Character = ownerCharacter,
+                MapId = 40990200,
+                ChannelId = 1,
+                X = 10,
+                Y = 20,
+                Z = 30,
+                Rotation = 180,
+            };
+            var peer = new CapturingPlayerSession
+            {
+                CharacterId = 2,
+                Character = peerCharacter,
+                MapId = 40990200,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, owner);
+            state.RegisterClient(ServerType.Area, peer);
+            owner.AccompanyingRoboIds.Add(1);
+            peer.AccompanyingRoboIds.Add(1);
+
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance, null, new RoboRepository(handlerDb));
+            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, owner, TestContext.Current.CancellationToken);
+
+            Assert.Collection(
+                peer.Sent,
+                sent => Assert.Equal(PacketType.AvatarNotifyData, sent.Type),
+                sent =>
+                {
+                    Assert.Equal(PacketType.NotifyRoboData, sent.Type);
+                    var reader = new PacketReader(sent.Payload);
+                    Assert.Equal(0u, reader.ReadUInt());
+                    var remote = RoboData.FromBytes(reader.ReadBytes(RoboData.WireSize));
+                    Assert.Equal(1u, remote.RoboId);
+                    Assert.Equal(1u, remote.OwnerAvatarId);
+                    Assert.Equal(RoboRepository.GetObjectId(1, 1), remote.Character.SlotId);
+                    Assert.Equal((uint)RoboState.Accompanying, remote.State);
+                }
+            );
+
+            Assert.Collection(
+                owner.Sent,
+                sent => Assert.Equal(PacketType.MapDataEnterEndResponse, sent.Type),
+                sent => Assert.Equal(PacketType.AvatarNotifyData, sent.Type),
+                sent =>
+                {
+                    Assert.Equal(PacketType.NotifyRoboData, sent.Type);
+                    var reader = new PacketReader(sent.Payload);
+                    Assert.Equal(0u, reader.ReadUInt());
+                    var remote = RoboData.FromBytes(reader.ReadBytes(RoboData.WireSize));
+                    Assert.Equal(1u, remote.RoboId);
+                    Assert.Equal(2u, remote.OwnerAvatarId);
+                }
+            );
+            Assert.Contains(RoboRepository.GetObjectId(1, 1), peer.VisibleRemoteRoboObjectIds);
+            Assert.Contains(RoboRepository.GetObjectId(2, 1), owner.VisibleRemoteRoboObjectIds);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+}

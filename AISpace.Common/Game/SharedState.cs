@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Game;
@@ -112,6 +113,30 @@ public class SharedState
         return includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId).ToList();
     }
 
+    public static RoboData PrepareOwnedRobo(RoboData robo, IPlayerSession owner)
+    {
+        robo.OwnerAvatarId = owner.CharacterId;
+        if (owner.AccompanyingRoboIds.Contains(robo.RoboId))
+        {
+            robo.State = (uint)RoboState.Accompanying;
+            ApplyRoboMap(robo, owner);
+        }
+        else
+        {
+            robo.State = (uint)RoboState.InMyRoom;
+            robo.Character.Map = new CharacterMapData();
+        }
+
+        return robo;
+    }
+
+    public static RoboData PrepareRemoteRobo(RoboData robo, IPlayerSession owner)
+    {
+        robo.State = (uint)RoboState.Accompanying;
+        ApplyRoboMap(robo, owner);
+        return robo;
+    }
+
     public async Task BroadcastAreaDisappearAsync(IPlayerSession session, CancellationToken ct = default)
     {
         if (session.CharacterId == 0)
@@ -123,7 +148,26 @@ public class SharedState
 
         var payload = new NotifyDisappearChara(session.CharacterId).ToBytes();
         foreach (var peer in peers)
+        {
             await peer.SendAsync(PacketType.NotifyDisappearChara, payload, ct);
+
+            foreach (var roboId in session.AccompanyingRoboIds)
+                await SendRoboDisappearAsync(peer, session.CharacterId, roboId, ct);
+        }
+    }
+
+    public async Task BroadcastRoboDisappearAsync(IPlayerSession owner, uint roboId, CancellationToken ct = default)
+    {
+        foreach (var peer in GetAreaPeers(owner))
+            await SendRoboDisappearAsync(peer, owner.CharacterId, roboId, ct);
+    }
+
+    public async Task ClearRemoteRobosAsync(IPlayerSession session, CancellationToken ct = default)
+    {
+        foreach (var remoteRoboObjectId in session.VisibleRemoteRoboObjectIds.ToArray())
+            await session.SendAsync(PacketType.NotifyDisappearChara, new NotifyDisappearChara(remoteRoboObjectId).ToBytes(), ct);
+
+        session.VisibleRemoteRoboObjectIds.Clear();
     }
 
     public IPlayerSession? GetAreaSessionByCharacterId(uint characterId, uint? mapId = null, int? channelId = null)
@@ -137,6 +181,26 @@ public class SharedState
 
         _sessionStore.TryGetSession(presence.ConnectionId, out var session);
         return session;
+    }
+
+    private static async Task SendRoboDisappearAsync(IPlayerSession peer, uint ownerCharacterId, uint roboId, CancellationToken ct)
+    {
+        var remoteRoboObjectId = RoboRepository.GetObjectId(ownerCharacterId, roboId);
+        if (!peer.VisibleRemoteRoboObjectIds.Remove(remoteRoboObjectId))
+            return;
+
+        await peer.SendAsync(PacketType.NotifyDisappearChara, new NotifyDisappearChara(remoteRoboObjectId).ToBytes(), ct);
+    }
+
+    private static void ApplyRoboMap(RoboData robo, IPlayerSession owner)
+    {
+        robo.OwnerAvatarId = owner.CharacterId;
+        robo.Character.Map = new CharacterMapData
+        {
+            ChannelId = checked((uint)owner.ChannelId),
+            MapId = owner.MapId,
+            Movement = new MovementData(owner.X, owner.Y, owner.Z, owner.Rotation, MovementType.Stopped),
+        };
     }
 
     public IPlayerSession? GetAreaSessionByUserId(int userId, uint? mapId = null, int? channelId = null)

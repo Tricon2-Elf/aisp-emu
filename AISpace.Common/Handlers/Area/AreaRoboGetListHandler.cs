@@ -16,7 +16,7 @@ public class AreaRoboGetListHandler(IRoboRepository roboRepository) : IPacketHan
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var characterId = checked((int)session.CharacterId);
-        var robos = await roboRepository.GetAllAsync(characterId, ct);
-        await session.SendAsync(ResponseType, new RoboGetListResponse(robos).ToBytes(), ct);
+        var ownedRobos = (await roboRepository.GetAllAsync(characterId, ct)).Take(RoboGetListResponse.MaximumRoboCount).Select(robo => SharedState.PrepareOwnedRobo(robo, session)).ToList();
+        await session.SendAsync(ResponseType, new RoboGetListResponse(ownedRobos).ToBytes(), ct);
     }
 }

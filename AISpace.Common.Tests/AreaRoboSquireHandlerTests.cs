@@ -12,20 +12,20 @@ namespace AISpace.Common.Tests;
 public class AreaRoboSquireHandlerTests
 {
     [Fact]
-    public async Task HandleAsync_MarksOwnedRoboAsAccompanyingBeforeSuccessResponse()
+    public async Task HandleAsync_MarksOwnedRoboAsAccompanyingOnlyForCurrentSession()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
             await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
-            var objectId = RoboObjectIds.For(1);
+            var objectId = RoboRepository.GetObjectId(1, 1);
             var chara = new CharaData(objectId, 1002011, "Robot") { Visual = new CharaVisual(BloodType.A, 1, 1, 0, objectId, 0, 10930010) };
             await using (var seedDb = new MainContext(options))
                 await new RoboRepository(seedDb).UpsertAsync(1, new RoboData(1, chara, (uint)RoboState.InMyRoom) { OwnerAvatarId = 1 }, TestContext.Current.CancellationToken);
 
             await using (var handlerDb = new MainContext(options))
             {
-                var handler = new AreaRoboSquireHandler(new RoboRepository(handlerDb), NullLogger<AreaRoboSquireHandler>.Instance);
+                var state = new SharedState();
                 var session = new CapturingPlayerSession
                 {
                     CharacterId = 1,
@@ -36,11 +36,21 @@ public class AreaRoboSquireHandlerTests
                     Z = 33,
                     Rotation = 180,
                 };
+                var peer = new CapturingPlayerSession
+                {
+                    CharacterId = 2,
+                    ChannelId = 4,
+                    MapId = 40000001,
+                };
+                state.RegisterClient(ServerType.Area, session);
+                state.RegisterClient(ServerType.Area, peer);
+                var handler = new AreaRoboSquireHandler(new RoboRepository(handlerDb), NullLogger<AreaRoboSquireHandler>.Instance, state);
                 var writer = new PacketWriter();
                 writer.Write(1u);
 
                 await handler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
 
+                Assert.Contains(1u, session.AccompanyingRoboIds);
                 Assert.Collection(
                     session.Sent,
                     sent =>
@@ -66,12 +76,21 @@ public class AreaRoboSquireHandlerTests
                         Assert.Equal(0u, reader.ReadUInt());
                     }
                 );
+
+                var peerNotify = Assert.Single(peer.Sent);
+                Assert.Equal(PacketType.NotifyRoboData, peerNotify.Type);
+                var notifyReader = new PacketReader(peerNotify.Payload);
+                Assert.Equal(0u, notifyReader.ReadUInt());
+                var remote = RoboData.FromBytes(notifyReader.ReadBytes(RoboData.WireSize));
+                Assert.Equal(1u, remote.RoboId);
+                Assert.Equal(1u, remote.OwnerAvatarId);
+                Assert.Equal(objectId, remote.Character.SlotId);
             }
 
             await using var verifyDb = new MainContext(options);
             var stored = await new RoboRepository(verifyDb).GetAsync(1, 1, TestContext.Current.CancellationToken);
             Assert.NotNull(stored);
-            Assert.Equal((uint)RoboState.Accompanying, stored.State);
+            Assert.Equal((uint)RoboState.InMyRoom, stored.State);
         }
         finally
         {
