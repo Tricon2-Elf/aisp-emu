@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaRoboCallHandler(IRoboRepository roboRepository, ILogger<AreaRoboCallHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaRoboCallHandler(IRoboRepository roboRepository, ILogger<AreaRoboCallHandler> logger, SharedState? state = null) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.RoboCallRequest;
     public PacketType ResponseType => PacketType.RoboCallResponse;
@@ -27,7 +27,9 @@ public class AreaRoboCallHandler(IRoboRepository roboRepository, ILogger<AreaRob
             return;
         }
 
-        await roboRepository.UpdateStateAsync(characterId, request.RoboId, (uint)RoboState.InMyRoom, ct);
+        session.AccompanyingRoboIds.Remove(request.RoboId);
+        if (state is not null)
+            await state.BroadcastRoboDisappearAsync(session, request.RoboId, ct);
 
         var map = new CharacterMapData
         {

@@ -563,6 +563,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_robo_list_r", ImplementationState.Implemented)]
     RoboGetListResponse = 0xF606,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_robo_data", ImplementationState.Implemented)]
+    NotifyRoboData = 0x1029,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_robo_create_info", ImplementationState.Implemented)]
     GetRoboCreateInfoRequest = 0x252C,
 

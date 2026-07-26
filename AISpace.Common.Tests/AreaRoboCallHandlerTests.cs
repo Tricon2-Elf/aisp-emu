@@ -19,7 +19,7 @@ public class AreaRoboCallHandlerTests
         try
         {
             await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
-            var objectId = RoboObjectIds.For(1);
+            var objectId = RoboRepository.GetObjectId(1, 1);
             var chara = new CharaData(objectId, 1002011, "Robot") { Visual = new CharaVisual(BloodType.A, 1, 1, 0, objectId, 0, 10930010) };
             await using (var seedDb = new MainContext(options))
             {
@@ -48,11 +48,13 @@ public class AreaRoboCallHandlerTests
                     Z = 30,
                     Rotation = 180,
                 };
+                session.AccompanyingRoboIds.Add(1);
                 var writer = new PacketWriter();
                 writer.Write(1u);
 
                 await handler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
 
+                Assert.Empty(session.AccompanyingRoboIds);
                 Assert.Collection(
                     session.Sent,
                     sent =>

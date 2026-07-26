@@ -109,6 +109,8 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.ActiveEventCompletionPolicy = EventCompletionPolicy.Once;
         session.ServerScriptState = null;
         session.PendingEventEndAfterFade = false;
+        session.AccompanyingRoboIds.Clear();
+        session.VisibleRemoteRoboObjectIds.Clear();
         session.Character = chara;
         session.CharacterId = charId;
         session.MapId = mapId;
