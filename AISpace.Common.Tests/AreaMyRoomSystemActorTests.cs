@@ -79,14 +79,14 @@ public class AreaMyRoomSystemActorTests
     }
 
     [Fact]
-    public async Task DoorAccess_ChainsScriptsTeleportsToUdxThenPlaysBat0101021()
+    public async Task DoorAccess_ChainsScriptsTeleportsToUdxThenReturnsToOriginalMyRoom()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
             await using var db = new MainContext(options);
             await SeedMyRoomActorsAsync(db);
-            await SeedUdxDestinationAsync(db);
+            await SeedDoorTravelMapsAsync(db);
 
             var user = new User { Username = "myroom-door-user" };
             var character = new Character
@@ -95,7 +95,7 @@ public class AreaMyRoomSystemActorTests
                 User = user,
                 ModelId = 1,
                 Birthdate = DateTime.UnixEpoch,
-                CurrentMapId = MyRoomInfo.BaseMapId,
+                CurrentMapId = MyRoomInfo.TwelveTatamiMapId,
             };
             db.Users.Add(user);
             db.Characters.Add(character);
@@ -111,7 +111,7 @@ public class AreaMyRoomSystemActorTests
             var mapDataEnterEndHandler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance, dispatcher);
             var session = new CapturingPlayerSession
             {
-                MapId = MyRoomInfo.BaseMapId,
+                MapId = MyRoomInfo.TwelveTatamiMapId,
                 ChannelId = 1,
                 CharacterId = (uint)character.Id,
                 User = user,
@@ -120,7 +120,7 @@ public class AreaMyRoomSystemActorTests
             session.User!.Characters.Add(character);
             session.Character = character;
 
-            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
+            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF31), session, TestContext.Current.CancellationToken);
 
             Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
@@ -164,15 +164,81 @@ public class AreaMyRoomSystemActorTests
             Assert.Null(session.ActiveEventKey);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
             Assert.True(await eventRepository.HasCompletedAsync(character.Id, ServerEvents.Keys.MyRoomDoor, TestContext.Current.CancellationToken));
+            Assert.Equal(MyRoomInfo.TwelveTatamiMapId, session.MapId);
+            Assert.True(session.IsMapTransitionPending);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyChangeMyRoom);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
 
-            session.MapId = MyRoomInfo.BaseMapId;
-            session.Sent.Clear();
+    [Fact]
+    public async Task CompletedDoorAccess_ClosesOrReturnsToHomeIslandShoppingArea()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            await SeedMyRoomActorsAsync(db);
+            await SeedDoorTravelMapsAsync(db);
+
+            var user = new User { Username = "completed-myroom-door-user" };
+            var character = new Character
+            {
+                Name = "Completed Door Tester",
+                User = user,
+                ModelId = 1,
+                Birthdate = DateTime.UnixEpoch,
+                CurrentMapId = MyRoomInfo.BaseMapId,
+                HomeIslandId = 2,
+            };
+            db.Users.Add(user);
+            db.Characters.Add(character);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var eventRepository = new CharacterEventRepository(db);
+            await eventRepository.MarkCompletedAsync(character.Id, ServerEvents.Keys.MyRoomDoor, TestContext.Current.CancellationToken);
+
+            var dispatcher = CreateDispatcher(db);
+            var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(db), new ShopRepository(db), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
+            var selectHandler = new AreaEventSelectExecRHandler(dispatcher, NullLogger<AreaEventSelectExecRHandler>.Instance);
+            var session = new CapturingPlayerSession
+            {
+                MapId = MyRoomInfo.BaseMapId,
+                ChannelId = 1,
+                CharacterId = (uint)character.Id,
+                User = user,
+                Character = character,
+            };
+            user.Characters.Add(character);
+
             await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
 
+            Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
+            Assert.Equal(0u, ReadResult(session.Sent.Single(packet => packet.Type == PacketType.EventAccessNpcResponse).Payload));
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventStartNotify);
+            var popupOptions = session.Sent.Where(packet => packet.Type == PacketType.EventSelectPushNotify).ToArray();
+            Assert.Equal(2, popupOptions.Length);
+            Assert.Equal("Return to Shopping Area", new PacketReader(popupOptions[0].Payload).ReadString("utf-8"));
+            Assert.Equal("Close", new PacketReader(popupOptions[1].Payload).ReadString("utf-8"));
+
+            await selectHandler.HandleAsync(BuildEventSelectionPayload(1), session, TestContext.Current.CancellationToken);
+
             Assert.Null(session.ActiveEventKey);
-            var replayResponse = Assert.Single(session.Sent);
-            Assert.Equal(PacketType.EventAccessNpcResponse, replayResponse.Type);
-            Assert.Equal(1u, ReadResult(replayResponse.Payload));
+            Assert.Equal(MyRoomInfo.BaseMapId, session.MapId);
+            Assert.DoesNotContain(session.Sent, packet => packet.Type is PacketType.NotifyChangeMap or PacketType.NotifyChangeMyRoom);
+
+            session.Sent.Clear();
+            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
+            await selectHandler.HandleAsync(BuildEventSelectionPayload(0), session, TestContext.Current.CancellationToken);
+
+            Assert.Null(session.ActiveEventKey);
+            Assert.Equal(10_020_200u, session.MapId);
+            Assert.True(session.IsMapTransitionPending);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
         }
         finally
         {
@@ -319,9 +385,13 @@ public class AreaMyRoomSystemActorTests
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private static async Task SeedUdxDestinationAsync(MainContext db)
+    private static async Task SeedDoorTravelMapsAsync(MainContext db)
     {
-        db.Maps.Add(
+        db.Maps.AddRange(
+            new Map { MapId = MyRoomInfo.SixTatamiMapId, Name = "MyRoom (6 tatami)" },
+            new Map { MapId = MyRoomInfo.EightTatamiMapId, Name = "MyRoom (8 tatami)" },
+            new Map { MapId = MyRoomInfo.TenTatamiMapId, Name = "MyRoom (10 tatami)" },
+            new Map { MapId = MyRoomInfo.TwelveTatamiMapId, Name = "MyRoom (12 tatami)" },
             new Map
             {
                 MapId = MyRoomDoorServerScript.AkihabaraUdxMapId,
@@ -330,7 +400,10 @@ public class AreaMyRoomSystemActorTests
                 SpawnY = 0.1f,
                 SpawnZ = -15219,
                 SpawnRotation = 180,
-            }
+            },
+            new Map { MapId = 10_010_200, Name = "Da Capo Shopping Street" },
+            new Map { MapId = 10_020_200, Name = "Clannad Shopping Street" },
+            new Map { MapId = 10_030_200, Name = "Shuffle Shopping Street" }
         );
         db.Channels.Add(
             new GameChannel
