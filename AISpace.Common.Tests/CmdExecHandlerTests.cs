@@ -99,14 +99,17 @@ public class CmdExecHandlerTests
         }
     }
 
-    [Fact]
-    public async Task MyRoomCommand_TeleportsAreaSessionToBaseMyRoomMap()
+    [Theory]
+    [InlineData("/myroom")]
+    [InlineData("/room")]
+    public async Task MyRoomCommand_TeleportsRegisteredAreaSessionToBaseMyRoomMap(string command)
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
 
         try
         {
             var user = CreateUserWithCharacter(1, 8008, "myroom-user", "MyRoom User", 10990100);
+            user.Characters.First().HomeIslandId = 1;
 
             await using (var db = new MainContext(options))
             {
@@ -159,7 +162,7 @@ public class CmdExecHandlerTests
 
             var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
 
-            await handler.HandleAsync(BuildCmdExecPayload("/room"), msgSession, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(BuildCmdExecPayload(command), msgSession, TestContext.Current.CancellationToken);
 
             Assert.Equal(MyRoomInfo.BaseMapId, areaSession.MapId);
             Assert.Equal(0f, areaSession.X);
@@ -172,6 +175,65 @@ public class CmdExecHandlerTests
             await using var verifyDb = new MainContext(options);
             var persisted = await verifyDb.Characters.SingleAsync(c => c.Id == 8008, TestContext.Current.CancellationToken);
             Assert.Equal(MyRoomInfo.BaseMapId, persisted.CurrentMapId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Theory]
+    [InlineData("/myroom")]
+    [InlineData("/room")]
+    public async Task MyRoomCommand_DoesNotTeleportCharacterWithoutHomeIsland(string command)
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8009, "unregistered-myroom-user", "Unregistered MyRoom User", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                db.Maps.AddRange(new Map { MapId = 10990100, Name = "Akihabara" }, new Map { MapId = MyRoomInfo.BaseMapId, Name = "My Room (6 tatami mats)" });
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8009,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = new CmdExecHandler(state, new MapRepository(new MainContext(options)), new UserRepository(new MainContext(options)), new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance), new StubItemBaseListCache(), CreateDirectMapLinkTransitionService(options, state), NullLogger<CmdExecHandler>.Instance);
+
+            await handler.HandleAsync(BuildCmdExecPayload(command), msgSession, TestContext.Current.CancellationToken);
+
+            Assert.Equal(10990100u, areaSession.MapId);
+            Assert.Equal(10990100u, areaSession.Character!.CurrentMapId);
+            Assert.DoesNotContain(areaSession.Sent, packet => packet.Type is PacketType.NotifyChangeMap or PacketType.NotifyChangeMyRoom);
+            Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+
+            await using var verifyDb = new MainContext(options);
+            var persisted = await verifyDb.Characters.SingleAsync(c => c.Id == 8009, TestContext.Current.CancellationToken);
+            Assert.Equal(10990100u, persisted.CurrentMapId);
         }
         finally
         {

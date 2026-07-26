@@ -77,12 +77,20 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
         if (cmd is "myroom" or "room")
         {
             var areaClient = ResolveAreaClient(session);
-            if (areaClient == null)
+            if (areaClient == null || areaClient.CharacterId == 0)
             {
                 logger.LogWarning("CmdExecHandler: myroom requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
                 return;
             }
 
+            var character = await characterRepo.GetByIdAsync(checked((int)areaClient.CharacterId), ct);
+            if (character is null || character.HomeIslandId == 0)
+            {
+                logger.LogWarning("CmdExecHandler: myroom requires character {CharacterId} to have a home island", areaClient.CharacterId);
+                return;
+            }
+
+            areaClient.Character = character;
             var destinationMapId = MyRoomInfo.BaseMapId;
             if (!await directMapLinkTransitionService.TryTeleportToMapAsync(areaClient, destinationMapId, ct))
             {
