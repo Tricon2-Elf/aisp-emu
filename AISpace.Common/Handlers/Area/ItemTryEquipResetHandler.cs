@@ -1,14 +1,13 @@
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemTryEquipResetHandler(ICharacterRepository characterRepo, ILogger<ItemTryEquipResetHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class ItemTryEquipResetHandler(ICharacterRepository characterRepo, IRoboRepository roboRepository, ILogger<ItemTryEquipResetHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemTryEquipResetRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipResetResponse;
@@ -19,27 +18,35 @@ public class ItemTryEquipResetHandler(ICharacterRepository characterRepo, ILogge
         var request = ItemTryEquipResetRequest.FromBytes(payload.Span);
         logger.LogInformation("Client {Id} requested ItemTryEquipReset for ObjId: {ObjId}", session.ConnectionId, request.ObjId);
 
-        // Cancel (sub_529380): client reverts locally via sub_528770, sends reset, keeps wardrobe open.
-        // reset_r (sub_529E80) clears the in-flight wait (5342) via sub_526F10 — it does NOT close the UI.
-        // If try-on updated the live CChara equip, local revert can be incomplete; echo saved DB equips
-        // through replaced so recv_item_try_equip_replaced re-applies the entry outfit (sub_5296C0).
-        await session.SendAsync(ResponseType, new ItemTryEquipResetResponse(0).ToBytes(), ct);
-
-        if (session.CharacterId != 0)
+        if (session.CharacterId == 0)
         {
-            var character = await characterRepo.GetByIdAsync((int)session.CharacterId, ct);
-            if (character is not null)
-            {
-                var equips = TryEquipNotifyBuilder.FromCharacter(character);
-                if (equips.Count > 0)
-                {
-                    await session.SendAsync(
-                        PacketType.ItemTryEquipReplacedNotify,
-                        new ItemTryEquipReplacedNotify(request.ObjId, equips).ToBytes(),
-                        ct
-                    );
-                }
-            }
+            await session.SendAsync(ResponseType, new ItemTryEquipResetResponse(1).ToBytes(), ct);
+            return;
         }
+
+        IReadOnlyList<ItemEquipEntry>? equipment = null;
+        if (request.ObjId == session.CharacterId)
+        {
+            var character = await characterRepo.GetByIdAsync(checked((int)session.CharacterId), ct);
+            if (character is not null)
+                equipment = TryEquipNotifyBuilder.FromCharacter(character);
+        }
+        else if (RoboRepository.TryGetRoboId(session.CharacterId, request.ObjId, out var roboId))
+        {
+            var robo = await roboRepository.GetAsync(checked((int)session.CharacterId), roboId, ct);
+            if (robo is not null)
+                equipment = TryEquipNotifyBuilder.FromRobo(robo);
+        }
+
+        if (equipment is null)
+        {
+            await session.SendAsync(ResponseType, new ItemTryEquipResetResponse(1).ToBytes(), ct);
+            return;
+        }
+
+        // Cancel (sub_529380): client reverts locally via sub_528770, sends reset, keeps wardrobe open.
+        // Echo the persisted target equipment so recv_item_try_equip_replaced re-applies the entry outfit.
+        await session.SendAsync(ResponseType, new ItemTryEquipResetResponse(0).ToBytes(), ct);
+        await session.SendAsync(PacketType.ItemTryEquipReplacedNotify, new ItemTryEquipReplacedNotify(request.ObjId, equipment).ToBytes(), ct);
     }
 }

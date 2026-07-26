@@ -1,4 +1,5 @@
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.Game;
 using AISpace.Network.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ public interface IRoboRepository
     Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<IReadOnlyList<RoboData>> GetAllAsync(int characterId, CancellationToken ct = default);
+    Task<RoboData?> ReplaceEquipmentAsync(int characterId, uint roboId, IReadOnlyList<ItemEquipEntry> equips, CancellationToken ct = default);
     Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default);
 }
 
@@ -30,6 +32,26 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         return objectId;
     }
 
+    public static bool TryGetRoboId(uint ownerCharacterId, uint objectId, out uint roboId)
+    {
+        var firstObjectId = (ulong)ObjectIdBase + (ulong)ownerCharacterId * MaximumRobosPerCharacter;
+        if (firstObjectId > MaximumClientObjectId || (ulong)objectId < firstObjectId)
+        {
+            roboId = 0;
+            return false;
+        }
+
+        var offset = (ulong)objectId - firstObjectId;
+        if (offset >= MaximumRobosPerCharacter)
+        {
+            roboId = 0;
+            return false;
+        }
+
+        roboId = checked((uint)offset + 1);
+        return true;
+    }
+
     public Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default)
     {
         return db.Robos.AsNoTracking().AnyAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
@@ -45,6 +67,44 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
     {
         var entities = await WithDetails(db.Robos.AsNoTracking()).Where(x => x.CharacterId == characterId).OrderBy(x => x.RoboId).ToListAsync(ct);
         return entities.Select(ToRoboData).ToList();
+    }
+
+    public async Task<RoboData?> ReplaceEquipmentAsync(int characterId, uint roboId, IReadOnlyList<ItemEquipEntry> equips, CancellationToken ct = default)
+    {
+        if (equips.Count > CharaData.EquipmentSlotCount)
+            throw new InvalidDataException($"Robo equipment cannot contain more than {CharaData.EquipmentSlotCount} entries.");
+
+        var entity = await WithDetails(db.Robos).SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        if (entity is null)
+            return null;
+
+        var equipmentBySlot = new Dictionary<byte, ItemEquipEntry>();
+        foreach (var equip in equips)
+        {
+            if (equip.ItemId == 0 || !EquipSlotMapper.TryResolveSlotIndex(equip.ItemId, equip.SocketBit, out var slotIndex))
+                continue;
+
+            var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId);
+            equipmentBySlot[slotIndex] = socket == 0 ? equip : new ItemEquipEntry(equip.ItemId, socket);
+        }
+
+        foreach (var row in entity.Equipment)
+        {
+            if (equipmentBySlot.TryGetValue(row.SlotIndex, out var equip))
+            {
+                row.ItemId = equip.ItemId;
+                row.Socket = equip.SocketBit;
+            }
+            else
+            {
+                row.ItemId = 0;
+                row.Socket = 0;
+            }
+        }
+
+        entity.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return ToRoboData(entity);
     }
 
     public async Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default)
