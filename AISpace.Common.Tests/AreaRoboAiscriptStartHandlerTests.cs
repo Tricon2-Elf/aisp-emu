@@ -20,7 +20,7 @@ public class AreaRoboAiscriptStartHandlerTests
             await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
             await using (var seedDb = new MainContext(options))
             {
-                var objectId = RoboObjectIds.For(1);
+                var objectId = RoboRepository.GetObjectId(1, 1);
                 var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Owned Robo")) { OwnerAvatarId = 1 };
                 await new RoboRepository(seedDb).UpsertAsync(1, robo, TestContext.Current.CancellationToken);
             }
@@ -43,7 +43,7 @@ public class AreaRoboAiscriptStartHandlerTests
             await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
             await using (var seedDb = new MainContext(options))
             {
-                var objectId = RoboObjectIds.For(1);
+                var objectId = RoboRepository.GetObjectId(2, 1);
                 var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Other Robo")) { OwnerAvatarId = 2 };
                 await new RoboRepository(seedDb).UpsertAsync(2, robo, TestContext.Current.CancellationToken);
             }

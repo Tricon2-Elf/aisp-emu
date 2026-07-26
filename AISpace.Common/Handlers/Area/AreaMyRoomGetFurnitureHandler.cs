@@ -21,6 +21,7 @@ public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository) : IPa
             var robos = await roboRepository.GetAllAsync(checked((int)session.CharacterId), ct);
             foreach (var robo in robos)
             {
+                session.AccompanyingRoboIds.Remove(robo.RoboId);
                 var map = new CharacterMapData
                 {
                     ChannelId = checked((uint)session.ChannelId),

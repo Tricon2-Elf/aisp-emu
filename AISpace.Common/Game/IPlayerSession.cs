@@ -32,6 +32,8 @@ public interface IPlayerSession
     NpcEventKind ActiveEventKind { get; set; }
     EventCompletionPolicy ActiveEventCompletionPolicy { get; set; }
     ServerScriptState? ServerScriptState { get; set; }
+    ISet<uint> AccompanyingRoboIds { get; }
+    ISet<uint> VisibleRemoteRoboObjectIds { get; }
     bool IsAuthenticated { get; }
 
     Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default);

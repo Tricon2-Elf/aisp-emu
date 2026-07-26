@@ -97,7 +97,7 @@ public class RoboRepositoryTests
 
     private static RoboData CreateRobo(uint characterId, uint roboId, string name)
     {
-        var objectId = RoboObjectIds.For(roboId);
+        var objectId = RoboRepository.GetObjectId(characterId, roboId);
         var character = new CharaData(objectId, 1002011, name)
         {
             Visual = new CharaVisual(BloodType.AB, 6, 7, 2, objectId, 3, 10930010),

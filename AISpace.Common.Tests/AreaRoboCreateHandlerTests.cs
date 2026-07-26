@@ -28,7 +28,7 @@ public class AreaRoboCreateHandlerTests
     [Fact]
     public void RoboData_WireSize_MatchesClientReadRoboData()
     {
-        var chara = new CharaData(RoboObjectIds.For(1), 1002011, "Robot");
+        var chara = new CharaData(RoboRepository.GetObjectId(1, 1), 1002011, "Robot");
         var bytes = new RoboData(1, chara).ToBytes();
         Assert.Equal(RoboData.WireSize, bytes.Length);
         Assert.Equal(sizeof(uint) + RoboData.WireSize, new RoboCreateResponse(0, new RoboData(1, chara)).ToBytes().Length);
@@ -62,7 +62,7 @@ public class AreaRoboCreateHandlerTests
             var stored = await new RoboRepository(restartedDb).GetAsync(42, 1, TestContext.Current.CancellationToken);
             Assert.NotNull(stored);
             Assert.Equal(42u, stored.OwnerAvatarId);
-            Assert.Equal(RoboObjectIds.For(1), stored.Chara.Visual.VisualId);
+            Assert.Equal(RoboRepository.GetObjectId(42, 1), stored.Chara.Visual.VisualId);
             Assert.Equal("Robot", stored.Character.Name);
         }
         finally

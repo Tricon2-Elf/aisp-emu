@@ -1,10 +1,36 @@
 using System.Buffers.Binary;
 using AISpace.Network.Data;
+using AISpace.Network.Packets.Area;
 
 namespace AISpace.Network.Tests;
 
 public class RoboDataTests
 {
+    [Fact]
+    public void NotifyRoboData_WritesResultAndOneRobo()
+    {
+        var robo = new RoboData(1, new CharaData(2_000_000_010, 1_002_011, "Remote Robo"), state: 2) { OwnerAvatarId = 7 };
+
+        var bytes = new NotifyRoboData(0, robo).ToBytes();
+
+        Assert.Equal(sizeof(uint) + RoboData.WireSize, bytes.Length);
+        var reader = new PacketReader(bytes);
+        Assert.Equal(0u, reader.ReadUInt());
+        var parsed = RoboData.FromBytes(reader.ReadBytes(RoboData.WireSize));
+        Assert.Equal(1u, parsed.RoboId);
+        Assert.Equal(7u, parsed.OwnerAvatarId);
+        Assert.Equal(2_000_000_010u, parsed.Character.SlotId);
+    }
+
+    [Fact]
+    public void RoboGetListResponse_RejectsMoreThanTenOwnedRobos()
+    {
+        var robo = new RoboData(1, new CharaData(2_000_000_010, 1_002_011, "Owned Robo"));
+        var response = new RoboGetListResponse(Enumerable.Repeat(robo, RoboGetListResponse.MaximumRoboCount + 1).ToList());
+
+        Assert.Throws<InvalidOperationException>(() => response.ToBytes());
+    }
+
     [Fact]
     public void RoboData_round_trips_the_complete_named_wire_layout()
     {

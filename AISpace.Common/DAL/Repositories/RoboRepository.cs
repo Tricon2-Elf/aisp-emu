@@ -1,5 +1,4 @@
 using AISpace.Common.DAL.Entities;
-using AISpace.Common.Game;
 using AISpace.Network.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,11 +10,26 @@ public interface IRoboRepository
     Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<IReadOnlyList<RoboData>> GetAllAsync(int characterId, CancellationToken ct = default);
     Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default);
-    Task<bool> UpdateStateAsync(int characterId, uint roboId, uint state, CancellationToken ct = default);
 }
 
 public sealed class RoboRepository(MainContext db) : IRoboRepository
 {
+    private const uint ObjectIdBase = 2_000_000_000u;
+    private const uint MaximumRobosPerCharacter = 10;
+    private const uint MaximumClientObjectId = int.MaxValue;
+
+    public static uint GetObjectId(uint ownerCharacterId, uint roboId)
+    {
+        if (roboId is 0 or > MaximumRobosPerCharacter)
+            throw new ArgumentOutOfRangeException(nameof(roboId), roboId, $"Robo IDs must be between 1 and {MaximumRobosPerCharacter}.");
+
+        var objectId = checked(ObjectIdBase + checked(ownerCharacterId * MaximumRobosPerCharacter) + roboId - 1);
+        if (objectId > MaximumClientObjectId)
+            throw new ArgumentOutOfRangeException(nameof(ownerCharacterId), ownerCharacterId, "Character ID is too large for the client object-ID namespace.");
+
+        return objectId;
+    }
+
     public Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default)
     {
         return db.Robos.AsNoTracking().AnyAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
@@ -59,18 +73,6 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         entity.UpdatedAt = now;
 
         await db.SaveChangesAsync(ct);
-    }
-
-    public async Task<bool> UpdateStateAsync(int characterId, uint roboId, uint state, CancellationToken ct = default)
-    {
-        var entity = await db.Robos.SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
-        if (entity is null)
-            return false;
-
-        entity.State = state;
-        entity.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
-        return true;
     }
 
     private static IQueryable<Robo> WithDetails(IQueryable<Robo> query)
@@ -274,7 +276,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
     {
         ValidateStoredCollections(entity);
         var tpsBattleData = entity.TpsBattleData;
-        var objectId = RoboObjectIds.For(entity.RoboId);
+        var objectId = GetObjectId(checked((uint)entity.CharacterId), entity.RoboId);
 
         var character = new CharaData(objectId, entity.ModelId, entity.Name)
         {

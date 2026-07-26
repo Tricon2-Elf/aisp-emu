@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaRoboSquireHandler(IRoboRepository roboRepository, ILogger<AreaRoboSquireHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaRoboSquireHandler(IRoboRepository roboRepository, ILogger<AreaRoboSquireHandler> logger, SharedState? state = null) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.RoboSquireRequest;
     public PacketType ResponseType => PacketType.RoboSquireResponse;
@@ -25,7 +25,7 @@ public class AreaRoboSquireHandler(IRoboRepository roboRepository, ILogger<AreaR
             return;
         }
 
-        await roboRepository.UpdateStateAsync(characterId, request.RoboId, (uint)RoboState.Accompanying, ct);
+        session.AccompanyingRoboIds.Add(request.RoboId);
 
         var map = new CharacterMapData
         {
@@ -39,6 +39,16 @@ public class AreaRoboSquireHandler(IRoboRepository roboRepository, ILogger<AreaR
         var stateUpdate = new NotifyUpdateRoboState(request.RoboId, robo.Character.SlotId, (uint)RoboState.Accompanying, map);
         await session.SendAsync(PacketType.NotifyUpdateRoboState, stateUpdate.ToBytes(), ct);
         await session.SendAsync(ResponseType, new RoboSquireResponse(request.RoboId, 0).ToBytes(), ct);
+
+        if (state is not null)
+        {
+            foreach (var peer in state.GetAreaPeers(session))
+            {
+                var remoteRobo = SharedState.PrepareRemoteRobo(robo, session);
+                if (peer.VisibleRemoteRoboObjectIds.Add(remoteRobo.Character.SlotId))
+                    await peer.SendAsync(PacketType.NotifyRoboData, new NotifyRoboData(0, remoteRobo).ToBytes(), ct);
+            }
+        }
 
         logger.LogInformation("Robo {RoboId} now accompanies character {CharacterId}", request.RoboId, session.CharacterId);
     }

@@ -39,6 +39,8 @@ public class PlayerSession : IPlayerSession
     public NpcEventKind ActiveEventKind { get; set; }
     public EventCompletionPolicy ActiveEventCompletionPolicy { get; set; }
     public ServerScriptState? ServerScriptState { get; set; }
+    public ISet<uint> AccompanyingRoboIds { get; } = new HashSet<uint>();
+    public ISet<uint> VisibleRemoteRoboObjectIds { get; } = new HashSet<uint>();
     public bool IsAuthenticated => User != null;
 
     public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) => ClientConnection.SendAsync(type, payload, ct);

@@ -22,7 +22,7 @@ public class AreaRoboCreateHandler(IRoboRepository roboRepository, ILogger<AreaR
         var request = RoboCreateRequest.FromBytes(payload.Span);
         // Client always calls the first doll as id 1 after create; keep ids stable.
         var roboId = DefaultRoboId;
-        var objectId = RoboObjectIds.For(roboId);
+        var objectId = RoboRepository.GetObjectId(session.CharacterId, roboId);
 
         logger.LogInformation("RoboCreateRequest from character {CharacterId}: name={Name}, model={ModelId}, visual={Visual}, objectId={ObjectId}", session.CharacterId, request.Name, request.ModelId, request.Visual, objectId);
 
