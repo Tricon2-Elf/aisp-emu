@@ -25,21 +25,30 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
         {
             Character cha = session.User!.Characters.First();
 
-            var dataResponse = new AvatarDataResponse((uint)cha.Id, cha.Name, cha.ModelId, 0, 0);
-            dataResponse.Visual.VisualId = (uint)cha.Id;
-            dataResponse.Visual.BloodType = cha.BloodType;
-            dataResponse.Visual.Month = (byte)cha.Birthdate.Month;
-            dataResponse.Visual.Day = (byte)cha.Birthdate.Day;
-            dataResponse.Visual.Gender = (uint)cha.Gender;
-            dataResponse.Visual.Face = (byte)cha.FaceType;
-            dataResponse.Visual.Hairstyle = cha.Hairstyle;
-            dataResponse.AddEquip(
-                cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
-                ItemEntityMapper.ResolveEquipSocket
-            );
+            var dataResponse = CreateDataResponse(cha, 0);
             await session.SendAsync(ResponseType, dataResponse.ToBytes(), ct);
         }
         var avatarGetDataResp = new AvatarGetDataResponse(0);
         await session.SendAsync(PacketType.AvatarGetDataResponse, avatarGetDataResp.ToBytes(), ct);
+    }
+
+    internal static AvatarDataResponse CreateDataResponse(Character character, uint slotId)
+    {
+        var dataResponse = new AvatarDataResponse((uint)character.Id, character.Name, character.ModelId, character.HomeIslandId, slotId);
+        dataResponse.Visual.VisualId = ResolveBuildId(character.ModelId);
+        dataResponse.Visual.BloodType = character.BloodType;
+        dataResponse.Visual.Month = (byte)character.Birthdate.Month;
+        dataResponse.Visual.Day = (byte)character.Birthdate.Day;
+        dataResponse.Visual.Gender = (uint)character.Gender;
+        dataResponse.Visual.Face = (byte)character.FaceType;
+        dataResponse.Visual.Hairstyle = character.Hairstyle;
+        dataResponse.AddEquip(character.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveEquipSocket);
+        return dataResponse;
+    }
+
+    private static uint ResolveBuildId(uint modelId)
+    {
+        var buildId = modelId / 10 % 10;
+        return buildId == 0 ? 1u : buildId;
     }
 }
