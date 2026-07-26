@@ -23,4 +23,13 @@ internal static class TryEquipNotifyBuilder
 
         return entries;
     }
+
+    /// <summary>
+    /// Builds the complete fixed-size equipment array consumed by recv_notify_update_robo_equip.
+    /// Robo equipment is positional, so empty slots must be retained.
+    /// </summary>
+    public static List<ItemEquipEntry> FromRobo(RoboData robo)
+    {
+        return robo.Character.Equips.Select(equip => new ItemEquipEntry(equip.ItemId, equip.Socket)).ToList();
+    }
 }

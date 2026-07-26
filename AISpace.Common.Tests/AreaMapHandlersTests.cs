@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Moq;
 
 namespace AISpace.Common.Tests;
 
@@ -2014,14 +2015,113 @@ public class AreaMapHandlersTests
         state.RegisterClient(ServerType.Area, differentMapPeer);
         state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-        var handler = new AreaEmotionCharaHandler(state);
+        var roboRepository = new Mock<IRoboRepository>();
+        var handler = new AreaEmotionCharaHandler(state, roboRepository.Object);
 
         await handler.HandleAsync(BuildUIntPairPayload(sender.CharacterId, 77), sender, TestContext.Current.CancellationToken);
 
-        Assert.Collection(sender.Sent, packet => Assert.Equal(PacketType.EmotionCharaResponse, packet.Type), packet => Assert.Equal(PacketType.NotifyEmotionChara, packet.Type));
-        Assert.Collection(sameAreaPeer.Sent, packet => Assert.Equal(PacketType.NotifyEmotionChara, packet.Type));
+        Assert.Collection(
+            sender.Sent,
+            packet =>
+            {
+                Assert.Equal(PacketType.EmotionCharaResponse, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(sender.CharacterId, reader.ReadUInt());
+                Assert.Equal(0u, reader.ReadUInt());
+            },
+            packet =>
+            {
+                Assert.Equal(PacketType.NotifyEmotionChara, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(sender.CharacterId, reader.ReadUInt());
+                Assert.Equal(77u, reader.ReadUInt());
+            }
+        );
+        Assert.Collection(
+            sameAreaPeer.Sent,
+            packet =>
+            {
+                Assert.Equal(PacketType.NotifyEmotionChara, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(sender.CharacterId, reader.ReadUInt());
+                Assert.Equal(77u, reader.ReadUInt());
+            }
+        );
         Assert.Empty(differentMapPeer.Sent);
         Assert.Empty(differentChannelPeer.Sent);
+    }
+
+    [Fact]
+    public async Task EmotionHandler_PreservesOwnedRoboObjectId()
+    {
+        var state = new SharedState();
+        var sender = CreateSession(CreateUserWithCharacter(1, 42, "emotion-user", "Emotion User", 20000000), 20000000, 1);
+        var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 20000000), 20000000, 1);
+        var roboObjectId = RoboRepository.GetObjectId(sender.CharacterId, 1);
+        var roboRepository = new Mock<IRoboRepository>();
+        roboRepository.Setup(x => x.ExistsAsync(checked((int)sender.CharacterId), 1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        state.RegisterClient(ServerType.Area, sender);
+        state.RegisterClient(ServerType.Area, sameAreaPeer);
+
+        var handler = new AreaEmotionCharaHandler(state, roboRepository.Object);
+        await handler.HandleAsync(BuildUIntPairPayload(roboObjectId, 27), sender, TestContext.Current.CancellationToken);
+
+        Assert.Collection(
+            sender.Sent,
+            packet =>
+            {
+                Assert.Equal(PacketType.EmotionCharaResponse, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(roboObjectId, reader.ReadUInt());
+                Assert.Equal(0u, reader.ReadUInt());
+            },
+            packet =>
+            {
+                Assert.Equal(PacketType.NotifyEmotionChara, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(roboObjectId, reader.ReadUInt());
+                Assert.Equal(27u, reader.ReadUInt());
+            }
+        );
+        Assert.Collection(
+            sameAreaPeer.Sent,
+            packet =>
+            {
+                Assert.Equal(PacketType.NotifyEmotionChara, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(roboObjectId, reader.ReadUInt());
+                Assert.Equal(27u, reader.ReadUInt());
+            }
+        );
+    }
+
+    [Fact]
+    public async Task EmotionHandler_RejectsUnownedTargetObjectId()
+    {
+        var state = new SharedState();
+        var sender = CreateSession(CreateUserWithCharacter(1, 42, "emotion-user", "Emotion User", 20000000), 20000000, 1);
+        var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 20000000), 20000000, 1);
+        var otherRoboObjectId = RoboRepository.GetObjectId(sameAreaPeer.CharacterId, 1);
+        var roboRepository = new Mock<IRoboRepository>();
+
+        state.RegisterClient(ServerType.Area, sender);
+        state.RegisterClient(ServerType.Area, sameAreaPeer);
+
+        var handler = new AreaEmotionCharaHandler(state, roboRepository.Object);
+        await handler.HandleAsync(BuildUIntPairPayload(otherRoboObjectId, 27), sender, TestContext.Current.CancellationToken);
+
+        Assert.Collection(
+            sender.Sent,
+            packet =>
+            {
+                Assert.Equal(PacketType.EmotionCharaResponse, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(otherRoboObjectId, reader.ReadUInt());
+                Assert.Equal(1u, reader.ReadUInt());
+            }
+        );
+        Assert.Empty(sameAreaPeer.Sent);
     }
 
     [Fact]
