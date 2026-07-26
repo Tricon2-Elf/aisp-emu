@@ -144,6 +144,6 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
     private static byte[] BuildAppearanceNotify(IPlayerSession session, Character character)
     {
         var pos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
-        return AreasvEnterHandler.CreateNotify(character, session.CharacterId, 1, pos);
+        return AreasvEnterHandler.CreateNotify(character, session.CharacterId, 1, pos, checked((uint)session.ChannelId), session.MapId);
     }
 }
