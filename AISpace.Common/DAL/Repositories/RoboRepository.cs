@@ -11,6 +11,7 @@ public interface IRoboRepository
     Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<IReadOnlyList<RoboData>> GetAllAsync(int characterId, CancellationToken ct = default);
     Task<RoboData?> ReplaceEquipmentAsync(int characterId, uint roboId, IReadOnlyList<ItemEquipEntry> equips, CancellationToken ct = default);
+    Task<bool> ReplaceDistributedStatusPointsAsync(int characterId, uint roboId, IReadOnlyList<uint> values, CancellationToken ct = default);
     Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default);
 }
 
@@ -105,6 +106,33 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         entity.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return ToRoboData(entity);
+    }
+
+    public async Task<bool> ReplaceDistributedStatusPointsAsync(int characterId, uint roboId, IReadOnlyList<uint> values, CancellationToken ct = default)
+    {
+        if (values.Count != RoboData.DistributedStatusPointCount)
+            throw new ArgumentException($"Exactly {RoboData.DistributedStatusPointCount} distributed status-point values are required.", nameof(values));
+
+        var entity = await db.Robos.Include(x => x.DistributedStatusPoints).SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        if (entity is null)
+            return false;
+
+        var previouslyDistributed = entity.DistributedStatusPoints.Aggregate(0UL, (total, point) => total + point.Value);
+        var newlyDistributed = values.Aggregate(0UL, (total, value) => total + value);
+        var totalBudget = (ulong)entity.AvailableStatusPoints + previouslyDistributed;
+        if (newlyDistributed > totalBudget)
+            return false;
+
+        entity.AvailableStatusPoints = checked((uint)(totalBudget - newlyDistributed));
+        for (byte index = 0; index < RoboData.DistributedStatusPointCount; index++)
+        {
+            var row = entity.DistributedStatusPoints.Single(x => x.StatusIndex == index);
+            row.Value = values[index];
+        }
+
+        entity.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     public async Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default)

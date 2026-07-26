@@ -893,10 +893,10 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_delete_friend_list_r", ImplementationState.NotImplemented)]
     DeleteFriendListResponse = 0x4BD6,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_distribute_status_point_add_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_distribute_status_point_add_r", ImplementationState.Implemented)]
     DistributeStatusPointAddResponse = 0x7764,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_distribute_status_point_finish_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_distribute_status_point_finish_r", ImplementationState.Implemented)]
     DistributeStatusPointFinishResponse = 0x7735,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_edit_robo_myprofile_r", ImplementationState.NotImplemented)]
@@ -1062,7 +1062,7 @@ public enum PacketType : ushort
     GetRoboJobListResponse = 0x8DE2,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_tps_use_item_list_r", ImplementationState.NotImplemented)]
-    GetTpsUseItemListResponse = 0x6A62,
+    GetTpsUseItemListResponse = 0x6841,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_hair_shop_buy_r", ImplementationState.NotImplemented)]
     HairShopBuyResponse = 0x4EF2,
@@ -1123,6 +1123,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_live_contest_entry_participant_r", ImplementationState.NotImplemented)]
     LiveContestEntryParticipantResponse = 0x5E6E,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_live_contest_play_r", ImplementationState.NotImplemented)]
+    LiveContestPlayResponse = 0x6A62,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_live_contest_start_r", ImplementationState.NotImplemented)]
     LiveContestStartResponse = 0xBF8A,
@@ -1733,11 +1736,14 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_delete_friend_list", ImplementationState.NotImplemented)]
     DeleteFriendListRequest = 0x343B,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_distribute_status_point_add", ImplementationState.NotImplemented)]
-    DistributeStatusPointAddRequest = 0x96B9,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_distribute_status_point_add", ImplementationState.Implemented)]
+    DistributeStatusPointAddRequest = 0x6755,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_distribute_status_point_finish", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_distribute_status_point_finish", ImplementationState.Implemented)]
     DistributeStatusPointFinishRequest = 0xC252,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_tps_use_item_list", ImplementationState.NotImplemented)]
+    GetTpsUseItemListRequest = 0x96B9,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_edit_robo_myprofile", ImplementationState.NotImplemented)]
     EditRoboMyProfileRequest = 0x5AA9,
