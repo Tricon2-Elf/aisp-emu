@@ -1434,7 +1434,15 @@ public class AreaMapHandlersTests
             packet =>
             {
                 Assert.Equal(PacketType.AvatarNotifyData, packet.Type);
-                Assert.Equal(0u, new PacketReader(packet.Payload).ReadUInt());
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(0u, reader.ReadUInt());
+                var avatar = AvatarData.FromBytes(reader.ReadBytes(AvatarData.WireSize));
+                Assert.Equal(1u, avatar.Character.Map.ChannelId);
+                Assert.Equal(10990110u, avatar.Character.Map.MapId);
+                Assert.Equal(10990110u, avatar.Character.Map.MapSerialId);
+                Assert.Equal(11f, avatar.Character.Map.Movement.X);
+                Assert.Equal(12f, avatar.Character.Map.Movement.Y);
+                Assert.Equal(13f, avatar.Character.Map.Movement.Z);
             }
         );
     }

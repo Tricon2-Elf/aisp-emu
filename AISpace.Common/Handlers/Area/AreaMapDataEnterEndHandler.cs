@@ -28,11 +28,11 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
             if (roboRepository is not null)
                 accompanyingRobos = (await roboRepository.GetAllAsync(checked((int)session.CharacterId), ct)).Where(x => session.AccompanyingRoboIds.Contains(x.RoboId)).ToList();
 
-            var spawnMeForPeersPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 1, myPos);
+            var spawnMeForPeersPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 1, myPos, checked((uint)session.ChannelId), session.MapId);
             if (session.NeedsPostLoadSelfAvatarNotify)
             {
                 logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, myChar.Id);
-                var spawnMeForSelfPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 0, myPos);
+                var spawnMeForSelfPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 0, myPos, checked((uint)session.ChannelId), session.MapId);
                 await session.SendAsync(PacketType.AvatarNotifyData, spawnMeForSelfPacket, ct);
                 session.NeedsPostLoadSelfAvatarNotify = false;
             }
@@ -50,7 +50,7 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
                 if (otherChar != null)
                 {
                     var otherPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
-                    var spawnOtherForMe = AreasvEnterHandler.CreateNotify(otherChar, other.CharacterId, 1, otherPos);
+                    var spawnOtherForMe = AreasvEnterHandler.CreateNotify(otherChar, other.CharacterId, 1, otherPos, checked((uint)other.ChannelId), other.MapId);
                     await session.SendAsync(PacketType.AvatarNotifyData, spawnOtherForMe, ct);
                 }
 

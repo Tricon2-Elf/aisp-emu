@@ -128,18 +128,18 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
                 var cha = session.Character ?? session.User!.Characters.First();
                 var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
 
-                await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos), ct);
+                await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos, checked((uint)session.ChannelId), session.MapId), ct);
                 session.NeedsPostLoadSelfAvatarNotify = false;
 
                 foreach (var other in state.GetAreaPeers(session))
                 {
-                    await other.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 1, myPos), ct);
+                    await other.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 1, myPos, checked((uint)session.ChannelId), session.MapId), ct);
 
                     var oCha = other.Character ?? other.User?.Characters.FirstOrDefault();
                     if (oCha != null)
                     {
                         var oPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
-                        await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(oCha, other.CharacterId, 1, oPos), ct);
+                        await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(oCha, other.CharacterId, 1, oPos, checked((uint)other.ChannelId), other.MapId), ct);
                     }
                 }
             },
@@ -147,9 +147,19 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         );
     }
 
-    public static byte[] CreateNotify(DAL.Entities.Character cha, uint objId, uint res, MovementData pos)
+    public static byte[] CreateNotify(DAL.Entities.Character cha, uint objId, uint res, MovementData pos, uint channelId = 0, uint mapId = 0)
     {
-        var cd = new CharaData(objId, cha.ModelId, cha.Name) { Movement = pos };
+        var cd = new CharaData(objId, cha.ModelId, cha.Name)
+        {
+            Map = new CharacterMapData
+            {
+                ChannelId = channelId,
+                MapId = mapId,
+                MapSerialId = mapId,
+                RouteState = 0,
+                Movement = pos,
+            },
+        };
         cd.Visual.VisualId = (uint)cha.Id;
         cd.Visual.BloodType = cha.BloodType;
         cd.Visual.Month = (byte)cha.Birthdate.Month;
