@@ -1,5 +1,5 @@
-using AISpace.Common.DAL.Repositories;
 using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
@@ -8,11 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemTryEquipReplaceHandler(
-    ICharacterRepository characterRepo,
-    SharedState state,
-    ILogger<ItemTryEquipReplaceHandler> logger
-) : IPacketHandler, IRequiresAuthenticatedSession
+public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRoboRepository roboRepository, SharedState state, ILogger<ItemTryEquipReplaceHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemTryEquipReplaceRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipReplaceResponse;
@@ -21,24 +17,60 @@ public class ItemTryEquipReplaceHandler(
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = ItemTryEquipReplaceRequest.FromBytes(payload.Span);
-        logger.LogInformation(
-            "Client {ConnectionId} ItemTryEquipReplace objId={ObjId} equipCount={Count}",
-            session.ConnectionId,
-            request.ObjId,
-            request.Equips.Count
-        );
+        logger.LogInformation("Client {ConnectionId} ItemTryEquipReplace objId={ObjId} equipCount={Count}", session.ConnectionId, request.ObjId, request.Equips.Count);
 
-        EquipReplaceResult? replaceResult = null;
-        if (session.CharacterId != 0)
+        if (session.CharacterId == 0)
         {
-            var character = await characterRepo.GetByIdAsync((int)session.CharacterId, ct);
-            var resolvedEquips = ResolveEquipsForPersistence(request.Equips, character);
-            replaceResult = await characterRepo.ReplaceEquipmentAsync((int)session.CharacterId, resolvedEquips, ct);
-            session.Character = await characterRepo.GetByIdAsync((int)session.CharacterId, ct);
+            await session.SendAsync(ResponseType, new ItemTryEquipReplaceResponse(1).ToBytes(), ct);
+            return;
         }
 
-        await session.SendAsync(PacketType.ItemTryEquipReplaceResponse, new ItemTryEquipReplaceResponse(0).ToBytes(), ct);
-        var normalizedEquips = request.Equips
+        var characterId = checked((int)session.CharacterId);
+        var character = await characterRepo.GetByIdAsync(characterId, ct);
+        var resolvedEquips = ResolveEquipsForPersistence(request.Equips, character);
+        var normalizedEquips = NormalizeEquips(resolvedEquips);
+
+        if (request.ObjId == session.CharacterId)
+        {
+            var replaceResult = await characterRepo.ReplaceEquipmentAsync(characterId, resolvedEquips, ct);
+            session.Character = await characterRepo.GetByIdAsync(characterId, ct);
+
+            await SendReplaceSuccessAsync(session, request.ObjId, normalizedEquips, ct);
+            await CharacterItemSync.SendReplaceChangesAsync(session, replaceResult, ct);
+
+            if (session.Character is not null)
+            {
+                var appearanceNotify = BuildAppearanceNotify(session, session.Character);
+                foreach (var peer in state.GetAreaPeers(session))
+                    await peer.SendAsync(PacketType.AvatarNotifyData, appearanceNotify, ct);
+            }
+
+            return;
+        }
+
+        if (!RoboRepository.TryGetRoboId(session.CharacterId, request.ObjId, out var roboId))
+        {
+            await session.SendAsync(ResponseType, new ItemTryEquipReplaceResponse(1).ToBytes(), ct);
+            return;
+        }
+
+        var robo = await roboRepository.ReplaceEquipmentAsync(characterId, roboId, resolvedEquips, ct);
+        if (robo is null)
+        {
+            await session.SendAsync(ResponseType, new ItemTryEquipReplaceResponse(1).ToBytes(), ct);
+            return;
+        }
+
+        await SendReplaceSuccessAsync(session, request.ObjId, normalizedEquips, ct);
+
+        var update = new NotifyUpdateRoboEquip(roboId, request.ObjId, TryEquipNotifyBuilder.FromRobo(robo)).ToBytes();
+        foreach (var peer in state.GetAreaPeers(session, includeSelf: true))
+            await peer.SendAsync(PacketType.NotifyUpdateRoboEquip, update, ct);
+    }
+
+    private static List<ItemEquipEntry> NormalizeEquips(IReadOnlyList<ItemEquipEntry> equips)
+    {
+        return equips
             .Select(e =>
             {
                 var socket = ItemEntityMapper.ResolveBodyspot((int)e.ItemId);
@@ -47,21 +79,12 @@ public class ItemTryEquipReplaceHandler(
                 return new ItemEquipEntry(e.ItemId, socket);
             })
             .ToList();
-        await session.SendAsync(
-            PacketType.ItemTryEquipReplacedNotify,
-            new ItemTryEquipReplacedNotify(request.ObjId, normalizedEquips).ToBytes(),
-            ct
-        );
+    }
 
-        if (replaceResult is not null)
-            await CharacterItemSync.SendReplaceChangesAsync(session, replaceResult, ct);
-
-        if (session.Character is not null && session.CharacterId != 0)
-        {
-            var appearanceNotify = BuildAppearanceNotify(session, session.Character);
-            foreach (var peer in state.GetAreaPeers(session))
-                await peer.SendAsync(PacketType.AvatarNotifyData, appearanceNotify, ct);
-        }
+    private static async Task SendReplaceSuccessAsync(IPlayerSession session, uint objectId, IReadOnlyList<ItemEquipEntry> equipment, CancellationToken ct)
+    {
+        await session.SendAsync(PacketType.ItemTryEquipReplaceResponse, new ItemTryEquipReplaceResponse(0).ToBytes(), ct);
+        await session.SendAsync(PacketType.ItemTryEquipReplacedNotify, new ItemTryEquipReplacedNotify(objectId, equipment).ToBytes(), ct);
     }
 
     private static IReadOnlyList<ItemEquipEntry> ResolveEquipsForPersistence(IReadOnlyList<ItemEquipEntry> equips, Character? character)
@@ -89,9 +112,7 @@ public class ItemTryEquipReplaceHandler(
         if (ownedItemIds.Contains((int)requestItemId))
             return requestItemId;
 
-        var candidates = ownedItemIds
-            .Where(id => ResolveLegacySerialId(id) == requestItemId)
-            .ToList();
+        var candidates = ownedItemIds.Where(id => ResolveLegacySerialId(id) == requestItemId).ToList();
         if (candidates.Count == 0)
             return requestItemId;
 
@@ -99,9 +120,7 @@ public class ItemTryEquipReplaceHandler(
             return (uint)candidates[0];
 
         // Disambiguate serial collisions using requested socket/bodyspot when possible.
-        var bySocket = candidates
-            .Where(id => ItemEntityMapper.ResolveBodyspot(id) == socketBit)
-            .ToList();
+        var bySocket = candidates.Where(id => ItemEntityMapper.ResolveBodyspot(id) == socketBit).ToList();
         if (bySocket.Count == 1)
             return (uint)bySocket[0];
 

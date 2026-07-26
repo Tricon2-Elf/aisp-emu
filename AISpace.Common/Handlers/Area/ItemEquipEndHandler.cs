@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemEquipEndHandler(ILogger<ItemEquipEndHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class ItemEquipEndHandler(IRoboRepository roboRepository, ILogger<ItemEquipEndHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private readonly ILogger<ItemEquipEndHandler> _logger = logger;
 
@@ -19,9 +20,15 @@ public class ItemEquipEndHandler(ILogger<ItemEquipEndHandler> logger) : IPacketH
         var request = ItemEquipEndRequest.FromBytes(payload.Span);
         _logger.LogInformation("Client {Id} requested ItemEquipEnd for ObjId: {ObjId}", session.ConnectionId, request.ObjId);
 
+        var ownsTarget = session.CharacterId != 0 && request.ObjId == session.CharacterId;
+        if (!ownsTarget && session.CharacterId != 0 && RoboRepository.TryGetRoboId(session.CharacterId, request.ObjId, out var roboId))
+            ownsTarget = await roboRepository.ExistsAsync(checked((int)session.CharacterId), roboId, ct);
+
         // Client sub_78A890→sub_5295A0 commits wardrobe changes only when result==0.
-        var response = new ItemEquipEndResponse(0);
+        var response = new ItemEquipEndResponse(ownsTarget ? 0u : 1u);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
+        if (!ownsTarget)
+            return;
 
         var equipEnded = new ItemEquipEnded(request.ObjId);
         await session.SendAsync(PacketType.ItemEquipEnded, equipEnded.ToBytes(), ct);
