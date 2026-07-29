@@ -354,7 +354,7 @@
 - **Packet ID (hex):** 0xA0D1
 - **Packet ID (int):** 41169
 - **Packet Size:** 8 + Count×12 (Count ≤ 300)
-- **Description:** Furniture placement base list (g_pFurnitureMaybe). Flags affect snap/LOD only — not furniture.csv アクション / click routing.
+- **Description:** Furniture placement base list (g_pFurnitureMaybe). PlacementFlags selects the floor, wall, and ceiling placement tabs and snapping behavior; it is separate from furniture.csv アクション / click routing. The observed client does not read Type.
 
 **Layout:**
 
@@ -363,8 +363,8 @@
     UInt {Count}
     Count × {
         UInt {ItemId}
-        UInt {Flags}
-        UInt {Unknown}
+        UInt {PlacementFlags: Floor=0x08, Wall=0x10, Ceiling=0x20}
+        UInt {Type}
     }
 ```
 

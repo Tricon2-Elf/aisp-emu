@@ -11,12 +11,17 @@ namespace AISpace.Network.Packets.Area;
 /// </summary>
 public class MyRoomUseFurnitureRequest(uint roomId, uint furnId, uint reason) : IIncomingPacket<MyRoomUseFurnitureRequest>
 {
+    public const int WireSize = 12;
+
     public uint RoomId = roomId;
     public uint FurnId = furnId;
     public uint Reason = reason;
 
     public static MyRoomUseFurnitureRequest FromBytes(ReadOnlySpan<byte> data)
     {
+        if (data.Length != WireSize)
+            throw new InvalidDataException($"{nameof(MyRoomUseFurnitureRequest)} requires exactly {WireSize} bytes, received {data.Length}.");
+
         var reader = new PacketReader(data);
         return new MyRoomUseFurnitureRequest(reader.ReadUInt(), reader.ReadUInt(), reader.ReadUInt());
     }

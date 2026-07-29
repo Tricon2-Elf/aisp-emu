@@ -19,22 +19,14 @@ public class AreaMyRoomEndFurnitureHandler(ILogger<AreaMyRoomEndFurnitureHandler
 
         if (!MyRoomInfo.IsMyRoomMap(session.MapId) || request.RoomId != session.CharacterId)
         {
-            logger.LogWarning(
-                "Rejected MyRoomEndFurniture for character {CharacterId} on map {MapId}: roomId {RoomId}",
-                session.CharacterId,
-                session.MapId,
-                request.RoomId
-            );
+            logger.LogWarning("Rejected MyRoomEndFurniture for character {CharacterId} on map {MapId}: roomId {RoomId}", session.CharacterId, session.MapId, request.RoomId);
             await session.SendAsync(ResponseType, new MyRoomEndFurnitureResponse(1).ToBytes(), ct);
             return;
         }
 
-        logger.LogInformation(
-            "MyRoomEndFurniture for character {CharacterId} on map {MapId}",
-            session.CharacterId,
-            session.MapId
-        );
+        logger.LogInformation("MyRoomEndFurniture for character {CharacterId} on map {MapId}", session.CharacterId, session.MapId);
 
+        session.PendingMyRoomFurnitureItemId = null;
         await session.SendAsync(ResponseType, new MyRoomEndFurnitureResponse(0).ToBytes(), ct);
     }
 }

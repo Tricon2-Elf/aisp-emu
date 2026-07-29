@@ -114,6 +114,8 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.Character = chara;
         session.CharacterId = charId;
         session.MapId = mapId;
+        session.MyRoomOwnerId = MyRoomInfo.IsMyRoomMap(mapId) ? charId : 0;
+        session.PendingMyRoomFurnitureItemId = null;
 
         state.RegisterClient(ServerType.Area, session);
 

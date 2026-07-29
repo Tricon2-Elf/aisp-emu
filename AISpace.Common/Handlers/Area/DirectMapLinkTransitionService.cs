@@ -253,6 +253,8 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         session.Character = updatedCharacter;
         session.CharacterId = (uint)updatedCharacter.Id;
         session.MapId = destinationMapId;
+        session.MyRoomOwnerId = MyRoomInfo.IsMyRoomMap(destinationMapId) ? session.CharacterId : 0;
+        session.PendingMyRoomFurnitureItemId = null;
         session.ChannelId = (int)destinationChannelId;
         session.X = spawnX;
         session.Y = spawnY;
@@ -302,7 +304,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
                     Animation = notifyChangeMap.Animation,
                     Flag = notifyChangeMap.Flag,
                     AreaServerInfo = notifyChangeMap.AreaServerInfo,
-                    Room = new MyRoomData(session.CharacterId, session.CharacterId, MyRoomInfo.GetRoomStage(destinationMapId)),
+                    Room = new MyRoomData(session.CharacterId, session.CharacterId, MyRoomInfo.GetRoomStage(destinationMapId), updatedCharacter.MyRoomName, updatedCharacter.MyRoomSecurity),
                     FadeFlag = notifyChangeMap.FadeFlag,
                 };
 

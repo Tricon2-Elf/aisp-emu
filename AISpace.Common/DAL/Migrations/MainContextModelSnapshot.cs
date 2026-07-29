@@ -83,6 +83,18 @@ namespace AISpace.Common.DAL.Migrations
                     b.Property<uint>("ModelId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("MyRoomName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(45)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("My Room");
+
+                    b.Property<uint>("MyRoomSecurity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0u);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -175,6 +187,22 @@ namespace AISpace.Common.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Circles", (string)null);
+                });
+
+            modelBuilder.Entity("AISpace.Common.DAL.Entities.Furniture", b =>
+                {
+                    b.Property<int>("ItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("PlacementFlags")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ItemId");
+
+                    b.ToTable("Furniture", (string)null);
                 });
 
             modelBuilder.Entity("AISpace.Common.DAL.Entities.GameChannel", b =>
@@ -332,6 +360,39 @@ namespace AISpace.Common.DAL.Migrations
                     b.HasIndex("SourceMapId", "ChannelId", "SortOrder");
 
                     b.ToTable("MapLinks", (string)null);
+                });
+
+            modelBuilder.Entity("AISpace.Common.DAL.Entities.MyRoomFurniture", b =>
+                {
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("FurnitureId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte>("DirectionX")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte>("DirectionY")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<float>("PositionX")
+                        .HasColumnType("REAL");
+
+                    b.Property<float>("PositionY")
+                        .HasColumnType("REAL");
+
+                    b.Property<float>("PositionZ")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("CharacterId", "FurnitureId");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("MyRoomFurniture", (string)null);
                 });
 
             modelBuilder.Entity("AISpace.Common.DAL.Entities.Npc", b =>
@@ -1061,6 +1122,34 @@ namespace AISpace.Common.DAL.Migrations
                     b.Navigation("Item");
                 });
 
+            modelBuilder.Entity("AISpace.Common.DAL.Entities.Furniture", b =>
+                {
+                    b.HasOne("AISpace.Common.DAL.Entities.Item", "Item")
+                        .WithOne("Furniture")
+                        .HasForeignKey("AISpace.Common.DAL.Entities.Furniture", "ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("AISpace.Common.DAL.Entities.MyRoomFurniture", b =>
+                {
+                    b.HasOne("AISpace.Common.DAL.Entities.Character", "Character")
+                        .WithMany("MyRoomFurniture")
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AISpace.Common.DAL.Entities.Furniture", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("AISpace.Common.DAL.Entities.Npc", b =>
                 {
                     b.HasOne("AISpace.Common.DAL.Entities.Shop", "Shop")
@@ -1176,7 +1265,14 @@ namespace AISpace.Common.DAL.Migrations
 
                     b.Navigation("Inventory");
 
+                    b.Navigation("MyRoomFurniture");
+
                     b.Navigation("Robos");
+                });
+
+            modelBuilder.Entity("AISpace.Common.DAL.Entities.Item", b =>
+                {
+                    b.Navigation("Furniture");
                 });
 
             modelBuilder.Entity("AISpace.Common.DAL.Entities.Npc", b =>

@@ -17,9 +17,21 @@ public class AreaMyRoomUseFurnitureHandlerTests
 
         await handler.HandleAsync(BuildRequest(42, 77, 1), session, TestContext.Current.CancellationToken);
 
-        var packet = Assert.Single(session.Sent);
-        Assert.Equal(PacketType.MyRoomUseFurnitureResponse, packet.Type);
-        Assert.Equal(0u, new PacketReader(packet.Payload).ReadUInt());
+        Assert.Collection(
+            session.Sent,
+            packet =>
+            {
+                Assert.Equal(PacketType.MyRoomUseFurnitureResponse, packet.Type);
+                Assert.Equal(0u, new PacketReader(packet.Payload).ReadUInt());
+            },
+            packet =>
+            {
+                Assert.Equal(PacketType.NotifyMyRoomUseFurniture, packet.Type);
+                var reader = new PacketReader(packet.Payload);
+                Assert.Equal(42u, reader.ReadUInt());
+                Assert.Equal(77u, reader.ReadUInt());
+            }
+        );
     }
 
     [Fact]
