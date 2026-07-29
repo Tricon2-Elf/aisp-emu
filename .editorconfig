@@ -1,0 +1,5 @@
+root = true
+
+[*.cs]
+# Interpolated log strings: keep existing Log*($"...") style; CA1873 is noisy here.
+dotnet_diagnostic.CA1873.severity = none
