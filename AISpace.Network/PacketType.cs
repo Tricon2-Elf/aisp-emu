@@ -914,6 +914,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_bgm_play", ImplementationState.NotImplemented)]
     EventBgmPlayNotify = 0x59D3,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_bgm_play", ImplementationState.NotImplemented)]
+    NotifyBgmPlay = 0x36C1,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_event_board_open", ImplementationState.NotImplemented)]
     EventBoardOpenNotify = 0xFC57,
 
@@ -1142,22 +1145,25 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myhouse_replacement_r", ImplementationState.NotImplemented)]
     MyHouseReplacementResponse = 0xE0FD,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_set_furniture_r", ImplementationState.Implemented)]
+    MyRoomSetFurnitureResponse = 0x1840,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_end_furniture_r", ImplementationState.Implemented)]
     MyRoomEndFurnitureResponse = 0xCECA,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_remove_furniture_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_remove_furniture_r", ImplementationState.Implemented)]
     MyRoomRemoveFurnitureResponse = 0xFD30,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_start_furniture_r", ImplementationState.Implemented)]
     MyRoomStartFurnitureResponse = 0x19BC,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_furniture_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_furniture_r", ImplementationState.Implemented)]
     MyRoomUpdateFurnitureResponse = 0x50A3,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_name_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_name_r", ImplementationState.Implemented)]
     MyRoomUpdateNameResponse = 0xB186,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_security_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_update_security_r", ImplementationState.Implemented)]
     MyRoomUpdateSecurityResponse = 0xCE31,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_myroom_use_furniture_r", ImplementationState.Implemented)]
@@ -1182,7 +1188,7 @@ public enum PacketType : ushort
     NicotvCloseResponse = 0x00E1,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_nicotv_get_info_by_furniture_r", ImplementationState.NotImplemented)]
-    NicotvGetInfoByFurnitureResponse = 0x36C1,
+    NicotvGetInfoByFurnitureResponse = 0x35A3,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_nicotv_get_playhead_time_r", ImplementationState.NotImplemented)]
     NicotvGetPlayheadTimeResponse = 0x0AAD,
@@ -1334,6 +1340,12 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_auction_list", ImplementationState.NotImplemented)]
     NotifyMyHouseAuctionList = 0xC1E6,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_auction_list_end", ImplementationState.NotImplemented)]
+    NotifyMyHouseAuctionListEnd = 0x4BF2,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_auction_open", ImplementationState.NotImplemented)]
+    NotifyMyHouseAuctionOpen = 0xBA5A,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_change_looks", ImplementationState.NotImplemented)]
     NotifyMyHouseChangeLooks = 0x4BE3,
 
@@ -1352,13 +1364,25 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_relocate_succeed", ImplementationState.NotImplemented)]
     NotifyMyHouseRelocateSucceed = 0xCA17,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_set_furniture", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_release", ImplementationState.NotImplemented)]
+    NotifyMyHouseRelease = 0xFA51,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_rent_open", ImplementationState.NotImplemented)]
+    NotifyMyHouseRentOpen = 0x7B64,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myhouse_replacement_open", ImplementationState.NotImplemented)]
+    NotifyMyHouseReplacementOpen = 0x67AC,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_remove_furniture", ImplementationState.Implemented)]
+    NotifyMyRoomRemoveFurniture = 0x7A75,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_set_furniture", ImplementationState.Implemented)]
     NotifyMyRoomSetFurniture = 0x7BBD,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_update_furniture", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_update_furniture", ImplementationState.Implemented)]
     NotifyMyRoomUpdateFurniture = 0xCEAB,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_use_furniture", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_myroom_use_furniture", ImplementationState.Implemented)]
     NotifyMyRoomUseFurniture = 0xF777,
 
     [PacketMetadata(PacketServerType.Msg, PacketDirection.ServerToClient, "recv_notify_new_mail", ImplementationState.NotImplemented)]
@@ -1417,6 +1441,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_room_list_open_start", ImplementationState.NotImplemented)]
     NotifyRoomListOpenStart = 0xA5BA,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_room_list_open_end", ImplementationState.NotImplemented)]
+    NotifyRoomListOpenEnd = 0xDC32,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_notify_room_list_pack", ImplementationState.NotImplemented)]
     NotifyRoomListPack = 0xC0B2,
@@ -1565,7 +1592,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_robo_squire_r", ImplementationState.Implemented)]
     RoboSquireResponse = 0x899D,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_room_list_close_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_room_list_close_r", ImplementationState.Implemented)]
     RoomListCloseResponse = 0xCBE8,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_sheet_shop_buy_r", ImplementationState.NotImplemented)]
@@ -1841,14 +1868,32 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_use_furniture", ImplementationState.Implemented)]
     MyRoomUseFurnitureRequest = 0x2231,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_update_name", ImplementationState.NotImplemented)]
-    MyRoomUpdateNameRequest = 0x9A24,
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_update_name", ImplementationState.Implemented)]
+    MyRoomUpdateNameRequest = 0xB154,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_update_security", ImplementationState.Implemented)]
+    MyRoomUpdateSecurityRequest = 0xE54D,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_set_furniture", ImplementationState.Implemented)]
+    MyRoomSetFurnitureRequest = 0xAEFB,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_remove_furniture", ImplementationState.Implemented)]
+    MyRoomRemoveFurnitureRequest = 0xD0DB,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_myroom_update_furniture", ImplementationState.Implemented)]
+    MyRoomUpdateFurnitureRequest = 0x6405,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_room_list_close", ImplementationState.Implemented)]
+    RoomListCloseRequest = 0x9A24,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_nicotv_close", ImplementationState.NotImplemented)]
     NicotvCloseRequest = 0x69BD,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_nicotv_get_info_by_furniture", ImplementationState.NotImplemented)]
     NicotvGetInfoByFurnitureRequest = 0xC87A,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_nicotv_open_by_furniture", ImplementationState.NotImplemented)]
+    NicotvOpenByFurnitureRequest = 0x13CD,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_nicotv_get_playhead_time", ImplementationState.NotImplemented)]
     NicotvGetPlayheadTimeRequest = 0x1359,

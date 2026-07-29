@@ -297,10 +297,10 @@ public class AreaMyRoomSystemActorTests
         try
         {
             await using var db = new MainContext(options);
-            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(db));
+            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(db), new MyRoomRepository(db));
             var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
 
-            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(BuildMyRoomGetFurniturePayload(session.MapId, session.ChannelId), session, TestContext.Current.CancellationToken);
 
             var response = Assert.Single(session.Sent);
             Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type);
@@ -310,6 +310,14 @@ public class AreaMyRoomSystemActorTests
         {
             await connection.DisposeAsync();
         }
+    }
+
+    private static byte[] BuildMyRoomGetFurniturePayload(uint mapId, int channelId)
+    {
+        var writer = new PacketWriter();
+        writer.Write(mapId);
+        writer.Write(checked((uint)channelId));
+        return writer.ToBytes();
     }
 
     [Fact]
@@ -326,7 +334,7 @@ public class AreaMyRoomSystemActorTests
                 await new RoboRepository(writeDb).UpsertAsync(42, robo, TestContext.Current.CancellationToken);
 
             await using var handlerDb = new MainContext(options);
-            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(handlerDb));
+            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(handlerDb), new MyRoomRepository(handlerDb));
             var session = new CapturingPlayerSession
             {
                 MapId = MyRoomInfo.TwelveTatamiMapId,
@@ -339,7 +347,7 @@ public class AreaMyRoomSystemActorTests
             };
             session.AccompanyingRoboIds.Add(1);
 
-            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(BuildMyRoomGetFurniturePayload(session.MapId, session.ChannelId), session, TestContext.Current.CancellationToken);
 
             Assert.Empty(session.AccompanyingRoboIds);
             Assert.Collection(

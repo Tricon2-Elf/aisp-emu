@@ -52,6 +52,7 @@ internal class Program
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<ICharacterEventRepository, CharacterEventRepository>();
         builder.Services.AddScoped<IRoboRepository, RoboRepository>();
+        builder.Services.AddScoped<IMyRoomRepository, MyRoomRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
         builder.Services.AddScoped<IMapLinkRepository, MapLinkRepository>();
@@ -143,6 +144,7 @@ internal class Program
             await ChannelRepository.SeedChannelsIfEmptyAsync(db, Path.Combine(seedDir, "channels.json"), serverOptions.IPOverride, areaPort: (ushort)serverOptions.AreaServer.Port);
             await ItemRepository.SeedItemsIfEmptyAsync(db, Path.Combine(seedDir, "baseItems.json"));
             await ItemRepository.EnsureSeedItemsPresentAsync(db, Path.Combine(seedDir, "baseItems.json"));
+            await MyRoomRepository.EnsureFurnitureCatalogPresentAsync(db, Path.Combine(seedDir, "furniture.json"));
             await ShopRepository.SeedShopsFromJsonAsync(db, Path.Combine(seedDir, "starterShop.json"), app.Logger);
             await NpcRepository.SeedFromJsonAsync(db, Path.Combine(seedDir, "npcs.json"), app.Logger);
             await scope.ServiceProvider.GetRequiredService<IItemBaseListCache>().WarmAsync();

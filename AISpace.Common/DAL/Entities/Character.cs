@@ -30,9 +30,12 @@ public class Character
     public Circle? Circle { get; set; }
     public uint CurrentMapId { get; set; }
     public uint HomeIslandId { get; set; }
+    public string MyRoomName { get; set; } = "My Room";
+    public uint MyRoomSecurity { get; set; }
     public CharadollPersonality CharadollPersonality { get; set; } = CharadollPersonality.None;
 
     public ICollection<CharacterInventory> Inventory { get; set; } = new List<CharacterInventory>();
     public ICollection<CharacterEquipment> Equipment { get; set; } = new List<CharacterEquipment>();
     public ICollection<Robo> Robos { get; set; } = new List<Robo>();
+    public ICollection<MyRoomFurniture> MyRoomFurniture { get; set; } = new List<MyRoomFurniture>();
 }

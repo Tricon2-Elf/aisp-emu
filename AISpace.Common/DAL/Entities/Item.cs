@@ -6,4 +6,5 @@ public class Item
     public string Name { get; set; } = string.Empty;
     public int Socket { get; set; }
     public int IconId { get; set; } = 1;
+    public Furniture? Furniture { get; set; }
 }

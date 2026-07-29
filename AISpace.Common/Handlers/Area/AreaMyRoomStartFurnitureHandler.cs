@@ -19,26 +19,16 @@ public class AreaMyRoomStartFurnitureHandler(ILogger<AreaMyRoomStartFurnitureHan
 
         if (!MyRoomInfo.IsMyRoomMap(session.MapId) || request.RoomId != session.CharacterId)
         {
-            logger.LogWarning(
-                "Rejected MyRoomStartFurniture for character {CharacterId} on map {MapId}: roomId {RoomId}",
-                session.CharacterId,
-                session.MapId,
-                request.RoomId
-            );
+            logger.LogWarning("Rejected MyRoomStartFurniture for character {CharacterId} on map {MapId}: roomId {RoomId}", session.CharacterId, session.MapId, request.RoomId);
             await session.SendAsync(ResponseType, new MyRoomStartFurnitureResponse(1, 0).ToBytes(), ct);
             return;
         }
 
         var stage = MyRoomInfo.GetRoomStage(session.MapId);
         var maxPlacement = MyRoomInfo.GetMaxFurniturePlacement(stage);
+        session.PendingMyRoomFurnitureItemId = null;
 
-        logger.LogInformation(
-            "MyRoomStartFurniture for character {CharacterId} on map {MapId} (stage {Stage}, max {MaxPlacement})",
-            session.CharacterId,
-            session.MapId,
-            stage,
-            maxPlacement
-        );
+        logger.LogInformation("MyRoomStartFurniture for character {CharacterId} on map {MapId} (stage {Stage}, max {MaxPlacement})", session.CharacterId, session.MapId, stage, maxPlacement);
 
         await session.SendAsync(ResponseType, new MyRoomStartFurnitureResponse(0, maxPlacement).ToBytes(), ct);
     }

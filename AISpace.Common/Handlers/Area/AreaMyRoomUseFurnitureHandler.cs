@@ -25,6 +25,7 @@ public class AreaMyRoomUseFurnitureHandler(ILogger<AreaMyRoomUseFurnitureHandler
         }
 
         await session.SendAsync(ResponseType, new MyRoomUseFurnitureResponse(0).ToBytes(), ct);
+        await session.SendAsync(PacketType.NotifyMyRoomUseFurniture, new NotifyMyRoomUseFurniture(request.RoomId, request.FurnId).ToBytes(), ct);
 
         logger.LogInformation("MyRoomUseFurniture ack for character {CharacterId} furnId {FurnId} reason {Reason}", session.CharacterId, request.FurnId, request.Reason);
     }

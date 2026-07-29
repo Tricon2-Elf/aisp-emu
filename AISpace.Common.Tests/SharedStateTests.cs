@@ -95,6 +95,8 @@ public class SharedStateTests
         public Character? Character { get; set; }
         public User? User { get; set; }
         public uint MapId { get; set; }
+        public uint MyRoomOwnerId { get; set; }
+        public uint? PendingMyRoomFurnitureItemId { get; set; }
         public int ChannelId { get; set; }
         public float X { get; set; }
         public float Y { get; set; }

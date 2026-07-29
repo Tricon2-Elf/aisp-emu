@@ -2,12 +2,14 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class MyRoomGetFurnitureResponse : IOutgoingPacket
+public class MyRoomGetFurnitureResponse(uint result = 0) : IOutgoingPacket
 {
+    public uint Result { get; } = result;
+
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write((uint)0); //Result
+        writer.Write(Result);
         return writer.ToBytes();
     }
 }

@@ -160,8 +160,13 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         if (existing is null)
             return;
 
-        existing.Quantity -= quantity;
-        if (existing.Quantity <= 0)
+        var remainingQuantity = Math.Max(0, existing.Quantity - quantity);
+        var placedQuantity = itemId < 0 ? 0 : await db.MyRoomFurniture.CountAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
+        if (remainingQuantity < placedQuantity)
+            throw new InvalidOperationException($"Cannot remove furniture item {itemId} from character {characterId}: {placedQuantity} owned copies are currently placed in MyRoom.");
+
+        existing.Quantity = remainingQuantity;
+        if (existing.Quantity == 0)
             db.CharacterInventories.Remove(existing);
 
         await db.SaveChangesAsync(ct);

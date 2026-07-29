@@ -16,6 +16,8 @@ public interface IPlayerSession
     Character? Character { get; set; }
     User? User { get; set; }
     uint MapId { get; set; }
+    uint MyRoomOwnerId { get; set; }
+    uint? PendingMyRoomFurnitureItemId { get; set; }
     int ChannelId { get; set; }
     float X { get; set; }
     float Y { get; set; }

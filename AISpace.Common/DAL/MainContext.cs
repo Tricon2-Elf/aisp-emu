@@ -16,6 +16,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Character> Characters => Set<Character>();
 
     public DbSet<Item> Items { get; set; }
+    public DbSet<Furniture> Furniture { get; set; }
     public DbSet<CharacterInventory> CharacterInventories { get; set; }
     public DbSet<CharacterEquipment> CharacterEquipments { get; set; }
     public DbSet<Robo> Robos { get; set; }
@@ -25,6 +26,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<RoboBattleAbility> RoboBattleAbilities { get; set; }
     public DbSet<RoboDistributedStatusPoint> RoboDistributedStatusPoints { get; set; }
     public DbSet<CharacterEventStatus> CharacterEventStatuses { get; set; }
+    public DbSet<MyRoomFurniture> MyRoomFurniture { get; set; }
     public DbSet<Circle> Circles { get; internal set; }
     public DbSet<Map> Maps { get; set; }
     public DbSet<MapLink> MapLinks { get; set; }
@@ -65,9 +67,19 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.HasIndex(x => x.Name).IsUnique();
+            e.Property(x => x.MyRoomName).HasMaxLength(45).IsRequired().HasDefaultValue("My Room");
+            e.Property(x => x.MyRoomSecurity).HasDefaultValue(0u);
             e.Property(x => x.CharadollPersonality).HasConversion<byte>().HasDefaultValue(CharadollPersonality.None).HasSentinel(CharadollPersonality.None);
 
             e.HasOne(x => x.User).WithMany(u => u.Characters).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<MyRoomFurniture>(e =>
+        {
+            e.ToTable("MyRoomFurniture");
+            e.HasKey(x => new { x.CharacterId, x.FurnitureId });
+            e.HasOne(x => x.Character).WithMany(x => x.MyRoomFurniture).HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Furniture>().WithMany().HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<CharacterEventStatus>(e =>
@@ -87,6 +99,14 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.Property(x => x.Socket).HasDefaultValue(0);
             e.Property(x => x.IconId).HasDefaultValue(1);
+        });
+
+        b.Entity<Furniture>(e =>
+        {
+            e.ToTable("Furniture");
+            e.HasKey(x => x.ItemId);
+            e.Property(x => x.PlacementFlags).HasConversion<uint>();
+            e.HasOne(x => x.Item).WithOne(x => x.Furniture).HasForeignKey<Furniture>(x => x.ItemId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<CharacterInventory>(e =>
