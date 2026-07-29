@@ -13,7 +13,7 @@ public class CircleChatOutHandler(ILogger<CircleChatOutHandler> logger)
     public override PacketType ResponseType => PacketType.CircleChatInResponse; // Often the same response (just Result)
     public override ServerType ServerType => ServerType.Msg;
 
-    public override async Task<CircleChatInResponse?> HandleAsync(
+    public override Task<CircleChatInResponse?> HandleAsync(
         CircleChatOutRequest request,
         IPlayerSession session,
         CancellationToken ct = default
@@ -21,6 +21,6 @@ public class CircleChatOutHandler(ILogger<CircleChatOutHandler> logger)
     {
         logger.LogInformation($"Player {session.CharacterId} leaving circle chat");
         // Exit logic
-        return new CircleChatInResponse(0);
+        return Task.FromResult<CircleChatInResponse?>(new CircleChatInResponse(0));
     }
 }

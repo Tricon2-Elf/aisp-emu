@@ -13,7 +13,7 @@ public class CircleChatInHandler(ILogger<CircleChatInHandler> logger)
     public override PacketType ResponseType => PacketType.CircleChatInResponse;
     public override ServerType ServerType => ServerType.Msg;
 
-    public override async Task<CircleChatInResponse?> HandleAsync(
+    public override Task<CircleChatInResponse?> HandleAsync(
         CircleChatInRequest request,
         IPlayerSession session,
         CancellationToken ct = default
@@ -29,6 +29,6 @@ public class CircleChatInHandler(ILogger<CircleChatInHandler> logger)
             $"Player {session.CharacterId} entering circle chat {request.CircleId}"
         );
 
-        return new CircleChatInResponse(0); // 0 = success
+        return Task.FromResult<CircleChatInResponse?>(new CircleChatInResponse(0)); // 0 = success
     }
 }
