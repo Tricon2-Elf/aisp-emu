@@ -7,6 +7,8 @@
 | Restore + build | `dotnet restore AISpace.sln && dotnet build AISpace.sln` |
 | Run tests (all) | `dotnet test AISpace.sln` |
 | Run single test project | `dotnet test AISpace.Common.Tests` |
+| Collect coverage | `./scripts/run-coverage.sh` |
+| Coverage HTML report | `./scripts/reportgenerator.sh` |
 | Run the server | `dotnet run --project AISpace.Server` |
 | Format staged files | `git config core.hooksPath .githooks` (once), then commit |
 | Check format (CI style) | `dotnet tool restore && dotnet tool run csharpier check .` |
@@ -19,6 +21,7 @@
 - **.NET 10 SDK** required (all projects target `net10.0` — this is a preview SDK).
 - **CSharpier** for formatting: `dotnet tool restore` installs it locally. Config: `printWidth: 400` (intentionally wide).
 - **EF Core 10.0**: migrations in `AISpace.Common/DAL/Migrations/`, tool `dotnet-ef` managed in `dotnet-tools.json`.
+- **Coverage**: Coverlet collector on test projects; `./scripts/run-coverage.sh` then `./scripts/reportgenerator.sh` (ReportGenerator via `dotnet-tools.json`).
 - **Tests use xunit.v3** (not v2). Test projects have `OutputType Exe` and global `using Xunit`. Moq for mocking, SQLite in-memory for DB integration tests. Use `TestContext.Current.CancellationToken` for test cancellation.
 
 ## Project dependency graph (strict — no cycles)
