@@ -6,7 +6,10 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository, IMyRoomRepository myRoomRepository) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMyRoomGetFurnitureHandler(
+    IRoboRepository roboRepository,
+    IMyRoomRepository myRoomRepository
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyRoomGetFurnitureRequest;
 
@@ -14,7 +17,11 @@ public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository, IMyRo
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = MyRoomGetFurnitureRequest.FromBytes(payload.Span);
         if (request.MapId != session.MapId || request.ChannelId != checked((uint)session.ChannelId))
@@ -27,26 +34,46 @@ public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository, IMyRo
         {
             if (session.MyRoomId == 0)
             {
-                await session.SendAsync(ResponseType, new MyRoomGetFurnitureResponse(1).ToBytes(), ct);
+                await session.SendAsync(
+                    ResponseType,
+                    new MyRoomGetFurnitureResponse(1).ToBytes(),
+                    ct
+                );
                 return;
             }
 
             var room = await myRoomRepository.GetRoomAsync(checked((int)session.MyRoomId), ct);
             if (room is null)
             {
-                await session.SendAsync(ResponseType, new MyRoomGetFurnitureResponse(1).ToBytes(), ct);
+                await session.SendAsync(
+                    ResponseType,
+                    new MyRoomGetFurnitureResponse(1).ToBytes(),
+                    ct
+                );
                 return;
             }
 
             var furniture = await myRoomRepository.GetFurnitureAsync(room.Id, ct);
             foreach (var placement in furniture)
-                await session.SendAsync(PacketType.MyRoomNotifyFurniture, new MyRoomNotifyFurniture(MyRoomFurnitureMapper.ToPacket(placement)).ToBytes(), ct);
+                await session.SendAsync(
+                    PacketType.MyRoomNotifyFurniture,
+                    new MyRoomNotifyFurniture(MyRoomFurnitureMapper.ToPacket(placement)).ToBytes(),
+                    ct
+                );
 
             if (room.OwnerCharacterId == checked((int)session.CharacterId))
             {
-                var availableFurniture = await myRoomRepository.GetAvailableFurnitureInventoryAsync(room.OwnerCharacterId, ct);
+                var availableFurniture = await myRoomRepository.GetAvailableFurnitureInventoryAsync(
+                    room.OwnerCharacterId,
+                    ct
+                );
                 foreach (var stack in availableFurniture.OrderBy(x => x.Key))
-                    await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(session, stack.Key, stack.Value, ct);
+                    await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(
+                        session,
+                        stack.Key,
+                        stack.Value,
+                        ct
+                    );
             }
 
             var robos = await roboRepository.GetAllAsync(room.OwnerCharacterId, ct);
@@ -59,9 +86,20 @@ public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository, IMyRo
                 {
                     ChannelId = checked((uint)session.ChannelId),
                     MapId = session.MapId,
-                    Movement = new MovementData(session.X, session.Y, session.Z - 50f, session.Rotation, MovementType.Stopped),
+                    Movement = new MovementData(
+                        session.X,
+                        session.Y,
+                        session.Z - 50f,
+                        session.Rotation,
+                        MovementType.Stopped
+                    ),
                 };
-                var notify = new NotifyUpdateRoboState(robo.RoboId, robo.Character.SlotId, (uint)RoboState.InMyRoom, map);
+                var notify = new NotifyUpdateRoboState(
+                    robo.RoboId,
+                    robo.Character.SlotId,
+                    (uint)RoboState.InMyRoom,
+                    map
+                );
                 await session.SendAsync(PacketType.NotifyUpdateRoboState, notify.ToBytes(), ct);
             }
         }

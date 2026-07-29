@@ -13,7 +13,9 @@ public ref struct PacketReader(ReadOnlySpan<byte> buffer)
     private ReadOnlySpan<byte> ReadSpan(int length)
     {
         if (_offset + length > _buffer.Length)
-            throw new EndOfStreamException($"PacketReader: tried to read {length} bytes with {_buffer.Length - _offset} remaining");
+            throw new EndOfStreamException(
+                $"PacketReader: tried to read {length} bytes with {_buffer.Length - _offset} remaining"
+            );
 
         var span = _buffer.Slice(_offset, length);
         _offset += length;

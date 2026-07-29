@@ -4,32 +4,68 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Game.ServerScripts;
 
-public sealed class MyRoomWardrobeServerScript(ServerScriptSession serverScriptSession) : IServerScript
+public sealed class MyRoomWardrobeServerScript(ServerScriptSession serverScriptSession)
+    : IServerScript
 {
     private const string AwaitingSelectionStep = "AwaitingSelection";
 
     public string EventKey => ServerEvents.Keys.MyRoomWardrobe;
     public EventCompletionPolicy CompletionPolicy => EventCompletionPolicy.Replayable;
 
-    public async Task StartAsync(IPlayerSession session, ServerScriptContext context, CancellationToken ct = default)
+    public async Task StartAsync(
+        IPlayerSession session,
+        ServerScriptContext context,
+        CancellationToken ct = default
+    )
     {
         session.ServerScriptState!.Step = AwaitingSelectionStep;
-        await session.SendAsync(PacketType.EventSelectInitNotify, new EventSelectInitNotify { SelectType = EventSelectType.Popup }.ToBytes(), ct);
-        await session.SendAsync(PacketType.EventSelectPushNotify, new EventSelectPushNotify { SelectName = "倉庫を利用する" }.ToBytes(), ct);
-        await session.SendAsync(PacketType.EventSelectPushNotify, new EventSelectPushNotify { SelectName = "使用しない" }.ToBytes(), ct);
-        await session.SendAsync(PacketType.EventSelectExecNotify, new EventSelectExecNotify { Text = "倉庫を利用しますか？" }.ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.EventSelectInitNotify,
+            new EventSelectInitNotify { SelectType = EventSelectType.Popup }.ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.EventSelectPushNotify,
+            new EventSelectPushNotify { SelectName = "倉庫を利用する" }.ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.EventSelectPushNotify,
+            new EventSelectPushNotify { SelectName = "使用しない" }.ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.EventSelectExecNotify,
+            new EventSelectExecNotify { Text = "倉庫を利用しますか？" }.ToBytes(),
+            ct
+        );
     }
 
-    public async Task<bool> TryHandlePacketAsync(PacketType packetType, ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task<bool> TryHandlePacketAsync(
+        PacketType packetType,
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var state = session.ServerScriptState;
-        if (state is null || !string.Equals(state.EventKey, EventKey, StringComparison.Ordinal) || state.Step != AwaitingSelectionStep || packetType != PacketType.EventSelectExecRRequest)
+        if (
+            state is null
+            || !string.Equals(state.EventKey, EventKey, StringComparison.Ordinal)
+            || state.Step != AwaitingSelectionStep
+            || packetType != PacketType.EventSelectExecRRequest
+        )
             return false;
 
         var request = EventSelectExecRRequest.FromBytes(payload.Span);
         if (request.Result != 0 || request.SelectNo == 1)
         {
-            await serverScriptSession.CompleteAsync(session, request.Result, markComplete: false, ct);
+            await serverScriptSession.CompleteAsync(
+                session,
+                request.Result,
+                markComplete: false,
+                ct
+            );
             return true;
         }
 
@@ -41,7 +77,11 @@ public sealed class MyRoomWardrobeServerScript(ServerScriptSession serverScriptS
 
         var aiPoints = (ulong)Math.Max(0, session.User?.AiPoints ?? 0);
         await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
-        await session.SendAsync(PacketType.StorageOpenedNotify, new StorageOpenedNotify(aiPoints).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.StorageOpenedNotify,
+            new StorageOpenedNotify(aiPoints).ToBytes(),
+            ct
+        );
         return true;
     }
 }

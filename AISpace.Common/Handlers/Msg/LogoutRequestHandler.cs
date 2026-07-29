@@ -6,13 +6,20 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class LogoutRequestHandler(IUserSessionRepository sessionRepo, ILogger<LogoutRequestHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class LogoutRequestHandler(
+    IUserSessionRepository sessionRepo,
+    ILogger<LogoutRequestHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.LogoutRequest;
     public PacketType ResponseType => PacketType.LogoutResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         logger.LogInformation("[LOGOUT] User {username} is leaving.", session.User!.Username);
         await sessionRepo.DeleteAllForUserAsync(session.User.Id, ct);

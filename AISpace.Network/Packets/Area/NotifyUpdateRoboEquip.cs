@@ -5,7 +5,11 @@ namespace AISpace.Network.Packets.Area;
 /// <summary>
 /// Updates the fixed equipment array for the Robo identified by both its owner-local Robo ID and runtime object ID.
 /// </summary>
-public sealed class NotifyUpdateRoboEquip(uint roboId, uint objectId, IEnumerable<ItemEquipEntry> equipment) : IOutgoingPacket
+public sealed class NotifyUpdateRoboEquip(
+    uint roboId,
+    uint objectId,
+    IEnumerable<ItemEquipEntry> equipment
+) : IOutgoingPacket
 {
     public const int MaximumEquipmentCount = 30;
 
@@ -16,7 +20,9 @@ public sealed class NotifyUpdateRoboEquip(uint roboId, uint objectId, IEnumerabl
     public byte[] ToBytes()
     {
         if (Equipment.Count > MaximumEquipmentCount)
-            throw new InvalidOperationException($"NotifyUpdateRoboEquip cannot contain more than {MaximumEquipmentCount} equipment entries.");
+            throw new InvalidOperationException(
+                $"NotifyUpdateRoboEquip cannot contain more than {MaximumEquipmentCount} equipment entries."
+            );
 
         var writer = new PacketWriter();
         writer.Write(RoboId);

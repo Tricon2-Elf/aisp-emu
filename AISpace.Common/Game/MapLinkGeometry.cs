@@ -19,7 +19,12 @@ public static class MapLinkGeometry
         var centerX = link.PositionX + offsetX;
         var centerZ = link.PositionZ + offsetZ;
 
-        return new TriggerLane(StartX: centerX + halfLineX, StartZ: centerZ + halfLineZ, EndX: centerX - halfLineX, EndZ: centerZ - halfLineZ);
+        return new TriggerLane(
+            StartX: centerX + halfLineX,
+            StartZ: centerZ + halfLineZ,
+            EndX: centerX - halfLineX,
+            EndZ: centerZ - halfLineZ
+        );
     }
 
     public static TriggerRectangle GetTriggerRectangle(MapLink link)
@@ -36,22 +41,45 @@ public static class MapLinkGeometry
         var centerX = link.PositionX + (normalX * (link.Depth * 0.5f));
         var centerZ = link.PositionZ + (normalZ * (link.Depth * 0.5f));
 
-        return new TriggerRectangle(CenterX: centerX, CenterZ: centerZ, TangentX: tangentX, TangentZ: tangentZ, NormalX: normalX, NormalZ: normalZ, HalfLength: MathF.Abs(link.Length), HalfDepth: halfDepth);
+        return new TriggerRectangle(
+            CenterX: centerX,
+            CenterZ: centerZ,
+            TangentX: tangentX,
+            TangentZ: tangentZ,
+            NormalX: normalX,
+            NormalZ: normalZ,
+            HalfLength: MathF.Abs(link.Length),
+            HalfDepth: halfDepth
+        );
     }
 
     public static bool ContainsPoint(MapLink link, float x, float z)
     {
         var rectangle = GetTriggerRectangle(link);
         var local = ToLocal(rectangle, x, z);
-        return MathF.Abs(local.LocalTangent) <= rectangle.HalfLength && MathF.Abs(local.LocalNormal) <= rectangle.HalfDepth;
+        return MathF.Abs(local.LocalTangent) <= rectangle.HalfLength
+            && MathF.Abs(local.LocalNormal) <= rectangle.HalfDepth;
     }
 
-    public static bool IntersectsSegment(MapLink link, float startX, float startZ, float endX, float endZ)
+    public static bool IntersectsSegment(
+        MapLink link,
+        float startX,
+        float startZ,
+        float endX,
+        float endZ
+    )
     {
         var rectangle = GetTriggerRectangle(link);
         var start = ToLocal(rectangle, startX, startZ);
         var end = ToLocal(rectangle, endX, endZ);
-        return SegmentIntersectsAxisAlignedRectangle(start.LocalTangent, start.LocalNormal, end.LocalTangent, end.LocalNormal, rectangle.HalfLength, rectangle.HalfDepth);
+        return SegmentIntersectsAxisAlignedRectangle(
+            start.LocalTangent,
+            start.LocalNormal,
+            end.LocalTangent,
+            end.LocalNormal,
+            rectangle.HalfLength,
+            rectangle.HalfDepth
+        );
     }
 
     public static float DistanceSquaredToRectangle(MapLink link, float x, float z)
@@ -77,7 +105,9 @@ public static class MapLinkGeometry
             return (pointDeltaX * pointDeltaX) + (pointDeltaZ * pointDeltaZ);
         }
 
-        var projection = (((x - lane.StartX) * segmentX) + ((z - lane.StartZ) * segmentZ)) / segmentLengthSquared;
+        var projection =
+            (((x - lane.StartX) * segmentX) + ((z - lane.StartZ) * segmentZ))
+            / segmentLengthSquared;
         var clampedProjection = Math.Clamp(projection, 0f, 1f);
         var closestX = lane.StartX + (segmentX * clampedProjection);
         var closestZ = lane.StartZ + (segmentZ * clampedProjection);
@@ -90,10 +120,20 @@ public static class MapLinkGeometry
     {
         var deltaX = x - rectangle.CenterX;
         var deltaZ = z - rectangle.CenterZ;
-        return new LocalPoint(LocalTangent: (deltaX * rectangle.TangentX) + (deltaZ * rectangle.TangentZ), LocalNormal: (deltaX * rectangle.NormalX) + (deltaZ * rectangle.NormalZ));
+        return new LocalPoint(
+            LocalTangent: (deltaX * rectangle.TangentX) + (deltaZ * rectangle.TangentZ),
+            LocalNormal: (deltaX * rectangle.NormalX) + (deltaZ * rectangle.NormalZ)
+        );
     }
 
-    private static bool SegmentIntersectsAxisAlignedRectangle(float startTangent, float startNormal, float endTangent, float endNormal, float halfLength, float halfDepth)
+    private static bool SegmentIntersectsAxisAlignedRectangle(
+        float startTangent,
+        float startNormal,
+        float endTangent,
+        float endNormal,
+        float halfLength,
+        float halfDepth
+    )
     {
         if (MathF.Abs(startTangent) <= halfLength && MathF.Abs(startNormal) <= halfDepth)
             return true;
@@ -106,7 +146,10 @@ public static class MapLinkGeometry
         var tMin = 0f;
         var tMax = 1f;
 
-        return Clip(-deltaTangent, startTangent + halfLength, ref tMin, ref tMax) && Clip(deltaTangent, halfLength - startTangent, ref tMin, ref tMax) && Clip(-deltaNormal, startNormal + halfDepth, ref tMin, ref tMax) && Clip(deltaNormal, halfDepth - startNormal, ref tMin, ref tMax);
+        return Clip(-deltaTangent, startTangent + halfLength, ref tMin, ref tMax)
+            && Clip(deltaTangent, halfLength - startTangent, ref tMin, ref tMax)
+            && Clip(-deltaNormal, startNormal + halfDepth, ref tMin, ref tMax)
+            && Clip(deltaNormal, halfDepth - startNormal, ref tMin, ref tMax);
     }
 
     private static bool Clip(float p, float q, ref float tMin, ref float tMax)
@@ -137,7 +180,16 @@ public static class MapLinkGeometry
 
     public readonly record struct TriggerLane(float StartX, float StartZ, float EndX, float EndZ);
 
-    public readonly record struct TriggerRectangle(float CenterX, float CenterZ, float TangentX, float TangentZ, float NormalX, float NormalZ, float HalfLength, float HalfDepth);
+    public readonly record struct TriggerRectangle(
+        float CenterX,
+        float CenterZ,
+        float TangentX,
+        float TangentZ,
+        float NormalX,
+        float NormalZ,
+        float HalfLength,
+        float HalfDepth
+    );
 
     private readonly record struct LocalPoint(float LocalTangent, float LocalNormal);
 }

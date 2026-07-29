@@ -56,7 +56,11 @@ public class MsgHandlersTests
             var session = new CapturingPlayerSession { ChannelId = 1 };
 
             // Request My Room (no channel rows) — still get the player's current channel.
-            await handler.HandleAsync(BuildUIntPayload(20000000), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPayload(20000000),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Single(session.Sent);
             Assert.Equal(PacketType.GetChannelListMapResponse, session.Sent[0].Type);
@@ -103,7 +107,11 @@ public class MsgHandlersTests
             var handler = CreateHandler(runDb);
             var session = new CapturingPlayerSession { ChannelId = 0 };
 
-            await handler.HandleAsync(BuildUIntPayload(10990100), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPayload(10990100),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Single(session.Sent);
             Assert.Equal(PacketType.GetChannelListMapResponse, session.Sent[0].Type);
@@ -144,7 +152,9 @@ public class MsgHandlersTests
 
             var services = new ServiceCollection();
             services.AddDbContext<MainContext>(builder => builder.UseSqlite(connection));
-            var scopeFactory = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+            var scopeFactory = services
+                .BuildServiceProvider()
+                .GetRequiredService<IServiceScopeFactory>();
             await using var runDb = new MainContext(options);
             var handler = new ChannelSelectHandler(
                 NullLogger<ChannelSelectHandler>.Instance,
@@ -159,13 +169,24 @@ public class MsgHandlersTests
                 ),
                 new ChannelRepository(runDb)
             );
-            var session = new CapturingPlayerSession { User = CreateUserWithCharacter(1, 5001, "msg-user", "Msg User", 10990100), UserId = 1 };
+            var session = new CapturingPlayerSession
+            {
+                User = CreateUserWithCharacter(1, 5001, "msg-user", "Msg User", 10990100),
+                UserId = 1,
+            };
 
-            await handler.HandleAsync(BuildUIntPayload(1), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPayload(1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(1, session.ChannelId);
             Assert.Equal(10990100u, session.MapId);
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.ChannelSelectResponse, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.ChannelSelectResponse, packet.Type)
+            );
         }
         finally
         {
@@ -180,7 +201,13 @@ public class MsgHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 6001, "selector-msg-user", "Selector Msg User", 10990100);
+            var user = CreateUserWithCharacter(
+                1,
+                6001,
+                "selector-msg-user",
+                "Selector Msg User",
+                10990100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -257,15 +284,30 @@ public class MsgHandlersTests
             await using var runDb = new MainContext(options);
             var handler = CreateHandler(runDb, state);
 
-            await handler.HandleAsync(BuildUIntPayload(10990200), msgSession, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPayload(10990200),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(msgSession.Sent, packet => Assert.Equal(PacketType.GetChannelListMapResponse, packet.Type));
-            Assert.Collection(areaSession.Sent, packet => Assert.Equal(PacketType.EventAreaMapSelectCloseNotify, packet.Type), packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+            Assert.Collection(
+                msgSession.Sent,
+                packet => Assert.Equal(PacketType.GetChannelListMapResponse, packet.Type)
+            );
+            Assert.Collection(
+                areaSession.Sent,
+                packet => Assert.Equal(PacketType.EventAreaMapSelectCloseNotify, packet.Type),
+                packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type)
+            );
 
-            var close = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(areaSession.Sent[0].Payload);
+            var close = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(
+                areaSession.Sent[0].Payload
+            );
             Assert.Equal(0u, close.Result);
 
-            var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(areaSession.Sent[1].Payload);
+            var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(
+                areaSession.Sent[1].Payload
+            );
             Assert.Equal(10990200u, notify.MapId);
             Assert.Equal(1u, notify.ChannelId);
 
@@ -310,7 +352,13 @@ public class MsgHandlersTests
         return writer.ToBytes();
     }
 
-    private static User CreateUserWithCharacter(int userId, int characterId, string username, string characterName, uint currentMapId)
+    private static User CreateUserWithCharacter(
+        int userId,
+        int characterId,
+        string username,
+        string characterName,
+        uint currentMapId
+    )
     {
         var user = new User { Id = userId, Username = username };
         user.SetPassword("pw");
@@ -339,7 +387,10 @@ public class MsgHandlersTests
         return user;
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state)
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(
+        MainContext db,
+        SharedState state
+    )
     {
         return new DirectMapLinkTransitionService(
             new MapRepository(db),

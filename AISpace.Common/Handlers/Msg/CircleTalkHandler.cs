@@ -10,7 +10,11 @@ public class CircleTalkHandler : IPacketHandler, IRequiresAuthenticatedSession
     public PacketType ResponseType => PacketType.CircleChatPostResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var req = CircleTalkRequest.FromBytes(payload.Span);
         await session.SendAsync(ResponseType, new CmdExecResponse(req.MessageId, 0).ToBytes(), ct);

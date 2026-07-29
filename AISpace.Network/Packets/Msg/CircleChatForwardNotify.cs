@@ -2,7 +2,12 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleChatForwardNotify(uint circleId, uint fromAvatarId, string message, uint balloonId) : IOutgoingPacket
+public class CircleChatForwardNotify(
+    uint circleId,
+    uint fromAvatarId,
+    string message,
+    uint balloonId
+) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

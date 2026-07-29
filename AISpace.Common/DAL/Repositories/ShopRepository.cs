@@ -14,21 +14,44 @@ public interface IShopRepository
 
 public sealed class ShopRepository(MainContext db) : IShopRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
-    public async Task<IReadOnlyList<ShopItem>> GetEnabledItemsAsync(int shopId, CancellationToken ct = default) =>
-        await db.ShopItems.AsNoTracking().Where(x => x.ShopId == shopId && x.IsEnabled).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).ToListAsync(ct);
+    public async Task<IReadOnlyList<ShopItem>> GetEnabledItemsAsync(
+        int shopId,
+        CancellationToken ct = default
+    ) =>
+        await db
+            .ShopItems.AsNoTracking()
+            .Where(x => x.ShopId == shopId && x.IsEnabled)
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Id)
+            .ToListAsync(ct);
 
-    public async Task<ShopItem?> GetEnabledItemAsync(int shopId, int itemId, CancellationToken ct = default) =>
-        await db.ShopItems.AsNoTracking().FirstOrDefaultAsync(x => x.ShopId == shopId && x.ItemId == itemId && x.IsEnabled, ct);
+    public async Task<ShopItem?> GetEnabledItemAsync(
+        int shopId,
+        int itemId,
+        CancellationToken ct = default
+    ) =>
+        await db
+            .ShopItems.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.ShopId == shopId && x.ItemId == itemId && x.IsEnabled, ct);
 
-    public static async Task SeedShopsFromJsonAsync(MainContext db, string jsonPath, ILogger? logger = null, CancellationToken ct = default)
+    public static async Task SeedShopsFromJsonAsync(
+        MainContext db,
+        string jsonPath,
+        ILogger? logger = null,
+        CancellationToken ct = default
+    )
     {
         if (!File.Exists(jsonPath))
             throw new FileNotFoundException("Shop seed JSON not found.", jsonPath);
 
         var json = await File.ReadAllTextAsync(jsonPath, ct);
-        var root = JsonSerializer.Deserialize<ShopSeedRoot>(json, JsonOptions) ?? new ShopSeedRoot();
+        var root =
+            JsonSerializer.Deserialize<ShopSeedRoot>(json, JsonOptions) ?? new ShopSeedRoot();
 
         if (root.Version <= 0)
             throw new InvalidDataException("Shop seed version must be greater than zero.");
@@ -56,8 +79,15 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
             var expandedItems = new List<ShopItemSeedRow>(shopRow.Items);
             if (shopRow.ItemIds.Count > 0)
             {
-                if (shopRow.DefaultAiPrice is null || shopRow.DefaultNicoPrice is null || shopRow.DefaultAiPrice <= 0 || shopRow.DefaultNicoPrice <= 0)
-                    throw new InvalidDataException($"Shop {shopRow.Code} using itemIds must define defaultAiPrice/defaultNicoPrice > 0.");
+                if (
+                    shopRow.DefaultAiPrice is null
+                    || shopRow.DefaultNicoPrice is null
+                    || shopRow.DefaultAiPrice <= 0
+                    || shopRow.DefaultNicoPrice <= 0
+                )
+                    throw new InvalidDataException(
+                        $"Shop {shopRow.Code} using itemIds must define defaultAiPrice/defaultNicoPrice > 0."
+                    );
 
                 var seenItemIds = expandedItems.Select(x => x.ItemId).ToHashSet();
                 for (var i = 0; i < shopRow.ItemIds.Count; i++)
@@ -82,25 +112,34 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
             foreach (var itemRow in expandedItems)
             {
                 if (itemRow.ItemId <= 0)
-                    throw new InvalidDataException($"Shop {shopRow.Code} has invalid item id {itemRow.ItemId}.");
+                    throw new InvalidDataException(
+                        $"Shop {shopRow.Code} has invalid item id {itemRow.ItemId}."
+                    );
                 if (itemRow.AiPrice <= 0 || itemRow.NicoPrice <= 0)
-                    throw new InvalidDataException($"Shop {shopRow.Code} item {itemRow.ItemId} must have aiPrice and nicoPrice > 0.");
+                    throw new InvalidDataException(
+                        $"Shop {shopRow.Code} item {itemRow.ItemId} must have aiPrice and nicoPrice > 0."
+                    );
 
-                var itemExists = await db.Items.AsNoTracking().AnyAsync(x => x.Id == itemRow.ItemId, ct);
+                var itemExists = await db
+                    .Items.AsNoTracking()
+                    .AnyAsync(x => x.Id == itemRow.ItemId, ct);
                 if (!itemExists)
                 {
-                    logger?.LogWarning("Skipping shop seed item {ItemId} for shop {ShopCode}; item does not exist in Items table.", itemRow.ItemId, shopRow.Code);
+                    logger?.LogWarning(
+                        "Skipping shop seed item {ItemId} for shop {ShopCode}; item does not exist in Items table.",
+                        itemRow.ItemId,
+                        shopRow.Code
+                    );
                     continue;
                 }
 
-                var shopItem = await db.ShopItems.SingleOrDefaultAsync(x => x.ShopId == shop.Id && x.ItemId == itemRow.ItemId, ct);
+                var shopItem = await db.ShopItems.SingleOrDefaultAsync(
+                    x => x.ShopId == shop.Id && x.ItemId == itemRow.ItemId,
+                    ct
+                );
                 if (shopItem is null)
                 {
-                    shopItem = new ShopItem
-                    {
-                        ShopId = shop.Id,
-                        ItemId = itemRow.ItemId,
-                    };
+                    shopItem = new ShopItem { ShopId = shop.Id, ItemId = itemRow.ItemId };
                     db.ShopItems.Add(shopItem);
                 }
 
@@ -113,16 +152,26 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
             foreach (var npcRow in shopRow.Npcs)
             {
                 if (npcRow.DayPhase is < -1 or > 4)
-                    throw new InvalidDataException($"NPC {npcRow.NpcObjectId} dayPhase must be -1 or 0..4.");
+                    throw new InvalidDataException(
+                        $"NPC {npcRow.NpcObjectId} dayPhase must be -1 or 0..4."
+                    );
                 if (string.IsNullOrWhiteSpace(npcRow.Name))
                     throw new InvalidDataException($"NPC {npcRow.NpcObjectId} name is required.");
 
-                var dateStartUtc = ParseUtc(npcRow.DateStartUtc, DateTime.UnixEpoch, "dateStartUtc");
+                var dateStartUtc = ParseUtc(
+                    npcRow.DateStartUtc,
+                    DateTime.UnixEpoch,
+                    "dateStartUtc"
+                );
                 var dateEndUtc = ParseUtc(npcRow.DateEndUtc, DateTime.MaxValue, "dateEndUtc");
                 if (dateStartUtc > dateEndUtc)
-                    throw new InvalidDataException($"NPC {npcRow.NpcObjectId} dateStartUtc must be <= dateEndUtc.");
+                    throw new InvalidDataException(
+                        $"NPC {npcRow.NpcObjectId} dateStartUtc must be <= dateEndUtc."
+                    );
 
-                var npc = await db.Npcs.Include(x => x.Equipment).SingleOrDefaultAsync(x => x.NpcObjectId == npcRow.NpcObjectId, ct);
+                var npc = await db
+                    .Npcs.Include(x => x.Equipment)
+                    .SingleOrDefaultAsync(x => x.NpcObjectId == npcRow.NpcObjectId, ct);
                 if (npc is null)
                 {
                     npc = new Npc { NpcObjectId = npcRow.NpcObjectId };
@@ -150,7 +199,9 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                 foreach (var equipment in equipmentRows)
                 {
                     if (!seenSlots.Add(equipment.SlotIndex))
-                        throw new InvalidDataException($"NPC {npcRow.NpcObjectId} has duplicate equipment slotIndex {equipment.SlotIndex}.");
+                        throw new InvalidDataException(
+                            $"NPC {npcRow.NpcObjectId} has duplicate equipment slotIndex {equipment.SlotIndex}."
+                        );
                 }
 
                 await db.SaveChangesAsync(ct);
@@ -173,7 +224,9 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                 }
 
                 var incomingSlots = equipmentRows.Select(x => x.SlotIndex).ToHashSet();
-                var staleRows = npc.Equipment.Where(x => !incomingSlots.Contains(x.SlotIndex)).ToList();
+                var staleRows = npc
+                    .Equipment.Where(x => !incomingSlots.Contains(x.SlotIndex))
+                    .ToList();
                 if (staleRows.Count > 0)
                     db.NpcEquipments.RemoveRange(staleRows);
             }
@@ -186,7 +239,9 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
     {
         if (string.IsNullOrWhiteSpace(value))
             return NpcInteractionType.Shop;
-        return Enum.TryParse<NpcInteractionType>(value, ignoreCase: true, out var parsed) ? parsed : NpcInteractionType.Shop;
+        return Enum.TryParse<NpcInteractionType>(value, ignoreCase: true, out var parsed)
+            ? parsed
+            : NpcInteractionType.Shop;
     }
 
     private static DateTime ParseUtc(string? value, DateTime fallback, string fieldName)
@@ -194,7 +249,14 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
         if (string.IsNullOrWhiteSpace(value))
             return fallback;
 
-        if (!DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+        if (
+            !DateTimeOffset.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsed
+            )
+        )
             throw new InvalidDataException($"Invalid UTC timestamp for {fieldName}: '{value}'.");
         return parsed.UtcDateTime;
     }

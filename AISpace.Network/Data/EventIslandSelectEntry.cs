@@ -30,7 +30,9 @@ public sealed class EventIslandSelectEntry
     public static EventIslandSelectEntry FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
-        var baseEntry = SelectInitIslandEntry.FromBytes(reader.ReadBytes(SelectInitIslandEntry.PacketSize));
+        var baseEntry = SelectInitIslandEntry.FromBytes(
+            reader.ReadBytes(SelectInitIslandEntry.PacketSize)
+        );
         return new EventIslandSelectEntry
         {
             IslandId = baseEntry.IslandId,

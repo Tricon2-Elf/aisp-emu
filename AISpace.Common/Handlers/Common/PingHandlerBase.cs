@@ -11,7 +11,11 @@ public abstract class PingHandlerBase(ILogger logger) : IPacketHandler
     public PacketType ResponseType => PacketType.Ping;
     public abstract ServerType ServerType { get; }
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         logger.LogTrace("Ping from {ConnectionId}", session.ConnectionId);
         var ping = PingRequest.FromBytes(payload.Span);

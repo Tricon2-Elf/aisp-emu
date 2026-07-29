@@ -12,19 +12,31 @@ public interface IItemRepository
 
 public sealed class ItemRepository(MainContext db) : IItemRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
-    public Task<Item?> GetByIdAsync(int id, CancellationToken ct = default) => db.Items.AsNoTracking().SingleOrDefaultAsync(i => i.Id == id, ct);
+    public Task<Item?> GetByIdAsync(int id, CancellationToken ct = default) =>
+        db.Items.AsNoTracking().SingleOrDefaultAsync(i => i.Id == id, ct);
 
-    public async Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken ct = default) => await db.Items.AsNoTracking().ToListAsync(ct);
+    public async Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken ct = default) =>
+        await db.Items.AsNoTracking().ToListAsync(ct);
 
-    public static async Task SeedItemsIfEmptyAsync(MainContext db, string jsonPath, CancellationToken ct = default)
+    public static async Task SeedItemsIfEmptyAsync(
+        MainContext db,
+        string jsonPath,
+        CancellationToken ct = default
+    )
     {
         if (await db.Items.AnyAsync(ct))
             return;
 
         if (!File.Exists(jsonPath))
-            throw new FileNotFoundException("Item seed JSON not found (required for empty Items table).", jsonPath);
+            throw new FileNotFoundException(
+                "Item seed JSON not found (required for empty Items table).",
+                jsonPath
+            );
 
         var json = await File.ReadAllTextAsync(jsonPath, ct);
         var rows = JsonSerializer.Deserialize<List<ItemSeedRow>>(json, JsonOptions) ?? [];
@@ -56,7 +68,11 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
     }
 
     /// <summary>Adds any seed items that are missing from an existing Items table (idempotent).</summary>
-    public static async Task EnsureSeedItemsPresentAsync(MainContext db, string jsonPath, CancellationToken ct = default)
+    public static async Task EnsureSeedItemsPresentAsync(
+        MainContext db,
+        string jsonPath,
+        CancellationToken ct = default
+    )
     {
         if (!File.Exists(jsonPath))
             return;

@@ -2,7 +2,11 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public sealed class GetRoboCreateInfoResponse(uint modelId, uint hairstyle, IReadOnlyList<ItemSlotInfo> equips) : IOutgoingPacket
+public sealed class GetRoboCreateInfoResponse(
+    uint modelId,
+    uint hairstyle,
+    IReadOnlyList<ItemSlotInfo> equips
+) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

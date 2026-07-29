@@ -1,6 +1,11 @@
 namespace AISpace.Network.Data;
 
-public class ChannelInfo(uint channelID, uint currentUserCount, uint maxUserCount, ServerInfo serverInfo)
+public class ChannelInfo(
+    uint channelID,
+    uint currentUserCount,
+    uint maxUserCount,
+    ServerInfo serverInfo
+)
 {
     public const int PacketSize = 4 + 4 + 4 + 67;
 

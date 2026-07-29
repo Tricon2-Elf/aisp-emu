@@ -7,7 +7,12 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Server;
 
-public class ScheduledMaintenanceService(SharedState state, IOptions<MaintenanceOptions> options, IHostApplicationLifetime lifetime, ILogger<ScheduledMaintenanceService> logger) : BackgroundService
+public class ScheduledMaintenanceService(
+    SharedState state,
+    IOptions<MaintenanceOptions> options,
+    IHostApplicationLifetime lifetime,
+    ILogger<ScheduledMaintenanceService> logger
+) : BackgroundService
 {
     private readonly MaintenanceOptions _options = options.Value;
     private readonly HashSet<int> _sentWarnings = [];
@@ -22,19 +27,38 @@ public class ScheduledMaintenanceService(SharedState state, IOptions<Maintenance
             return;
         }
 
-        var parsed = TimeOnly.TryParseExact(_options.ScheduledTime, "HH:mm", out var scheduledTimeOfDay);
+        var parsed = TimeOnly.TryParseExact(
+            _options.ScheduledTime,
+            "HH:mm",
+            out var scheduledTimeOfDay
+        );
         if (!parsed)
         {
-            logger.LogError("Invalid ScheduledTime format '{ScheduledTime}'. Expected 'HH:mm' (UTC). Maintenance disabled.", _options.ScheduledTime);
+            logger.LogError(
+                "Invalid ScheduledTime format '{ScheduledTime}'. Expected 'HH:mm' (UTC). Maintenance disabled.",
+                _options.ScheduledTime
+            );
             return;
         }
 
-        logger.LogInformation("Scheduled maintenance enabled: daily at {ScheduledTime} UTC with warnings at {Minutes} min", _options.ScheduledTime, string.Join(", ", _options.WarningMinutes));
+        logger.LogInformation(
+            "Scheduled maintenance enabled: daily at {ScheduledTime} UTC with warnings at {Minutes} min",
+            _options.ScheduledTime,
+            string.Join(", ", _options.WarningMinutes)
+        );
 
         while (!ct.IsCancellationRequested)
         {
             var now = DateTimeOffset.UtcNow;
-            var scheduleTime = new DateTimeOffset(now.Year, now.Month, now.Day, scheduledTimeOfDay.Hour, scheduledTimeOfDay.Minute, 0, TimeSpan.Zero);
+            var scheduleTime = new DateTimeOffset(
+                now.Year,
+                now.Month,
+                now.Day,
+                scheduledTimeOfDay.Hour,
+                scheduledTimeOfDay.Minute,
+                0,
+                TimeSpan.Zero
+            );
 
             while (now > scheduleTime)
                 scheduleTime = scheduleTime.AddDays(1);
@@ -68,9 +92,15 @@ public class ScheduledMaintenanceService(SharedState state, IOptions<Maintenance
 
     private void BroadcastWarning(int minutesRemaining)
     {
-        var message = minutesRemaining == 1 ? "Server maintenance in 1 minute. You will be disconnected." : string.Format(_options.Message, minutesRemaining);
+        var message =
+            minutesRemaining == 1
+                ? "Server maintenance in 1 minute. You will be disconnected."
+                : string.Format(_options.Message, minutesRemaining);
 
-        logger.LogInformation("Broadcasting maintenance warning: {Minutes} min remaining", minutesRemaining);
+        logger.LogInformation(
+            "Broadcasting maintenance warning: {Minutes} min remaining",
+            minutesRemaining
+        );
         SendToAllAreaClients(message);
     }
 

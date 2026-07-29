@@ -12,7 +12,10 @@ public interface IChannelRepository
 
 public class ChannelRepository(MainContext db) : IChannelRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     private readonly MainContext _db = db;
 
@@ -21,18 +24,32 @@ public class ChannelRepository(MainContext db) : IChannelRepository
         return await _db.Channels.OrderBy(c => c.ChannelNum).ToListAsync(ct);
     }
 
-    public async Task<GameChannel?> GetByChannelNumAsync(int channelNum, CancellationToken ct = default)
+    public async Task<GameChannel?> GetByChannelNumAsync(
+        int channelNum,
+        CancellationToken ct = default
+    )
     {
-        return await _db.Channels.AsNoTracking().FirstOrDefaultAsync(c => c.ChannelNum == channelNum, ct);
+        return await _db
+            .Channels.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.ChannelNum == channelNum, ct);
     }
 
-    public static async Task SeedChannelsIfEmptyAsync(MainContext db, string jsonPath, string? ipOverride, ushort areaPort, CancellationToken ct = default)
+    public static async Task SeedChannelsIfEmptyAsync(
+        MainContext db,
+        string jsonPath,
+        string? ipOverride,
+        ushort areaPort,
+        CancellationToken ct = default
+    )
     {
         if (await db.Channels.AnyAsync(ct))
             return;
 
         if (!File.Exists(jsonPath))
-            throw new FileNotFoundException("Channel seed JSON not found (required for empty Channels table).", jsonPath);
+            throw new FileNotFoundException(
+                "Channel seed JSON not found (required for empty Channels table).",
+                jsonPath
+            );
 
         var json = await File.ReadAllTextAsync(jsonPath, ct);
         var rows = JsonSerializer.Deserialize<List<ChannelSeedRow>>(json, JsonOptions) ?? [];

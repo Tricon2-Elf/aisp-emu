@@ -2,7 +2,8 @@ namespace AISpace.Network.Packets.Common
 {
     using AISpace.Network;
 
-    public class VersionCheckRequest(uint Major, uint Minor, uint Version) : IIncomingPacket<VersionCheckRequest>
+    public class VersionCheckRequest(uint Major, uint Minor, uint Version)
+        : IIncomingPacket<VersionCheckRequest>
     {
         public uint Major = Major;
         public uint Minor = Minor;

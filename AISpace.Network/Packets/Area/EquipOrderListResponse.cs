@@ -5,7 +5,8 @@ namespace AISpace.Network.Packets.Area;
 public class EquipOrderListResponse : IOutgoingPacket
 {
     public uint Result { get; set; }
-    public IReadOnlyList<CharaOrderData> CharaOrders { get; set; } = CharaOrderData.DefaultClothingOrders;
+    public IReadOnlyList<CharaOrderData> CharaOrders { get; set; } =
+        CharaOrderData.DefaultClothingOrders;
 
     public EquipOrderListResponse(uint result = 0)
     {

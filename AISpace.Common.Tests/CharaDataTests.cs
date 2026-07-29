@@ -10,11 +10,7 @@ public class CharaDataTests
     {
         var cd = new CharaData(1, 1, "test");
         cd.AddEquip(
-            new[]
-            {
-                new CharacterEquipSlot(1, 10200100),
-                new CharacterEquipSlot(3, 10500070),
-            },
+            new[] { new CharacterEquipSlot(1, 10200100), new CharacterEquipSlot(3, 10500070) },
             ItemEntityMapper.ResolveEquipSocket
         );
 

@@ -12,7 +12,11 @@ public class AreaUccAdvFigureBaseListHandler : IPacketHandler, IRequiresAuthenti
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var response = new UccAdvFigureBaseListResponse();
         await session.SendAsync(ResponseType, response.ToBytes(), ct);

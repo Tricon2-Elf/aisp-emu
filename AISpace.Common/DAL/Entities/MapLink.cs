@@ -50,7 +50,13 @@ public class MapLink
         if (string.IsNullOrWhiteSpace(DestinationMapIds))
             return [];
 
-        var parsed = DestinationMapIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(raw => uint.TryParse(raw, out var mapId) ? mapId : 0u).Where(mapId => mapId != 0).Distinct().Take(4).ToList();
+        var parsed = DestinationMapIds
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(raw => uint.TryParse(raw, out var mapId) ? mapId : 0u)
+            .Where(mapId => mapId != 0)
+            .Distinct()
+            .Take(4)
+            .ToList();
 
         return parsed;
     }
@@ -60,9 +66,19 @@ public class MapLink
     /// </summary>
     public (float X, float Y, float Z, int Rotation) ResolveDestinationSpawn(Map destinationMap)
     {
-        if (DestinationSpawnX is { } x && DestinationSpawnY is { } y && DestinationSpawnZ is { } z && DestinationSpawnRotation is { } rotation)
+        if (
+            DestinationSpawnX is { } x
+            && DestinationSpawnY is { } y
+            && DestinationSpawnZ is { } z
+            && DestinationSpawnRotation is { } rotation
+        )
             return (x, y, z, rotation);
 
-        return (destinationMap.SpawnX, destinationMap.SpawnY, destinationMap.SpawnZ, destinationMap.SpawnRotation);
+        return (
+            destinationMap.SpawnX,
+            destinationMap.SpawnY,
+            destinationMap.SpawnZ,
+            destinationMap.SpawnRotation
+        );
     }
 }

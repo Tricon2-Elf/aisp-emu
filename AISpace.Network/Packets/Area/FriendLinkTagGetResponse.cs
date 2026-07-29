@@ -2,7 +2,14 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class FriendLinkTagGetResponse(uint result, uint avatarId, uint tagData = 0, uint slot = 0, uint questionnaireTagData = 0, uint questionnaireSlot = 0) : IOutgoingPacket
+public class FriendLinkTagGetResponse(
+    uint result,
+    uint avatarId,
+    uint tagData = 0,
+    uint slot = 0,
+    uint questionnaireTagData = 0,
+    uint questionnaireSlot = 0
+) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

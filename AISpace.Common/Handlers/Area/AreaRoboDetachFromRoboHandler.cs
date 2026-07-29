@@ -6,23 +6,49 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public sealed class AreaRoboDetachFromRoboHandler(IRoboRepository roboRepository, ILogger<AreaRoboDetachFromRoboHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public sealed class AreaRoboDetachFromRoboHandler(
+    IRoboRepository roboRepository,
+    ILogger<AreaRoboDetachFromRoboHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.RoboDetachFromRoboRequest;
     public PacketType ResponseType => PacketType.RoboDetachNoticeFromRoboNotify;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = RoboDetachFromRoboRequest.FromBytes(payload.Span);
-        var owned = session.CharacterId != 0 && await roboRepository.ExistsAsync(checked((int)session.CharacterId), request.RoboId, ct);
+        var owned =
+            session.CharacterId != 0
+            && await roboRepository.ExistsAsync(
+                checked((int)session.CharacterId),
+                request.RoboId,
+                ct
+            );
         if (!owned)
         {
-            logger.LogWarning("Rejected Robo-side conversation detach for character {CharacterId}: Robo {RoboId} is not owned by the character", session.CharacterId, request.RoboId);
+            logger.LogWarning(
+                "Rejected Robo-side conversation detach for character {CharacterId}: Robo {RoboId} is not owned by the character",
+                session.CharacterId,
+                request.RoboId
+            );
             return;
         }
 
-        logger.LogDebug("Clearing rejected Robo conversation for character {CharacterId}: Robo {RoboId}, avatar object {AvatarObjectId}", session.CharacterId, request.RoboId, session.CharacterId);
-        await session.SendAsync(ResponseType, new RoboDetachNoticeFromRoboNotify(request.RoboId, session.CharacterId).ToBytes(), ct);
+        logger.LogDebug(
+            "Clearing rejected Robo conversation for character {CharacterId}: Robo {RoboId}, avatar object {AvatarObjectId}",
+            session.CharacterId,
+            request.RoboId,
+            session.CharacterId
+        );
+        await session.SendAsync(
+            ResponseType,
+            new RoboDetachNoticeFromRoboNotify(request.RoboId, session.CharacterId).ToBytes(),
+            ct
+        );
     }
 }

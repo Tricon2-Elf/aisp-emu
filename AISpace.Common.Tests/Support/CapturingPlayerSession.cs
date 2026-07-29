@@ -7,7 +7,8 @@ namespace AISpace.Common.Tests.Support;
 
 internal sealed class CapturingPlayerSession : IPlayerSession
 {
-    public CapturingPlayerSession(Guid? connectionId = null) => ConnectionId = connectionId ?? Guid.NewGuid();
+    public CapturingPlayerSession(Guid? connectionId = null) =>
+        ConnectionId = connectionId ?? Guid.NewGuid();
 
     public Guid ConnectionId { get; }
     public int UserId { get; set; }

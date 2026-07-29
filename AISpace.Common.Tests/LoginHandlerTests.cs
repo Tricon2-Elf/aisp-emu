@@ -18,7 +18,14 @@ public class LoginHandlerTests
     {
         const string otp = "12345678901234567890";
         var user = new User { Id = 5, Username = "u" };
-        user.Characters.Add(new Character { Id = 42, Name = "ChatUser", UserId = 5 });
+        user.Characters.Add(
+            new Character
+            {
+                Id = 42,
+                Name = "ChatUser",
+                UserId = 5,
+            }
+        );
         var us = new UserSession
         {
             UserId = 5,
@@ -28,10 +35,16 @@ public class LoginHandlerTests
         };
 
         var sessionRepo = new Mock<AISpace.Common.DAL.Repositories.IUserSessionRepository>();
-        sessionRepo.Setup(r => r.GetValidSessionAsync(otp, It.IsAny<CancellationToken>())).ReturnsAsync(us);
+        sessionRepo
+            .Setup(r => r.GetValidSessionAsync(otp, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(us);
 
         var state = new SharedState();
-        var handler = new LoginHandler(sessionRepo.Object, state, NullLogger<LoginHandler>.Instance);
+        var handler = new LoginHandler(
+            sessionRepo.Object,
+            state,
+            NullLogger<LoginHandler>.Instance
+        );
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
 
@@ -46,7 +59,10 @@ public class LoginHandlerTests
         Assert.Equal(42u, session.CharacterId);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.LoginResponse, session.Sent[0].Type);
-        Assert.Equal((uint)AuthResponseResult.Success, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        Assert.Equal(
+            (uint)AuthResponseResult.Success,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
         Assert.Contains(state.MsgClients, client => client.ConnectionId == session.ConnectionId);
     }
 
@@ -54,9 +70,15 @@ public class LoginHandlerTests
     public async Task InvalidOtp_ReturnsInvalidCredentials()
     {
         var sessionRepo = new Mock<AISpace.Common.DAL.Repositories.IUserSessionRepository>();
-        sessionRepo.Setup(r => r.GetValidSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((UserSession?)null);
+        sessionRepo
+            .Setup(r => r.GetValidSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserSession?)null);
 
-        var handler = new LoginHandler(sessionRepo.Object, new SharedState(), NullLogger<LoginHandler>.Instance);
+        var handler = new LoginHandler(
+            sessionRepo.Object,
+            new SharedState(),
+            NullLogger<LoginHandler>.Instance
+        );
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
 
@@ -67,7 +89,10 @@ public class LoginHandlerTests
         await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
         Assert.Null(session.User);
-        Assert.Equal((uint)AuthResponseResult.InvalidCredentials, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        Assert.Equal(
+            (uint)AuthResponseResult.InvalidCredentials,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
     }
 
     [Fact]
@@ -83,9 +108,15 @@ public class LoginHandlerTests
         };
 
         var sessionRepo = new Mock<AISpace.Common.DAL.Repositories.IUserSessionRepository>();
-        sessionRepo.Setup(r => r.GetValidSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(us);
+        sessionRepo
+            .Setup(r => r.GetValidSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(us);
 
-        var handler = new LoginHandler(sessionRepo.Object, new SharedState(), NullLogger<LoginHandler>.Instance);
+        var handler = new LoginHandler(
+            sessionRepo.Object,
+            new SharedState(),
+            NullLogger<LoginHandler>.Instance
+        );
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
 
@@ -95,6 +126,9 @@ public class LoginHandlerTests
 
         await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
-        Assert.Equal((uint)AuthResponseResult.InvalidCredentials, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        Assert.Equal(
+            (uint)AuthResponseResult.InvalidCredentials,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
     }
 }

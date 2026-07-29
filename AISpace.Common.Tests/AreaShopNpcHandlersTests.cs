@@ -30,7 +30,12 @@ public class AreaShopNpcHandlersTests
         {
             await using (var db = new MainContext(options))
             {
-                await SeedShopNpcAsync(db, isNpcEnabled: true, isShopEnabled: true, isShopItemEnabled: true);
+                await SeedShopNpcAsync(
+                    db,
+                    isNpcEnabled: true,
+                    isShopEnabled: true,
+                    isShopItemEnabled: true
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -38,7 +43,11 @@ public class AreaShopNpcHandlersTests
             var handler = new AreaNpcGetDataHandler(new NpcRepository(runDb));
             var session = new CapturingPlayerSession { MapId = StarterMapId };
 
-            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Contains(session.Sent, p => p.Type == PacketType.NpcGetDataResponse);
             var npcPacket = Assert.Single(session.Sent, p => p.Type == PacketType.NpcNotifyData);
@@ -62,7 +71,13 @@ public class AreaShopNpcHandlersTests
 
             await using (var db = new MainContext(options))
             {
-                await SeedShopNpcAsync(db, isNpcEnabled: true, isShopEnabled: true, isShopItemEnabled: true, bannerVisualId: bannerVisualId);
+                await SeedShopNpcAsync(
+                    db,
+                    isNpcEnabled: true,
+                    isShopEnabled: true,
+                    isShopItemEnabled: true,
+                    bannerVisualId: bannerVisualId
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -70,11 +85,18 @@ public class AreaShopNpcHandlersTests
             var handler = CreateEventAccessNpcHandler(runDb);
             var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(StarterNpcObjectId), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(StarterNpcObjectId),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
             Assert.Contains(session.Sent, p => p.Type == PacketType.NotifySupplyNpcExec);
-            var shopStarted = Assert.Single(session.Sent, p => p.Type == PacketType.ShopStartedNotify);
+            var shopStarted = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.ShopStartedNotify
+            );
             var startedReader = new PacketReader(shopStarted.Payload);
             Assert.Equal(StarterNpcObjectId, startedReader.ReadUInt());
             Assert.Equal("Starter Shop", startedReader.ReadString("ASCII"));
@@ -135,7 +157,11 @@ public class AreaShopNpcHandlersTests
                 ActiveShopId = 42,
             };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177288), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177288),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveShopId);
             Assert.Equal(ScriptedEvents.Keys.IntroductionRin02, session.ActiveEventKey);
@@ -145,7 +171,12 @@ public class AreaShopNpcHandlersTests
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventStartNotify);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventScriptPlayNotify);
             var script = session.Sent.Single(p => p.Type == PacketType.EventScriptPlayNotify);
-            Assert.Equal(new EventScriptPlayNotify(ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.IntroductionRin02)).ToBytes(), script.Payload);
+            Assert.Equal(
+                new EventScriptPlayNotify(
+                    ScriptedEvents.GetScriptLabel(ScriptedEvents.Keys.IntroductionRin02)
+                ).ToBytes(),
+                script.Payload
+            );
         }
         finally
         {
@@ -192,10 +223,17 @@ public class AreaShopNpcHandlersTests
                 ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
             };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177288), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177288),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ScriptedEvents.Keys.IntroductionRin01, session.ActiveEventKey);
-            var response = Assert.Single(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            var response = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.EventAccessNpcResponse
+            );
             Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventStartNotify);
         }
@@ -242,11 +280,18 @@ public class AreaShopNpcHandlersTests
                 ActiveShopId = 42,
             };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177299), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177299),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveShopId);
             Assert.Null(session.ActiveEventKey);
-            var response = Assert.Single(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            var response = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.EventAccessNpcResponse
+            );
             Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventStartNotify);
         }
@@ -264,7 +309,12 @@ public class AreaShopNpcHandlersTests
         {
             await using (var db = new MainContext(options))
             {
-                await SeedShopNpcAsync(db, isNpcEnabled: false, isShopEnabled: true, isShopItemEnabled: true);
+                await SeedShopNpcAsync(
+                    db,
+                    isNpcEnabled: false,
+                    isShopEnabled: true,
+                    isShopItemEnabled: true
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -272,9 +322,16 @@ public class AreaShopNpcHandlersTests
             var handler = CreateEventAccessNpcHandler(runDb);
             var session = new CapturingPlayerSession { MapId = StarterMapId, CharacterId = 9001 };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(StarterNpcObjectId), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(StarterNpcObjectId),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            var response = Assert.Single(session.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            var response = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.EventAccessNpcResponse
+            );
             var reader = new PacketReader(response.Payload);
             Assert.Equal(1u, reader.ReadUInt());
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.ShopStartedNotify);
@@ -293,7 +350,13 @@ public class AreaShopNpcHandlersTests
         {
             await using (var db = new MainContext(options))
             {
-                await SeedShopNpcAsync(db, isNpcEnabled: true, isShopEnabled: true, isShopItemEnabled: true, channelId: 1);
+                await SeedShopNpcAsync(
+                    db,
+                    isNpcEnabled: true,
+                    isShopEnabled: true,
+                    isShopItemEnabled: true,
+                    channelId: 1
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
@@ -308,14 +371,28 @@ public class AreaShopNpcHandlersTests
                 CharacterId = 9001,
             };
 
-            await npcHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, offChannelSession, TestContext.Current.CancellationToken);
+            await npcHandler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                offChannelSession,
+                TestContext.Current.CancellationToken
+            );
             Assert.DoesNotContain(offChannelSession.Sent, p => p.Type == PacketType.NpcNotifyData);
 
-            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(StarterNpcObjectId), offChannelSession, TestContext.Current.CancellationToken);
-            var response = Assert.Single(offChannelSession.Sent, p => p.Type == PacketType.EventAccessNpcResponse);
+            await accessHandler.HandleAsync(
+                BuildEventAccessNpcPayload(StarterNpcObjectId),
+                offChannelSession,
+                TestContext.Current.CancellationToken
+            );
+            var response = Assert.Single(
+                offChannelSession.Sent,
+                p => p.Type == PacketType.EventAccessNpcResponse
+            );
             var reader = new PacketReader(response.Payload);
             Assert.Equal(1u, reader.ReadUInt());
-            Assert.DoesNotContain(offChannelSession.Sent, p => p.Type == PacketType.ShopStartedNotify);
+            Assert.DoesNotContain(
+                offChannelSession.Sent,
+                p => p.Type == PacketType.ShopStartedNotify
+            );
         }
         finally
         {
@@ -323,7 +400,14 @@ public class AreaShopNpcHandlersTests
         }
     }
 
-    private static async Task SeedShopNpcAsync(MainContext db, bool isNpcEnabled, bool isShopEnabled, bool isShopItemEnabled, uint bannerVisualId = 10110, int channelId = -1)
+    private static async Task SeedShopNpcAsync(
+        MainContext db,
+        bool isNpcEnabled,
+        bool isShopEnabled,
+        bool isShopItemEnabled,
+        uint bannerVisualId = 10110,
+        int channelId = -1
+    )
     {
         db.Items.Add(
             new Item
@@ -439,9 +523,17 @@ public class AreaShopNpcHandlersTests
             await using var runDb = new MainContext(options);
             var characterId = runDb.Characters.Select(c => c.Id).Single();
             var handler = CreateEventAccessNpcHandler(runDb);
-            var session = new CapturingPlayerSession { MapId = 10990300, CharacterId = (uint)characterId };
+            var session = new CapturingPlayerSession
+            {
+                MapId = 10990300,
+                CharacterId = (uint)characterId,
+            };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177291), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177291),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.ShinjuRegistration, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
@@ -455,10 +547,18 @@ public class AreaShopNpcHandlersTests
             Assert.Contains(session.Sent, p => p.Type == PacketType.SelectInitIslandStart);
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventEndNotify);
 
-            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(session.Sent.Single(p => p.Type == PacketType.SelectInitIslandStart).Payload);
+            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(
+                session.Sent.Single(p => p.Type == PacketType.SelectInitIslandStart).Payload
+            );
             Assert.Equal(3, islandStart.Islands.Count);
-            Assert.Equal(4 + (SelectInitIslandEntry.PacketSize * 3), session.Sent.Single(p => p.Type == PacketType.SelectInitIslandStart).Payload.Length);
-            Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventIslandSelectExecNotify);
+            Assert.Equal(
+                4 + (SelectInitIslandEntry.PacketSize * 3),
+                session.Sent.Single(p => p.Type == PacketType.SelectInitIslandStart).Payload.Length
+            );
+            Assert.DoesNotContain(
+                session.Sent,
+                p => p.Type == PacketType.EventIslandSelectExecNotify
+            );
         }
         finally
         {
@@ -506,31 +606,66 @@ public class AreaShopNpcHandlersTests
             var characterId = runDb.Characters.Select(c => c.Id).Single();
             var shinjuNpc = runDb.Npcs.Single();
             var dispatcher = CreateServerScriptDispatcher(runDb);
-            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(runDb, new SharedState()), dispatcher, NullLogger<AreaSelectInitIslandEndHandler>.Instance);
+            var handler = new AreaSelectInitIslandEndHandler(
+                CreateDirectMapLinkTransitionService(runDb, new SharedState()),
+                dispatcher,
+                NullLogger<AreaSelectInitIslandEndHandler>.Instance
+            );
             var session = new CapturingPlayerSession
             {
                 CharacterId = (uint)characterId,
                 ActiveEventKey = ServerEvents.Keys.ShinjuRegistration,
                 ActiveEventKind = NpcEventKind.ServerScript,
                 ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
-                ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuRegistration, Step = "IslandSelect" },
+                ServerScriptState = new ServerScriptState
+                {
+                    EventKey = ServerEvents.Keys.ShinjuRegistration,
+                    Step = "IslandSelect",
+                },
             };
             session.ServerScriptState.Data["npc"] = shinjuNpc;
 
-            await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 3 }), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(
+                    new SelectInitIslandEndRequest { IslandId = 3 }
+                ),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.ShinjuRegistration, session.ActiveEventKey);
             Assert.Equal("CharadollSelect", session.ServerScriptState!.Step);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventStartNotify);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.EventStartNotify
+            );
             Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSelectInitNotify);
-            Assert.Equal(3, session.Sent.Count(packet => packet.Type == PacketType.EventSelectPushNotify));
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSelectExecNotify);
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.EventSelectInitNotify
+            );
+            Assert.Equal(
+                3,
+                session.Sent.Count(packet => packet.Type == PacketType.EventSelectPushNotify)
+            );
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.EventSelectExecNotify
+            );
 
-            var character = await runDb.Characters.SingleAsync(TestContext.Current.CancellationToken);
+            var character = await runDb.Characters.SingleAsync(
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(3u, character.HomeIslandId);
             Assert.Equal(1u, character.ModelId);
-            Assert.False(await runDb.CharacterEventStatuses.AnyAsync(x => x.CharacterId == characterId && x.EventKey == ServerEvents.Keys.ShinjuRegistration, TestContext.Current.CancellationToken));
+            Assert.False(
+                await runDb.CharacterEventStatuses.AnyAsync(
+                    x =>
+                        x.CharacterId == characterId
+                        && x.EventKey == ServerEvents.Keys.ShinjuRegistration,
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
@@ -564,32 +699,52 @@ public class AreaShopNpcHandlersTests
             await using var runDb = new MainContext(options);
             var characterId = runDb.Characters.Select(c => c.Id).Single();
             var dispatcher = CreateServerScriptDispatcher(runDb);
-            var handler = new AreaEventSelectExecRHandler(dispatcher, NullLogger<AreaEventSelectExecRHandler>.Instance);
+            var handler = new AreaEventSelectExecRHandler(
+                dispatcher,
+                NullLogger<AreaEventSelectExecRHandler>.Instance
+            );
             var session = new CapturingPlayerSession
             {
                 CharacterId = (uint)characterId,
                 ActiveEventKey = ServerEvents.Keys.ShinjuRegistration,
                 ActiveEventKind = NpcEventKind.ServerScript,
                 ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
-                ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.ShinjuRegistration, Step = "CharadollSelect" },
+                ServerScriptState = new ServerScriptState
+                {
+                    EventKey = ServerEvents.Keys.ShinjuRegistration,
+                    Step = "CharadollSelect",
+                },
             };
             session.ServerScriptState.Data["islandId"] = 3u;
 
             var writer = new PacketWriter();
             writer.Write(0u);
             writer.Write((byte)1);
-            await handler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                writer.ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(NpcEventKind.None, session.ActiveEventKind);
             Assert.Null(session.ServerScriptState);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
 
-            var character = await runDb.Characters.SingleAsync(TestContext.Current.CancellationToken);
+            var character = await runDb.Characters.SingleAsync(
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(3u, character.HomeIslandId);
             Assert.Equal(1u, character.ModelId);
             Assert.Equal(CharadollPersonality.Quiet, character.CharadollPersonality);
-            Assert.True(await runDb.CharacterEventStatuses.AnyAsync(x => x.CharacterId == characterId && x.EventKey == ServerEvents.Keys.ShinjuRegistration, TestContext.Current.CancellationToken));
+            Assert.True(
+                await runDb.CharacterEventStatuses.AnyAsync(
+                    x =>
+                        x.CharacterId == characterId
+                        && x.EventKey == ServerEvents.Keys.ShinjuRegistration,
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
@@ -643,9 +798,17 @@ public class AreaShopNpcHandlersTests
             await using var runDb = new MainContext(options);
             var characterId = runDb.Characters.Select(c => c.Id).Single();
             var handler = CreateEventAccessNpcHandler(runDb);
-            var session = new CapturingPlayerSession { MapId = 10990300, CharacterId = (uint)characterId };
+            var session = new CapturingPlayerSession
+            {
+                MapId = 10990300,
+                CharacterId = (uint)characterId,
+            };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177291), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177291),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.ShinjuRegistration, session.ActiveEventKey);
             Assert.Equal("CharadollSelect", session.ServerScriptState!.Step);
@@ -716,11 +879,27 @@ public class AreaShopNpcHandlersTests
             await using var runDb = new MainContext(options);
             var characterIdForSession = runDb.Characters.Select(c => c.Id).Single();
             var dispatcher = CreateServerScriptDispatcher(runDb);
-            var handler = new AreaEventAccessNpcHandler(new NpcRepository(runDb), new ShopRepository(runDb), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
-            var syncHandler = new AreaEventSyncRHandler(dispatcher, NullLogger<AreaEventSyncRHandler>.Instance);
-            var session = new CapturingPlayerSession { MapId = 10990300, CharacterId = (uint)characterIdForSession };
+            var handler = new AreaEventAccessNpcHandler(
+                new NpcRepository(runDb),
+                new ShopRepository(runDb),
+                dispatcher,
+                NullLogger<AreaEventAccessNpcHandler>.Instance
+            );
+            var syncHandler = new AreaEventSyncRHandler(
+                dispatcher,
+                NullLogger<AreaEventSyncRHandler>.Instance
+            );
+            var session = new CapturingPlayerSession
+            {
+                MapId = 10990300,
+                CharacterId = (uint)characterIdForSession,
+            };
 
-            await handler.HandleAsync(BuildEventAccessNpcPayload(1342177291), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177291),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.ShinjuRegistration, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
@@ -729,7 +908,9 @@ public class AreaShopNpcHandlersTests
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventMessageCloseNotify);
             Assert.Contains(session.Sent, p => p.Type == PacketType.EventSyncNotify);
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.EventEndNotify);
-            var messagePayload = session.Sent.Single(p => p.Type == PacketType.EventMessageNotify).Payload;
+            var messagePayload = session
+                .Sent.Single(p => p.Type == PacketType.EventMessageNotify)
+                .Payload;
             var reader = new PacketReader(messagePayload);
             Assert.Equal(1342177291u, reader.ReadUInt());
             Assert.Equal("Shinju", reader.ReadString());
@@ -739,7 +920,11 @@ public class AreaShopNpcHandlersTests
 
             var syncPayload = new PacketWriter();
             syncPayload.Write(0u);
-            await syncHandler.HandleAsync(syncPayload.ToBytes(), session, TestContext.Current.CancellationToken);
+            await syncHandler.HandleAsync(
+                syncPayload.ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(NpcEventKind.None, session.ActiveEventKind);
@@ -752,19 +937,44 @@ public class AreaShopNpcHandlersTests
         }
     }
 
-    private static AreaEventAccessNpcHandler CreateEventAccessNpcHandler(MainContext db) => new(new NpcRepository(db), new ShopRepository(db), CreateServerScriptDispatcher(db), NullLogger<AreaEventAccessNpcHandler>.Instance);
+    private static AreaEventAccessNpcHandler CreateEventAccessNpcHandler(MainContext db) =>
+        new(
+            new NpcRepository(db),
+            new ShopRepository(db),
+            CreateServerScriptDispatcher(db),
+            NullLogger<AreaEventAccessNpcHandler>.Instance
+        );
 
     private static ServerScriptDispatcher CreateServerScriptDispatcher(MainContext db)
     {
         var eventRepository = new CharacterEventRepository(db);
-        var serverScriptSession = new ServerScriptSession(eventRepository, NullLogger<ServerScriptSession>.Instance);
-        var characterRepository = new CharacterRepository(db, NullLogger<CharacterRepository>.Instance);
+        var serverScriptSession = new ServerScriptSession(
+            eventRepository,
+            NullLogger<ServerScriptSession>.Instance
+        );
+        var characterRepository = new CharacterRepository(
+            db,
+            NullLogger<CharacterRepository>.Instance
+        );
         var mapRepository = new MapRepository(db);
-        var shinjuRegistrationScript = new ShinjuRegistrationServerScript(characterRepository, eventRepository, mapRepository, serverScriptSession, NullLogger<ShinjuRegistrationServerScript>.Instance);
-        return new ServerScriptDispatcher([shinjuRegistrationScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        var shinjuRegistrationScript = new ShinjuRegistrationServerScript(
+            characterRepository,
+            eventRepository,
+            mapRepository,
+            serverScriptSession,
+            NullLogger<ShinjuRegistrationServerScript>.Instance
+        );
+        return new ServerScriptDispatcher(
+            [shinjuRegistrationScript],
+            serverScriptSession,
+            NullLogger<ServerScriptDispatcher>.Instance
+        );
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state) =>
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(
+        MainContext db,
+        SharedState state
+    ) =>
         new(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),

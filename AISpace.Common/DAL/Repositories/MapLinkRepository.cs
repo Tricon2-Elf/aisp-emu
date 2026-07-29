@@ -6,25 +6,49 @@ namespace AISpace.Common.DAL.Repositories;
 
 public interface IMapLinkRepository
 {
-    Task<IReadOnlyList<MapLink>> GetBySourceMapAsync(uint sourceMapId, uint channelId, CancellationToken ct = default);
+    Task<IReadOnlyList<MapLink>> GetBySourceMapAsync(
+        uint sourceMapId,
+        uint channelId,
+        CancellationToken ct = default
+    );
 }
 
 public class MapLinkRepository(MainContext db) : IMapLinkRepository
 {
     private readonly MainContext _db = db;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
-    public async Task<IReadOnlyList<MapLink>> GetBySourceMapAsync(uint sourceMapId, uint channelId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MapLink>> GetBySourceMapAsync(
+        uint sourceMapId,
+        uint channelId,
+        CancellationToken ct = default
+    )
     {
         long mapId = sourceMapId;
         long channel = channelId;
 
-        return await _db.MapLinks.AsNoTracking().Where(x => x.IsEnabled && x.SourceMapId == mapId && (x.ChannelId == channel || x.ChannelId == 0)).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).ToListAsync(ct);
+        return await _db
+            .MapLinks.AsNoTracking()
+            .Where(x =>
+                x.IsEnabled
+                && x.SourceMapId == mapId
+                && (x.ChannelId == channel || x.ChannelId == 0)
+            )
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Id)
+            .ToListAsync(ct);
     }
 
     /// <summary>Replaces all map-link entries from seed JSON on every call.</summary>
-    public static async Task SeedMapLinksIfEmptyAsync(MainContext db, string jsonPath, CancellationToken ct = default)
+    public static async Task SeedMapLinksIfEmptyAsync(
+        MainContext db,
+        string jsonPath,
+        CancellationToken ct = default
+    )
     {
         await db.MapLinks.ExecuteDeleteAsync(ct);
 

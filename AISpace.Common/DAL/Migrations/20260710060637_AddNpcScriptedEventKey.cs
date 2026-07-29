@@ -15,15 +15,14 @@ namespace AISpace.Common.DAL.Migrations
                 table: "Npcs",
                 type: "TEXT",
                 maxLength: 128,
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "ScriptedEventKey",
-                table: "Npcs");
+            migrationBuilder.DropColumn(name: "ScriptedEventKey", table: "Npcs");
         }
     }
 }

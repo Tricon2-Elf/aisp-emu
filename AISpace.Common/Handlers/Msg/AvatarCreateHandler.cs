@@ -7,7 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacterRepository charRepo) : PacketHandlerBase<AvatarCreateRequest, AvatarCreateResponse>, IRequiresAuthenticatedSession
+public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacterRepository charRepo)
+    : PacketHandlerBase<AvatarCreateRequest, AvatarCreateResponse>,
+        IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.AvatarCreateRequest;
     public override PacketType ResponseType => PacketType.AvatarCreateResponse;
@@ -15,11 +17,25 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
 
     private readonly ILogger<AvatarCreateHandler> _logger = logger;
 
-    public override async Task<AvatarCreateResponse?> HandleAsync(AvatarCreateRequest request, IPlayerSession session, CancellationToken ct = default)
+    public override async Task<AvatarCreateResponse?> HandleAsync(
+        AvatarCreateRequest request,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         _logger.LogInformation("createRequest: {request}", request.ToString());
 
-        Character newChar = await charRepo.CreateAsync(request.AvatarName, session.User!.Id, request.modelId, request.visual.BloodType, request.visual.Birthdate, (int)request.visual.Gender, request.visual.Face, request.visual.Hairstyle, ct);
+        Character newChar = await charRepo.CreateAsync(
+            request.AvatarName,
+            session.User!.Id,
+            request.modelId,
+            request.visual.BloodType,
+            request.visual.Birthdate,
+            (int)request.visual.Gender,
+            request.visual.Face,
+            request.visual.Hairstyle,
+            ct
+        );
 
         if ((int)request.visual.Gender == 1)
             for (byte slot = 0; slot < 4; slot++)
@@ -28,7 +44,11 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
             for (byte slot = 0; slot < 4; slot++)
                 await charRepo.EquipAsync(newChar.Id, slot, DefaultClothingItems.Female[slot], ct);
 
-        foreach (var itemId in DefaultClothingItems.WardrobeInventoryForGender((int)request.visual.Gender))
+        foreach (
+            var itemId in DefaultClothingItems.WardrobeInventoryForGender(
+                (int)request.visual.Gender
+            )
+        )
             await charRepo.AddInventoryAsync(newChar.Id, itemId, 1, ct);
 
         // The authenticated Msg session was loaded before this character existed. Hydrate the
@@ -37,11 +57,17 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
         var hydratedCharacter = await charRepo.GetByIdAsync(newChar.Id, ct);
         if (hydratedCharacter is null)
         {
-            _logger.LogError("Character {CharacterId} could not be reloaded after creation for user {UserId}", newChar.Id, session.User.Id);
+            _logger.LogError(
+                "Character {CharacterId} could not be reloaded after creation for user {UserId}",
+                newChar.Id,
+                session.User.Id
+            );
             return new AvatarCreateResponse(1);
         }
 
-        var staleCharacter = session.User.Characters.FirstOrDefault(character => character.Id == hydratedCharacter.Id);
+        var staleCharacter = session.User.Characters.FirstOrDefault(character =>
+            character.Id == hydratedCharacter.Id
+        );
         if (staleCharacter is not null)
             session.User.Characters.Remove(staleCharacter);
         session.User.Characters.Add(hydratedCharacter);

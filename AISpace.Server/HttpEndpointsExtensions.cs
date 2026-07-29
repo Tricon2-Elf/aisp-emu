@@ -16,17 +16,38 @@ internal static class HttpEndpointsExtensions
             (GameServerHealthRegistry registry) =>
             {
                 var report = registry.GetHealthReport();
-                var allHealthy = report.Process.State == "healthy" && report.Servers.Values.All(s => s.State == "healthy");
+                var allHealthy =
+                    report.Process.State == "healthy"
+                    && report.Servers.Values.All(s => s.State == "healthy");
                 return Results.Json(
-                    new { status = allHealthy ? "Healthy" : "Unhealthy", process = report.Process, servers = report.Servers },
-                    statusCode: allHealthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable
+                    new
+                    {
+                        status = allHealthy ? "Healthy" : "Unhealthy",
+                        process = report.Process,
+                        servers = report.Servers,
+                    },
+                    statusCode: allHealthy
+                        ? StatusCodes.Status200OK
+                        : StatusCodes.Status503ServiceUnavailable
                 );
             }
         );
 
-        app.MapPost("/api/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync(null, request, broadcast, loggerFactory));
-        app.MapPost("/api/area/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync("area", request, broadcast, loggerFactory));
-        app.MapPost("/api/msg/broadcast", (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) => HandleBroadcastAsync("msg", request, broadcast, loggerFactory));
+        app.MapPost(
+            "/api/broadcast",
+            (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) =>
+                HandleBroadcastAsync(null, request, broadcast, loggerFactory)
+        );
+        app.MapPost(
+            "/api/area/broadcast",
+            (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) =>
+                HandleBroadcastAsync("area", request, broadcast, loggerFactory)
+        );
+        app.MapPost(
+            "/api/msg/broadcast",
+            (HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory) =>
+                HandleBroadcastAsync("msg", request, broadcast, loggerFactory)
+        );
 
         app.MapPost(
             "/api/users",
@@ -36,7 +57,11 @@ internal static class HttpEndpointsExtensions
                 if (body == null || string.IsNullOrWhiteSpace(body.Username))
                     return Results.BadRequest(new { error = "username is required" });
 
-                var (success, error, user) = await service.CreateUserAsync(body.Username, body.Password, ct);
+                var (success, error, user) = await service.CreateUserAsync(
+                    body.Username,
+                    body.Password,
+                    ct
+                );
                 if (!success || user == null)
                     return Results.BadRequest<object>(new { error = "failed to create user" });
 
@@ -65,13 +90,22 @@ internal static class HttpEndpointsExtensions
 
         app.MapPost(
             "/api/users/{username}/reset-password",
-            async (string username, HttpRequest request, UserAdminService service, CancellationToken ct) =>
+            async (
+                string username,
+                HttpRequest request,
+                UserAdminService service,
+                CancellationToken ct
+            ) =>
             {
                 var body = await request.ReadFromJsonAsync<ResetPasswordRequest>(ct);
                 if (body == null || string.IsNullOrWhiteSpace(body.NewPassword))
                     return Results.BadRequest(new { error = "newPassword is required" });
 
-                var (success, error) = await service.ResetPasswordAsync(username, body.NewPassword, ct);
+                var (success, error) = await service.ResetPasswordAsync(
+                    username,
+                    body.NewPassword,
+                    ct
+                );
                 if (!success)
                     return Results.NotFound(new { error });
 
@@ -81,7 +115,13 @@ internal static class HttpEndpointsExtensions
 
         app.MapGet(
             "/api/users",
-            async (string? search, int? skip, int? take, UserAdminService service, CancellationToken ct) =>
+            async (
+                string? search,
+                int? skip,
+                int? take,
+                UserAdminService service,
+                CancellationToken ct
+            ) =>
             {
                 var (users, total) = await service.ListUsersAsync(search, skip, take, ct);
                 return Results.Ok(new { users, total });
@@ -102,10 +142,19 @@ internal static class HttpEndpointsExtensions
 
         app.MapPost(
             "/api/users/{username}/ban",
-            async (string username, HttpRequest request, UserAdminService service, CancellationToken ct) =>
+            async (
+                string username,
+                HttpRequest request,
+                UserAdminService service,
+                CancellationToken ct
+            ) =>
             {
                 var body = await request.ReadFromJsonAsync<BanRequest>(ct);
-                var (success, error, sessionsKicked) = await service.BanUserAsync(username, body?.Reason, ct);
+                var (success, error, sessionsKicked) = await service.BanUserAsync(
+                    username,
+                    body?.Reason,
+                    ct
+                );
                 if (!success)
                     return Results.NotFound(new { error });
 
@@ -172,7 +221,12 @@ internal static class HttpEndpointsExtensions
         return app;
     }
 
-    private static async Task<IResult> HandleBroadcastAsync(string? target, HttpRequest request, BroadcastService broadcast, ILoggerFactory loggerFactory)
+    private static async Task<IResult> HandleBroadcastAsync(
+        string? target,
+        HttpRequest request,
+        BroadcastService broadcast,
+        ILoggerFactory loggerFactory
+    )
     {
         var body = await request.ReadFromJsonAsync<BroadcastRequest>();
         if (body == null || string.IsNullOrWhiteSpace(body.Message))
@@ -193,7 +247,11 @@ internal static class HttpEndpointsExtensions
         var logPrefix = target is null or "" or "all" ? "API broadcast" : $"API {target} broadcast";
         log.LogInformation("{Prefix}: {Message}", logPrefix, body.Message);
 
-        var result = await broadcast.BroadcastToServersAsync(body.Message, serverTypes, request.HttpContext.RequestAborted);
+        var result = await broadcast.BroadcastToServersAsync(
+            body.Message,
+            serverTypes,
+            request.HttpContext.RequestAborted
+        );
 
         if (serverTypes.Length == 2)
             return Results.Ok(

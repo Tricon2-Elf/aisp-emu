@@ -12,7 +12,11 @@ public class AreaGetAdventureWorkListHandlerTests
         var handler = new AreaGetAdventureWorkListHandler();
         var session = new CapturingPlayerSession { CharacterId = 1 };
 
-        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         var sent = Assert.Single(session.Sent);
         Assert.Equal(PacketType.GetAdventureWorkListResponse, sent.Type);

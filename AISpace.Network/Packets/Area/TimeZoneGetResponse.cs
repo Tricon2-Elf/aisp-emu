@@ -2,7 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class TimeZoneGetResponse(uint Result, uint Timezone, uint Time, uint TimeZoneMax, byte Flag) : IOutgoingPacket
+public class TimeZoneGetResponse(uint Result, uint Timezone, uint Time, uint TimeZoneMax, byte Flag)
+    : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

@@ -23,11 +23,22 @@ public class RoboRepositoryTests
             var expectedWireData = expected.ToBytes();
 
             await using (var writeDb = new MainContext(options))
-                await new RoboRepository(writeDb).UpsertAsync(7, robo, TestContext.Current.CancellationToken);
+                await new RoboRepository(writeDb).UpsertAsync(
+                    7,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
 
             await using (var inspectionDb = new MainContext(options))
             {
-                var entity = await inspectionDb.Robos.AsNoTracking().Include(x => x.TpsBattleData).ThenInclude(x => x.BattleAbilities).Include(x => x.Equipment).Include(x => x.ItemUseEffects).Include(x => x.DistributedStatusPoints).SingleAsync(TestContext.Current.CancellationToken);
+                var entity = await inspectionDb
+                    .Robos.AsNoTracking()
+                    .Include(x => x.TpsBattleData)
+                        .ThenInclude(x => x.BattleAbilities)
+                    .Include(x => x.Equipment)
+                    .Include(x => x.ItemUseEffects)
+                    .Include(x => x.DistributedStatusPoints)
+                    .SingleAsync(TestContext.Current.CancellationToken);
                 Assert.Equal(7, entity.CharacterId);
                 Assert.Equal(2u, entity.RoboId);
                 Assert.Equal("Persistent Robo", entity.Name);
@@ -41,7 +52,12 @@ public class RoboRepositoryTests
             }
 
             await using var restartedDb = new MainContext(options);
-            var loaded = Assert.Single(await new RoboRepository(restartedDb).GetAllAsync(7, TestContext.Current.CancellationToken));
+            var loaded = Assert.Single(
+                await new RoboRepository(restartedDb).GetAllAsync(
+                    7,
+                    TestContext.Current.CancellationToken
+                )
+            );
             Assert.Equal(expectedWireData, loaded.ToBytes());
             Assert.Equal(2u, loaded.RoboId);
             Assert.Equal(7u, loaded.OwnerAvatarId);
@@ -77,17 +93,44 @@ public class RoboRepositoryTests
             await TestDb.SeedCharacterAsync(options, 8, TestContext.Current.CancellationToken);
             await using var db = new MainContext(options);
             var repository = new RoboRepository(db);
-            await repository.UpsertAsync(8, CreateRobo(8, 1, "First"), TestContext.Current.CancellationToken);
-            await repository.UpsertAsync(8, CreateRobo(8, 1, "Updated"), TestContext.Current.CancellationToken);
+            await repository.UpsertAsync(
+                8,
+                CreateRobo(8, 1, "First"),
+                TestContext.Current.CancellationToken
+            );
+            await repository.UpsertAsync(
+                8,
+                CreateRobo(8, 1, "Updated"),
+                TestContext.Current.CancellationToken
+            );
 
-            var loaded = Assert.Single(await repository.GetAllAsync(8, TestContext.Current.CancellationToken));
+            var loaded = Assert.Single(
+                await repository.GetAllAsync(8, TestContext.Current.CancellationToken)
+            );
             Assert.Equal("Updated", loaded.Character.Name);
             Assert.Equal(1, await db.Robos.CountAsync(TestContext.Current.CancellationToken));
-            Assert.Equal(1, await db.RoboTpsBattleData.CountAsync(TestContext.Current.CancellationToken));
-            Assert.Equal(30, await db.RoboEquipment.CountAsync(TestContext.Current.CancellationToken));
-            Assert.Equal(8, await db.RoboItemUseEffects.CountAsync(TestContext.Current.CancellationToken));
-            Assert.Equal(20, await db.RoboBattleAbilities.CountAsync(TestContext.Current.CancellationToken));
-            Assert.Equal(5, await db.RoboDistributedStatusPoints.CountAsync(TestContext.Current.CancellationToken));
+            Assert.Equal(
+                1,
+                await db.RoboTpsBattleData.CountAsync(TestContext.Current.CancellationToken)
+            );
+            Assert.Equal(
+                30,
+                await db.RoboEquipment.CountAsync(TestContext.Current.CancellationToken)
+            );
+            Assert.Equal(
+                8,
+                await db.RoboItemUseEffects.CountAsync(TestContext.Current.CancellationToken)
+            );
+            Assert.Equal(
+                20,
+                await db.RoboBattleAbilities.CountAsync(TestContext.Current.CancellationToken)
+            );
+            Assert.Equal(
+                5,
+                await db.RoboDistributedStatusPoints.CountAsync(
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
@@ -189,7 +232,14 @@ public class RoboRepositoryTests
                 Enabled = 1,
                 ItemDefinitionId = 9001 + slotValue,
                 EffectType = 200 + slotValue,
-                Parameters = [300 + slotValue, 400 + slotValue, 500 + slotValue, 600 + slotValue, 700 + slotValue],
+                Parameters =
+                [
+                    300 + slotValue,
+                    400 + slotValue,
+                    500 + slotValue,
+                    600 + slotValue,
+                    700 + slotValue,
+                ],
                 OverwriteExisting = (byte)(slot % 2),
             };
         }
@@ -198,6 +248,9 @@ public class RoboRepositoryTests
 
     private static BattleAbilityValues AbilityValues(uint firstValue)
     {
-        return new BattleAbilityValues { Values = [firstValue, firstValue + 1, firstValue + 2, firstValue + 3, firstValue + 4] };
+        return new BattleAbilityValues
+        {
+            Values = [firstValue, firstValue + 1, firstValue + 2, firstValue + 3, firstValue + 4],
+        };
     }
 }

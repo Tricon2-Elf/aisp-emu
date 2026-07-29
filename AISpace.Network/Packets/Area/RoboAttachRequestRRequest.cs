@@ -12,6 +12,10 @@ public sealed class RoboAttachRequestRRequest : IIncomingPacket<RoboAttachReques
     public static RoboAttachRequestRRequest FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
-        return new RoboAttachRequestRRequest { RoboId = reader.ReadUInt(), Result = reader.ReadUInt() };
+        return new RoboAttachRequestRRequest
+        {
+            RoboId = reader.ReadUInt(),
+            Result = reader.ReadUInt(),
+        };
     }
 }

@@ -13,18 +13,23 @@ public sealed class ShopBuyRequest : IIncomingPacket<ShopBuyRequest>
         var count = reader.ReadUInt();
 
         if (count > 500)
-            throw new InvalidDataException($"ShopBuyRequest item count {count} exceeds protocol limit");
+            throw new InvalidDataException(
+                $"ShopBuyRequest item count {count} exceeds protocol limit"
+            );
 
         var items = new List<ShopBuyRequestedItem>((int)count);
         for (var i = 0; i < count; i++)
         {
-            items.Add(new ShopBuyRequestedItem(reader.ReadUInt(), reader.ReadUShort(), reader.ReadUInt(), reader.ReadUInt()));
+            items.Add(
+                new ShopBuyRequestedItem(
+                    reader.ReadUInt(),
+                    reader.ReadUShort(),
+                    reader.ReadUInt(),
+                    reader.ReadUInt()
+                )
+            );
         }
 
-        return new ShopBuyRequest
-        {
-            Items = items,
-            PriceType = (ShopPriceType)reader.ReadByte(),
-        };
+        return new ShopBuyRequest { Items = items, PriceType = (ShopPriceType)reader.ReadByte() };
     }
 }

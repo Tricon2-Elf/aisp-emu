@@ -13,9 +13,25 @@ public class EnqueteGetHandler : IPacketHandler, IRequiresAuthenticatedSession
 
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
-        List<EnqueteData> questions = [new EnqueteData(0, "What is the music of life?", ["Um... the lute? No, drums!", "Screaming?", "Silence, my brother", "Some kind of choir. With chanting"])];
+        List<EnqueteData> questions =
+        [
+            new EnqueteData(
+                0,
+                "What is the music of life?",
+                [
+                    "Um... the lute? No, drums!",
+                    "Screaming?",
+                    "Silence, my brother",
+                    "Some kind of choir. With chanting",
+                ]
+            ),
+        ];
 
         await session.SendAsync(ResponseType, new EnqueteGetResponse(0, questions).ToBytes(), ct);
     }

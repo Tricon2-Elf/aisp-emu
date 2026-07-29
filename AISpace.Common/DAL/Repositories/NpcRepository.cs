@@ -9,45 +9,120 @@ namespace AISpace.Common.DAL.Repositories;
 
 public interface INpcRepository
 {
-    Task<IReadOnlyList<Npc>> GetActiveByMapAsync(uint mapId, int channelId, CancellationToken ct = default);
-    Task<Npc?> GetActiveByMapAndObjectIdAsync(uint mapId, int channelId, uint npcObjectId, CancellationToken ct = default);
-    Task<Shop?> GetSingleActiveShopForMapAsync(uint mapId, int channelId, CancellationToken ct = default);
+    Task<IReadOnlyList<Npc>> GetActiveByMapAsync(
+        uint mapId,
+        int channelId,
+        CancellationToken ct = default
+    );
+    Task<Npc?> GetActiveByMapAndObjectIdAsync(
+        uint mapId,
+        int channelId,
+        uint npcObjectId,
+        CancellationToken ct = default
+    );
+    Task<Shop?> GetSingleActiveShopForMapAsync(
+        uint mapId,
+        int channelId,
+        CancellationToken ct = default
+    );
 }
 
 public sealed class NpcRepository(MainContext db) : INpcRepository
 {
-    public async Task<IReadOnlyList<Npc>> GetActiveByMapAsync(uint mapId, int channelId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Npc>> GetActiveByMapAsync(
+        uint mapId,
+        int channelId,
+        CancellationToken ct = default
+    )
     {
         var activePhase = (int)TimeZoneService.GetServerTime().Phase;
         var nowUtc = DateTime.UtcNow;
         long mapIdLong = mapId;
-        return await db.Npcs.AsNoTracking().Include(x => x.Equipment).Where(x => x.IsEnabled && x.MapId == mapIdLong && (x.ChannelId == -1 || x.ChannelId == channelId) && (x.DayPhase == -1 || x.DayPhase == activePhase) && x.DateStartUtc <= nowUtc && x.DateEndUtc >= nowUtc).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).ToListAsync(ct);
+        return await db
+            .Npcs.AsNoTracking()
+            .Include(x => x.Equipment)
+            .Where(x =>
+                x.IsEnabled
+                && x.MapId == mapIdLong
+                && (x.ChannelId == -1 || x.ChannelId == channelId)
+                && (x.DayPhase == -1 || x.DayPhase == activePhase)
+                && x.DateStartUtc <= nowUtc
+                && x.DateEndUtc >= nowUtc
+            )
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Id)
+            .ToListAsync(ct);
     }
 
-    public async Task<Npc?> GetActiveByMapAndObjectIdAsync(uint mapId, int channelId, uint npcObjectId, CancellationToken ct = default)
+    public async Task<Npc?> GetActiveByMapAndObjectIdAsync(
+        uint mapId,
+        int channelId,
+        uint npcObjectId,
+        CancellationToken ct = default
+    )
     {
         var activePhase = (int)TimeZoneService.GetServerTime().Phase;
         var nowUtc = DateTime.UtcNow;
         long mapIdLong = mapId;
         long npcObjectIdLong = npcObjectId;
-        return await db.Npcs.AsNoTracking().Include(x => x.Shop).FirstOrDefaultAsync(x => x.IsEnabled && x.MapId == mapIdLong && (x.ChannelId == -1 || x.ChannelId == channelId) && x.NpcObjectId == npcObjectIdLong && (x.DayPhase == -1 || x.DayPhase == activePhase) && x.DateStartUtc <= nowUtc && x.DateEndUtc >= nowUtc, ct);
+        return await db
+            .Npcs.AsNoTracking()
+            .Include(x => x.Shop)
+            .FirstOrDefaultAsync(
+                x =>
+                    x.IsEnabled
+                    && x.MapId == mapIdLong
+                    && (x.ChannelId == -1 || x.ChannelId == channelId)
+                    && x.NpcObjectId == npcObjectIdLong
+                    && (x.DayPhase == -1 || x.DayPhase == activePhase)
+                    && x.DateStartUtc <= nowUtc
+                    && x.DateEndUtc >= nowUtc,
+                ct
+            );
     }
 
-    public async Task<Shop?> GetSingleActiveShopForMapAsync(uint mapId, int channelId, CancellationToken ct = default)
+    public async Task<Shop?> GetSingleActiveShopForMapAsync(
+        uint mapId,
+        int channelId,
+        CancellationToken ct = default
+    )
     {
         var activePhase = (int)TimeZoneService.GetServerTime().Phase;
         var nowUtc = DateTime.UtcNow;
         long mapIdLong = mapId;
-        var shopIds = await db.Npcs.AsNoTracking().Where(x => x.IsEnabled && x.MapId == mapIdLong && x.ShopId != null && (x.ChannelId == -1 || x.ChannelId == channelId) && (x.DayPhase == -1 || x.DayPhase == activePhase) && x.DateStartUtc <= nowUtc && x.DateEndUtc >= nowUtc).OrderBy(x => x.SortOrder).ThenBy(x => x.Id).Select(x => x.ShopId!.Value).Distinct().Take(2).ToListAsync(ct);
+        var shopIds = await db
+            .Npcs.AsNoTracking()
+            .Where(x =>
+                x.IsEnabled
+                && x.MapId == mapIdLong
+                && x.ShopId != null
+                && (x.ChannelId == -1 || x.ChannelId == channelId)
+                && (x.DayPhase == -1 || x.DayPhase == activePhase)
+                && x.DateStartUtc <= nowUtc
+                && x.DateEndUtc >= nowUtc
+            )
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Id)
+            .Select(x => x.ShopId!.Value)
+            .Distinct()
+            .Take(2)
+            .ToListAsync(ct);
 
         if (shopIds.Count != 1)
             return null;
 
         var shopId = shopIds[0];
-        return await db.Shops.AsNoTracking().FirstOrDefaultAsync(x => x.Id == shopId && x.IsEnabled, ct);
+        return await db
+            .Shops.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == shopId && x.IsEnabled, ct);
     }
 
-    public static async Task SeedFromJsonAsync(MainContext db, string jsonPath, ILogger? logger = null, CancellationToken ct = default)
+    public static async Task SeedFromJsonAsync(
+        MainContext db,
+        string jsonPath,
+        ILogger? logger = null,
+        CancellationToken ct = default
+    )
     {
         if (!File.Exists(jsonPath))
             throw new FileNotFoundException("NPC seed JSON not found.", jsonPath);
@@ -61,14 +136,20 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         foreach (var npcRow in root.Npcs)
         {
             if (npcRow.DayPhase is < -1 or > 4)
-                throw new InvalidDataException($"NPC {npcRow.NpcObjectId} dayPhase must be -1 or 0..4.");
+                throw new InvalidDataException(
+                    $"NPC {npcRow.NpcObjectId} dayPhase must be -1 or 0..4."
+                );
 
             var dateStartUtc = ParseUtc(npcRow.DateStartUtc, DateTime.UnixEpoch, "dateStartUtc");
             var dateEndUtc = ParseUtc(npcRow.DateEndUtc, DateTime.MaxValue, "dateEndUtc");
             if (dateStartUtc > dateEndUtc)
-                throw new InvalidDataException($"NPC {npcRow.NpcObjectId} dateStartUtc must be <= dateEndUtc.");
+                throw new InvalidDataException(
+                    $"NPC {npcRow.NpcObjectId} dateStartUtc must be <= dateEndUtc."
+                );
 
-            var npc = await db.Npcs.Include(x => x.Equipment).SingleOrDefaultAsync(x => x.NpcObjectId == npcRow.NpcObjectId, ct);
+            var npc = await db
+                .Npcs.Include(x => x.Equipment)
+                .SingleOrDefaultAsync(x => x.NpcObjectId == npcRow.NpcObjectId, ct);
             if (npc is null)
             {
                 npc = new Npc { NpcObjectId = npcRow.NpcObjectId };
@@ -90,7 +171,11 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             npc.InteractionType = ParseInteractionType(npcRow.InteractionType);
             npc.IsEnabled = npcRow.IsEnabled ?? true;
             npc.SortOrder = npcRow.SortOrder ?? 0;
-            npc.EventKind = ParseEventKind(npcRow.EventKind, npcRow.ScriptedEventKey, npcRow.EventKey);
+            npc.EventKind = ParseEventKind(
+                npcRow.EventKind,
+                npcRow.ScriptedEventKey,
+                npcRow.EventKey
+            );
             npc.EventKey = ResolveEventKey(npcRow.EventKey, npcRow.ScriptedEventKey);
 
             var equipmentRows = npcRow.Equipment ?? [];
@@ -98,11 +183,19 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             foreach (var equipment in equipmentRows)
             {
                 if (!seenSlots.Add(equipment.SlotIndex))
-                    throw new InvalidDataException($"NPC {npcRow.NpcObjectId} has duplicate equipment slotIndex {equipment.SlotIndex}.");
+                    throw new InvalidDataException(
+                        $"NPC {npcRow.NpcObjectId} has duplicate equipment slotIndex {equipment.SlotIndex}."
+                    );
 
-                var itemExists = await db.Items.AsNoTracking().AnyAsync(x => x.Id == equipment.ItemId, ct);
+                var itemExists = await db
+                    .Items.AsNoTracking()
+                    .AnyAsync(x => x.Id == equipment.ItemId, ct);
                 if (!itemExists)
-                    logger?.LogWarning("NPC seed item {ItemId} for npcObjectId {NpcObjectId} does not exist in Items table.", equipment.ItemId, npcRow.NpcObjectId);
+                    logger?.LogWarning(
+                        "NPC seed item {ItemId} for npcObjectId {NpcObjectId} does not exist in Items table.",
+                        equipment.ItemId,
+                        npcRow.NpcObjectId
+                    );
             }
 
             await db.SaveChangesAsync(ct);
@@ -129,7 +222,10 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         await db.SaveChangesAsync(ct);
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     private static NpcInteractionType ParseInteractionType(string? value)
     {
@@ -137,12 +233,21 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             return NpcInteractionType.Decorative;
         if (string.Equals(value, "HomeIslandRegistration", StringComparison.OrdinalIgnoreCase))
             return NpcInteractionType.Decorative;
-        return Enum.TryParse<NpcInteractionType>(value, ignoreCase: true, out var parsed) ? parsed : NpcInteractionType.Decorative;
+        return Enum.TryParse<NpcInteractionType>(value, ignoreCase: true, out var parsed)
+            ? parsed
+            : NpcInteractionType.Decorative;
     }
 
-    private static NpcEventKind ParseEventKind(string? eventKind, string? legacyScriptedEventKey, string? eventKey)
+    private static NpcEventKind ParseEventKind(
+        string? eventKind,
+        string? legacyScriptedEventKey,
+        string? eventKey
+    )
     {
-        if (!string.IsNullOrWhiteSpace(eventKind) && Enum.TryParse<NpcEventKind>(eventKind, ignoreCase: true, out var parsed))
+        if (
+            !string.IsNullOrWhiteSpace(eventKind)
+            && Enum.TryParse<NpcEventKind>(eventKind, ignoreCase: true, out var parsed)
+        )
             return parsed;
 
         var key = ResolveEventKey(eventKey, legacyScriptedEventKey);
@@ -161,7 +266,14 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         if (string.IsNullOrWhiteSpace(value))
             return fallback;
 
-        if (!DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+        if (
+            !DateTimeOffset.TryParse(
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsed
+            )
+        )
             throw new InvalidDataException($"Invalid UTC timestamp for {fieldName}: '{value}'.");
         return parsed.UtcDateTime;
     }

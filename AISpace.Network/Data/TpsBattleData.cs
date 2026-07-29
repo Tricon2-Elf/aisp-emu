@@ -116,7 +116,9 @@ public sealed class BattleAbilityValues
     public byte[] ToBytes()
     {
         if (Values.Length != Count)
-            throw new InvalidOperationException($"BattleAbilityValues must contain exactly {Count} values.");
+            throw new InvalidOperationException(
+                $"BattleAbilityValues must contain exactly {Count} values."
+            );
 
         var writer = new PacketWriter();
         foreach (var value in Values)
@@ -152,7 +154,11 @@ public sealed class CosplayProgressData
     public static CosplayProgressData FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
-        return new CosplayProgressData { CosplayId = reader.ReadUInt(), Progress = LevelProgressData.FromBytes(reader.ReadBytes(LevelProgressData.WireSize)) };
+        return new CosplayProgressData
+        {
+            CosplayId = reader.ReadUInt(),
+            Progress = LevelProgressData.FromBytes(reader.ReadBytes(LevelProgressData.WireSize)),
+        };
     }
 }
 
@@ -196,7 +202,10 @@ public sealed class TpsBattleData
     public static TpsBattleData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"TpsBattleData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"TpsBattleData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
         return new TpsBattleData
@@ -204,10 +213,18 @@ public sealed class TpsBattleData
             HitPoints = HitPointData.FromBytes(reader.ReadBytes(HitPointData.WireSize)),
             Stamina = StaminaData.FromBytes(reader.ReadBytes(StaminaData.WireSize)),
             Tank = TankData.FromBytes(reader.ReadBytes(TankData.WireSize)),
-            BaseAbilities = BattleAbilityValues.FromBytes(reader.ReadBytes(BattleAbilityValues.WireSize)),
-            AbilityModifierType0 = BattleAbilityValues.FromBytes(reader.ReadBytes(BattleAbilityValues.WireSize)),
-            AbilityModifierType1 = BattleAbilityValues.FromBytes(reader.ReadBytes(BattleAbilityValues.WireSize)),
-            AbilityModifierType2 = BattleAbilityValues.FromBytes(reader.ReadBytes(BattleAbilityValues.WireSize)),
+            BaseAbilities = BattleAbilityValues.FromBytes(
+                reader.ReadBytes(BattleAbilityValues.WireSize)
+            ),
+            AbilityModifierType0 = BattleAbilityValues.FromBytes(
+                reader.ReadBytes(BattleAbilityValues.WireSize)
+            ),
+            AbilityModifierType1 = BattleAbilityValues.FromBytes(
+                reader.ReadBytes(BattleAbilityValues.WireSize)
+            ),
+            AbilityModifierType2 = BattleAbilityValues.FromBytes(
+                reader.ReadBytes(BattleAbilityValues.WireSize)
+            ),
             StatusEffectFlags = reader.ReadULong(),
             ActionFlags = reader.ReadUInt(),
             ActiveSkillId = reader.ReadUInt(),

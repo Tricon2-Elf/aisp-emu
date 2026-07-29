@@ -2,7 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class RoboVoiceTypeUpdateRequest(byte voiceType) : IIncomingPacket<RoboVoiceTypeUpdateRequest>
+public class RoboVoiceTypeUpdateRequest(byte voiceType)
+    : IIncomingPacket<RoboVoiceTypeUpdateRequest>
 {
     public byte VoiceType { get; } = voiceType;
 

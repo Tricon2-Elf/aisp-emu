@@ -81,7 +81,10 @@ public class SharedStateTests
 
         await state.BroadcastAreaDisappearAsync(source, TestContext.Current.CancellationToken);
 
-        var disappearedObjectIds = sameAreaPeer.Sent.Where(p => p.Type == PacketType.NotifyDisappearChara).Select(p => new PacketReader(p.Payload).ReadUInt()).ToArray();
+        var disappearedObjectIds = sameAreaPeer
+            .Sent.Where(p => p.Type == PacketType.NotifyDisappearChara)
+            .Select(p => new PacketReader(p.Payload).ReadUInt())
+            .ToArray();
         Assert.Equal([source.CharacterId, remoteRoboId], disappearedObjectIds);
         Assert.DoesNotContain(remoteRoboId, sameAreaPeer.VisibleRemoteRoboObjectIds);
         Assert.DoesNotContain(otherMapPeer.Sent, p => p.Type == PacketType.NotifyDisappearChara);
@@ -117,7 +120,10 @@ public class SharedStateTests
         state.RegisterClient(ServerType.Area, roomOneVisitor);
         state.RegisterClient(ServerType.Area, roomTwoMember);
 
-        Assert.Equal([roomOneVisitor.ConnectionId], state.GetAreaPeers(roomOneMember).Select(session => session.ConnectionId));
+        Assert.Equal(
+            [roomOneVisitor.ConnectionId],
+            state.GetAreaPeers(roomOneMember).Select(session => session.ConnectionId)
+        );
         Assert.Empty(state.GetAreaPeers(roomTwoMember));
     }
 

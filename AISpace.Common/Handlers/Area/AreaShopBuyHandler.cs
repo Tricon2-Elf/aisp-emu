@@ -21,7 +21,11 @@ public sealed class AreaShopBuyHandler(
     public PacketType ResponseType => PacketType.ShopBuyResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         if (session.CharacterId == 0 || session.User is null)
         {
@@ -36,7 +40,11 @@ public sealed class AreaShopBuyHandler(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to parse ShopBuyRequest for character {CharacterId}", session.CharacterId);
+            logger.LogWarning(
+                ex,
+                "Failed to parse ShopBuyRequest for character {CharacterId}",
+                session.CharacterId
+            );
             var total = (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
@@ -52,13 +60,20 @@ public sealed class AreaShopBuyHandler(
         var activeShopId = session.ActiveShopId;
         if (activeShopId is null)
         {
-            var inferredShop = await npcRepository.GetSingleActiveShopForMapAsync(session.MapId, session.ChannelId, ct);
+            var inferredShop = await npcRepository.GetSingleActiveShopForMapAsync(
+                session.MapId,
+                session.ChannelId,
+                ct
+            );
             activeShopId = inferredShop?.Id;
         }
 
         if (activeShopId is null)
         {
-            var total = request.PriceType == ShopPriceType.NicoPoints ? (ulong)Math.Max(0, session.User.NicoPoints) : (ulong)Math.Max(0, session.User.AiPoints);
+            var total =
+                request.PriceType == ShopPriceType.NicoPoints
+                    ? (ulong)Math.Max(0, session.User.NicoPoints)
+                    : (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
         }
@@ -78,7 +93,10 @@ public sealed class AreaShopBuyHandler(
 
         if (mergedQuantities.Count == 0)
         {
-            var total = request.PriceType == ShopPriceType.NicoPoints ? (ulong)Math.Max(0, session.User.NicoPoints) : (ulong)Math.Max(0, session.User.AiPoints);
+            var total =
+                request.PriceType == ShopPriceType.NicoPoints
+                    ? (ulong)Math.Max(0, session.User.NicoPoints)
+                    : (ulong)Math.Max(0, session.User.AiPoints);
             await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
             return;
         }
@@ -94,11 +112,15 @@ public sealed class AreaShopBuyHandler(
         foreach (var (itemId, quantity) in mergedQuantities)
         {
             var row = catalog[itemId];
-            var unitPrice = request.PriceType == ShopPriceType.NicoPoints ? row.NicoPrice : row.AiPrice;
+            var unitPrice =
+                request.PriceType == ShopPriceType.NicoPoints ? row.NicoPrice : row.AiPrice;
             // Reject zero-priced entries so catalog/config mistakes cannot grant free items.
             if (unitPrice == 0)
             {
-                var total = request.PriceType == ShopPriceType.NicoPoints ? (ulong)Math.Max(0, session.User.NicoPoints) : (ulong)Math.Max(0, session.User.AiPoints);
+                var total =
+                    request.PriceType == ShopPriceType.NicoPoints
+                        ? (ulong)Math.Max(0, session.User.NicoPoints)
+                        : (ulong)Math.Max(0, session.User.AiPoints);
                 await session.SendAsync(ResponseType, new ShopBuyResponse(1, total).ToBytes(), ct);
                 return;
             }
@@ -115,13 +137,22 @@ public sealed class AreaShopBuyHandler(
 
         if (currentBalance < totalCost)
         {
-            await session.SendAsync(ResponseType, new ShopBuyResponse(1, currentBalance).ToBytes(), ct);
+            await session.SendAsync(
+                ResponseType,
+                new ShopBuyResponse(1, currentBalance).ToBytes(),
+                ct
+            );
             return;
         }
 
         foreach (var (itemId, quantity) in mergedQuantities)
         {
-            await characterRepository.AddInventoryAsync((int)session.CharacterId, (int)itemId, checked((int)quantity), ct);
+            await characterRepository.AddInventoryAsync(
+                (int)session.CharacterId,
+                (int)itemId,
+                checked((int)quantity),
+                ct
+            );
         }
 
         var updatedBalance = checked((long)(currentBalance - totalCost));
@@ -138,10 +169,18 @@ public sealed class AreaShopBuyHandler(
         }
 
         await db.SaveChangesAsync(ct);
-        await session.SendAsync(ResponseType, new ShopBuyResponse(0, (ulong)updatedBalance).ToBytes(), ct);
+        await session.SendAsync(
+            ResponseType,
+            new ShopBuyResponse(0, (ulong)updatedBalance).ToBytes(),
+            ct
+        );
         if (request.PriceType == ShopPriceType.AiPoints)
         {
-            await session.SendAsync(PacketType.MoneyUpdatedAipoint, new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.MoneyUpdatedAipoint,
+                new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(),
+                ct
+            );
         }
         if (request.PriceType == ShopPriceType.NicoPoints)
         {
@@ -152,7 +191,10 @@ public sealed class AreaShopBuyHandler(
             );
         }
 
-        var refreshedCharacter = await characterRepository.GetByIdAsync((int)session.CharacterId, ct);
+        var refreshedCharacter = await characterRepository.GetByIdAsync(
+            (int)session.CharacterId,
+            ct
+        );
         if (refreshedCharacter is not null)
         {
             session.Character = refreshedCharacter;

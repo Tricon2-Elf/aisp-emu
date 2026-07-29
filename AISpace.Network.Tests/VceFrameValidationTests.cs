@@ -10,8 +10,15 @@ public class VceFrameValidationTests
     [InlineData(-1, 4096, false)]
     [InlineData(4097, 4096, false)]
     [InlineData(int.MaxValue, 4096, false)]
-    public void IsAcceptableFrameSize_ValidatesBounds(int msgSize, int maxReceiveFrameSize, bool expected)
+    public void IsAcceptableFrameSize_ValidatesBounds(
+        int msgSize,
+        int maxReceiveFrameSize,
+        bool expected
+    )
     {
-        Assert.Equal(expected, VceFrameValidation.IsAcceptableFrameSize(msgSize, maxReceiveFrameSize));
+        Assert.Equal(
+            expected,
+            VceFrameValidation.IsAcceptableFrameSize(msgSize, maxReceiveFrameSize)
+        );
     }
 }

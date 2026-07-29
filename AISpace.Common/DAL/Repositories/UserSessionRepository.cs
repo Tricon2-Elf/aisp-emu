@@ -6,15 +6,26 @@ namespace AISpace.Common.DAL.Repositories;
 
 public interface IUserSessionRepository
 {
-    Task<UserSession> CreateAsync(int userId, string otp, TimeSpan duration, CancellationToken ct = default);
+    Task<UserSession> CreateAsync(
+        int userId,
+        string otp,
+        TimeSpan duration,
+        CancellationToken ct = default
+    );
     Task<UserSession?> GetValidSessionAsync(string otp, CancellationToken ct = default);
     Task InvalidateExpiredAsync(CancellationToken ct = default);
     Task DeleteAllForUserAsync(int userId, CancellationToken ct = default);
 }
 
-public class UserSessionRepository(MainContext db, ILogger<UserSessionRepository> logger) : IUserSessionRepository
+public class UserSessionRepository(MainContext db, ILogger<UserSessionRepository> logger)
+    : IUserSessionRepository
 {
-    public async Task<UserSession> CreateAsync(int userId, string otp, TimeSpan duration, CancellationToken ct = default)
+    public async Task<UserSession> CreateAsync(
+        int userId,
+        string otp,
+        TimeSpan duration,
+        CancellationToken ct = default
+    )
     {
         var session = new UserSession
         {
@@ -31,7 +42,12 @@ public class UserSessionRepository(MainContext db, ILogger<UserSessionRepository
     public async Task<UserSession?> GetValidSessionAsync(string otp, CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
-        return await db.UserSessions.Include(s => s.User).ThenInclude(u => u.Characters).ThenInclude(c => c.Equipment).Where(s => s.OTP == otp && s.ExpiresAt > now).SingleOrDefaultAsync(ct);
+        return await db
+            .UserSessions.Include(s => s.User)
+                .ThenInclude(u => u.Characters)
+                    .ThenInclude(c => c.Equipment)
+            .Where(s => s.OTP == otp && s.ExpiresAt > now)
+            .SingleOrDefaultAsync(ct);
     }
 
     public async Task InvalidateExpiredAsync(CancellationToken ct = default)

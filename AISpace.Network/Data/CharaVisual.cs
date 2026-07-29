@@ -8,7 +8,15 @@ public enum BloodType : uint
     O = 3,
 }
 
-public class CharaVisual(BloodType bloodType, byte month, byte day, uint gender, uint visualId, byte face, uint hairStyle)
+public class CharaVisual(
+    BloodType bloodType,
+    byte month,
+    byte day,
+    uint gender,
+    uint visualId,
+    byte face,
+    uint hairStyle
+)
 {
     public BloodType BloodType = bloodType; //1=A, 2=B
     public byte Month = month;
@@ -32,7 +40,15 @@ public class CharaVisual(BloodType bloodType, byte month, byte day, uint gender,
         var characterID = reader.ReadUInt();
         var face = reader.ReadByte();
         var hairstyle = reader.ReadUInt();
-        var newCV = new CharaVisual((BloodType)bloodType, month, day, gender, characterID, face, hairstyle);
+        var newCV = new CharaVisual(
+            (BloodType)bloodType,
+            month,
+            day,
+            gender,
+            characterID,
+            face,
+            hairstyle
+        );
         return newCV;
     }
 

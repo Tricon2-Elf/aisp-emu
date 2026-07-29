@@ -17,16 +17,35 @@ public class CharacterItemSyncTests
             Id = 1,
             Equipment =
             [
-                new CharacterEquipment { CharacterId = 1, SlotIndex = 0, ItemId = 10100220 },
+                new CharacterEquipment
+                {
+                    CharacterId = 1,
+                    SlotIndex = 0,
+                    ItemId = 10100220,
+                },
             ],
             Inventory =
             [
-                new CharacterInventory { CharacterId = 1, ItemId = 10100220, Quantity = 1 },
-                new CharacterInventory { CharacterId = 1, ItemId = 10200100, Quantity = 1 },
+                new CharacterInventory
+                {
+                    CharacterId = 1,
+                    ItemId = 10100220,
+                    Quantity = 1,
+                },
+                new CharacterInventory
+                {
+                    CharacterId = 1,
+                    ItemId = 10200100,
+                    Quantity = 1,
+                },
             ],
         };
 
-        await CharacterItemSync.SendBootstrapAsync(session, character, TestContext.Current.CancellationToken);
+        await CharacterItemSync.SendBootstrapAsync(
+            session,
+            character,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(2, session.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
         Assert.Single(session.Sent, p => p.Type == PacketType.ItemEquippedNotify);

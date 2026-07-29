@@ -85,7 +85,10 @@ public abstract class GameServerBase<T> : BackgroundService
                     {
                         try
                         {
-                            State.BroadcastAreaDisappearAsync(disconnectedSession).GetAwaiter().GetResult();
+                            State
+                                .BroadcastAreaDisappearAsync(disconnectedSession)
+                                .GetAwaiter()
+                                .GetResult();
                         }
                         catch (Exception ex)
                         {
@@ -120,35 +123,56 @@ public abstract class GameServerBase<T> : BackgroundService
             var heartbeatLoop = RunHeartbeatLoop(runToken);
             var additionalLoops = GetAdditionalLoops(runToken).ToArray();
 
-            var allLoops = new List<Task>(3 + additionalLoops.Length) { acceptLoop, packetLoop, heartbeatLoop };
+            var allLoops = new List<Task>(3 + additionalLoops.Length)
+            {
+                acceptLoop,
+                packetLoop,
+                heartbeatLoop,
+            };
             allLoops.AddRange(additionalLoops);
 
             var completed = await Task.WhenAny(allLoops);
             if (completed == acceptLoop)
             {
-                Logger.LogWarning("{ServerType} TCP listener stopped unexpectedly; restarting", ActiveServerType);
+                Logger.LogWarning(
+                    "{ServerType} TCP listener stopped unexpectedly; restarting",
+                    ActiveServerType
+                );
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "tcp listener stopped");
             }
             else if (completed == packetLoop)
             {
-                Logger.LogWarning("{ServerType} packet loop stopped unexpectedly; restarting listener", ActiveServerType);
+                Logger.LogWarning(
+                    "{ServerType} packet loop stopped unexpectedly; restarting listener",
+                    ActiveServerType
+                );
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "packet loop stopped");
             }
             else if (completed == heartbeatLoop)
             {
-                Logger.LogWarning("{ServerType} heartbeat loop stopped unexpectedly; restarting listener", ActiveServerType);
+                Logger.LogWarning(
+                    "{ServerType} heartbeat loop stopped unexpectedly; restarting listener",
+                    ActiveServerType
+                );
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "heartbeat loop stopped");
             }
             else
             {
-                Logger.LogWarning("{ServerType} auxiliary loop stopped unexpectedly; restarting listener", ActiveServerType);
+                Logger.LogWarning(
+                    "{ServerType} auxiliary loop stopped unexpectedly; restarting listener",
+                    ActiveServerType
+                );
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "auxiliary loop stopped");
             }
 
             runCts.Cancel();
             HealthRegistry.ClearAcceptCheck(ActiveServerType);
             HealthRegistry.ClearClientLoadCheck(ActiveServerType);
-            await Task.WhenAll(allLoops.Select(task => task.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default)));
+            await Task.WhenAll(
+                allLoops.Select(task =>
+                    task.ContinueWith(_ => Task.CompletedTask, TaskScheduler.Default)
+                )
+            );
 
             if (ct.IsCancellationRequested)
                 break;
@@ -205,10 +229,19 @@ public abstract class GameServerBase<T> : BackgroundService
                             continue;
                         }
 
-                        session = State.GetOrAddSession(packet.Client.Id, () => new PlayerSession(packet.Client.Id, packet.Client));
+                        session = State.GetOrAddSession(
+                            packet.Client.Id,
+                            () => new PlayerSession(packet.Client.Id, packet.Client)
+                        );
                     }
 
-                    await Dispatcher.DispatchAsync(ActiveServerType, packet.Type, packet.Data, session, ct);
+                    await Dispatcher.DispatchAsync(
+                        ActiveServerType,
+                        packet.Type,
+                        packet.Data,
+                        session,
+                        ct
+                    );
                 }
                 catch (OperationCanceledException)
                 {
@@ -216,7 +249,13 @@ public abstract class GameServerBase<T> : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "Packet dispatch failed (ServerType={ServerType}, type={Type}): {Message}", ActiveServerType, packet.Type, ex.Message);
+                    Logger.LogError(
+                        ex,
+                        "Packet dispatch failed (ServerType={ServerType}, type={Type}): {Message}",
+                        ActiveServerType,
+                        packet.Type,
+                        ex.Message
+                    );
                 }
             }
         }

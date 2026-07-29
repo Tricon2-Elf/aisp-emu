@@ -34,15 +34,33 @@ namespace AISpace.Common.DAL.Migrations
                     Experience = table.Column<ulong>(type: "INTEGER", nullable: false),
                     ExperienceToNextLevel = table.Column<ulong>(type: "INTEGER", nullable: false),
                     AvailableStatusPoints = table.Column<uint>(type: "INTEGER", nullable: false),
-                    UserStatusText = table.Column<string>(type: "TEXT", maxLength: 49, nullable: false),
+                    UserStatusText = table.Column<string>(
+                        type: "TEXT",
+                        maxLength: 49,
+                        nullable: false
+                    ),
                     UserStatusIconId = table.Column<uint>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    CreatedAt = table.Column<DateTime>(
+                        type: "TEXT",
+                        nullable: false,
+                        defaultValueSql: "CURRENT_TIMESTAMP"
+                    ),
+                    UpdatedAt = table.Column<DateTime>(
+                        type: "TEXT",
+                        nullable: false,
+                        defaultValueSql: "CURRENT_TIMESTAMP"
+                    ),
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Robos", x => new { x.CharacterId, x.RoboId });
-                    table.ForeignKey(name: "FK_Robos_Characters_CharacterId", column: x => x.CharacterId, principalTable: "Characters", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Robos_Characters_CharacterId",
+                        column: x => x.CharacterId,
+                        principalTable: "Characters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -66,7 +84,13 @@ namespace AISpace.Common.DAL.Migrations
                             x.StatusIndex,
                         }
                     );
-                    table.ForeignKey(name: "FK_RoboDistributedStatusPoints_Robos_CharacterId_RoboId", columns: x => new { x.CharacterId, x.RoboId }, principalTable: "Robos", principalColumns: new[] { "CharacterId", "RoboId" }, onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoboDistributedStatusPoints_Robos_CharacterId_RoboId",
+                        columns: x => new { x.CharacterId, x.RoboId },
+                        principalTable: "Robos",
+                        principalColumns: new[] { "CharacterId", "RoboId" },
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -91,7 +115,13 @@ namespace AISpace.Common.DAL.Migrations
                             x.SlotIndex,
                         }
                     );
-                    table.ForeignKey(name: "FK_RoboEquipment_Robos_CharacterId_RoboId", columns: x => new { x.CharacterId, x.RoboId }, principalTable: "Robos", principalColumns: new[] { "CharacterId", "RoboId" }, onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoboEquipment_Robos_CharacterId_RoboId",
+                        columns: x => new { x.CharacterId, x.RoboId },
+                        principalTable: "Robos",
+                        principalColumns: new[] { "CharacterId", "RoboId" },
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -124,7 +154,13 @@ namespace AISpace.Common.DAL.Migrations
                             x.SlotIndex,
                         }
                     );
-                    table.ForeignKey(name: "FK_RoboItemUseEffects_Robos_CharacterId_RoboId", columns: x => new { x.CharacterId, x.RoboId }, principalTable: "Robos", principalColumns: new[] { "CharacterId", "RoboId" }, onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoboItemUseEffects_Robos_CharacterId_RoboId",
+                        columns: x => new { x.CharacterId, x.RoboId },
+                        principalTable: "Robos",
+                        principalColumns: new[] { "CharacterId", "RoboId" },
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -147,8 +183,14 @@ namespace AISpace.Common.DAL.Migrations
                     MaximumHearts = table.Column<byte>(type: "INTEGER", nullable: false),
                     StaminaCurrent = table.Column<float>(type: "REAL", nullable: false),
                     StaminaRecoveryRate = table.Column<float>(type: "REAL", nullable: false),
-                    StaminaCostReductionBonus = table.Column<uint>(type: "INTEGER", nullable: false),
-                    StaminaCostReductionPenalty = table.Column<uint>(type: "INTEGER", nullable: false),
+                    StaminaCostReductionBonus = table.Column<uint>(
+                        type: "INTEGER",
+                        nullable: false
+                    ),
+                    StaminaCostReductionPenalty = table.Column<uint>(
+                        type: "INTEGER",
+                        nullable: false
+                    ),
                     TankCurrent = table.Column<uint>(type: "INTEGER", nullable: false),
                     TankBaseMaximum = table.Column<uint>(type: "INTEGER", nullable: false),
                     TankMaximumBonus = table.Column<uint>(type: "INTEGER", nullable: false),
@@ -160,12 +202,21 @@ namespace AISpace.Common.DAL.Migrations
                     CosplayLevel = table.Column<byte>(type: "INTEGER", nullable: false),
                     CosplayStatusPoints = table.Column<ulong>(type: "INTEGER", nullable: false),
                     CosplayExperience = table.Column<ulong>(type: "INTEGER", nullable: false),
-                    CosplayExperienceToNextLevel = table.Column<ulong>(type: "INTEGER", nullable: false),
+                    CosplayExperienceToNextLevel = table.Column<ulong>(
+                        type: "INTEGER",
+                        nullable: false
+                    ),
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_RoboTpsBattleData", x => new { x.CharacterId, x.RoboId });
-                    table.ForeignKey(name: "FK_RoboTpsBattleData_Robos_CharacterId_RoboId", columns: x => new { x.CharacterId, x.RoboId }, principalTable: "Robos", principalColumns: new[] { "CharacterId", "RoboId" }, onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoboTpsBattleData_Robos_CharacterId_RoboId",
+                        columns: x => new { x.CharacterId, x.RoboId },
+                        principalTable: "Robos",
+                        principalColumns: new[] { "CharacterId", "RoboId" },
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -191,7 +242,13 @@ namespace AISpace.Common.DAL.Migrations
                             x.AbilityIndex,
                         }
                     );
-                    table.ForeignKey(name: "FK_RoboBattleAbilities_RoboTpsBattleData_CharacterId_RoboId", columns: x => new { x.CharacterId, x.RoboId }, principalTable: "RoboTpsBattleData", principalColumns: new[] { "CharacterId", "RoboId" }, onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RoboBattleAbilities_RoboTpsBattleData_CharacterId_RoboId",
+                        columns: x => new { x.CharacterId, x.RoboId },
+                        principalTable: "RoboTpsBattleData",
+                        principalColumns: new[] { "CharacterId", "RoboId" },
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
         }

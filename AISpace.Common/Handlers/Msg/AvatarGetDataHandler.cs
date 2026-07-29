@@ -8,7 +8,10 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharacterRepository charRepo) : IPacketHandler, IRequiresAuthenticatedSession
+public class AvatarGetDataHandler(
+    ILogger<AvatarGetDataHandler> logger,
+    ICharacterRepository charRepo
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
 
@@ -19,7 +22,11 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
     ILogger<AvatarGetDataHandler> _logger = logger;
     ICharacterRepository _charRepo = charRepo;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         if (session.User!.Characters.Count != 0)
         {
@@ -34,7 +41,13 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
 
     internal static AvatarDataResponse CreateDataResponse(Character character, uint slotId)
     {
-        var dataResponse = new AvatarDataResponse((uint)character.Id, character.Name, character.ModelId, character.HomeIslandId, slotId);
+        var dataResponse = new AvatarDataResponse(
+            (uint)character.Id,
+            character.Name,
+            character.ModelId,
+            character.HomeIslandId,
+            slotId
+        );
         dataResponse.Visual.VisualId = ResolveBuildId(character.ModelId);
         dataResponse.Visual.BloodType = character.BloodType;
         dataResponse.Visual.Month = (byte)character.Birthdate.Month;
@@ -42,7 +55,10 @@ public class AvatarGetDataHandler(ILogger<AvatarGetDataHandler> logger, ICharact
         dataResponse.Visual.Gender = (uint)character.Gender;
         dataResponse.Visual.Face = (byte)character.FaceType;
         dataResponse.Visual.Hairstyle = character.Hairstyle;
-        dataResponse.AddEquip(character.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveEquipSocket);
+        dataResponse.AddEquip(
+            character.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
+            ItemEntityMapper.ResolveEquipSocket
+        );
         return dataResponse;
     }
 

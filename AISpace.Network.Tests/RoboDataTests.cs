@@ -9,7 +9,10 @@ public class RoboDataTests
     [Fact]
     public void NotifyRoboData_WritesResultAndOneRobo()
     {
-        var robo = new RoboData(1, new CharaData(2_000_000_010, 1_002_011, "Remote Robo"), state: 2) { OwnerAvatarId = 7 };
+        var robo = new RoboData(1, new CharaData(2_000_000_010, 1_002_011, "Remote Robo"), state: 2)
+        {
+            OwnerAvatarId = 7,
+        };
 
         var bytes = new NotifyRoboData(0, robo).ToBytes();
 
@@ -26,7 +29,9 @@ public class RoboDataTests
     public void RoboGetListResponse_RejectsMoreThanTenOwnedRobos()
     {
         var robo = new RoboData(1, new CharaData(2_000_000_010, 1_002_011, "Owned Robo"));
-        var response = new RoboGetListResponse(Enumerable.Repeat(robo, RoboGetListResponse.MaximumRoboCount + 1).ToList());
+        var response = new RoboGetListResponse(
+            Enumerable.Repeat(robo, RoboGetListResponse.MaximumRoboCount + 1).ToList()
+        );
 
         Assert.Throws<InvalidOperationException>(() => response.ToBytes());
     }
@@ -79,11 +84,21 @@ public class RoboDataTests
         var effectOffset = 4 * sizeof(uint) + sizeof(ushort) + CharaData.WireSize;
         Assert.Equal(501u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(effectOffset)));
 
-        var roboTailOffset = effectOffset + RoboData.ItemUseEffectCount * ItemUseEffectData.WireSize;
+        var roboTailOffset =
+            effectOffset + RoboData.ItemUseEffectCount * ItemUseEffectData.WireSize;
         Assert.Equal(404u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(roboTailOffset)));
-        Assert.Equal(25u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(roboTailOffset + sizeof(uint))));
-        Assert.Equal(1u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(roboTailOffset + 2 * sizeof(uint))));
-        Assert.Equal("Robo status", UserStatusData.FromBytes(bytes.AsSpan(roboTailOffset + 7 * sizeof(uint))).StatusText);
+        Assert.Equal(
+            25u,
+            BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(roboTailOffset + sizeof(uint)))
+        );
+        Assert.Equal(
+            1u,
+            BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(roboTailOffset + 2 * sizeof(uint)))
+        );
+        Assert.Equal(
+            "Robo status",
+            UserStatusData.FromBytes(bytes.AsSpan(roboTailOffset + 7 * sizeof(uint))).StatusText
+        );
 
         var parsed = RoboData.FromBytes(bytes);
         Assert.Equal(101u, parsed.RoboId);

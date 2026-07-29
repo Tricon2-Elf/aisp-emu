@@ -14,7 +14,11 @@ public sealed class NotifyRoomListPack : IOutgoingPacket
     {
         ArgumentNullException.ThrowIfNull(rooms);
         if (rooms.Count > MaximumRooms)
-            throw new ArgumentOutOfRangeException(nameof(rooms), rooms.Count, $"The client accepts at most {MaximumRooms} rooms per packet.");
+            throw new ArgumentOutOfRangeException(
+                nameof(rooms),
+                rooms.Count,
+                $"The client accepts at most {MaximumRooms} rooms per packet."
+            );
 
         Rooms = rooms;
     }

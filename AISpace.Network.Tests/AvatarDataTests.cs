@@ -103,12 +103,27 @@ public class AvatarDataTests
         Assert.Equal(CharaData.WireSize, character.ToBytes().Length);
         Assert.Equal(AvatarData.WireSize, bytes.Length);
         Assert.Equal(123u, BinaryPrimitives.ReadUInt32LittleEndian(bytes));
-        Assert.Equal(201u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(4 + CharaData.WireSize)));
-        var avatarTailOffset = 4 + CharaData.WireSize + AvatarData.ItemUseEffectCount * ItemUseEffectData.WireSize;
-        Assert.Equal(0x10203040u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(avatarTailOffset)));
-        Assert.Equal(5678u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(avatarTailOffset + sizeof(uint))));
+        Assert.Equal(
+            201u,
+            BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(4 + CharaData.WireSize))
+        );
+        var avatarTailOffset =
+            4 + CharaData.WireSize + AvatarData.ItemUseEffectCount * ItemUseEffectData.WireSize;
+        Assert.Equal(
+            0x10203040u,
+            BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(avatarTailOffset))
+        );
+        Assert.Equal(
+            5678u,
+            BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(avatarTailOffset + sizeof(uint)))
+        );
         Assert.Equal(3, bytes[avatarTailOffset + 2 * sizeof(uint)]);
-        Assert.Equal("Testing", UserStatusData.FromBytes(bytes.AsSpan(avatarTailOffset + 2 * sizeof(uint) + sizeof(byte))).StatusText);
+        Assert.Equal(
+            "Testing",
+            UserStatusData
+                .FromBytes(bytes.AsSpan(avatarTailOffset + 2 * sizeof(uint) + sizeof(byte)))
+                .StatusText
+        );
 
         var parsed = AvatarData.FromBytes(bytes);
         Assert.Equal(123u, parsed.AvatarId);

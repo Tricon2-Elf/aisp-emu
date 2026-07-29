@@ -10,7 +10,11 @@ public class AreaEmotionGetObtainedListHandler : IPacketHandler, IRequiresAuthen
     public PacketType ResponseType => PacketType.EmotionGetObtainedListResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var ids = new List<uint>();
 

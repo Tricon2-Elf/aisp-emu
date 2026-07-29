@@ -9,11 +9,19 @@ using Microsoft.Extensions.Options;
 namespace AISpace.Server.Services;
 
 /// <summary>Single process-wide timer for scheduler health sampling and area timezone broadcasts.</summary>
-public sealed class GameServerSchedulerService(SharedState state, GameServerHealthRegistry healthRegistry, IOptions<ServerOptions> options, ILogger<GameServerSchedulerService> logger) : BackgroundService
+public sealed class GameServerSchedulerService(
+    SharedState state,
+    GameServerHealthRegistry healthRegistry,
+    IOptions<ServerOptions> options,
+    ILogger<GameServerSchedulerService> logger
+) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
-        var heartbeatIntervalSeconds = Math.Max(1, options.Value.HealthCheck.HeartbeatIntervalSeconds);
+        var heartbeatIntervalSeconds = Math.Max(
+            1,
+            options.Value.HealthCheck.HeartbeatIntervalSeconds
+        );
         var schedulerTickSeconds = Math.Max(1, options.Value.HealthCheck.SchedulerTickSeconds);
         logger.LogInformation("Game scheduler started ({TickSeconds}s tick)", schedulerTickSeconds);
 
@@ -27,11 +35,14 @@ public sealed class GameServerSchedulerService(SharedState state, GameServerHeal
             var lag = now - lastTickUtc;
             lastTickUtc = now;
 
-            RunTickStep("scheduler tick", () =>
-            {
-                healthRegistry.RecordSchedulerTick(lag);
-                healthRegistry.SampleProcessCpu();
-            });
+            RunTickStep(
+                "scheduler tick",
+                () =>
+                {
+                    healthRegistry.RecordSchedulerTick(lag);
+                    healthRegistry.SampleProcessCpu();
+                }
+            );
 
             tick++;
             if (tick % heartbeatIntervalSeconds == 0)
@@ -51,7 +62,12 @@ public sealed class GameServerSchedulerService(SharedState state, GameServerHeal
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Game scheduler {StepName} failed: {Message}", stepName, ex.Message);
+            logger.LogError(
+                ex,
+                "Game scheduler {StepName} failed: {Message}",
+                stepName,
+                ex.Message
+            );
         }
     }
 

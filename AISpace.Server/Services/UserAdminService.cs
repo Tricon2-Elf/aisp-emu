@@ -14,14 +14,22 @@ public class UserAdminService
     private readonly SharedState _state;
     private readonly ILogger<UserAdminService> _logger;
 
-    public UserAdminService(IUserRepository userRepo, SharedState state, ILogger<UserAdminService> logger)
+    public UserAdminService(
+        IUserRepository userRepo,
+        SharedState state,
+        ILogger<UserAdminService> logger
+    )
     {
         _userRepo = userRepo;
         _state = state;
         _logger = logger;
     }
 
-    public async Task<(bool Success, string? Error, UserDetail? User)> CreateUserAsync(string username, string password, CancellationToken ct = default)
+    public async Task<(bool Success, string? Error, UserDetail? User)> CreateUserAsync(
+        string username,
+        string password,
+        CancellationToken ct = default
+    )
     {
         if (string.IsNullOrWhiteSpace(username))
             return (false, "username is required", null);
@@ -37,11 +45,18 @@ public class UserAdminService
         if (user == null)
             return (false, "failed to create user", null);
 
-        _logger.LogInformation("API created user {Username} (ID: {UserId})", user.Username, user.Id);
+        _logger.LogInformation(
+            "API created user {Username} (ID: {UserId})",
+            user.Username,
+            user.Id
+        );
         return (true, null, MapToDetail(user));
     }
 
-    public async Task<(bool Success, string? Error)> DeleteUserAsync(string username, CancellationToken ct = default)
+    public async Task<(bool Success, string? Error)> DeleteUserAsync(
+        string username,
+        CancellationToken ct = default
+    )
     {
         var user = await _userRepo.GetByUsernameAsync(username);
         if (user == null)
@@ -50,11 +65,19 @@ public class UserAdminService
         await KickUserAsync(user, ct);
 
         await _userRepo.DeleteAsync(user.Id);
-        _logger.LogInformation("API deleted user {Username} (ID: {UserId})", user.Username, user.Id);
+        _logger.LogInformation(
+            "API deleted user {Username} (ID: {UserId})",
+            user.Username,
+            user.Id
+        );
         return (true, null);
     }
 
-    public async Task<(bool Success, string? Error)> ResetPasswordAsync(string username, string newPassword, CancellationToken ct = default)
+    public async Task<(bool Success, string? Error)> ResetPasswordAsync(
+        string username,
+        string newPassword,
+        CancellationToken ct = default
+    )
     {
         if (string.IsNullOrWhiteSpace(newPassword))
             return (false, "newPassword is required");
@@ -68,7 +91,11 @@ public class UserAdminService
         return (true, null);
     }
 
-    public async Task<(bool Success, string? Error, int SessionsKicked)> BanUserAsync(string username, string? reason, CancellationToken ct = default)
+    public async Task<(bool Success, string? Error, int SessionsKicked)> BanUserAsync(
+        string username,
+        string? reason,
+        CancellationToken ct = default
+    )
     {
         var user = await _userRepo.GetByUsernameAsync(username);
         if (user == null)
@@ -81,7 +108,10 @@ public class UserAdminService
         return (true, null, sessionsKicked);
     }
 
-    public async Task<(bool Success, string? Error)> UnbanUserAsync(string username, CancellationToken ct = default)
+    public async Task<(bool Success, string? Error)> UnbanUserAsync(
+        string username,
+        CancellationToken ct = default
+    )
     {
         var user = await _userRepo.GetByUsernameAsync(username);
         if (user == null)
@@ -92,14 +122,21 @@ public class UserAdminService
         return (true, null);
     }
 
-    public async Task<(bool Success, string? Error, int SessionsClosed)> KickUserAsync(string username, CancellationToken ct = default)
+    public async Task<(bool Success, string? Error, int SessionsClosed)> KickUserAsync(
+        string username,
+        CancellationToken ct = default
+    )
     {
         var user = await _userRepo.GetByUsernameAsync(username);
         if (user == null)
             return (false, "user not found", 0);
 
         var sessionsClosed = await KickUserAsync(user, ct);
-        _logger.LogInformation("API kicked user {Username}, closed {Count} sessions", username, sessionsClosed);
+        _logger.LogInformation(
+            "API kicked user {Username}, closed {Count} sessions",
+            username,
+            sessionsClosed
+        );
         return (true, null, sessionsClosed);
     }
 
@@ -131,14 +168,24 @@ public class UserAdminService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error disconnecting session {ConnectionId} for user {Username}", session.ConnectionId, user.Username);
+                _logger.LogWarning(
+                    ex,
+                    "Error disconnecting session {ConnectionId} for user {Username}",
+                    session.ConnectionId,
+                    user.Username
+                );
             }
         }
 
         return matchingSessions.Count;
     }
 
-    public async Task<(IReadOnlyList<UserSummary> Users, int Total)> ListUsersAsync(string? search = null, int? skip = null, int? take = null, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<UserSummary> Users, int Total)> ListUsersAsync(
+        string? search = null,
+        int? skip = null,
+        int? take = null,
+        CancellationToken ct = default
+    )
     {
         var users = await _userRepo.GetAllAsync(search, skip, take);
         var total = await _userRepo.CountAsync(search);
@@ -157,7 +204,10 @@ public class UserAdminService
         return (summaries, total);
     }
 
-    public async Task<UserDetail?> GetUserDetailAsync(string username, CancellationToken ct = default)
+    public async Task<UserDetail?> GetUserDetailAsync(
+        string username,
+        CancellationToken ct = default
+    )
     {
         var user = await _userRepo.GetByUsernameAsync(username);
         return user == null ? null : MapToDetail(user);
@@ -194,7 +244,10 @@ public class UserAdminService
     public async Task<StatsResponse> GetStatsAsync(CancellationToken ct = default)
     {
         var totalUsers = await _userRepo.CountAsync();
-        var onlineCount = _state.GetServerClients(ServerType.Auth).Count(s => s.IsAuthenticated) + _state.GetServerClients(ServerType.Msg).Count(s => s.IsAuthenticated) + _state.GetServerClients(ServerType.Area).Count(s => s.IsAuthenticated);
+        var onlineCount =
+            _state.GetServerClients(ServerType.Auth).Count(s => s.IsAuthenticated)
+            + _state.GetServerClients(ServerType.Msg).Count(s => s.IsAuthenticated)
+            + _state.GetServerClients(ServerType.Area).Count(s => s.IsAuthenticated);
 
         var uptimeSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - _state.StartTimeUnix;
 

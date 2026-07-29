@@ -12,7 +12,8 @@ public static class MyRoomInfo
     /// <summary>Alias for the base (6-tatami) MyRoom map.</summary>
     public const uint BaseMapId = SixTatamiMapId;
 
-    public static bool IsMyRoomMap(uint mapId) => mapId is SixTatamiMapId or EightTatamiMapId or TenTatamiMapId or TwelveTatamiMapId;
+    public static bool IsMyRoomMap(uint mapId) =>
+        mapId is SixTatamiMapId or EightTatamiMapId or TenTatamiMapId or TwelveTatamiMapId;
 
     public static MyRoomStage GetRoomStage(uint mapId) =>
         mapId switch

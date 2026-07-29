@@ -12,7 +12,16 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepository userRepo, ICharacterRepository characterRepo, IMyRoomRepository myRoomRepository, IItemBaseListCache itemBaseListCache, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class CmdExecHandler(
+    SharedState state,
+    IMapRepository mapRepo,
+    IUserRepository userRepo,
+    ICharacterRepository characterRepo,
+    IMyRoomRepository myRoomRepository,
+    IItemBaseListCache itemBaseListCache,
+    DirectMapLinkTransitionService directMapLinkTransitionService,
+    ILogger<CmdExecHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
     private const float JumpDistance = 100f;
@@ -21,14 +30,22 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
     public PacketType ResponseType => PacketType.CmdExecResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = CmdExecRequest.FromBytes(payload.Span);
 
         var response = new CmdExecResponse(request.MessageId, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
         string cmd = request.Command.Trim().TrimStart('/').ToLowerInvariant();
-        logger.LogInformation("CmdExecHandler: '{cmd}' with args: '{args}'", cmd, string.Join(", ", request.Arguments));
+        logger.LogInformation(
+            "CmdExecHandler: '{cmd}' with args: '{args}'",
+            cmd,
+            string.Join(", ", request.Arguments)
+        );
 
         if (cmd is "pos" or "coords")
         {
@@ -37,12 +54,20 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             {
                 // DistID -5 is the client "System" / Notice chat filter (see sub_428B10 / sub_428BB0).
                 const uint systemDistId = unchecked((uint)-5);
-                var text = $"Char: {areaClient.CharacterId} | Map: {areaClient.MapId} | Ch: {areaClient.ChannelId} | X: {areaClient.X}f | Y: {areaClient.Y}f | Z: {areaClient.Z}f | Rot: {areaClient.Rotation}";
-                await session.SendAsync(PacketType.TalkForwardNotify, new TalkForwardNotify(0, systemDistId, text, 0).ToBytes(), ct);
+                var text =
+                    $"Char: {areaClient.CharacterId} | Map: {areaClient.MapId} | Ch: {areaClient.ChannelId} | X: {areaClient.X}f | Y: {areaClient.Y}f | Z: {areaClient.Z}f | Rot: {areaClient.Rotation}";
+                await session.SendAsync(
+                    PacketType.TalkForwardNotify,
+                    new TalkForwardNotify(0, systemDistId, text, 0).ToBytes(),
+                    ct
+                );
             }
             else
             {
-                logger.LogWarning("CmdExecHandler: No area session found for user {UserId} (server may be in separate process or not in area)", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: No area session found for user {UserId} (server may be in separate process or not in area)",
+                    session.User?.Id ?? session.UserId
+                );
             }
             return;
         }
@@ -50,7 +75,10 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
         if (cmd is "tele" or "tp" or "teleport")
         {
             var destinationMapId = 10990100u;
-            if (request.Arguments.Count == 0 || !uint.TryParse(request.Arguments[0], out destinationMapId))
+            if (
+                request.Arguments.Count == 0
+                || !uint.TryParse(request.Arguments[0], out destinationMapId)
+            )
             {
                 destinationMapId = 10990100u;
             }
@@ -58,17 +86,36 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             var areaClient = ResolveAreaClient(session);
             if (areaClient == null)
             {
-                logger.LogWarning("CmdExecHandler: tele requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: tele requires an active area session for user {UserId}",
+                    session.User?.Id ?? session.UserId
+                );
                 return;
             }
 
-            if (!await directMapLinkTransitionService.TryTeleportToMapAsync(areaClient, destinationMapId, ct))
+            if (
+                !await directMapLinkTransitionService.TryTeleportToMapAsync(
+                    areaClient,
+                    destinationMapId,
+                    ct
+                )
+            )
             {
-                logger.LogWarning("CmdExecHandler: tele to map {MapId} failed for user {UserId} (character {CharacterId})", destinationMapId, session.User?.Id ?? session.UserId, areaClient.CharacterId);
+                logger.LogWarning(
+                    "CmdExecHandler: tele to map {MapId} failed for user {UserId} (character {CharacterId})",
+                    destinationMapId,
+                    session.User?.Id ?? session.UserId,
+                    areaClient.CharacterId
+                );
             }
             else
             {
-                logger.LogInformation("CmdExecHandler: teleported user {UserId} (character {CharacterId}) to map {MapId}", session.User?.Id ?? session.UserId, areaClient.CharacterId, destinationMapId);
+                logger.LogInformation(
+                    "CmdExecHandler: teleported user {UserId} (character {CharacterId}) to map {MapId}",
+                    session.User?.Id ?? session.UserId,
+                    areaClient.CharacterId,
+                    destinationMapId
+                );
             }
 
             return;
@@ -79,39 +126,69 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             var areaClient = ResolveAreaClient(session);
             if (areaClient == null || areaClient.CharacterId == 0)
             {
-                logger.LogWarning("CmdExecHandler: myroom requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: myroom requires an active area session for user {UserId}",
+                    session.User?.Id ?? session.UserId
+                );
                 return;
             }
 
-            var character = await characterRepo.GetByIdAsync(checked((int)areaClient.CharacterId), ct);
+            var character = await characterRepo.GetByIdAsync(
+                checked((int)areaClient.CharacterId),
+                ct
+            );
             if (character is null || character.HomeIslandId == 0)
             {
-                logger.LogWarning("CmdExecHandler: myroom requires character {CharacterId} to have a home island", areaClient.CharacterId);
+                logger.LogWarning(
+                    "CmdExecHandler: myroom requires character {CharacterId} to have a home island",
+                    areaClient.CharacterId
+                );
                 return;
             }
 
             areaClient.Character = character;
 
             DAL.Entities.Room? room;
-            if (cmd == "room" && request.Arguments.Count > 0 && string.Equals(request.Arguments[0], "create", StringComparison.OrdinalIgnoreCase))
+            if (
+                cmd == "room"
+                && request.Arguments.Count > 0
+                && string.Equals(request.Arguments[0], "create", StringComparison.OrdinalIgnoreCase)
+            )
             {
-                if (!TryParseRoomStage(request.Arguments.Count > 1 ? request.Arguments[1] : null, out var stage))
+                if (
+                    !TryParseRoomStage(
+                        request.Arguments.Count > 1 ? request.Arguments[1] : null,
+                        out var stage
+                    )
+                )
                 {
-                    logger.LogWarning("CmdExecHandler: room create requires a tatami size of 6, 8, 10, or 12 for character {CharacterId}", areaClient.CharacterId);
+                    logger.LogWarning(
+                        "CmdExecHandler: room create requires a tatami size of 6, 8, 10, or 12 for character {CharacterId}",
+                        areaClient.CharacterId
+                    );
                     return;
                 }
 
-                var roomName = request.Arguments.Count > 2 ? string.Join(' ', request.Arguments.Skip(2)) : "My Room";
+                var roomName =
+                    request.Arguments.Count > 2
+                        ? string.Join(' ', request.Arguments.Skip(2))
+                        : "My Room";
                 if (roomName.Length > 45)
                 {
-                    logger.LogWarning("CmdExecHandler: room create name is longer than 45 characters for character {CharacterId}", areaClient.CharacterId);
+                    logger.LogWarning(
+                        "CmdExecHandler: room create name is longer than 45 characters for character {CharacterId}",
+                        areaClient.CharacterId
+                    );
                     return;
                 }
 
                 room = await myRoomRepository.CreateRoomAsync(character.Id, stage, roomName, ct);
                 if (room is null)
                 {
-                    logger.LogWarning("CmdExecHandler: failed to create room for character {CharacterId}", areaClient.CharacterId);
+                    logger.LogWarning(
+                        "CmdExecHandler: failed to create room for character {CharacterId}",
+                        areaClient.CharacterId
+                    );
                     return;
                 }
             }
@@ -119,14 +196,21 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             {
                 if (!int.TryParse(request.Arguments[0], out var roomId) || roomId <= 0)
                 {
-                    logger.LogWarning("CmdExecHandler: room requires a positive room ID for character {CharacterId}", areaClient.CharacterId);
+                    logger.LogWarning(
+                        "CmdExecHandler: room requires a positive room ID for character {CharacterId}",
+                        areaClient.CharacterId
+                    );
                     return;
                 }
 
                 room = await myRoomRepository.GetRoomAsync(roomId, ct);
                 if (room is null)
                 {
-                    logger.LogWarning("CmdExecHandler: room {RoomId} does not exist for character {CharacterId}", roomId, areaClient.CharacterId);
+                    logger.LogWarning(
+                        "CmdExecHandler: room {RoomId} does not exist for character {CharacterId}",
+                        roomId,
+                        areaClient.CharacterId
+                    );
                     return;
                 }
             }
@@ -135,15 +219,30 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 room = await myRoomRepository.GetOrCreateDefaultRoomAsync(character.Id, ct);
                 if (room is null)
                 {
-                    logger.LogWarning("CmdExecHandler: could not resolve the default room for character {CharacterId}", areaClient.CharacterId);
+                    logger.LogWarning(
+                        "CmdExecHandler: could not resolve the default room for character {CharacterId}",
+                        areaClient.CharacterId
+                    );
                     return;
                 }
             }
 
             if (!await directMapLinkTransitionService.TryTeleportToRoomAsync(areaClient, room, ct))
-                logger.LogWarning("CmdExecHandler: room teleport failed for user {UserId} (character {CharacterId}, room {RoomId})", session.User?.Id ?? session.UserId, areaClient.CharacterId, room.Id);
+                logger.LogWarning(
+                    "CmdExecHandler: room teleport failed for user {UserId} (character {CharacterId}, room {RoomId})",
+                    session.User?.Id ?? session.UserId,
+                    areaClient.CharacterId,
+                    room.Id
+                );
             else
-                logger.LogInformation("CmdExecHandler: teleported user {UserId} (character {CharacterId}) to room {RoomId} owned by character {OwnerCharacterId} on stage {Stage}", session.User?.Id ?? session.UserId, areaClient.CharacterId, room.Id, room.OwnerCharacterId, room.Stage);
+                logger.LogInformation(
+                    "CmdExecHandler: teleported user {UserId} (character {CharacterId}) to room {RoomId} owned by character {OwnerCharacterId} on stage {Stage}",
+                    session.User?.Id ?? session.UserId,
+                    areaClient.CharacterId,
+                    room.Id,
+                    room.OwnerCharacterId,
+                    room.Stage
+                );
 
             return;
         }
@@ -151,14 +250,24 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
         if (cmd is "jump")
         {
             var areaClient = ResolveAreaClient(session);
-            if (areaClient == null || areaClient.User == null || areaClient.User.Characters.Count == 0)
+            if (
+                areaClient == null
+                || areaClient.User == null
+                || areaClient.User.Characters.Count == 0
+            )
             {
-                logger.LogWarning("CmdExecHandler: jump requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: jump requires an active area session for user {UserId}",
+                    session.User?.Id ?? session.UserId
+                );
                 return;
             }
 
             var jumpDistance = JumpDistance;
-            if (request.Arguments.Count > 0 && float.TryParse(request.Arguments[0], out var parsedDistance))
+            if (
+                request.Arguments.Count > 0
+                && float.TryParse(request.Arguments[0], out var parsedDistance)
+            )
                 jumpDistance = parsedDistance;
 
             var angle = areaClient.Rotation * (MathF.PI / 180f);
@@ -168,7 +277,13 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             areaClient.MovementTypeId = (int)MovementType.Stopped;
 
             var chara = areaClient.Character ?? areaClient.User.Characters.First();
-            var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
+            var newPos = new MovementData(
+                areaClient.X,
+                areaClient.Y,
+                areaClient.Z,
+                areaClient.Rotation,
+                MovementType.Stopped
+            );
 
             var notifyMove = new AvatarNotifyMove(areaClient.CharacterId, [newPos]).ToBytes();
             await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
@@ -190,7 +305,10 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             var areaClient = ResolveAreaClient(session);
             if (areaClient == null || areaClient.CharacterId == 0)
             {
-                logger.LogWarning("CmdExecHandler: outfit requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: outfit requires an active area session for user {UserId}",
+                    session.User?.Id ?? session.UserId
+                );
                 return;
             }
 
@@ -198,11 +316,16 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             var character = await characterRepo.GetByIdAsync(characterId, ct);
             if (character is null)
             {
-                logger.LogWarning("CmdExecHandler: outfit could not resolve character {CharacterId}", characterId);
+                logger.LogWarning(
+                    "CmdExecHandler: outfit could not resolve character {CharacterId}",
+                    characterId
+                );
                 return;
             }
 
-            var itemIds = DefaultClothingItems.WardrobeInventoryForGender(character.Gender).ToList();
+            var itemIds = DefaultClothingItems
+                .WardrobeInventoryForGender(character.Gender)
+                .ToList();
 
             foreach (var itemId in itemIds)
                 await characterRepo.AddInventoryAsync(characterId, itemId, 1, ct);
@@ -214,7 +337,11 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             areaClient.Character = refreshed;
             await CharacterItemSync.SendInventoryBootstrapAsync(areaClient, refreshed, ct);
 
-            logger.LogInformation("CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client", itemIds.Count, characterId);
+            logger.LogInformation(
+                "CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client",
+                itemIds.Count,
+                characterId
+            );
             return;
         }
 
@@ -223,35 +350,57 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             var areaClient = ResolveAreaClient(session);
             if (areaClient == null || areaClient.CharacterId == 0)
             {
-                logger.LogWarning("CmdExecHandler: give requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: give requires an active area session for user {UserId}",
+                    session.User?.Id ?? session.UserId
+                );
                 return;
             }
 
-            if (request.Arguments.Count == 0 || !int.TryParse(request.Arguments[0], out var itemId) || itemId <= 0)
+            if (
+                request.Arguments.Count == 0
+                || !int.TryParse(request.Arguments[0], out var itemId)
+                || itemId <= 0
+            )
             {
-                logger.LogWarning("CmdExecHandler: give requires a positive item id argument (user {UserId})", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: give requires a positive item id argument (user {UserId})",
+                    session.User?.Id ?? session.UserId
+                );
                 return;
             }
 
             if (!await itemBaseListCache.ContainsItemAsync(itemId, ct))
             {
-                logger.LogWarning("CmdExecHandler: give rejected unknown item {ItemId} for character {CharacterId}", itemId, areaClient.CharacterId);
+                logger.LogWarning(
+                    "CmdExecHandler: give rejected unknown item {ItemId} for character {CharacterId}",
+                    itemId,
+                    areaClient.CharacterId
+                );
                 return;
             }
 
             var quantity = 1;
-            if (request.Arguments.Count > 1 && int.TryParse(request.Arguments[1], out var parsedQuantity) && parsedQuantity > 0)
+            if (
+                request.Arguments.Count > 1
+                && int.TryParse(request.Arguments[1], out var parsedQuantity)
+                && parsedQuantity > 0
+            )
                 quantity = parsedQuantity;
 
             var characterId = (int)areaClient.CharacterId;
             var character = await characterRepo.GetByIdAsync(characterId, ct);
             if (character is null)
             {
-                logger.LogWarning("CmdExecHandler: give could not resolve character {CharacterId}", characterId);
+                logger.LogWarning(
+                    "CmdExecHandler: give could not resolve character {CharacterId}",
+                    characterId
+                );
                 return;
             }
 
-            var previousQuantity = character.Inventory.FirstOrDefault(i => i.ItemId == itemId)?.Quantity ?? 0;
+            var previousQuantity =
+                character.Inventory.FirstOrDefault(i => i.ItemId == itemId)?.Quantity ?? 0;
 
             try
             {
@@ -259,7 +408,13 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             }
             catch (DbUpdateException ex)
             {
-                logger.LogWarning(ex, "CmdExecHandler: give failed to add item {ItemId} (qty {Quantity}) to character {CharacterId}", itemId, quantity, characterId);
+                logger.LogWarning(
+                    ex,
+                    "CmdExecHandler: give failed to add item {ItemId} (qty {Quantity}) to character {CharacterId}",
+                    itemId,
+                    quantity,
+                    characterId
+                );
                 return;
             }
 
@@ -270,7 +425,12 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             if (refreshed is not null)
                 areaClient.Character = refreshed;
 
-            logger.LogInformation("CmdExecHandler: gave item {ItemId} x{Quantity} to character {CharacterId} and sent inventory notify", itemId, quantity, characterId);
+            logger.LogInformation(
+                "CmdExecHandler: gave item {ItemId} x{Quantity} to character {CharacterId} and sent inventory notify",
+                itemId,
+                quantity,
+                characterId
+            );
             return;
         }
 
@@ -283,9 +443,16 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 return;
             }
 
-            if (request.Arguments.Count == 0 || !long.TryParse(request.Arguments[0], out var amount) || amount <= 0)
+            if (
+                request.Arguments.Count == 0
+                || !long.TryParse(request.Arguments[0], out var amount)
+                || amount <= 0
+            )
             {
-                logger.LogWarning("CmdExecHandler: money requires a positive amount argument (user {UserId})", userId);
+                logger.LogWarning(
+                    "CmdExecHandler: money requires a positive amount argument (user {UserId})",
+                    userId
+                );
                 return;
             }
 
@@ -297,7 +464,11 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             var addNicoPoints = target is "both" or "all" or "nico" or "nicopoints";
             if (!addAiPoints && !addNicoPoints)
             {
-                logger.LogWarning("CmdExecHandler: money unsupported target '{Target}' for user {UserId} (expected ai|nico|both)", target, userId);
+                logger.LogWarning(
+                    "CmdExecHandler: money unsupported target '{Target}' for user {UserId} (expected ai|nico|both)",
+                    target,
+                    userId
+                );
                 return;
             }
 
@@ -319,10 +490,25 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             }
 
             var notifySession = areaClient ?? session;
-            await notifySession.SendAsync(PacketType.MoneyUpdatedAipoint, new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(), ct);
-            await notifySession.SendAsync(PacketType.MoneyUpdatedNicopoint, new MoneyUpdatedNicopointNotify((ulong)Math.Max(0, user.NicoPoints)).ToBytes(), ct);
+            await notifySession.SendAsync(
+                PacketType.MoneyUpdatedAipoint,
+                new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(),
+                ct
+            );
+            await notifySession.SendAsync(
+                PacketType.MoneyUpdatedNicopoint,
+                new MoneyUpdatedNicopointNotify((ulong)Math.Max(0, user.NicoPoints)).ToBytes(),
+                ct
+            );
 
-            logger.LogInformation("CmdExecHandler: added {Amount} points ({Target}) for user {UserId} => ai={AiPoints}, nico={NicoPoints}", amount, target, userId, user.AiPoints, user.NicoPoints);
+            logger.LogInformation(
+                "CmdExecHandler: added {Amount} points ({Target}) for user {UserId} => ai={AiPoints}, nico={NicoPoints}",
+                amount,
+                target,
+                userId,
+                user.AiPoints,
+                user.NicoPoints
+            );
             return;
         }
 
@@ -330,7 +516,11 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
         {
             var areaClient = ResolveAreaClient(session);
 
-            if (areaClient != null && areaClient.User != null && areaClient.User.Characters.Count > 0)
+            if (
+                areaClient != null
+                && areaClient.User != null
+                && areaClient.User.Characters.Count > 0
+            )
             {
                 var chara = areaClient.Character ?? areaClient.User.Characters.First();
                 uint mapId = chara.CurrentMapId;
@@ -346,7 +536,13 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 areaClient.Rotation = map?.SpawnRotation ?? 0;
                 areaClient.MovementTypeId = (int)MovementType.Stopped;
 
-                var newPos = new MovementData(areaClient.X, areaClient.Y, areaClient.Z, areaClient.Rotation, MovementType.Stopped);
+                var newPos = new MovementData(
+                    areaClient.X,
+                    areaClient.Y,
+                    areaClient.Z,
+                    areaClient.Rotation,
+                    MovementType.Stopped
+                );
 
                 var notifyMove = new AvatarNotifyMove(areaClient.CharacterId, [newPos]).ToBytes();
                 await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
@@ -362,7 +558,10 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             }
             else
             {
-                logger.LogWarning("CmdExecHandler: escape requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
+                logger.LogWarning(
+                    "CmdExecHandler: escape requires an active area session for user {UserId}",
+                    session.User?.Id ?? session.UserId
+                );
             }
         }
     }
@@ -406,7 +605,10 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
         cd.Visual.Gender = (uint)cha.Gender;
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
-        cd.AddEquip(cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveEquipSocket);
+        cd.AddEquip(
+            cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
+            ItemEntityMapper.ResolveEquipSocket
+        );
         return new AvatarNotifyData(1, new AvatarData(objId, cd)).ToBytes();
     }
 }

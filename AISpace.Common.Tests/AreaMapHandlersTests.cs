@@ -104,7 +104,11 @@ public class AreaMapHandlersTests
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
-            var session = CreateSession(CreateUserWithCharacter(1, 1001, "link-user", "Link Tester", 10990100), 10990100, 0);
+            var session = CreateSession(
+                CreateUserWithCharacter(1, 1001, "link-user", "Link Tester", 10990100),
+                10990100,
+                0
+            );
             var logger = new ListLogger<AreaMapLinkGetDataHandler>();
             await using var runDb = new MainContext(options);
             var handler = new AreaMapLinkGetDataHandler(
@@ -122,21 +126,38 @@ public class AreaMapHandlersTests
                 logger
             );
 
-            await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPairPayload(10990100, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.MapLinkGetDataResponse, packet.Type), packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type), packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type), packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type), packet => Assert.Equal(PacketType.NotifySelectMap, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.MapLinkGetDataResponse, packet.Type),
+                packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type),
+                packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type),
+                packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type),
+                packet => Assert.Equal(PacketType.NotifySelectMap, packet.Type)
+            );
 
-            var firstLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[1].Payload);
+            var firstLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(
+                session.Sent[1].Payload
+            );
             Assert.Equal(10f, firstLink.Data.PositionX);
             Assert.Equal(20f, firstLink.Data.PositionZ);
             Assert.Equal(10, firstLink.Data.Yaw);
 
-            var selectorLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[2].Payload);
+            var selectorLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(
+                session.Sent[2].Payload
+            );
             Assert.Equal(30f, selectorLink.Data.PositionX);
             Assert.Equal(40f, selectorLink.Data.PositionZ);
             Assert.Equal(30, selectorLink.Data.Yaw);
 
-            var thirdLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(session.Sent[3].Payload);
+            var thirdLink = OutgoingPacketTestParsers.ParseMapLinkNotifyData(
+                session.Sent[3].Payload
+            );
             Assert.Equal(50f, thirdLink.Data.PositionX);
             Assert.Equal(60f, thirdLink.Data.PositionZ);
             Assert.Equal(50, thirdLink.Data.Yaw);
@@ -176,7 +197,12 @@ public class AreaMapHandlersTests
             );
             Assert.Equal(10990100u, session.MapId);
             Assert.Equal(1, session.ChannelId);
-            Assert.DoesNotContain(logger.Entries, entry => entry.Level == LogLevel.Warning && entry.Message.Contains("requires exactly one destination"));
+            Assert.DoesNotContain(
+                logger.Entries,
+                entry =>
+                    entry.Level == LogLevel.Warning
+                    && entry.Message.Contains("requires exactly one destination")
+            );
         }
         finally
         {
@@ -235,7 +261,11 @@ public class AreaMapHandlersTests
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
-            var session = CreateSession(CreateUserWithCharacter(1, 1002, "link-spawn-user", "Link Spawn", 10990100), 10990100, 0);
+            var session = CreateSession(
+                CreateUserWithCharacter(1, 1002, "link-spawn-user", "Link Spawn", 10990100),
+                10990100,
+                0
+            );
             await using var runDb = new MainContext(options);
             var handler = new AreaMapLinkGetDataHandler(
                 new MapLinkRepository(runDb),
@@ -252,9 +282,18 @@ public class AreaMapHandlersTests
                 NullLogger<AreaMapLinkGetDataHandler>.Instance
             );
 
-            await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPairPayload(10990100, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.MapLinkGetDataResponse, packet.Type), packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type), packet => Assert.Equal(PacketType.NotifySelectMap, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.MapLinkGetDataResponse, packet.Type),
+                packet => Assert.Equal(PacketType.MapLinkNotifyData, packet.Type),
+                packet => Assert.Equal(PacketType.NotifySelectMap, packet.Type)
+            );
 
             Assert.Collection(
                 ReadSelectMapEntries(session.Sent[2].Payload),
@@ -311,9 +350,21 @@ public class AreaMapHandlersTests
 
             var state = new SharedState();
             var session = CreateSession(user, 10990100, 1, x: 101f, y: 5f, z: 202f, rotation: 8);
-            var oldPeer = CreateSession(CreateUserWithCharacter(2, 2002, "old-peer", "Old Peer", 10990100), 10990100, 1);
-            var differentChannelPeer = CreateSession(CreateUserWithCharacter(3, 2003, "other-channel", "Other Channel", 10990100), 10990100, 2);
-            var destinationPeer = CreateSession(CreateUserWithCharacter(4, 2004, "dest-peer", "Dest Peer", 10990110), 10990110, 1);
+            var oldPeer = CreateSession(
+                CreateUserWithCharacter(2, 2002, "old-peer", "Old Peer", 10990100),
+                10990100,
+                1
+            );
+            var differentChannelPeer = CreateSession(
+                CreateUserWithCharacter(3, 2003, "other-channel", "Other Channel", 10990100),
+                10990100,
+                2
+            );
+            var destinationPeer = CreateSession(
+                CreateUserWithCharacter(4, 2004, "dest-peer", "Dest Peer", 10990110),
+                10990110,
+                1
+            );
 
             state.RegisterClient(ServerType.Area, session);
             state.RegisterClient(ServerType.Area, oldPeer);
@@ -321,9 +372,17 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, destinationPeer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
+            var handler = new AreaMapEnterHandler(
+                new MapRepository(runDb),
+                CreateDirectMapLinkTransitionService(runDb, state),
+                NullLogger<AreaMapEnterHandler>.Instance
+            );
 
-            await handler.HandleAsync(BuildUIntPairPayload(10990110, 1), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPairPayload(10990110, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Single(session.Sent);
             Assert.Equal(PacketType.MapEnterResponse, session.Sent[0].Type);
@@ -336,12 +395,18 @@ public class AreaMapHandlersTests
             Assert.Equal(28, session.Rotation);
             Assert.Equal(10990110u, session.Character!.CurrentMapId);
 
-            Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
+            Assert.Collection(
+                oldPeer.Sent,
+                packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type)
+            );
             Assert.Empty(differentChannelPeer.Sent);
             Assert.Empty(destinationPeer.Sent);
 
             await using var verifyDb = new MainContext(options);
-            var persistedCharacter = await verifyDb.Characters.SingleAsync(c => c.Id == session.Character.Id, TestContext.Current.CancellationToken);
+            var persistedCharacter = await verifyDb.Characters.SingleAsync(
+                c => c.Id == session.Character.Id,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(10990110u, persistedCharacter.CurrentMapId);
         }
         finally
@@ -411,20 +476,39 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var session = CreateSession(user, 10990100, 1, x: -9100f, y: 2f, z: -17500f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -9100f,
+                y: 2f,
+                z: -17500f,
+                rotation: 0
+            );
             session.HasMovedSinceMapLoad = true;
 
             state.RegisterClient(ServerType.Area, session);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
+            var handler = new AreaMapEnterHandler(
+                new MapRepository(runDb),
+                CreateDirectMapLinkTransitionService(runDb, state),
+                NullLogger<AreaMapEnterHandler>.Instance
+            );
 
-            await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPairPayload(10990100, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Single(session.Sent);
             Assert.Equal(PacketType.MapEnterResponse, session.Sent[0].Type);
             Assert.Equal(10990100u, session.MapId);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyChangeMap
+            );
         }
         finally
         {
@@ -494,18 +578,41 @@ public class AreaMapHandlersTests
 
             var state = new SharedState();
             // Start outside the trigger (Z before the depth extent), then step inside.
-            var session = CreateSession(user, 10990100, 1, x: -9100f, y: 2f, z: -18500f, rotation: 0);
-            var oldPeer = CreateSession(CreateUserWithCharacter(2, 7002, "old-peer", "Old Peer", 10990100), 10990100, 1);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -9100f,
+                y: 2f,
+                z: -18500f,
+                rotation: 0
+            );
+            var oldPeer = CreateSession(
+                CreateUserWithCharacter(2, 7002, "old-peer", "Old Peer", 10990100),
+                10990100,
+                1
+            );
 
             state.RegisterClient(ServerType.Area, session);
             state.RegisterClient(ServerType.Area, oldPeer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-9100f, 2f, -17500f, 0, MovementType.Running).ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-9100f, 2f, -17500f, 0, MovementType.Running).ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type)
+            );
 
             var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(session.Sent[0].Payload);
             Assert.Equal(1u, notify.ChannelId);
@@ -528,7 +635,10 @@ public class AreaMapHandlersTests
             Assert.Equal(-19200f, session.Z);
             Assert.Equal(10990110u, session.Character!.CurrentMapId);
 
-            Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
+            Assert.Collection(
+                oldPeer.Sent,
+                packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type)
+            );
             Assert.False(state.TryTakePendingAreaTransition(user.Id, out _));
             Assert.True(session.NeedsPostLoadSelfAvatarNotify);
         }
@@ -545,7 +655,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7003, "custom-spawn-user", "Custom Spawn", 10990100);
+            var user = CreateUserWithCharacter(
+                1,
+                7003,
+                "custom-spawn-user",
+                "Custom Spawn",
+                10990100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -603,16 +719,35 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var session = CreateSession(user, 10990100, 1, x: -9100f, y: 2f, z: -18500f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -9100f,
+                y: 2f,
+                z: -18500f,
+                rotation: 0
+            );
 
             state.RegisterClient(ServerType.Area, session);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-9100f, 2f, -17500f, 0, MovementType.Running).ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-9100f, 2f, -17500f, 0, MovementType.Running).ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type)
+            );
 
             var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(session.Sent[0].Payload);
             Assert.Equal(10990110u, notify.MapId);
@@ -640,7 +775,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7004, "inside-move-user", "Inside Mover", 10990100);
+            var user = CreateUserWithCharacter(
+                1,
+                7004,
+                "inside-move-user",
+                "Inside Mover",
+                10990100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -695,18 +836,41 @@ public class AreaMapHandlersTests
 
             var state = new SharedState();
             // Both start and end are inside the trigger volume.
-            var session = CreateSession(user, 10990100, 1, x: -9100f, y: 2f, z: -17500f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -9100f,
+                y: 2f,
+                z: -17500f,
+                rotation: 0
+            );
 
             state.RegisterClient(ServerType.Area, session);
 
-            await MarkIntroductionEventCompletedAsync(options, 7004, TestContext.Current.CancellationToken);
+            await MarkIntroductionEventCompletedAsync(
+                options,
+                7004,
+                TestContext.Current.CancellationToken
+            );
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-9000f, 2f, -17400f, 0, MovementType.Running).ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-9000f, 2f, -17400f, 0, MovementType.Running).ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyChangeMap
+            );
             Assert.Equal(10990100u, session.MapId);
             Assert.Equal(-9000f, session.X);
             Assert.Equal(-17400f, session.Z);
@@ -725,7 +889,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7011, "post-notify-user", "Post Notify", 10990110);
+            var user = CreateUserWithCharacter(
+                1,
+                7011,
+                "post-notify-user",
+                "Post Notify",
+                10990110
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -745,16 +915,32 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var session = CreateSession(user, 10990110, 1, x: -11000f, y: 0.1f, z: -19200f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990110,
+                1,
+                x: -11000f,
+                y: 0.1f,
+                z: -19200f,
+                rotation: 0
+            );
             session.IsMapTransitionPending = true;
             session.NeedsPostLoadSelfAvatarNotify = true;
 
             state.RegisterClient(ServerType.Area, session);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
+            var handler = new AreaMapEnterHandler(
+                new MapRepository(runDb),
+                CreateDirectMapLinkTransitionService(runDb, state),
+                NullLogger<AreaMapEnterHandler>.Instance
+            );
 
-            await handler.HandleAsync(BuildUIntPairPayload(10990110, 1), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPairPayload(10990110, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Single(session.Sent);
             Assert.Equal(PacketType.MapEnterResponse, session.Sent[0].Type);
@@ -818,11 +1004,29 @@ public class AreaMapHandlersTests
 
             await using var runDb = new MainContext(options);
             var service = CreateDirectMapLinkTransitionService(runDb, state);
-            var destinationMap = await new MapRepository(runDb).GetByMapIdAsync(10990110, TestContext.Current.CancellationToken);
+            var destinationMap = await new MapRepository(runDb).GetByMapIdAsync(
+                10990110,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(destinationMap);
 
-            var notify = await service.BuildNotifyChangeMapAsync(1, 10990110, destinationMap, sourceChannelId: 1, TestContext.Current.CancellationToken);
-            await service.CompleteMapTransitionAsync(session, session.Character!, 10990110, 1, destinationMap, notify, sendMapEnterResponse: false, TestContext.Current.CancellationToken);
+            var notify = await service.BuildNotifyChangeMapAsync(
+                1,
+                10990110,
+                destinationMap,
+                sourceChannelId: 1,
+                TestContext.Current.CancellationToken
+            );
+            await service.CompleteMapTransitionAsync(
+                session,
+                session.Character!,
+                10990110,
+                1,
+                destinationMap,
+                notify,
+                sendMapEnterResponse: false,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.False(state.TryTakePendingAreaTransition(user.Id, out _));
             Assert.Equal((ushort)0, notify.AreaServerInfo.Port);
@@ -845,7 +1049,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7013, "remote-area-user", "Remote Area", 10990100);
+            var user = CreateUserWithCharacter(
+                1,
+                7013,
+                "remote-area-user",
+                "Remote Area",
+                10990100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -895,11 +1105,29 @@ public class AreaMapHandlersTests
 
             await using var runDb = new MainContext(options);
             var service = CreateDirectMapLinkTransitionService(runDb, state);
-            var destinationMap = await new MapRepository(runDb).GetByMapIdAsync(10990110, TestContext.Current.CancellationToken);
+            var destinationMap = await new MapRepository(runDb).GetByMapIdAsync(
+                10990110,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(destinationMap);
 
-            var notify = await service.BuildNotifyChangeMapAsync(2, 10990110, destinationMap, sourceChannelId: 1, TestContext.Current.CancellationToken);
-            await service.CompleteMapTransitionAsync(session, session.Character!, 10990110, 2, destinationMap, notify, sendMapEnterResponse: false, TestContext.Current.CancellationToken);
+            var notify = await service.BuildNotifyChangeMapAsync(
+                2,
+                10990110,
+                destinationMap,
+                sourceChannelId: 1,
+                TestContext.Current.CancellationToken
+            );
+            await service.CompleteMapTransitionAsync(
+                session,
+                session.Character!,
+                10990110,
+                2,
+                destinationMap,
+                notify,
+                sendMapEnterResponse: false,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.True(state.TryTakePendingAreaTransition(user.Id, out var pending));
             Assert.Equal((ushort)50055, notify.AreaServerInfo.Port);
@@ -957,15 +1185,31 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var session = CreateSession(user, 10990100, 1, x: -9055f, y: 2f, z: -17988f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -9055f,
+                y: 2f,
+                z: -17988f,
+                rotation: 0
+            );
             session.HasMovedSinceMapLoad = false;
 
             state.RegisterClient(ServerType.Area, session);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaMapEnterHandler(new MapRepository(runDb), CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaMapEnterHandler>.Instance);
+            var handler = new AreaMapEnterHandler(
+                new MapRepository(runDb),
+                CreateDirectMapLinkTransitionService(runDb, state),
+                NullLogger<AreaMapEnterHandler>.Instance
+            );
 
-            await handler.HandleAsync(BuildUIntPairPayload(10990100, 1), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildUIntPairPayload(10990100, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Single(session.Sent);
             Assert.Equal(PacketType.MapEnterResponse, session.Sent[0].Type);
@@ -986,7 +1230,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7201, "selector-user", "Selector Traveler", 10990100);
+            var user = CreateUserWithCharacter(
+                1,
+                7201,
+                "selector-user",
+                "Selector Traveler",
+                10990100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -1041,18 +1291,40 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var session = CreateSession(user, 10990100, 1, x: -10450f, y: 2f, z: -18000f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -10450f,
+                y: 2f,
+                z: -18000f,
+                rotation: 0
+            );
 
             state.RegisterClient(ServerType.Area, session);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.SelectInitIslandStart, packet.Type), packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.SelectInitIslandStart, packet.Type),
+                packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type)
+            );
 
-            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(session.Sent[0].Payload);
+            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(
+                session.Sent[0].Payload
+            );
             Assert.Collection(
                 islandStart.Islands,
                 island =>
@@ -1063,7 +1335,9 @@ public class AreaMapHandlersTests
                 }
             );
 
-            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(session.Sent[1].Payload);
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(
+                session.Sent[1].Payload
+            );
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
             Assert.Equal(0u, selector.IsRegisteredIsland);
@@ -1088,7 +1362,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7301, "shuffle-selector-user", "Shuffle Selector", 10030100);
+            var user = CreateUserWithCharacter(
+                1,
+                7301,
+                "shuffle-selector-user",
+                "Shuffle Selector",
+                10030100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -1144,21 +1424,51 @@ public class AreaMapHandlersTests
 
             var state = new SharedState();
             // Start outside the depth extent (yaw 0 → +Z), then step into the volume.
-            var session = CreateSession(user, 10030100, 1, x: 11220f, y: 0f, z: -10320f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10030100,
+                1,
+                x: 11220f,
+                y: 0f,
+                z: -10320f,
+                rotation: 0
+            );
             state.RegisterClient(ServerType.Area, session);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(11220f, 0f, -10255f, 0, MovementType.Running).ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(11220f, 0f, -10255f, 0, MovementType.Running).ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.SelectInitIslandStart);
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventAreaMapSelectExec);
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.SelectInitIslandStart
+            );
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.EventAreaMapSelectExec
+            );
 
-            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(session.Sent.First(packet => packet.Type == PacketType.SelectInitIslandStart).Payload);
+            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(
+                session
+                    .Sent.First(packet => packet.Type == PacketType.SelectInitIslandStart)
+                    .Payload
+            );
             Assert.Collection(islandStart.Islands, island => Assert.Equal(3u, island.IslandId));
 
-            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(session.Sent.First(packet => packet.Type == PacketType.EventAreaMapSelectExec).Payload);
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(
+                session
+                    .Sent.First(packet => packet.Type == PacketType.EventAreaMapSelectExec)
+                    .Payload
+            );
             Assert.Equal(3u, selector.IslandId);
             Assert.Equal(3u, session.PendingAreaMapSelection!.IslandId);
         }
@@ -1222,18 +1532,37 @@ public class AreaMapHandlersTests
                     ChannelId = 1,
                     IslandId = 1,
                     IsRegisteredIsland = 0,
-                    Destinations = [new AreaMapSelectionDestination(10990110, 1), new AreaMapSelectionDestination(10990200, 1)],
+                    Destinations =
+                    [
+                        new AreaMapSelectionDestination(10990110, 1),
+                        new AreaMapSelectionDestination(10990200, 1),
+                    ],
                 },
             };
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaSelectInitIslandEndHandler(CreateDirectMapLinkTransitionService(runDb, state), CreateServerScriptDispatcher(runDb), NullLogger<AreaSelectInitIslandEndHandler>.Instance);
+            var handler = new AreaSelectInitIslandEndHandler(
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateServerScriptDispatcher(runDb),
+                NullLogger<AreaSelectInitIslandEndHandler>.Instance
+            );
 
-            await handler.HandleAsync(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(new SelectInitIslandEndRequest { IslandId = 1 }), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(
+                    new SelectInitIslandEndRequest { IslandId = 1 }
+                ),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type)
+            );
 
-            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(session.Sent[0].Payload);
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(
+                session.Sent[0].Payload
+            );
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
             Assert.Equal(0u, selector.IsRegisteredIsland);
@@ -1277,7 +1606,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7301, "selector-reply-user", "Selector Reply", 10990100);
+            var user = CreateUserWithCharacter(
+                1,
+                7301,
+                "selector-reply-user",
+                "Selector Reply",
+                10990100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -1324,7 +1659,15 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var session = CreateSession(user, 10990100, 1, x: -9800f, y: 2f, z: -18000f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -9800f,
+                y: 2f,
+                z: -18000f,
+                rotation: 0
+            );
             session.PendingAreaMapSelection = new PendingAreaMapSelection
             {
                 LinkId = 10,
@@ -1332,15 +1675,26 @@ public class AreaMapHandlersTests
                 ChannelId = 1,
                 IslandId = 1,
                 IsRegisteredIsland = 0,
-                Destinations = [new AreaMapSelectionDestination(10990110, 1), new AreaMapSelectionDestination(10990200, 1)],
+                Destinations =
+                [
+                    new AreaMapSelectionDestination(10990110, 1),
+                    new AreaMapSelectionDestination(10990200, 1),
+                ],
             };
 
-            var oldPeer = CreateSession(CreateUserWithCharacter(2, 7302, "old-peer", "Old Peer", 10990100), 10990100, 1);
+            var oldPeer = CreateSession(
+                CreateUserWithCharacter(2, 7302, "old-peer", "Old Peer", 10990100),
+                10990100,
+                1
+            );
             state.RegisterClient(ServerType.Area, session);
             state.RegisterClient(ServerType.Area, oldPeer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaEventAreaMapSelectExecRHandler(CreateDirectMapLinkTransitionService(runDb, state), NullLogger<AreaEventAreaMapSelectExecRHandler>.Instance);
+            var handler = new AreaEventAreaMapSelectExecRHandler(
+                CreateDirectMapLinkTransitionService(runDb, state),
+                NullLogger<AreaEventAreaMapSelectExecRHandler>.Instance
+            );
 
             await handler.HandleAsync(
                 OutgoingPacketTestParsers.EventAreaMapSelectExecRRequestToBytes(
@@ -1355,9 +1709,15 @@ public class AreaMapHandlersTests
                 TestContext.Current.CancellationToken
             );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.EventAreaMapSelectCloseNotify, packet.Type), packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.EventAreaMapSelectCloseNotify, packet.Type),
+                packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type)
+            );
 
-            var close = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(session.Sent[0].Payload);
+            var close = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(
+                session.Sent[0].Payload
+            );
             Assert.Equal(0u, close.Result);
 
             var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(session.Sent[1].Payload);
@@ -1374,7 +1734,10 @@ public class AreaMapHandlersTests
             Assert.Equal(90, session.Rotation);
             Assert.True(session.IsMapTransitionPending);
             Assert.Null(session.PendingAreaMapSelection);
-            Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
+            Assert.Collection(
+                oldPeer.Sent,
+                packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type)
+            );
         }
         finally
         {
@@ -1386,20 +1749,49 @@ public class AreaMapHandlersTests
     public async Task MapDataEnterEndHandler_SpawnsOnlyPeersInDestinationArea()
     {
         var state = new SharedState();
-        var session = CreateSession(CreateUserWithCharacter(1, 3001, "spawn-user", "Spawn User", 10990110), 10990110, 1, x: 1f, y: 2f, z: 3f);
+        var session = CreateSession(
+            CreateUserWithCharacter(1, 3001, "spawn-user", "Spawn User", 10990110),
+            10990110,
+            1,
+            x: 1f,
+            y: 2f,
+            z: 3f
+        );
         session.NeedsPostLoadSelfAvatarNotify = false;
-        var destinationPeer = CreateSession(CreateUserWithCharacter(2, 3002, "spawn-peer", "Spawn Peer", 10990110), 10990110, 1, x: 4f, y: 5f, z: 6f);
-        var oldPeer = CreateSession(CreateUserWithCharacter(3, 3003, "old-peer", "Old Peer", 10990100), 10990100, 1);
-        var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 3004, "other-channel", "Other Channel", 10990110), 10990110, 2);
+        var destinationPeer = CreateSession(
+            CreateUserWithCharacter(2, 3002, "spawn-peer", "Spawn Peer", 10990110),
+            10990110,
+            1,
+            x: 4f,
+            y: 5f,
+            z: 6f
+        );
+        var oldPeer = CreateSession(
+            CreateUserWithCharacter(3, 3003, "old-peer", "Old Peer", 10990100),
+            10990100,
+            1
+        );
+        var differentChannelPeer = CreateSession(
+            CreateUserWithCharacter(4, 3004, "other-channel", "Other Channel", 10990110),
+            10990110,
+            2
+        );
 
         state.RegisterClient(ServerType.Area, session);
         state.RegisterClient(ServerType.Area, destinationPeer);
         state.RegisterClient(ServerType.Area, oldPeer);
         state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-        var handler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance);
+        var handler = new AreaMapDataEnterEndHandler(
+            state,
+            NullLogger<AreaMapDataEnterEndHandler>.Instance
+        );
 
-        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Collection(
             session.Sent,
@@ -1410,7 +1802,10 @@ public class AreaMapHandlersTests
                 Assert.Equal(1u, new PacketReader(packet.Payload).ReadUInt());
             }
         );
-        Assert.Collection(destinationPeer.Sent, packet => Assert.Equal(PacketType.AvatarNotifyData, packet.Type));
+        Assert.Collection(
+            destinationPeer.Sent,
+            packet => Assert.Equal(PacketType.AvatarNotifyData, packet.Type)
+        );
         Assert.Empty(oldPeer.Sent);
         Assert.Empty(differentChannelPeer.Sent);
     }
@@ -1419,14 +1814,28 @@ public class AreaMapHandlersTests
     public async Task MapDataEnterEndHandler_SendsSelfAvatarNotify_EvenWithoutVisiblePeers()
     {
         var state = new SharedState();
-        var session = CreateSession(CreateUserWithCharacter(1, 3051, "solo-user", "Solo User", 10990110), 10990110, 1, x: 11f, y: 12f, z: 13f);
+        var session = CreateSession(
+            CreateUserWithCharacter(1, 3051, "solo-user", "Solo User", 10990110),
+            10990110,
+            1,
+            x: 11f,
+            y: 12f,
+            z: 13f
+        );
         session.NeedsPostLoadSelfAvatarNotify = true;
 
         state.RegisterClient(ServerType.Area, session);
 
-        var handler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance);
+        var handler = new AreaMapDataEnterEndHandler(
+            state,
+            NullLogger<AreaMapDataEnterEndHandler>.Instance
+        );
 
-        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Collection(
             session.Sent,
@@ -1495,9 +1904,21 @@ public class AreaMapHandlersTests
 
             var session = new CapturingPlayerSession();
             await using var handlerDb = new MainContext(options);
-            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), new MyRoomRepository(handlerDb), new SharedState(), NullLogger<AreasvEnterHandler>.Instance);
+            var handler = new AreasvEnterHandler(
+                new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new MapRepository(handlerDb),
+                new ChannelRepository(handlerDb),
+                new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
+                new MyRoomRepository(handlerDb),
+                new SharedState(),
+                NullLogger<AreasvEnterHandler>.Instance
+            );
 
-            await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildAreasvEnterPayload((uint)user.Id, otp),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(10990100u, session.MapId);
             Assert.Equal(1, session.ChannelId);
@@ -1506,7 +1927,10 @@ public class AreaMapHandlersTests
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.AreasvEnterResponse);
 
             await using var verifyDb = new MainContext(options);
-            var persisted = await verifyDb.Characters.SingleAsync(c => c.Id == 3062, TestContext.Current.CancellationToken);
+            var persisted = await verifyDb.Characters.SingleAsync(
+                c => c.Id == 3062,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(10990100u, persisted.CurrentMapId);
         }
         finally
@@ -1523,7 +1947,13 @@ public class AreaMapHandlersTests
         try
         {
             const string otp = "transition-otp-1234";
-            var user = CreateUserWithCharacter(1, 3061, "transition-user", "Transition User", 10990110);
+            var user = CreateUserWithCharacter(
+                1,
+                3061,
+                "transition-user",
+                "Transition User",
+                10990110
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -1551,13 +1981,27 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0));
+            state.SetPendingAreaTransition(
+                new SharedState.PendingMapTransfer(user.Id, 10990110, 1, -11000f, 0.1f, -19200f, 0)
+            );
 
             var session = new CapturingPlayerSession();
             await using var handlerDb = new MainContext(options);
-            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), new MyRoomRepository(handlerDb), state, NullLogger<AreasvEnterHandler>.Instance);
+            var handler = new AreasvEnterHandler(
+                new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new MapRepository(handlerDb),
+                new ChannelRepository(handlerDb),
+                new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
+                new MyRoomRepository(handlerDb),
+                state,
+                NullLogger<AreasvEnterHandler>.Instance
+            );
 
-            await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildAreasvEnterPayload((uint)user.Id, otp),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(10990110u, session.MapId);
             Assert.Equal(1, session.ChannelId);
@@ -1581,17 +2025,37 @@ public class AreaMapHandlersTests
         try
         {
             var state = new SharedState();
-            var mover = CreateSession(CreateUserWithCharacter(1, 4001, "move-user", "Mover", 10990100), 10990100, 1);
-            var peer = CreateSession(CreateUserWithCharacter(2, 4002, "same-peer", "Same Peer", 10990100), 10990100, 1);
+            var mover = CreateSession(
+                CreateUserWithCharacter(1, 4001, "move-user", "Mover", 10990100),
+                10990100,
+                1
+            );
+            var peer = CreateSession(
+                CreateUserWithCharacter(2, 4002, "same-peer", "Same Peer", 10990100),
+                10990100,
+                1
+            );
 
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, peer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
-            var moves = new[] { new MovementData(1f, 2f, 3f, 4, MovementType.Running), new MovementData(5f, 6f, 7f, 8, MovementType.Walking) };
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
+            var moves = new[]
+            {
+                new MovementData(1f, 2f, 3f, 4, MovementType.Running),
+                new MovementData(5f, 6f, 7f, 8, MovementType.Walking),
+            };
 
-            await handler.HandleAsync(BuildAvatarMovePayload(moves), mover, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildAvatarMovePayload(moves),
+                mover,
+                TestContext.Current.CancellationToken
+            );
 
             var notify = peer.Sent.Single(packet => packet.Type == PacketType.AvatarNotifyMove);
             var reader = new PacketReader(notify.Payload);
@@ -1617,10 +2081,26 @@ public class AreaMapHandlersTests
         try
         {
             var state = new SharedState();
-            var mover = CreateSession(CreateUserWithCharacter(1, 4001, "move-user", "Mover", 10990100), 10990100, 1);
-            var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 4002, "same-peer", "Same Peer", 10990100), 10990100, 1);
-            var differentMapPeer = CreateSession(CreateUserWithCharacter(3, 4003, "other-map", "Other Map", 10990110), 10990110, 1);
-            var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 4004, "other-channel", "Other Channel", 10990100), 10990100, 2);
+            var mover = CreateSession(
+                CreateUserWithCharacter(1, 4001, "move-user", "Mover", 10990100),
+                10990100,
+                1
+            );
+            var sameAreaPeer = CreateSession(
+                CreateUserWithCharacter(2, 4002, "same-peer", "Same Peer", 10990100),
+                10990100,
+                1
+            );
+            var differentMapPeer = CreateSession(
+                CreateUserWithCharacter(3, 4003, "other-map", "Other Map", 10990110),
+                10990110,
+                1
+            );
+            var differentChannelPeer = CreateSession(
+                CreateUserWithCharacter(4, 4004, "other-channel", "Other Channel", 10990100),
+                10990100,
+                2
+            );
 
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, sameAreaPeer);
@@ -1628,12 +2108,19 @@ public class AreaMapHandlersTests
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
             var move = new MovementData(9f, 8f, 7f, 6, MovementType.Running);
 
             await handler.HandleAsync(move.ToBytes(), mover, TestContext.Current.CancellationToken);
 
-            Assert.Collection(sameAreaPeer.Sent, packet => Assert.Equal(PacketType.AvatarNotifyMove, packet.Type));
+            Assert.Collection(
+                sameAreaPeer.Sent,
+                packet => Assert.Equal(PacketType.AvatarNotifyMove, packet.Type)
+            );
             Assert.Empty(differentMapPeer.Sent);
             Assert.Empty(differentChannelPeer.Sent);
         }
@@ -1704,24 +2191,54 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var mover = CreateSession(user, 10990100, 1, x: -10450f, y: 2f, z: -18000f, rotation: 0);
-            var oldPeer = CreateSession(CreateUserWithCharacter(2, 4102, "old-peer", "Old Peer", 10990100), 10990100, 1);
-            var differentChannelPeer = CreateSession(CreateUserWithCharacter(3, 4103, "other-channel", "Other Channel", 10990100), 10990100, 2);
+            var mover = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -10450f,
+                y: 2f,
+                z: -18000f,
+                rotation: 0
+            );
+            var oldPeer = CreateSession(
+                CreateUserWithCharacter(2, 4102, "old-peer", "Old Peer", 10990100),
+                10990100,
+                1
+            );
+            var differentChannelPeer = CreateSession(
+                CreateUserWithCharacter(3, 4103, "other-channel", "Other Channel", 10990100),
+                10990100,
+                2
+            );
 
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, oldPeer);
             state.RegisterClient(ServerType.Area, differentChannelPeer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(),
+                mover,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(mover.Sent, packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+            Assert.Collection(
+                mover.Sent,
+                packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type)
+            );
             var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(mover.Sent[0].Payload);
             Assert.Equal((ushort)0, notify.AreaServerInfo.Port);
             Assert.Equal(string.Empty, notify.AreaServerInfo.IP);
-            Assert.Collection(oldPeer.Sent, packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type));
+            Assert.Collection(
+                oldPeer.Sent,
+                packet => Assert.Equal(PacketType.NotifyDisappearChara, packet.Type)
+            );
             Assert.Empty(differentChannelPeer.Sent);
             Assert.Equal(10990110u, mover.MapId);
             Assert.Equal(-11000f, mover.X);
@@ -1799,20 +2316,46 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var mover = CreateSession(user, 10990100, 1, x: -10450f, y: 2f, z: -18000f, rotation: 0);
-            var peer = CreateSession(CreateUserWithCharacter(2, 4202, "selector-peer", "Selector Peer", 10990100), 10990100, 1);
+            var mover = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -10450f,
+                y: 2f,
+                z: -18000f,
+                rotation: 0
+            );
+            var peer = CreateSession(
+                CreateUserWithCharacter(2, 4202, "selector-peer", "Selector Peer", 10990100),
+                10990100,
+                1
+            );
 
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, peer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(),
+                mover,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(mover.Sent, packet => Assert.Equal(PacketType.SelectInitIslandStart, packet.Type), packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type));
+            Assert.Collection(
+                mover.Sent,
+                packet => Assert.Equal(PacketType.SelectInitIslandStart, packet.Type),
+                packet => Assert.Equal(PacketType.EventAreaMapSelectExec, packet.Type)
+            );
 
-            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(mover.Sent[0].Payload);
+            var islandStart = OutgoingPacketTestParsers.ParseSelectInitIslandStartNotify(
+                mover.Sent[0].Payload
+            );
             Assert.Collection(
                 islandStart.Islands,
                 island =>
@@ -1823,7 +2366,9 @@ public class AreaMapHandlersTests
                 }
             );
 
-            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(mover.Sent[1].Payload);
+            var selector = OutgoingPacketTestParsers.ParseEventAreaMapSelectExecNotify(
+                mover.Sent[1].Payload
+            );
             Assert.Equal([10990110u, 10990200u], selector.MapIds);
             Assert.Equal(1u, selector.IslandId);
             Assert.Equal(0u, selector.IsRegisteredIsland);
@@ -1850,7 +2395,13 @@ public class AreaMapHandlersTests
 
         try
         {
-            var user = CreateUserWithCharacter(1, 7251, "selector-collapse-user", "Selector Collapse", 10990100);
+            var user = CreateUserWithCharacter(
+                1,
+                7251,
+                "selector-collapse-user",
+                "Selector Collapse",
+                10990100
+            );
 
             await using (var db = new MainContext(options))
             {
@@ -1905,16 +2456,35 @@ public class AreaMapHandlersTests
             }
 
             var state = new SharedState();
-            var session = CreateSession(user, 10990100, 1, x: -10450f, y: 2f, z: -18000f, rotation: 0);
+            var session = CreateSession(
+                user,
+                10990100,
+                1,
+                x: -10450f,
+                y: 2f,
+                z: -18000f,
+                rotation: 0
+            );
 
             state.RegisterClient(ServerType.Area, session);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-9800f, 2f, -18000f, 0, MovementType.Running).ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Collection(session.Sent, packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type));
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.NotifyChangeMap, packet.Type)
+            );
 
             var notify = OutgoingPacketTestParsers.ParseNotifyChangeMap(session.Sent[0].Payload);
             Assert.Equal(10990110u, notify.MapId);
@@ -1978,23 +2548,42 @@ public class AreaMapHandlersTests
                     }
                 );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
-                await MarkIntroductionEventCompletedAsync(options, 4251, TestContext.Current.CancellationToken);
+                await MarkIntroductionEventCompletedAsync(
+                    options,
+                    4251,
+                    TestContext.Current.CancellationToken
+                );
             }
 
             var state = new SharedState();
             var mover = CreateSession(user, 10990100, 1, x: -9100f, y: 2f, z: -18780f, rotation: 0);
-            var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 4252, "same-peer", "Same Peer", 10990100), 10990100, 1);
+            var sameAreaPeer = CreateSession(
+                CreateUserWithCharacter(2, 4252, "same-peer", "Same Peer", 10990100),
+                10990100,
+                1
+            );
 
             state.RegisterClient(ServerType.Area, mover);
             state.RegisterClient(ServerType.Area, sameAreaPeer);
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaAvatarMoveRequestHandler(state, CreateDirectMapLinkTransitionService(runDb, state), CreateScriptedEventTriggerService(runDb));
+            var handler = new AreaAvatarMoveRequestHandler(
+                state,
+                CreateDirectMapLinkTransitionService(runDb, state),
+                CreateScriptedEventTriggerService(runDb)
+            );
 
-            await handler.HandleAsync(new MovementData(-8918f, 2f, -18718f, 0, MovementType.Running).ToBytes(), mover, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                new MovementData(-8918f, 2f, -18718f, 0, MovementType.Running).ToBytes(),
+                mover,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Empty(mover.Sent);
-            Assert.Collection(sameAreaPeer.Sent, packet => Assert.Equal(PacketType.AvatarNotifyMove, packet.Type));
+            Assert.Collection(
+                sameAreaPeer.Sent,
+                packet => Assert.Equal(PacketType.AvatarNotifyMove, packet.Type)
+            );
             Assert.Equal(10990100u, mover.MapId);
             Assert.Equal(-8918f, mover.X);
             Assert.Equal(2f, mover.Y);
@@ -2013,10 +2602,26 @@ public class AreaMapHandlersTests
     public async Task EmotionHandler_BroadcastsOnlyWithinSameMapAndChannel_IncludingSender()
     {
         var state = new SharedState();
-        var sender = CreateSession(CreateUserWithCharacter(1, 5001, "emotion-user", "Emotion User", 10990100), 10990100, 1);
-        var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 10990100), 10990100, 1);
-        var differentMapPeer = CreateSession(CreateUserWithCharacter(3, 5003, "other-map", "Other Map", 10990110), 10990110, 1);
-        var differentChannelPeer = CreateSession(CreateUserWithCharacter(4, 5004, "other-channel", "Other Channel", 10990100), 10990100, 2);
+        var sender = CreateSession(
+            CreateUserWithCharacter(1, 5001, "emotion-user", "Emotion User", 10990100),
+            10990100,
+            1
+        );
+        var sameAreaPeer = CreateSession(
+            CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 10990100),
+            10990100,
+            1
+        );
+        var differentMapPeer = CreateSession(
+            CreateUserWithCharacter(3, 5003, "other-map", "Other Map", 10990110),
+            10990110,
+            1
+        );
+        var differentChannelPeer = CreateSession(
+            CreateUserWithCharacter(4, 5004, "other-channel", "Other Channel", 10990100),
+            10990100,
+            2
+        );
 
         state.RegisterClient(ServerType.Area, sender);
         state.RegisterClient(ServerType.Area, sameAreaPeer);
@@ -2026,7 +2631,11 @@ public class AreaMapHandlersTests
         var roboRepository = new Mock<IRoboRepository>();
         var handler = new AreaEmotionCharaHandler(state, roboRepository.Object);
 
-        await handler.HandleAsync(BuildUIntPairPayload(sender.CharacterId, 77), sender, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildUIntPairPayload(sender.CharacterId, 77),
+            sender,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Collection(
             sender.Sent,
@@ -2063,19 +2672,35 @@ public class AreaMapHandlersTests
     public async Task EmotionHandler_PreservesOwnedRoboObjectId()
     {
         var state = new SharedState();
-        var sender = CreateSession(CreateUserWithCharacter(1, 42, "emotion-user", "Emotion User", 20000000), 20000000, 1);
-        var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 20000000), 20000000, 1);
+        var sender = CreateSession(
+            CreateUserWithCharacter(1, 42, "emotion-user", "Emotion User", 20000000),
+            20000000,
+            1
+        );
+        var sameAreaPeer = CreateSession(
+            CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 20000000),
+            20000000,
+            1
+        );
         sender.MyRoomId = 42;
         sameAreaPeer.MyRoomId = 42;
         var roboObjectId = RoboRepository.GetObjectId(sender.CharacterId, 1);
         var roboRepository = new Mock<IRoboRepository>();
-        roboRepository.Setup(x => x.ExistsAsync(checked((int)sender.CharacterId), 1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        roboRepository
+            .Setup(x =>
+                x.ExistsAsync(checked((int)sender.CharacterId), 1, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(true);
 
         state.RegisterClient(ServerType.Area, sender);
         state.RegisterClient(ServerType.Area, sameAreaPeer);
 
         var handler = new AreaEmotionCharaHandler(state, roboRepository.Object);
-        await handler.HandleAsync(BuildUIntPairPayload(roboObjectId, 27), sender, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildUIntPairPayload(roboObjectId, 27),
+            sender,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Collection(
             sender.Sent,
@@ -2110,8 +2735,16 @@ public class AreaMapHandlersTests
     public async Task EmotionHandler_RejectsUnownedTargetObjectId()
     {
         var state = new SharedState();
-        var sender = CreateSession(CreateUserWithCharacter(1, 42, "emotion-user", "Emotion User", 20000000), 20000000, 1);
-        var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 20000000), 20000000, 1);
+        var sender = CreateSession(
+            CreateUserWithCharacter(1, 42, "emotion-user", "Emotion User", 20000000),
+            20000000,
+            1
+        );
+        var sameAreaPeer = CreateSession(
+            CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 20000000),
+            20000000,
+            1
+        );
         var otherRoboObjectId = RoboRepository.GetObjectId(sameAreaPeer.CharacterId, 1);
         var roboRepository = new Mock<IRoboRepository>();
 
@@ -2119,7 +2752,11 @@ public class AreaMapHandlersTests
         state.RegisterClient(ServerType.Area, sameAreaPeer);
 
         var handler = new AreaEmotionCharaHandler(state, roboRepository.Object);
-        await handler.HandleAsync(BuildUIntPairPayload(otherRoboObjectId, 27), sender, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildUIntPairPayload(otherRoboObjectId, 27),
+            sender,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Collection(
             sender.Sent,
@@ -2138,9 +2775,28 @@ public class AreaMapHandlersTests
     public async Task AvatarProfileGetDataHandler_OnlyResolvesTargetsInSameMapAndChannel()
     {
         var state = new SharedState();
-        var requester = CreateSession(CreateUserWithCharacter(1, 6001, "profile-user", "Profile User", 10990100), 10990100, 1);
-        var visibleTarget = CreateSession(CreateUserWithCharacter(2, 6002, "visible-target", "Visible", 10990100, like1: "Apples"), 10990100, 1);
-        var hiddenTarget = CreateSession(CreateUserWithCharacter(3, 6003, "hidden-target", "Hidden", 10990100, like1: "Secret"), 10990100, 2);
+        var requester = CreateSession(
+            CreateUserWithCharacter(1, 6001, "profile-user", "Profile User", 10990100),
+            10990100,
+            1
+        );
+        var visibleTarget = CreateSession(
+            CreateUserWithCharacter(
+                2,
+                6002,
+                "visible-target",
+                "Visible",
+                10990100,
+                like1: "Apples"
+            ),
+            10990100,
+            1
+        );
+        var hiddenTarget = CreateSession(
+            CreateUserWithCharacter(3, 6003, "hidden-target", "Hidden", 10990100, like1: "Secret"),
+            10990100,
+            2
+        );
 
         state.RegisterClient(ServerType.Area, requester);
         state.RegisterClient(ServerType.Area, visibleTarget);
@@ -2148,7 +2804,11 @@ public class AreaMapHandlersTests
 
         var handler = new AreaAvatarProfileGetDataHandler(state);
 
-        await handler.HandleAsync(BuildUIntPayload(visibleTarget.CharacterId), requester, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildUIntPayload(visibleTarget.CharacterId),
+            requester,
+            TestContext.Current.CancellationToken
+        );
         var visibleReader = new PacketReader(requester.Sent[^1].Payload);
         Assert.Equal(0u, visibleReader.ReadUInt());
         Assert.Equal(visibleTarget.CharacterId, visibleReader.ReadUInt());
@@ -2156,14 +2816,26 @@ public class AreaMapHandlersTests
 
         requester.Sent.Clear();
 
-        await handler.HandleAsync(BuildUIntPayload(hiddenTarget.CharacterId), requester, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildUIntPayload(hiddenTarget.CharacterId),
+            requester,
+            TestContext.Current.CancellationToken
+        );
         var hiddenReader = new PacketReader(requester.Sent[^1].Payload);
         Assert.Equal(0u, hiddenReader.ReadUInt());
         Assert.Equal(hiddenTarget.CharacterId, hiddenReader.ReadUInt());
         Assert.Equal(string.Empty, hiddenReader.ReadFixedString(31, "shift_jis"));
     }
 
-    private static CapturingPlayerSession CreateSession(User user, uint mapId, int channelId, float x = 0f, float y = 0f, float z = 0f, int rotation = 0)
+    private static CapturingPlayerSession CreateSession(
+        User user,
+        uint mapId,
+        int channelId,
+        float x = 0f,
+        float y = 0f,
+        float z = 0f,
+        int rotation = 0
+    )
     {
         var character = user.Characters.Single();
 
@@ -2182,7 +2854,14 @@ public class AreaMapHandlersTests
         };
     }
 
-    private static User CreateUserWithCharacter(int userId, int characterId, string username, string characterName, uint currentMapId, string like1 = "Like 1")
+    private static User CreateUserWithCharacter(
+        int userId,
+        int characterId,
+        string username,
+        string characterName,
+        uint currentMapId,
+        string like1 = "Like 1"
+    )
     {
         var user = new User { Id = userId, Username = username };
         user.SetPassword("pw");
@@ -2244,7 +2923,11 @@ public class AreaMapHandlersTests
         return writer.ToBytes();
     }
 
-    private static async Task MarkIntroductionEventCompletedAsync(DbContextOptions<MainContext> options, int characterId, CancellationToken ct)
+    private static async Task MarkIntroductionEventCompletedAsync(
+        DbContextOptions<MainContext> options,
+        int characterId,
+        CancellationToken ct
+    )
     {
         await using var db = new MainContext(options);
         db.CharacterEventStatuses.Add(
@@ -2258,19 +2941,39 @@ public class AreaMapHandlersTests
         await db.SaveChangesAsync(ct);
     }
 
-    private static ScriptedEventTriggerService CreateScriptedEventTriggerService(MainContext db) => new(new CharacterEventRepository(db), NullLogger<ScriptedEventTriggerService>.Instance);
+    private static ScriptedEventTriggerService CreateScriptedEventTriggerService(MainContext db) =>
+        new(new CharacterEventRepository(db), NullLogger<ScriptedEventTriggerService>.Instance);
 
     private static ServerScriptDispatcher CreateServerScriptDispatcher(MainContext db)
     {
         var eventRepository = new CharacterEventRepository(db);
-        var serverScriptSession = new ServerScriptSession(eventRepository, NullLogger<ServerScriptSession>.Instance);
-        var characterRepository = new CharacterRepository(db, NullLogger<CharacterRepository>.Instance);
+        var serverScriptSession = new ServerScriptSession(
+            eventRepository,
+            NullLogger<ServerScriptSession>.Instance
+        );
+        var characterRepository = new CharacterRepository(
+            db,
+            NullLogger<CharacterRepository>.Instance
+        );
         var mapRepository = new MapRepository(db);
-        var shinjuRegistrationScript = new ShinjuRegistrationServerScript(characterRepository, eventRepository, mapRepository, serverScriptSession, NullLogger<ShinjuRegistrationServerScript>.Instance);
-        return new ServerScriptDispatcher([shinjuRegistrationScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        var shinjuRegistrationScript = new ShinjuRegistrationServerScript(
+            characterRepository,
+            eventRepository,
+            mapRepository,
+            serverScriptSession,
+            NullLogger<ShinjuRegistrationServerScript>.Instance
+        );
+        return new ServerScriptDispatcher(
+            [shinjuRegistrationScript],
+            serverScriptSession,
+            NullLogger<ServerScriptDispatcher>.Instance
+        );
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state)
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(
+        MainContext db,
+        SharedState state
+    )
     {
         return new DirectMapLinkTransitionService(
             new MapRepository(db),
@@ -2291,15 +2994,58 @@ public class AreaMapHandlersTests
         );
     }
 
-    private static IReadOnlyList<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, int Yaw, byte Animation)> ReadSelectMapEntries(byte[] payload)
+    private static IReadOnlyList<(
+        uint MapId,
+        ushort AreaServerPort,
+        string AreaServerIp,
+        uint ChannelId,
+        uint RouteMapId,
+        uint MapSerialId,
+        uint RouteState,
+        float PositionX,
+        float PositionY,
+        float PositionZ,
+        int Yaw,
+        byte Animation
+    )> ReadSelectMapEntries(byte[] payload)
     {
         var reader = new PacketReader(payload);
         var count = reader.ReadUInt();
-        var entries = new List<(uint MapId, ushort AreaServerPort, string AreaServerIp, uint ChannelId, uint RouteMapId, uint MapSerialId, uint RouteState, float PositionX, float PositionY, float PositionZ, int Yaw, byte Animation)>((int)count);
+        var entries = new List<(
+            uint MapId,
+            ushort AreaServerPort,
+            string AreaServerIp,
+            uint ChannelId,
+            uint RouteMapId,
+            uint MapSerialId,
+            uint RouteState,
+            float PositionX,
+            float PositionY,
+            float PositionZ,
+            int Yaw,
+            byte Animation
+        )>((int)count);
         for (var index = 0; index < count; index++)
         {
-            var entry = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
-            entries.Add((entry.MapId, entry.AreaServerInfo.Port, entry.AreaServerInfo.IP, entry.ChannelId, entry.RouteMapId, entry.MapSerialId, entry.RouteState, entry.PositionX, entry.PositionY, entry.PositionZ, entry.Yaw, entry.Animation));
+            var entry = NotifySelectMapEntry.FromBytes(
+                reader.ReadBytes(NotifySelectMapEntry.PacketSize)
+            );
+            entries.Add(
+                (
+                    entry.MapId,
+                    entry.AreaServerInfo.Port,
+                    entry.AreaServerInfo.IP,
+                    entry.ChannelId,
+                    entry.RouteMapId,
+                    entry.MapSerialId,
+                    entry.RouteState,
+                    entry.PositionX,
+                    entry.PositionY,
+                    entry.PositionZ,
+                    entry.Yaw,
+                    entry.Animation
+                )
+            );
         }
 
         return entries;
@@ -2317,7 +3063,13 @@ public class AreaMapHandlersTests
 
         public bool IsEnabled(LogLevel logLevel) => true;
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        )
         {
             Entries.Add((logLevel, formatter(state, exception)));
         }

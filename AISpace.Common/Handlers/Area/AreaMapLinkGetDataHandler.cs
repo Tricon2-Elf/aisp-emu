@@ -9,7 +9,13 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMapRepository mapRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, ILogger<AreaMapLinkGetDataHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMapLinkGetDataHandler(
+    IMapLinkRepository mapLinkRepository,
+    IMapRepository mapRepository,
+    IChannelRepository channelRepository,
+    IOptions<ServerOptions> serverOptions,
+    ILogger<AreaMapLinkGetDataHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapLinkGetDataRequest;
 
@@ -17,24 +23,54 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = MapLinkGetDataRequest.FromBytes(payload.Span);
         session.MapId = request.MapId;
         session.ChannelId = (int)request.ChannelId;
 
-        logger.LogInformation("MapLinkGetDataRequest received from user {UserId} on map {MapId} with channel {ChannelId}", session.User?.Id ?? session.UserId, request.MapId, request.ChannelId);
+        logger.LogInformation(
+            "MapLinkGetDataRequest received from user {UserId} on map {MapId} with channel {ChannelId}",
+            session.User?.Id ?? session.UserId,
+            request.MapId,
+            request.ChannelId
+        );
         var response = new MapLinkGetDataResponse(0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
 
-        var links = await mapLinkRepository.GetBySourceMapAsync(request.MapId, request.ChannelId, ct);
-        var currentChannel = await channelRepository.GetByChannelNumAsync((int)request.ChannelId, ct);
-        var areaServerInfo = currentChannel is null ? new ServerInfo(serverOptions.Value.ResolveAddress("localhost"), (ushort)serverOptions.Value.AreaServer.Port) : new ServerInfo(serverOptions.Value.ResolveAddress(currentChannel.IP), currentChannel.Port);
+        var links = await mapLinkRepository.GetBySourceMapAsync(
+            request.MapId,
+            request.ChannelId,
+            ct
+        );
+        var currentChannel = await channelRepository.GetByChannelNumAsync(
+            (int)request.ChannelId,
+            ct
+        );
+        var areaServerInfo = currentChannel is null
+            ? new ServerInfo(
+                serverOptions.Value.ResolveAddress("localhost"),
+                (ushort)serverOptions.Value.AreaServer.Port
+            )
+            : new ServerInfo(
+                serverOptions.Value.ResolveAddress(currentChannel.IP),
+                currentChannel.Port
+            );
         var selectEntries = new List<NotifySelectMapEntry>(links.Count);
 
         if (currentChannel is null)
         {
-            logger.LogWarning("Channel {ChannelId} was not found while building NotifySelectMap for map {MapId}; falling back to {Ip}:{Port}", request.ChannelId, request.MapId, areaServerInfo.IP, areaServerInfo.Port);
+            logger.LogWarning(
+                "Channel {ChannelId} was not found while building NotifySelectMap for map {MapId}; falling back to {Ip}:{Port}",
+                request.ChannelId,
+                request.MapId,
+                areaServerInfo.IP,
+                areaServerInfo.Port
+            );
         }
 
         foreach (var link in links)
@@ -42,17 +78,44 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
             var destinations = link.ParseDestinationMapIds();
             if (destinations.Count == 0)
             {
-                logger.LogWarning("Skipping MapLink {MapLinkId} on map {MapId}: no valid destinations were configured", link.Id, request.MapId);
+                logger.LogWarning(
+                    "Skipping MapLink {MapLinkId} on map {MapId}: no valid destinations were configured",
+                    link.Id,
+                    request.MapId
+                );
                 continue;
             }
 
             var lane = MapLinkGeometry.GetTriggerLane(link);
-            var mapLinkData = new MapLinkData(link.PositionX, link.PositionY, link.PositionZ, link.Yaw, link.Length, link.Depth);
-            await session.SendAsync(PacketType.MapLinkNotifyData, new MapLinkNotifyData(0, mapLinkData).ToBytes(), ct);
+            var mapLinkData = new MapLinkData(
+                link.PositionX,
+                link.PositionY,
+                link.PositionZ,
+                link.Yaw,
+                link.Length,
+                link.Depth
+            );
+            await session.SendAsync(
+                PacketType.MapLinkNotifyData,
+                new MapLinkNotifyData(0, mapLinkData).ToBytes(),
+                ct
+            );
 
-            if (link.Behavior == DAL.Entities.MapLinkBehavior.ForceSelection || destinations.Count != 1)
+            if (
+                link.Behavior == DAL.Entities.MapLinkBehavior.ForceSelection
+                || destinations.Count != 1
+            )
             {
-                logger.LogInformation("Sending selector MapLink {MapLinkId} on map {SourceMapId} with {DestinationCount} destination(s); trigger lane ({StartX}, {StartZ}) -> ({EndX}, {EndZ})", link.Id, request.MapId, destinations.Count, lane.StartX, lane.StartZ, lane.EndX, lane.EndZ);
+                logger.LogInformation(
+                    "Sending selector MapLink {MapLinkId} on map {SourceMapId} with {DestinationCount} destination(s); trigger lane ({StartX}, {StartZ}) -> ({EndX}, {EndZ})",
+                    link.Id,
+                    request.MapId,
+                    destinations.Count,
+                    lane.StartX,
+                    lane.StartZ,
+                    lane.EndX,
+                    lane.EndZ
+                );
                 continue;
             }
 
@@ -60,10 +123,17 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
             var destinationMap = await mapRepository.GetByMapIdAsync(destinationMapId, ct);
             if (destinationMap is null)
             {
-                logger.LogWarning("Destination map {DestinationMapId} for MapLink {MapLinkId} on map {SourceMapId} was not found; falling back to zeroed route data", destinationMapId, link.Id, request.MapId);
+                logger.LogWarning(
+                    "Destination map {DestinationMapId} for MapLink {MapLinkId} on map {SourceMapId} was not found; falling back to zeroed route data",
+                    destinationMapId,
+                    link.Id,
+                    request.MapId
+                );
             }
 
-            var (spawnX, spawnY, spawnZ, spawnRotation) = destinationMap is null ? (0f, 0f, 0f, 0) : link.ResolveDestinationSpawn(destinationMap);
+            var (spawnX, spawnY, spawnZ, spawnRotation) = destinationMap is null
+                ? (0f, 0f, 0f, 0)
+                : link.ResolveDestinationSpawn(destinationMap);
 
             selectEntries.Add(
                 new NotifySelectMapEntry
@@ -104,6 +174,10 @@ public class AreaMapLinkGetDataHandler(IMapLinkRepository mapLinkRepository, IMa
         }
 
         if (selectEntries.Count > 0)
-            await session.SendAsync(PacketType.NotifySelectMap, new NotifySelectMapData(selectEntries).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.NotifySelectMap,
+                new NotifySelectMapData(selectEntries).ToBytes(),
+                ct
+            );
     }
 }

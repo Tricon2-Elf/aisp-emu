@@ -5,24 +5,50 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Game.ServerScripts;
 
-public sealed class ServerScriptDispatcher(IEnumerable<IServerScript> scripts, ServerScriptSession serverScriptSession, ILogger<ServerScriptDispatcher> logger)
+public sealed class ServerScriptDispatcher(
+    IEnumerable<IServerScript> scripts,
+    ServerScriptSession serverScriptSession,
+    ILogger<ServerScriptDispatcher> logger
+)
 {
-    private readonly IReadOnlyDictionary<string, IServerScript> _scripts = scripts.ToDictionary(script => script.EventKey, StringComparer.Ordinal);
+    private readonly IReadOnlyDictionary<string, IServerScript> _scripts = scripts.ToDictionary(
+        script => script.EventKey,
+        StringComparer.Ordinal
+    );
 
     public bool HasScript(string eventKey) => _scripts.ContainsKey(eventKey);
 
-    public EventCompletionPolicy GetCompletionPolicy(string eventKey) => _scripts.TryGetValue(eventKey, out var script) ? script.CompletionPolicy : EventCompletionPolicy.Once;
+    public EventCompletionPolicy GetCompletionPolicy(string eventKey) =>
+        _scripts.TryGetValue(eventKey, out var script)
+            ? script.CompletionPolicy
+            : EventCompletionPolicy.Once;
 
-    public async Task<bool> CanStartAsync(IPlayerSession session, string eventKey, ServerScriptContext context, CancellationToken ct = default)
+    public async Task<bool> CanStartAsync(
+        IPlayerSession session,
+        string eventKey,
+        ServerScriptContext context,
+        CancellationToken ct = default
+    )
     {
-        return _scripts.TryGetValue(eventKey, out var script) && await script.CanStartAsync(session, context, ct);
+        return _scripts.TryGetValue(eventKey, out var script)
+            && await script.CanStartAsync(session, context, ct);
     }
 
-    public async Task StartAsync(IPlayerSession session, string eventKey, ServerScriptContext context, EventCompletionPolicy completionPolicy, CancellationToken ct = default)
+    public async Task StartAsync(
+        IPlayerSession session,
+        string eventKey,
+        ServerScriptContext context,
+        EventCompletionPolicy completionPolicy,
+        CancellationToken ct = default
+    )
     {
         if (!_scripts.TryGetValue(eventKey, out var script))
         {
-            logger.LogWarning("Unknown server script {EventKey} for character {CharacterId}", eventKey, session.CharacterId);
+            logger.LogWarning(
+                "Unknown server script {EventKey} for character {CharacterId}",
+                eventKey,
+                session.CharacterId
+            );
             return;
         }
 
@@ -31,7 +57,12 @@ public sealed class ServerScriptDispatcher(IEnumerable<IServerScript> scripts, S
         await script.StartAsync(session, context, ct);
     }
 
-    public async Task<bool> TryHandlePacketAsync(PacketType packetType, ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task<bool> TryHandlePacketAsync(
+        PacketType packetType,
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         if (session.ActiveEventKind != NpcEventKind.ServerScript || session.ActiveEventKey is null)
             return false;

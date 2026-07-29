@@ -4,7 +4,8 @@ namespace AISpace.Network.Packets.Area;
 /// Tells the client controlling a Robo that an avatar ended its interaction.
 /// Payload: UInt RoboId + UInt AvatarObjectId.
 /// </summary>
-public sealed class RoboDetachNoticeFromAvatarNotify(uint roboId, uint avatarObjectId) : IOutgoingPacket
+public sealed class RoboDetachNoticeFromAvatarNotify(uint roboId, uint avatarObjectId)
+    : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

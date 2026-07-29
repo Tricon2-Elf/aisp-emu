@@ -2,7 +2,12 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public sealed class NotifyUpdateRoboState(uint roboId, uint objectId, uint state, CharacterMapData? map = null) : IOutgoingPacket
+public sealed class NotifyUpdateRoboState(
+    uint roboId,
+    uint objectId,
+    uint state,
+    CharacterMapData? map = null
+) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

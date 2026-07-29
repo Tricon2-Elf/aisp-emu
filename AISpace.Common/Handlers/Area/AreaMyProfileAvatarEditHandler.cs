@@ -6,13 +6,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMyProfileAvatarEditHandler(MainContext db) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMyProfileAvatarEditHandler(MainContext db)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyProfileAvatarEditRequest;
     public PacketType ResponseType => PacketType.MyProfileAvatarEditResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var req = MyProfileAvatarEditRequest.FromBytes(payload.Span);
 

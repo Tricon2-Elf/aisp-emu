@@ -2,7 +2,13 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class ChannelSelectMyRoomResponse(uint result, ServerInfo serverInfo, uint mapId, uint mapSerialId, MyRoomData room) : IOutgoingPacket
+public class ChannelSelectMyRoomResponse(
+    uint result,
+    ServerInfo serverInfo,
+    uint mapId,
+    uint mapSerialId,
+    MyRoomData room
+) : IOutgoingPacket
 {
     public uint Result = result;
     public ServerInfo ServerInfo = serverInfo;

@@ -58,8 +58,19 @@ public class AreaRoboPostCallStubHandlerTests
             await using (var seedDb = new MainContext(options))
             {
                 var objectId = RoboRepository.GetObjectId(1, 1);
-                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Moving Robo"), (uint)RoboState.Accompanying) { OwnerAvatarId = 1 };
-                await new RoboRepository(seedDb).UpsertAsync(1, robo, TestContext.Current.CancellationToken);
+                var robo = new RoboData(
+                    1,
+                    new CharaData(objectId, 1_002_011, "Moving Robo"),
+                    (uint)RoboState.Accompanying
+                )
+                {
+                    OwnerAvatarId = 1,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    1,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
             }
 
             var state = new SharedState();
@@ -83,10 +94,18 @@ public class AreaRoboPostCallStubHandlerTests
             var handler = new AreaMoveRoboHandler(new RoboRepository(handlerDb), state);
             var payloadWriter = new PacketWriter();
             payloadWriter.Write(1u);
-            payloadWriter.Write(new MovementData(123, 0, -170, 180, MovementType.Running).ToBytes());
-            payloadWriter.Write(new MovementData(124, 0, -171, 180, MovementType.Running).ToBytes());
+            payloadWriter.Write(
+                new MovementData(123, 0, -170, 180, MovementType.Running).ToBytes()
+            );
+            payloadWriter.Write(
+                new MovementData(124, 0, -171, 180, MovementType.Running).ToBytes()
+            );
 
-            await handler.HandleAsync(payloadWriter.ToBytes(), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                payloadWriter.ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Empty(session.Sent);
             var sent = Assert.Single(peer.Sent);

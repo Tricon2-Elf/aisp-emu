@@ -3,7 +3,8 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public class FurnitureGetBaseListResponse(uint result, IReadOnlyList<FurnitureBaseEntry> entries) : IOutgoingPacket
+public class FurnitureGetBaseListResponse(uint result, IReadOnlyList<FurnitureBaseEntry> entries)
+    : IOutgoingPacket
 {
     public const int MaximumEntryCount = 300;
 
@@ -16,7 +17,9 @@ public class FurnitureGetBaseListResponse(uint result, IReadOnlyList<FurnitureBa
     public byte[] ToBytes()
     {
         if (Entries.Count > MaximumEntryCount)
-            throw new InvalidOperationException($"{nameof(FurnitureGetBaseListResponse)} supports at most {MaximumEntryCount} entries, received {Entries.Count}.");
+            throw new InvalidOperationException(
+                $"{nameof(FurnitureGetBaseListResponse)} supports at most {MaximumEntryCount} entries, received {Entries.Count}."
+            );
 
         var writer = new PacketWriter();
         writer.Write(Result);

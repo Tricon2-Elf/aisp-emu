@@ -12,20 +12,32 @@ public class MyRoomPacketTests
         {
             { PacketType.RoomListCloseRequest, 0x9A24, "send_room_list_close" },
             { PacketType.MyRoomUpdateNameRequest, 0xB154, "send_myroom_update_name" },
-            { PacketType.NicotvGetInfoByFurnitureResponse, 0x35A3, "recv_nicotv_get_info_by_furniture_r" },
+            {
+                PacketType.NicotvGetInfoByFurnitureResponse,
+                0x35A3,
+                "recv_nicotv_get_info_by_furniture_r"
+            },
             { PacketType.NotifyBgmPlay, 0x36C1, "recv_notify_bgm_play" },
             { PacketType.MyRoomUpdateSecurityRequest, 0xE54D, "send_myroom_update_security" },
             { PacketType.MyRoomSetFurnitureRequest, 0xAEFB, "send_myroom_set_furniture" },
             { PacketType.MyRoomRemoveFurnitureRequest, 0xD0DB, "send_myroom_remove_furniture" },
             { PacketType.MyRoomUpdateFurnitureRequest, 0x6405, "send_myroom_update_furniture" },
             { PacketType.NotifyRoomListOpenEnd, 0xDC32, "recv_notify_room_list_open_end" },
-            { PacketType.NotifyMyRoomRemoveFurniture, 0x7A75, "recv_notify_myroom_remove_furniture" },
+            {
+                PacketType.NotifyMyRoomRemoveFurniture,
+                0x7A75,
+                "recv_notify_myroom_remove_furniture"
+            },
             { PacketType.MyRoomSetFurnitureResponse, 0x1840, "recv_myroom_set_furniture_r" },
         };
 
     [Theory]
     [MemberData(nameof(CorrectedPacketTypes))]
-    public void PacketType_UsesClientOpcodeAndSymbol(PacketType packetType, ushort opcode, string decompiledName)
+    public void PacketType_UsesClientOpcodeAndSymbol(
+        PacketType packetType,
+        ushort opcode,
+        string decompiledName
+    )
     {
         Assert.Equal(opcode, (ushort)packetType);
 
@@ -39,8 +51,14 @@ public class MyRoomPacketTests
     {
         var related = typeof(PacketType)
             .GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Select(field => new { Field = field, Metadata = field.GetCustomAttribute<PacketMetadata>() })
-            .Where(entry => entry.Metadata is not null && IsMyRoomRelated(entry.Metadata.DecompiledName))
+            .Select(field => new
+            {
+                Field = field,
+                Metadata = field.GetCustomAttribute<PacketMetadata>(),
+            })
+            .Where(entry =>
+                entry.Metadata is not null && IsMyRoomRelated(entry.Metadata.DecompiledName)
+            )
             .Select(entry => new
             {
                 entry.Field.Name,
@@ -50,7 +68,10 @@ public class MyRoomPacketTests
             })
             .ToArray();
 
-        var duplicates = related.GroupBy(entry => (entry.Server, entry.Direction, entry.Opcode)).Where(group => group.Count() > 1).ToArray();
+        var duplicates = related
+            .GroupBy(entry => (entry.Server, entry.Direction, entry.Opcode))
+            .Where(group => group.Count() > 1)
+            .ToArray();
         Assert.Empty(duplicates);
     }
 
@@ -64,7 +85,17 @@ public class MyRoomPacketTests
     [Fact]
     public void FurnitureGetBaseListResponse_WritesClientLayoutAndEnforcesLimit()
     {
-        var payload = new FurnitureGetBaseListResponse(0, [new FurnitureBaseEntry(11_000_000, FurniturePlacementFlags.Floor, 7), new FurnitureBaseEntry(11_001_020, FurniturePlacementFlags.Wall | FurniturePlacementFlags.Ceiling, 9)]).ToBytes();
+        var payload = new FurnitureGetBaseListResponse(
+            0,
+            [
+                new FurnitureBaseEntry(11_000_000, FurniturePlacementFlags.Floor, 7),
+                new FurnitureBaseEntry(
+                    11_001_020,
+                    FurniturePlacementFlags.Wall | FurniturePlacementFlags.Ceiling,
+                    9
+                ),
+            ]
+        ).ToBytes();
         var reader = new PacketReader(payload);
 
         Assert.Equal(8 + 2 * 12, payload.Length);
@@ -74,11 +105,21 @@ public class MyRoomPacketTests
         Assert.Equal((uint)FurniturePlacementFlags.Floor, reader.ReadUInt());
         Assert.Equal(7u, reader.ReadUInt());
         Assert.Equal(11_001_020u, reader.ReadUInt());
-        Assert.Equal((uint)(FurniturePlacementFlags.Wall | FurniturePlacementFlags.Ceiling), reader.ReadUInt());
+        Assert.Equal(
+            (uint)(FurniturePlacementFlags.Wall | FurniturePlacementFlags.Ceiling),
+            reader.ReadUInt()
+        );
         Assert.Equal(9u, reader.ReadUInt());
 
-        var tooMany = Enumerable.Repeat(new FurnitureBaseEntry(1, FurniturePlacementFlags.Floor, 0), FurnitureGetBaseListResponse.MaximumEntryCount + 1).ToArray();
-        Assert.Throws<InvalidOperationException>(() => new FurnitureGetBaseListResponse(0, tooMany).ToBytes());
+        var tooMany = Enumerable
+            .Repeat(
+                new FurnitureBaseEntry(1, FurniturePlacementFlags.Floor, 0),
+                FurnitureGetBaseListResponse.MaximumEntryCount + 1
+            )
+            .ToArray();
+        Assert.Throws<InvalidOperationException>(() =>
+            new FurnitureGetBaseListResponse(0, tooMany).ToBytes()
+        );
     }
 
     [Fact]
@@ -92,7 +133,9 @@ public class MyRoomPacketTests
 
         Assert.Equal(20_000_030u, request.MapId);
         Assert.Equal(3u, request.ChannelId);
-        Assert.Throws<InvalidDataException>(() => MyRoomGetFurnitureRequest.FromBytes(writer.ToBytes().AsSpan(0, 4)));
+        Assert.Throws<InvalidDataException>(() =>
+            MyRoomGetFurnitureRequest.FromBytes(writer.ToBytes().AsSpan(0, 4))
+        );
     }
 
     [Fact]
@@ -135,7 +178,9 @@ public class MyRoomPacketTests
         Assert.Equal(42u, update.RoomId);
         Assert.Equal(73u, update.FurnitureId);
         Assert.Equal(set.Transform, update.Transform);
-        Assert.Throws<InvalidDataException>(() => MyRoomSetFurnitureRequest.FromBytes(payload.AsSpan(0, payload.Length - 1)));
+        Assert.Throws<InvalidDataException>(() =>
+            MyRoomSetFurnitureRequest.FromBytes(payload.AsSpan(0, payload.Length - 1))
+        );
     }
 
     [Fact]
@@ -154,7 +199,11 @@ public class MyRoomPacketTests
     [Fact]
     public void RoomListPack_MatchesClientPayloadLayoutAndLimit()
     {
-        var rooms = new[] { new RoomListEntry(42, "テスト部屋", "所有者", 0, 120), new RoomListEntry(73, "Second room", "Owner", 3, 121) };
+        var rooms = new[]
+        {
+            new RoomListEntry(42, "テスト部屋", "所有者", 0, 120),
+            new RoomListEntry(73, "Second room", "Owner", 3, 121),
+        };
 
         var payload = new NotifyRoomListPack(rooms).ToBytes();
         var reader = new PacketReader(payload);
@@ -162,11 +211,18 @@ public class MyRoomPacketTests
         Assert.Equal(4 + rooms.Length * RoomListEntry.WireSize, payload.Length);
         Assert.Equal(2u, reader.ReadUInt());
         Assert.Equal(42u, reader.ReadUInt());
-        Assert.Equal("テスト部屋", reader.ReadFixedString(RoomListEntry.RoomNameLength, "Shift_JIS"));
+        Assert.Equal(
+            "テスト部屋",
+            reader.ReadFixedString(RoomListEntry.RoomNameLength, "Shift_JIS")
+        );
         Assert.Equal("所有者", reader.ReadFixedString(RoomListEntry.OwnerNameLength, "Shift_JIS"));
         Assert.Equal(0, reader.ReadByte());
         Assert.Equal(120u, reader.ReadUInt());
-        Assert.Throws<ArgumentOutOfRangeException>(() => new NotifyRoomListPack(Enumerable.Repeat(rooms[0], NotifyRoomListPack.MaximumRooms + 1).ToArray()));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new NotifyRoomListPack(
+                Enumerable.Repeat(rooms[0], NotifyRoomListPack.MaximumRooms + 1).ToArray()
+            )
+        );
     }
 
     [Fact]
@@ -174,7 +230,13 @@ public class MyRoomPacketTests
     {
         var server = new ServerInfo("127.0.0.1", 50054);
         var room = new MyRoomData(42, 42, MyRoomStage.TwelveTatami, "テスト部屋", 2);
-        var channelResponse = new ChannelSelectMyRoomResponse(0, server, 20_000_030, 20_000_030, room);
+        var channelResponse = new ChannelSelectMyRoomResponse(
+            0,
+            server,
+            20_000_030,
+            20_000_030,
+            room
+        );
         var changeNotify = new NotifyChangeMyRoom
         {
             ChannelId = 1,
@@ -196,8 +258,17 @@ public class MyRoomPacketTests
         Assert.Equal(75, room.ToBytes().Length);
         Assert.Equal(154, channelResponse.ToBytes().Length);
         Assert.Equal(174, changeNotify.ToBytes().Length);
-        Assert.Equal(MyRoomFurnitureData.WireSize, new MyRoomNotifyFurniture(new MyRoomFurnitureData(42, 1, 0, 7001, 1, 2, 3, 4, 5, 1)).ToBytes().Length);
+        Assert.Equal(
+            MyRoomFurnitureData.WireSize,
+            new MyRoomNotifyFurniture(new MyRoomFurnitureData(42, 1, 0, 7001, 1, 2, 3, 4, 5, 1))
+                .ToBytes()
+                .Length
+        );
     }
 
-    private static bool IsMyRoomRelated(string decompiledName) => decompiledName.Contains("myroom", StringComparison.OrdinalIgnoreCase) || decompiledName.Contains("myhouse", StringComparison.OrdinalIgnoreCase) || decompiledName.Contains("furniture", StringComparison.OrdinalIgnoreCase) || decompiledName.Contains("room_list", StringComparison.OrdinalIgnoreCase);
+    private static bool IsMyRoomRelated(string decompiledName) =>
+        decompiledName.Contains("myroom", StringComparison.OrdinalIgnoreCase)
+        || decompiledName.Contains("myhouse", StringComparison.OrdinalIgnoreCase)
+        || decompiledName.Contains("furniture", StringComparison.OrdinalIgnoreCase)
+        || decompiledName.Contains("room_list", StringComparison.OrdinalIgnoreCase);
 }

@@ -10,9 +10,17 @@ public class AreaGetAiPaletteListHandler : IPacketHandler, IRequiresAuthenticate
     public PacketType ResponseType => PacketType.GetAiPaletteListResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = GetAiPaletteListRequest.FromBytes(payload.Span);
-        await session.SendAsync(ResponseType, new GetAiPaletteListResponse(0, request.RoboId).ToBytes(), ct);
+        await session.SendAsync(
+            ResponseType,
+            new GetAiPaletteListResponse(0, request.RoboId).ToBytes(),
+            ct
+        );
     }
 }

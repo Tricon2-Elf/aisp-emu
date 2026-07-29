@@ -8,7 +8,11 @@ namespace AISpace.Server.Tests;
 
 public class GameServerHealthRegistryTests
 {
-    private static GameServerHealthRegistry CreateRegistry(int heartbeatSeconds = 5, int stalenessSeconds = 30, int idleMaxCpu = 85) =>
+    private static GameServerHealthRegistry CreateRegistry(
+        int heartbeatSeconds = 5,
+        int stalenessSeconds = 30,
+        int idleMaxCpu = 85
+    ) =>
         new(
             Options.Create(
                 new ServerOptions
@@ -73,7 +77,11 @@ public class GameServerHealthRegistryTests
         var snapshot = WaitForServerState(registry, "msgServer", "unhealthy");
 
         Assert.Equal("unhealthy", snapshot["msgServer"].State);
-        Assert.Contains("heartbeat stale", snapshot["msgServer"].LastError, StringComparison.Ordinal);
+        Assert.Contains(
+            "heartbeat stale",
+            snapshot["msgServer"].LastError,
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]
@@ -137,7 +145,10 @@ public class GameServerHealthRegistryTests
         var registry = CreateRegistry();
         registry.AddServer(ServerType.Auth, 50050);
         registry.MarkListening(ServerType.Auth, 50050);
-        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 7, AvailableSlots: 25, MaxHandlers: 32));
+        registry.SetClientLoadCheck(
+            ServerType.Auth,
+            () => new VceClientLoad(ActiveHandlers: 7, AvailableSlots: 25, MaxHandlers: 32)
+        );
 
         var snapshot = registry.GetSnapshot();
 
@@ -152,7 +163,10 @@ public class GameServerHealthRegistryTests
         var registry = CreateRegistry();
         registry.AddServer(ServerType.Auth, 50050);
         registry.MarkListening(ServerType.Auth, 50050);
-        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 32, AvailableSlots: 0, MaxHandlers: 32));
+        registry.SetClientLoadCheck(
+            ServerType.Auth,
+            () => new VceClientLoad(ActiveHandlers: 32, AvailableSlots: 0, MaxHandlers: 32)
+        );
 
         var snapshot = registry.GetSnapshot();
 
@@ -167,7 +181,10 @@ public class GameServerHealthRegistryTests
         var registry = CreateRegistry();
         registry.AddServer(ServerType.Auth, 50050);
         registry.MarkListening(ServerType.Auth, 50050);
-        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 31, AvailableSlots: 1, MaxHandlers: 32));
+        registry.SetClientLoadCheck(
+            ServerType.Auth,
+            () => new VceClientLoad(ActiveHandlers: 31, AvailableSlots: 1, MaxHandlers: 32)
+        );
 
         var snapshot = registry.GetSnapshot();
 
@@ -233,7 +250,10 @@ public class GameServerHealthRegistryTests
                     {
                         HeartbeatIntervalSeconds = 5,
                         StalenessSeconds = 30,
-                        IdleMaxProcessCpuPercent = Math.Max(5, (int)(60.0 / Environment.ProcessorCount)),
+                        IdleMaxProcessCpuPercent = Math.Max(
+                            5,
+                            (int)(60.0 / Environment.ProcessorCount)
+                        ),
                         IdleMaxActiveHandlers = 2,
                     },
                 }
@@ -243,7 +263,10 @@ public class GameServerHealthRegistryTests
         registry.MarkListening(ServerType.Auth, 50050);
         registry.RecordHeartbeat(ServerType.Auth);
         registry.RecordSchedulerTick(TimeSpan.FromSeconds(1));
-        registry.SetClientLoadCheck(ServerType.Auth, () => new VceClientLoad(ActiveHandlers: 1, AvailableSlots: 31, MaxHandlers: 32));
+        registry.SetClientLoadCheck(
+            ServerType.Auth,
+            () => new VceClientLoad(ActiveHandlers: 1, AvailableSlots: 31, MaxHandlers: 32)
+        );
 
         registry.SampleProcessCpu();
         // Burn CPU on all logical processors so normalized process CPU exceeds the idle threshold
@@ -285,7 +308,13 @@ public class GameServerHealthRegistryTests
         Assert.Equal("healthy", report.Servers["authServer"].State);
     }
 
-    private static IReadOnlyDictionary<string, ServerHealthInfo> WaitForServerState(GameServerHealthRegistry registry, string serverKey, string expectedState, int timeoutMs = 5000, int pollMs = 25)
+    private static IReadOnlyDictionary<string, ServerHealthInfo> WaitForServerState(
+        GameServerHealthRegistry registry,
+        string serverKey,
+        string expectedState,
+        int timeoutMs = 5000,
+        int pollMs = 25
+    )
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         IReadOnlyDictionary<string, ServerHealthInfo>? snapshot = null;
@@ -299,7 +328,11 @@ public class GameServerHealthRegistryTests
         }
 
         snapshot ??= registry.GetSnapshot();
-        var actual = snapshot.TryGetValue(serverKey, out var finalInfo) ? finalInfo.State : "<missing>";
-        throw new Xunit.Sdk.XunitException($"Timed out waiting for {serverKey} to become '{expectedState}'. Last state was '{actual}'.");
+        var actual = snapshot.TryGetValue(serverKey, out var finalInfo)
+            ? finalInfo.State
+            : "<missing>";
+        throw new Xunit.Sdk.XunitException(
+            $"Timed out waiting for {serverKey} to become '{expectedState}'. Last state was '{actual}'."
+        );
     }
 }

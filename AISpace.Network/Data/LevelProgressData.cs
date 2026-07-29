@@ -26,7 +26,10 @@ public sealed class LevelProgressData
     public static LevelProgressData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"LevelProgressData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"LevelProgressData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
         return new LevelProgressData

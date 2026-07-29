@@ -7,7 +7,8 @@ public sealed class AvatarData(uint avatarId, CharaData character)
 
     public uint AvatarId { get; set; } = avatarId;
     public CharaData Character { get; set; } = character;
-    public ItemUseEffectData[] ItemUseEffects { get; set; } = Enumerable.Range(0, ItemUseEffectCount).Select(_ => new ItemUseEffectData()).ToArray();
+    public ItemUseEffectData[] ItemUseEffects { get; set; } =
+        Enumerable.Range(0, ItemUseEffectCount).Select(_ => new ItemUseEffectData()).ToArray();
 
     /// <summary>
     /// A protocol-reserved UInt32. ReadAvatarData consumes it, but this client
@@ -22,7 +23,9 @@ public sealed class AvatarData(uint avatarId, CharaData character)
     public byte[] ToBytes()
     {
         if (ItemUseEffects.Length != ItemUseEffectCount)
-            throw new InvalidOperationException($"AvatarData must contain exactly {ItemUseEffectCount} item-use effects.");
+            throw new InvalidOperationException(
+                $"AvatarData must contain exactly {ItemUseEffectCount} item-use effects."
+            );
 
         PacketWriter writer = new();
         writer.Write(AvatarId);
@@ -39,7 +42,10 @@ public sealed class AvatarData(uint avatarId, CharaData character)
     public static AvatarData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"AvatarData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"AvatarData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
         var avatarId = reader.ReadUInt();

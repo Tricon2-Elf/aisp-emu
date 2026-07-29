@@ -24,25 +24,49 @@ public sealed class StationStaffDepartureServerScriptTests
         {
             ActiveEventKey = ServerEvents.Keys.StationStaffDeparture,
             ActiveEventKind = NpcEventKind.ServerScript,
-            ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.StationStaffDeparture, Step = string.Empty },
+            ServerScriptState = new ServerScriptState
+            {
+                EventKey = ServerEvents.Keys.StationStaffDeparture,
+                Step = string.Empty,
+            },
         };
 
-        await runner.BeginAsync(session, ScriptedEvents.Keys.IntroductionMyRoomShuffle, TestContext.Current.CancellationToken);
+        await runner.BeginAsync(
+            session,
+            ScriptedEvents.Keys.IntroductionMyRoomShuffle,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(ServerEvents.Keys.StationStaffDeparture, session.ActiveEventKey);
         Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
         var scriptPlay = Assert.Single(session.Sent);
         Assert.Equal(PacketType.EventScriptPlayNotify, scriptPlay.Type);
-        Assert.Equal("./script/event/introdution_myroom_sh.csv", new PacketReader(scriptPlay.Payload).ReadString("utf-8"));
-        Assert.DoesNotContain(session.Sent, packet => packet.Type is PacketType.EventStartNotify or PacketType.EventEndNotify);
+        Assert.Equal(
+            "./script/event/introdution_myroom_sh.csv",
+            new PacketReader(scriptPlay.Payload).ReadString("utf-8")
+        );
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type is PacketType.EventStartNotify or PacketType.EventEndNotify
+        );
 
-        var scriptResult = await runner.TryHandleAsync(PacketType.EventScriptPlayRequest, BuildUIntPayload(0), session, TestContext.Current.CancellationToken);
+        var scriptResult = await runner.TryHandleAsync(
+            PacketType.EventScriptPlayRequest,
+            BuildUIntPayload(0),
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(ClientScriptSegmentStatus.InProgress, scriptResult.Status);
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventFadeInNotify);
         Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
 
-        var fadeResult = await runner.TryHandleAsync(PacketType.EventFadeInRequest, ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+        var fadeResult = await runner.TryHandleAsync(
+            PacketType.EventFadeInRequest,
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(ClientScriptSegmentStatus.Completed, fadeResult.Status);
         Assert.Equal(ServerEvents.Keys.StationStaffDeparture, session.ActiveEventKey);
@@ -58,23 +82,42 @@ public sealed class StationStaffDepartureServerScriptTests
         {
             ActiveEventKey = ServerEvents.Keys.StationStaffDeparture,
             ActiveEventKind = NpcEventKind.ServerScript,
-            ServerScriptState = new ServerScriptState { EventKey = ServerEvents.Keys.StationStaffDeparture, Step = string.Empty },
+            ServerScriptState = new ServerScriptState
+            {
+                EventKey = ServerEvents.Keys.StationStaffDeparture,
+                Step = string.Empty,
+            },
         };
-        await runner.BeginAsync(session, ScriptedEvents.Keys.IntroductionMyRoomDaCapo, TestContext.Current.CancellationToken);
+        await runner.BeginAsync(
+            session,
+            ScriptedEvents.Keys.IntroductionMyRoomDaCapo,
+            TestContext.Current.CancellationToken
+        );
 
-        var result = await runner.TryHandleAsync(PacketType.EventScriptPlayRequest, BuildUIntPayload(7), session, TestContext.Current.CancellationToken);
+        var result = await runner.TryHandleAsync(
+            PacketType.EventScriptPlayRequest,
+            BuildUIntPayload(7),
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(ClientScriptSegmentStatus.Failed, result.Status);
         Assert.Equal(7u, result.Result);
         Assert.Equal(ServerEvents.Keys.StationStaffDeparture, session.ActiveEventKey);
-        Assert.DoesNotContain(session.Sent, packet => packet.Type is PacketType.EventFadeInNotify or PacketType.EventEndNotify);
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type is PacketType.EventFadeInNotify or PacketType.EventEndNotify
+        );
     }
 
     [Theory]
     [InlineData(1u, "./script/event/introdution_myroom_dc.csv")]
     [InlineData(2u, "./script/event/introdution_myroom_cl.csv")]
     [InlineData(3u, "./script/event/introdution_myroom_sh.csv")]
-    public async Task StationStaffDeparture_SelectsClientScriptForHomeIsland(uint homeIslandId, string expectedLabel)
+    public async Task StationStaffDeparture_SelectsClientScriptForHomeIsland(
+        uint homeIslandId,
+        string expectedLabel
+    )
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -89,12 +132,24 @@ public sealed class StationStaffDepartureServerScriptTests
                 ChannelId = 1,
             };
 
-            await dispatcher.StartAsync(session, ServerEvents.Keys.StationStaffDeparture, CreateContext(), EventCompletionPolicy.Once, TestContext.Current.CancellationToken);
+            await dispatcher.StartAsync(
+                session,
+                ServerEvents.Keys.StationStaffDeparture,
+                CreateContext(),
+                EventCompletionPolicy.Once,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.StationStaffDeparture, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
-            Assert.Equal(1, session.Sent.Count(packet => packet.Type == PacketType.EventStartNotify));
-            var scriptPlay = Assert.Single(session.Sent, packet => packet.Type == PacketType.EventScriptPlayNotify);
+            Assert.Equal(
+                1,
+                session.Sent.Count(packet => packet.Type == PacketType.EventStartNotify)
+            );
+            var scriptPlay = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.EventScriptPlayNotify
+            );
             Assert.Equal(expectedLabel, new PacketReader(scriptPlay.Payload).ReadString("utf-8"));
         }
         finally
@@ -119,26 +174,57 @@ public sealed class StationStaffDepartureServerScriptTests
                 ChannelId = 1,
             };
 
-            await dispatcher.StartAsync(session, ServerEvents.Keys.StationStaffDeparture, CreateContext(), EventCompletionPolicy.Once, TestContext.Current.CancellationToken);
+            await dispatcher.StartAsync(
+                session,
+                ServerEvents.Keys.StationStaffDeparture,
+                CreateContext(),
+                EventCompletionPolicy.Once,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.StationStaffDeparture, session.ActiveEventKey);
-            var message = Assert.Single(session.Sent, packet => packet.Type == PacketType.EventMessageNotify);
+            var message = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.EventMessageNotify
+            );
             var messageReader = new PacketReader(message.Payload);
             Assert.Equal(1342177293u, messageReader.ReadUInt());
             Assert.Equal("駅員 (Station Staff)", messageReader.ReadString("utf-8"));
-            Assert.Equal("Please register at the Sotokanda Building first.", messageReader.ReadString("utf-8"));
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventMessageCloseNotify);
+            Assert.Equal(
+                "Please register at the Sotokanda Building first.",
+                messageReader.ReadString("utf-8")
+            );
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.EventMessageCloseNotify
+            );
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSyncNotify);
             Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventScriptPlayNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.EventScriptPlayNotify
+            );
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyChangeMap
+            );
 
-            var syncHandler = new AreaEventSyncRHandler(dispatcher, NullLogger<AreaEventSyncRHandler>.Instance);
-            await syncHandler.HandleAsync(BuildUIntPayload(0), session, TestContext.Current.CancellationToken);
+            var syncHandler = new AreaEventSyncRHandler(
+                dispatcher,
+                NullLogger<AreaEventSyncRHandler>.Instance
+            );
+            await syncHandler.HandleAsync(
+                BuildUIntPayload(0),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyChangeMap
+            );
         }
         finally
         {
@@ -188,22 +274,58 @@ public sealed class StationStaffDepartureServerScriptTests
             };
             state.RegisterClient(ServerType.Area, session);
 
-            await dispatcher.StartAsync(session, ServerEvents.Keys.StationStaffDeparture, CreateContext(), EventCompletionPolicy.Once, TestContext.Current.CancellationToken);
-            var scriptPlayHandler = new AreaEventScriptPlayHandler(NullLogger<AreaEventScriptPlayHandler>.Instance, dispatcher);
-            await scriptPlayHandler.HandleAsync(BuildUIntPayload(0), session, TestContext.Current.CancellationToken);
+            await dispatcher.StartAsync(
+                session,
+                ServerEvents.Keys.StationStaffDeparture,
+                CreateContext(),
+                EventCompletionPolicy.Once,
+                TestContext.Current.CancellationToken
+            );
+            var scriptPlayHandler = new AreaEventScriptPlayHandler(
+                NullLogger<AreaEventScriptPlayHandler>.Instance,
+                dispatcher
+            );
+            await scriptPlayHandler.HandleAsync(
+                BuildUIntPayload(0),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(10990100u, session.MapId);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type is PacketType.EventEndNotify or PacketType.NotifyChangeMap);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type is PacketType.EventEndNotify or PacketType.NotifyChangeMap
+            );
 
-            var fadeInHandler = new AreaEventFadeInHandler(eventRepository, NullLogger<AreaEventFadeInHandler>.Instance, dispatcher);
-            await fadeInHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            var fadeInHandler = new AreaEventFadeInHandler(
+                eventRepository,
+                NullLogger<AreaEventFadeInHandler>.Instance,
+                dispatcher
+            );
+            await fadeInHandler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(10030200u, session.MapId);
             Assert.Equal(1, session.Sent.Count(packet => packet.Type == PacketType.EventEndNotify));
-            Assert.Equal(1, session.Sent.Count(packet => packet.Type == PacketType.NotifyChangeMap));
-            Assert.True(session.Sent.FindIndex(packet => packet.Type == PacketType.EventEndNotify) < session.Sent.FindIndex(packet => packet.Type == PacketType.NotifyChangeMap));
-            Assert.False(await eventRepository.HasCompletedAsync(character.Id, ServerEvents.Keys.StationStaffDeparture, TestContext.Current.CancellationToken));
+            Assert.Equal(
+                1,
+                session.Sent.Count(packet => packet.Type == PacketType.NotifyChangeMap)
+            );
+            Assert.True(
+                session.Sent.FindIndex(packet => packet.Type == PacketType.EventEndNotify)
+                    < session.Sent.FindIndex(packet => packet.Type == PacketType.NotifyChangeMap)
+            );
+            Assert.False(
+                await eventRepository.HasCompletedAsync(
+                    character.Id,
+                    ServerEvents.Keys.StationStaffDeparture,
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
@@ -226,15 +348,31 @@ public sealed class StationStaffDepartureServerScriptTests
                 MapId = 10990100,
                 ChannelId = 1,
             };
-            await dispatcher.StartAsync(session, ServerEvents.Keys.StationStaffDeparture, CreateContext(), EventCompletionPolicy.Once, TestContext.Current.CancellationToken);
+            await dispatcher.StartAsync(
+                session,
+                ServerEvents.Keys.StationStaffDeparture,
+                CreateContext(),
+                EventCompletionPolicy.Once,
+                TestContext.Current.CancellationToken
+            );
 
-            var handler = new AreaEventScriptPlayHandler(NullLogger<AreaEventScriptPlayHandler>.Instance, dispatcher);
-            await handler.HandleAsync(BuildUIntPayload(9), session, TestContext.Current.CancellationToken);
+            var handler = new AreaEventScriptPlayHandler(
+                NullLogger<AreaEventScriptPlayHandler>.Instance,
+                dispatcher
+            );
+            await handler.HandleAsync(
+                BuildUIntPayload(9),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(10990100u, session.MapId);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type is PacketType.EventFadeInNotify or PacketType.NotifyChangeMap);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type is PacketType.EventFadeInNotify or PacketType.NotifyChangeMap
+            );
         }
         finally
         {
@@ -263,12 +401,28 @@ public sealed class StationStaffDepartureServerScriptTests
     private static ServerScriptDispatcher CreateDispatcher(MainContext db, SharedState state)
     {
         var eventRepository = new CharacterEventRepository(db);
-        var serverScriptSession = new ServerScriptSession(eventRepository, NullLogger<ServerScriptSession>.Instance);
-        var script = new StationStaffDepartureServerScript(new CharacterRepository(db, NullLogger<CharacterRepository>.Instance), new ClientScriptSegmentRunner(), serverScriptSession, CreateDirectMapLinkTransitionService(db, state), NullLogger<StationStaffDepartureServerScript>.Instance);
-        return new ServerScriptDispatcher([script], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        var serverScriptSession = new ServerScriptSession(
+            eventRepository,
+            NullLogger<ServerScriptSession>.Instance
+        );
+        var script = new StationStaffDepartureServerScript(
+            new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new ClientScriptSegmentRunner(),
+            serverScriptSession,
+            CreateDirectMapLinkTransitionService(db, state),
+            NullLogger<StationStaffDepartureServerScript>.Instance
+        );
+        return new ServerScriptDispatcher(
+            [script],
+            serverScriptSession,
+            NullLogger<ServerScriptDispatcher>.Instance
+        );
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state) =>
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(
+        MainContext db,
+        SharedState state
+    ) =>
         new(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),

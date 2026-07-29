@@ -15,7 +15,10 @@ public interface IWorldRepository
 
 public class WorldRepository(MainContext db) : IWorldRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     private readonly MainContext _db = db;
 
@@ -51,13 +54,22 @@ public class WorldRepository(MainContext db) : IWorldRepository
 
     /// <summary>Seeds world data if the Worlds table is empty. Call on startup after EnsureCreated.</summary>
     /// <param name="ipOverride">When set (e.g. IP_OVERRIDE in Docker), used as the world address instead of "localhost".</param>
-    public static async Task SeedWorldsIfEmptyAsync(MainContext db, string jsonPath, string? ipOverride = null, ushort msgPort = 50052, CancellationToken ct = default)
+    public static async Task SeedWorldsIfEmptyAsync(
+        MainContext db,
+        string jsonPath,
+        string? ipOverride = null,
+        ushort msgPort = 50052,
+        CancellationToken ct = default
+    )
     {
         if (await db.Worlds.AnyAsync(ct))
             return;
 
         if (!File.Exists(jsonPath))
-            throw new FileNotFoundException("World seed JSON not found (required for empty Worlds table).", jsonPath);
+            throw new FileNotFoundException(
+                "World seed JSON not found (required for empty Worlds table).",
+                jsonPath
+            );
 
         var json = await File.ReadAllTextAsync(jsonPath, ct);
         var rows = JsonSerializer.Deserialize<List<WorldSeedRow>>(json, JsonOptions) ?? [];

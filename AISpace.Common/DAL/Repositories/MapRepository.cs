@@ -14,7 +14,10 @@ public class MapRepository(MainContext db) : IMapRepository
 {
     private readonly MainContext _db = db;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     public async Task<Map?> GetByMapIdAsync(uint mapId, CancellationToken ct = default)
     {
@@ -22,12 +25,23 @@ public class MapRepository(MainContext db) : IMapRepository
         return await _db.Maps.AsNoTracking().FirstOrDefaultAsync(m => m.MapId == id, ct);
     }
 
-    public async Task<IReadOnlyList<Map>> GetMapsByIslandAsync(string island, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Map>> GetMapsByIslandAsync(
+        string island,
+        CancellationToken ct = default
+    )
     {
-        return await _db.Maps.AsNoTracking().Where(map => map.Island == island).OrderBy(map => map.MapId).ToListAsync(ct);
+        return await _db
+            .Maps.AsNoTracking()
+            .Where(map => map.Island == island)
+            .OrderBy(map => map.MapId)
+            .ToListAsync(ct);
     }
 
-    public static async Task EnsureSeedMapsPresentAsync(MainContext db, string jsonPath, CancellationToken ct = default)
+    public static async Task EnsureSeedMapsPresentAsync(
+        MainContext db,
+        string jsonPath,
+        CancellationToken ct = default
+    )
     {
         var canonicalMaps = await LoadMapsFromJsonAsync(jsonPath, ct);
         var existingMapIds = await db.Maps.Select(map => map.MapId).ToListAsync(ct);
@@ -55,7 +69,11 @@ public class MapRepository(MainContext db) : IMapRepository
     }
 
     /// <summary>Seeds map data if the Maps table is empty. Call on startup after EnsureCreated.</summary>
-    public static async Task SeedMapsIfEmptyAsync(MainContext db, string jsonPath, CancellationToken ct = default)
+    public static async Task SeedMapsIfEmptyAsync(
+        MainContext db,
+        string jsonPath,
+        CancellationToken ct = default
+    )
     {
         await db.Maps.ExecuteDeleteAsync(ct);
 
@@ -75,7 +93,10 @@ public class MapRepository(MainContext db) : IMapRepository
         await db.SaveChangesAsync(ct);
     }
 
-    private static async Task<List<Map>> LoadMapsFromJsonAsync(string jsonPath, CancellationToken ct)
+    private static async Task<List<Map>> LoadMapsFromJsonAsync(
+        string jsonPath,
+        CancellationToken ct
+    )
     {
         if (!File.Exists(jsonPath))
             throw new FileNotFoundException("Map seed JSON not found.", jsonPath);

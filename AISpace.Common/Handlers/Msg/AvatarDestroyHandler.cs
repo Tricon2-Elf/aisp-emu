@@ -6,20 +6,28 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> logger)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarDestroyRequest;
     public PacketType ResponseType => PacketType.AvatarDestroyResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         // Find the first character (as the emulator currently supports only one)
         var cha = session.User!.Characters.FirstOrDefault();
 
         if (cha != null)
         {
-            logger.LogInformation($"[DELETE] Removing character '{cha.Name}' for User {session.User.Username}");
+            logger.LogInformation(
+                $"[DELETE] Removing character '{cha.Name}' for User {session.User.Username}"
+            );
 
             // 1. Remove from database
             db.Characters.Remove(cha);

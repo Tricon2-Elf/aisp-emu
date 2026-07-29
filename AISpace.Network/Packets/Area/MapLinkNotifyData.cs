@@ -18,7 +18,15 @@ public class MapLinkNotifyData : IOutgoingPacket
         Data = data;
     }
 
-    public MapLinkNotifyData(uint result, float posX, float posY, float posZ, int yaw, float length, float halfExtent2)
+    public MapLinkNotifyData(
+        uint result,
+        float posX,
+        float posY,
+        float posZ,
+        int yaw,
+        float length,
+        float halfExtent2
+    )
     {
         Result = result;
         Data = new MapLinkData(posX, posY, posZ, yaw, length, halfExtent2);

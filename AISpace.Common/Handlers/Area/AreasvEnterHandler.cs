@@ -9,7 +9,15 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, IChannelRepository channelRepo, ICharacterRepository characterRepo, IMyRoomRepository myRoomRepository, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
+public class AreasvEnterHandler(
+    IUserSessionRepository _sessionRepo,
+    IMapRepository mapRepo,
+    IChannelRepository channelRepo,
+    ICharacterRepository characterRepo,
+    IMyRoomRepository myRoomRepository,
+    SharedState state,
+    ILogger<AreasvEnterHandler> logger
+) : IPacketHandler
 {
     private const float SpawnSpread = 50.0f;
     private const int MainChannelNum = 1;
@@ -18,20 +26,32 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
     public PacketType ResponseType => PacketType.AreasvEnterResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var loginReq = AreasvEnterRequest.FromBytes(payload.Span);
         var userSession = await _sessionRepo.GetValidSessionAsync(loginReq.OTP, ct);
 
         if (userSession is null || userSession.UserId != loginReq.UserID)
         {
-            await session.SendAsync(ResponseType, new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(), ct);
+            await session.SendAsync(
+                ResponseType,
+                new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(),
+                ct
+            );
             return;
         }
 
         if (userSession.User.IsBanned)
         {
-            await session.SendAsync(ResponseType, new LoginResponse(AuthResponseResult.AccountBanned).ToBytes(), ct);
+            await session.SendAsync(
+                ResponseType,
+                new LoginResponse(AuthResponseResult.AccountBanned).ToBytes(),
+                ct
+            );
             return;
         }
 
@@ -40,7 +60,10 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
 
         if (chara is null)
         {
-            logger.LogWarning("Character not found for UserId={UserId}, sending logout", session.User.Id);
+            logger.LogWarning(
+                "Character not found for UserId={UserId}, sending logout",
+                session.User.Id
+            );
             await session.SendAsync(PacketType.LogoutNotify, [], ct);
             return;
         }
@@ -48,7 +71,10 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         uint charId = (uint)chara.Id;
 
         uint mapId = chara.CurrentMapId;
-        var hasPendingTransition = state.TryTakePendingAreaTransition(session.User.Id, out var pendingTransition);
+        var hasPendingTransition = state.TryTakePendingAreaTransition(
+            session.User.Id,
+            out var pendingTransition
+        );
         if (hasPendingTransition)
             mapId = pendingTransition.MapId;
 
@@ -56,7 +82,10 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         if (MyRoomInfo.IsMyRoomMap(mapId))
         {
             if (hasPendingTransition && pendingTransition.MyRoomId != 0)
-                room = await myRoomRepository.GetRoomAsync(checked((int)pendingTransition.MyRoomId), ct);
+                room = await myRoomRepository.GetRoomAsync(
+                    checked((int)pendingTransition.MyRoomId),
+                    ct
+                );
             else if (chara.CurrentRoomId is > 0)
                 room = await myRoomRepository.GetRoomAsync(chara.CurrentRoomId.Value, ct);
 
@@ -69,15 +98,26 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
 
         if (!hasPendingTransition && (mapId == 0 || map is null))
         {
-            var mainChannel = await channelRepo.GetByChannelNumAsync(MainChannelNum, ct) ?? (await channelRepo.GetAllAsync(ct)).OrderBy(c => c.ChannelNum).FirstOrDefault();
+            var mainChannel =
+                await channelRepo.GetByChannelNumAsync(MainChannelNum, ct)
+                ?? (await channelRepo.GetAllAsync(ct)).OrderBy(c => c.ChannelNum).FirstOrDefault();
 
             if (mainChannel is null)
             {
-                logger.LogWarning("Map not found for MapId={MapId} and no channels are configured; character may spawn at default position.", mapId);
+                logger.LogWarning(
+                    "Map not found for MapId={MapId} and no channels are configured; character may spawn at default position.",
+                    mapId
+                );
             }
             else
             {
-                logger.LogInformation("Falling back to main channel {ChannelId} map {MapId} for user {UserId} (character CurrentMapId was {CurrentMapId})", mainChannel.ChannelNum, mainChannel.MapId, session.User.Id, chara.CurrentMapId);
+                logger.LogInformation(
+                    "Falling back to main channel {ChannelId} map {MapId} for user {UserId} (character CurrentMapId was {CurrentMapId})",
+                    mainChannel.ChannelNum,
+                    mainChannel.MapId,
+                    session.User.Id,
+                    chara.CurrentMapId
+                );
                 mapId = mainChannel.MapId;
                 map = await mapRepo.GetByMapIdAsync(mapId, ct);
                 session.ChannelId = mainChannel.ChannelNum;
@@ -86,12 +126,24 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         }
         else if (map is null)
         {
-            logger.LogWarning("Map not found for MapId={MapId} (character may spawn at default position). Ensure Maps table is seeded on VPS (e.g. volume for main.db or run migration/seed).", mapId);
+            logger.LogWarning(
+                "Map not found for MapId={MapId} (character may spawn at default position). Ensure Maps table is seeded on VPS (e.g. volume for main.db or run migration/seed).",
+                mapId
+            );
         }
 
         if (hasPendingTransition)
         {
-            logger.LogInformation("Applying pending area transition for user {UserId}: map {MapId}, channel {ChannelId}, spawn ({X}, {Y}, {Z}), rotation {Rotation}", session.User.Id, pendingTransition.MapId, pendingTransition.ChannelId, pendingTransition.X, pendingTransition.Y, pendingTransition.Z, pendingTransition.Rotation);
+            logger.LogInformation(
+                "Applying pending area transition for user {UserId}: map {MapId}, channel {ChannelId}, spawn ({X}, {Y}, {Z}), rotation {Rotation}",
+                session.User.Id,
+                pendingTransition.MapId,
+                pendingTransition.ChannelId,
+                pendingTransition.X,
+                pendingTransition.Y,
+                pendingTransition.Z,
+                pendingTransition.Rotation
+            );
 
             session.X = pendingTransition.X;
             session.Y = pendingTransition.Y;
@@ -141,20 +193,65 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
                     await Task.Delay(1000, ct);
 
                 var cha = session.Character ?? session.User!.Characters.First();
-                var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
+                var myPos = new MovementData(
+                    session.X,
+                    session.Y,
+                    session.Z,
+                    session.Rotation,
+                    MovementType.Stopped
+                );
 
-                await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 0, myPos, checked((uint)session.ChannelId), session.MapId), ct);
+                await session.SendAsync(
+                    PacketType.AvatarNotifyData,
+                    CreateNotify(
+                        cha,
+                        charId,
+                        0,
+                        myPos,
+                        checked((uint)session.ChannelId),
+                        session.MapId
+                    ),
+                    ct
+                );
                 session.NeedsPostLoadSelfAvatarNotify = false;
 
                 foreach (var other in state.GetAreaPeers(session))
                 {
-                    await other.SendAsync(PacketType.AvatarNotifyData, CreateNotify(cha, charId, 1, myPos, checked((uint)session.ChannelId), session.MapId), ct);
+                    await other.SendAsync(
+                        PacketType.AvatarNotifyData,
+                        CreateNotify(
+                            cha,
+                            charId,
+                            1,
+                            myPos,
+                            checked((uint)session.ChannelId),
+                            session.MapId
+                        ),
+                        ct
+                    );
 
                     var oCha = other.Character ?? other.User?.Characters.FirstOrDefault();
                     if (oCha != null)
                     {
-                        var oPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
-                        await session.SendAsync(PacketType.AvatarNotifyData, CreateNotify(oCha, other.CharacterId, 1, oPos, checked((uint)other.ChannelId), other.MapId), ct);
+                        var oPos = new MovementData(
+                            other.X,
+                            other.Y,
+                            other.Z,
+                            other.Rotation,
+                            MovementType.Stopped
+                        );
+                        await session.SendAsync(
+                            PacketType.AvatarNotifyData,
+                            CreateNotify(
+                                oCha,
+                                other.CharacterId,
+                                1,
+                                oPos,
+                                checked((uint)other.ChannelId),
+                                other.MapId
+                            ),
+                            ct
+                        );
                     }
                 }
             },
@@ -162,7 +259,14 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         );
     }
 
-    public static byte[] CreateNotify(DAL.Entities.Character cha, uint objId, uint res, MovementData pos, uint channelId = 0, uint mapId = 0)
+    public static byte[] CreateNotify(
+        DAL.Entities.Character cha,
+        uint objId,
+        uint res,
+        MovementData pos,
+        uint channelId = 0,
+        uint mapId = 0
+    )
     {
         var cd = new CharaData(objId, cha.ModelId, cha.Name)
         {
@@ -182,7 +286,10 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         cd.Visual.Gender = (uint)cha.Gender;
         cd.Visual.Face = (byte)cha.FaceType;
         cd.Visual.Hairstyle = cha.Hairstyle;
-        cd.AddEquip(cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)), ItemEntityMapper.ResolveEquipSocket);
+        cd.AddEquip(
+            cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
+            ItemEntityMapper.ResolveEquipSocket
+        );
         return new AvatarNotifyData(res, new AvatarData(objId, cd)).ToBytes();
     }
 }

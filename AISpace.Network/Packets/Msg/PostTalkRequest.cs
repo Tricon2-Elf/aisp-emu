@@ -2,7 +2,8 @@
 
 namespace AISpace.Network.Packets.Msg;
 
-public class PostTalkRequest(uint messageID, uint distID, string message, uint balloonID) : IIncomingPacket<PostTalkRequest>
+public class PostTalkRequest(uint messageID, uint distID, string message, uint balloonID)
+    : IIncomingPacket<PostTalkRequest>
 {
     public uint MessageID = messageID;
     public uint DistID = distID;

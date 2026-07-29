@@ -2,7 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Auth;
 
-public class WorldSelectResponse(uint result, string ipAddress, ushort port, string otp) : IOutgoingPacket
+public class WorldSelectResponse(uint result, string ipAddress, ushort port, string otp)
+    : IOutgoingPacket
 {
     uint worldCount = 1;
     public string IpAddress = ipAddress;

@@ -12,7 +12,11 @@ public class ItemGetBaseListHandler(IItemBaseListCache cache) : IPacketHandler
     public PacketType ResponseType => PacketType.ItemGetBaseListResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         if (cache.ResponsePayload.IsEmpty)
             await cache.WarmAsync(ct);

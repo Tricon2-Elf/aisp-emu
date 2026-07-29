@@ -15,7 +15,10 @@ public class SharedState
     private readonly ISessionPresenceRepository? _sessionPresenceRepository;
     private readonly IPendingMapTransferRepository? _pendingMapTransferRepository;
 
-    private readonly Channel<(string Id, string Message)> _messages = Channel.CreateUnbounded<(string Id, string Message)>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+    private readonly Channel<(string Id, string Message)> _messages = Channel.CreateUnbounded<(
+        string Id,
+        string Message
+    )>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
 
     public IReadOnlyCollection<IPlayerSession> AuthClients => GetServerClients(ServerType.Auth);
     public IReadOnlyCollection<IPlayerSession> MsgClients => GetServerClients(ServerType.Msg);
@@ -26,7 +29,11 @@ public class SharedState
     public SharedState()
         : this(new SessionStore(), new SessionClientRegistry(), new PendingTransitionStore()) { }
 
-    public SharedState(ISessionStore sessionStore, ISessionClientRegistry sessionClientRegistry, IPendingTransitionStore pendingTransitionStore)
+    public SharedState(
+        ISessionStore sessionStore,
+        ISessionClientRegistry sessionClientRegistry,
+        IPendingTransitionStore pendingTransitionStore
+    )
     {
         _sessionStore = sessionStore;
         _sessionClientRegistry = sessionClientRegistry;
@@ -34,7 +41,13 @@ public class SharedState
         _areaPresenceIndex = new AreaPresenceIndex(_sessionClientRegistry);
     }
 
-    public SharedState(ISessionStore sessionStore, ISessionClientRegistry sessionClientRegistry, IPendingTransitionStore pendingTransitionStore, ISessionPresenceRepository sessionPresenceRepository, IPendingMapTransferRepository pendingMapTransferRepository)
+    public SharedState(
+        ISessionStore sessionStore,
+        ISessionClientRegistry sessionClientRegistry,
+        IPendingTransitionStore pendingTransitionStore,
+        ISessionPresenceRepository sessionPresenceRepository,
+        IPendingMapTransferRepository pendingMapTransferRepository
+    )
         : this(sessionStore, sessionClientRegistry, pendingTransitionStore)
     {
         _sessionPresenceRepository = sessionPresenceRepository;
@@ -42,9 +55,11 @@ public class SharedState
     }
 
     /// <summary>Gets or creates a session for the given connection id. Factory is invoked only when a new session is needed.</summary>
-    public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) => _sessionStore.GetOrAddSession(connectionId, createSession);
+    public IPlayerSession GetOrAddSession(Guid connectionId, Func<IPlayerSession> createSession) =>
+        _sessionStore.GetOrAddSession(connectionId, createSession);
 
-    public bool TryGetSession(Guid connectionId, out IPlayerSession? session) => _sessionStore.TryGetSession(connectionId, out session);
+    public bool TryGetSession(Guid connectionId, out IPlayerSession? session) =>
+        _sessionStore.TryGetSession(connectionId, out session);
 
     public void RegisterClient(ServerType serverType, IPlayerSession session)
     {
@@ -85,7 +100,8 @@ public class SharedState
         return _pendingMapTransferRepository.TryTake(userId, out transition);
     }
 
-    public void EnqueueMessage(string id, string message) => _messages.Writer.TryWrite((id, message));
+    public void EnqueueMessage(string id, string message) =>
+        _messages.Writer.TryWrite((id, message));
 
     public ChannelReader<(string Id, string Message)> Messages => _messages.Reader;
 
@@ -107,13 +123,21 @@ public class SharedState
         return ResolveConnectedSessions(presences.Select(presence => presence.ConnectionId));
     }
 
-    public IReadOnlyList<IPlayerSession> GetAreaPeers(IPlayerSession session, bool includeSelf = false)
+    public IReadOnlyList<IPlayerSession> GetAreaPeers(
+        IPlayerSession session,
+        bool includeSelf = false
+    )
     {
         IEnumerable<IPlayerSession> peers = GetAreaSessions(session.MapId, session.ChannelId);
         if (MyRoomInfo.IsMyRoomMap(session.MapId))
-            peers = session.MyRoomId == 0 ? [] : peers.Where(other => other.MyRoomId == session.MyRoomId);
+            peers =
+                session.MyRoomId == 0
+                    ? []
+                    : peers.Where(other => other.MyRoomId == session.MyRoomId);
 
-        return (includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId)).ToList();
+        return (
+            includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId)
+        ).ToList();
     }
 
     public static RoboData PrepareOwnedRobo(RoboData robo, IPlayerSession owner)
@@ -140,7 +164,10 @@ public class SharedState
         return robo;
     }
 
-    public async Task BroadcastAreaDisappearAsync(IPlayerSession session, CancellationToken ct = default)
+    public async Task BroadcastAreaDisappearAsync(
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         if (session.CharacterId == 0)
             return;
@@ -159,7 +186,11 @@ public class SharedState
         }
     }
 
-    public async Task BroadcastRoboDisappearAsync(IPlayerSession owner, uint roboId, CancellationToken ct = default)
+    public async Task BroadcastRoboDisappearAsync(
+        IPlayerSession owner,
+        uint roboId,
+        CancellationToken ct = default
+    )
     {
         foreach (var peer in GetAreaPeers(owner))
             await SendRoboDisappearAsync(peer, owner.CharacterId, roboId, ct);
@@ -168,17 +199,29 @@ public class SharedState
     public async Task ClearRemoteRobosAsync(IPlayerSession session, CancellationToken ct = default)
     {
         foreach (var remoteRoboObjectId in session.VisibleRemoteRoboObjectIds.ToArray())
-            await session.SendAsync(PacketType.NotifyDisappearChara, new NotifyDisappearChara(remoteRoboObjectId).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.NotifyDisappearChara,
+                new NotifyDisappearChara(remoteRoboObjectId).ToBytes(),
+                ct
+            );
 
         session.VisibleRemoteRoboObjectIds.Clear();
     }
 
-    public IPlayerSession? GetAreaSessionByCharacterId(uint characterId, uint? mapId = null, int? channelId = null)
+    public IPlayerSession? GetAreaSessionByCharacterId(
+        uint characterId,
+        uint? mapId = null,
+        int? channelId = null
+    )
     {
         if (_sessionPresenceRepository == null)
             return _areaPresenceIndex.GetAreaSessionByCharacterId(characterId, mapId, channelId);
 
-        var presence = _sessionPresenceRepository.GetAreaSessionByCharacterId(characterId, mapId, channelId);
+        var presence = _sessionPresenceRepository.GetAreaSessionByCharacterId(
+            characterId,
+            mapId,
+            channelId
+        );
         if (presence == null)
             return null;
 
@@ -186,13 +229,22 @@ public class SharedState
         return session;
     }
 
-    private static async Task SendRoboDisappearAsync(IPlayerSession peer, uint ownerCharacterId, uint roboId, CancellationToken ct)
+    private static async Task SendRoboDisappearAsync(
+        IPlayerSession peer,
+        uint ownerCharacterId,
+        uint roboId,
+        CancellationToken ct
+    )
     {
         var remoteRoboObjectId = RoboRepository.GetObjectId(ownerCharacterId, roboId);
         if (!peer.VisibleRemoteRoboObjectIds.Remove(remoteRoboObjectId))
             return;
 
-        await peer.SendAsync(PacketType.NotifyDisappearChara, new NotifyDisappearChara(remoteRoboObjectId).ToBytes(), ct);
+        await peer.SendAsync(
+            PacketType.NotifyDisappearChara,
+            new NotifyDisappearChara(remoteRoboObjectId).ToBytes(),
+            ct
+        );
     }
 
     private static void ApplyRoboMap(RoboData robo, IPlayerSession owner)
@@ -202,11 +254,21 @@ public class SharedState
         {
             ChannelId = checked((uint)owner.ChannelId),
             MapId = owner.MapId,
-            Movement = new MovementData(owner.X, owner.Y, owner.Z, owner.Rotation, MovementType.Stopped),
+            Movement = new MovementData(
+                owner.X,
+                owner.Y,
+                owner.Z,
+                owner.Rotation,
+                MovementType.Stopped
+            ),
         };
     }
 
-    public IPlayerSession? GetAreaSessionByUserId(int userId, uint? mapId = null, int? channelId = null)
+    public IPlayerSession? GetAreaSessionByUserId(
+        int userId,
+        uint? mapId = null,
+        int? channelId = null
+    )
     {
         if (_sessionPresenceRepository == null)
             return _areaPresenceIndex.GetAreaSessionByUserId(userId, mapId, channelId);
@@ -237,11 +299,17 @@ public class SharedState
         }
     }
 
-    private static bool ShouldSupersede(ServerType serverType, IPlayerSession existing, IPlayerSession incoming) =>
+    private static bool ShouldSupersede(
+        ServerType serverType,
+        IPlayerSession existing,
+        IPlayerSession incoming
+    ) =>
         serverType switch
         {
-            ServerType.Area => existing.CharacterId != 0 && existing.CharacterId == incoming.CharacterId,
-            ServerType.Auth or ServerType.Msg => existing.UserId != 0 && existing.UserId == incoming.UserId,
+            ServerType.Area => existing.CharacterId != 0
+                && existing.CharacterId == incoming.CharacterId,
+            ServerType.Auth or ServerType.Msg => existing.UserId != 0
+                && existing.UserId == incoming.UserId,
             _ => false,
         };
 
@@ -257,5 +325,14 @@ public class SharedState
         return sessions;
     }
 
-    public readonly record struct PendingMapTransfer(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, int Rotation, uint MyRoomId = 0);
+    public readonly record struct PendingMapTransfer(
+        int UserId,
+        uint MapId,
+        int ChannelId,
+        float X,
+        float Y,
+        float Z,
+        int Rotation,
+        uint MyRoomId = 0
+    );
 }

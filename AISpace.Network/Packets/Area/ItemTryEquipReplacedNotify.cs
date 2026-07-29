@@ -2,7 +2,8 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public class ItemTryEquipReplacedNotify(uint objId, IEnumerable<ItemEquipEntry> equips) : IOutgoingPacket
+public class ItemTryEquipReplacedNotify(uint objId, IEnumerable<ItemEquipEntry> equips)
+    : IOutgoingPacket
 {
     public uint ObjId { get; set; } = objId;
     public IReadOnlyList<ItemEquipEntry> Equips { get; set; } = equips.ToList();

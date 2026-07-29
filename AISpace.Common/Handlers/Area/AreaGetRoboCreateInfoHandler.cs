@@ -22,10 +22,18 @@ public class AreaGetRoboCreateInfoHandler : IPacketHandler, IRequiresAuthenticat
     public PacketType ResponseType => PacketType.GetRoboCreateInfoResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         _ = GetRoboCreateInfoRequest.FromBytes(payload.Span);
-        var response = new GetRoboCreateInfoResponse(DefaultModelId, DefaultHairstyle, DefaultEquips);
+        var response = new GetRoboCreateInfoResponse(
+            DefaultModelId,
+            DefaultHairstyle,
+            DefaultEquips
+        );
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

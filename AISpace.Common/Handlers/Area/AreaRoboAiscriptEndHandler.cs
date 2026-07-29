@@ -10,7 +10,11 @@ public class AreaRoboAiscriptEndHandler : IPacketHandler, IRequiresAuthenticated
     public PacketType ResponseType => (PacketType)0;
     public ServerType ServerType => ServerType.Area;
 
-    public Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         _ = RoboAiscriptEndRequest.FromBytes(payload.Span);
         return Task.CompletedTask;

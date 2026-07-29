@@ -7,7 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AISpace.Server;
 
-public class AuthServer(ILogger<AuthServer> logger, GameServerContext ctx, int port) : GameServerBase<AuthServer>(logger, ctx, port)
+public class AuthServer(ILogger<AuthServer> logger, GameServerContext ctx, int port)
+    : GameServerBase<AuthServer>(logger, ctx, port)
 {
     protected override ServerType ActiveServerType => ServerType.Auth;
 

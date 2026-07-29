@@ -10,7 +10,11 @@ public abstract class VersionCheckHandlerBase : IPacketHandler
     public PacketType ResponseType => PacketType.VersionCheckResponse;
     public abstract ServerType ServerType { get; }
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var req = VersionCheckRequest.FromBytes(payload.Span);
         var resp = new VersionCheckResponse(0, req.Major, req.Minor, req.Version);

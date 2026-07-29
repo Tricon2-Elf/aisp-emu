@@ -15,9 +15,14 @@ public class BroadcastService
         _state = state;
     }
 
-    public Task<BroadcastResult> BroadcastAsync(string message, CancellationToken ct = default) => BroadcastToServersAsync(message, [ServerType.Area, ServerType.Msg], ct);
+    public Task<BroadcastResult> BroadcastAsync(string message, CancellationToken ct = default) =>
+        BroadcastToServersAsync(message, [ServerType.Area, ServerType.Msg], ct);
 
-    public async Task<BroadcastResult> BroadcastToServersAsync(string message, IReadOnlyList<ServerType> serverTypes, CancellationToken ct = default)
+    public async Task<BroadcastResult> BroadcastToServersAsync(
+        string message,
+        IReadOnlyList<ServerType> serverTypes,
+        CancellationToken ct = default
+    )
     {
         var forward = new TalkForwardNotify(0, 0, message, 0);
         var data = forward.ToBytes();

@@ -15,15 +15,14 @@ namespace AISpace.Common.DAL.Migrations
                 table: "Characters",
                 type: "INTEGER",
                 nullable: false,
-                defaultValue: (byte)2);
+                defaultValue: (byte)2
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "CharadollPersonality",
-                table: "Characters");
+            migrationBuilder.DropColumn(name: "CharadollPersonality", table: "Characters");
         }
     }
 }

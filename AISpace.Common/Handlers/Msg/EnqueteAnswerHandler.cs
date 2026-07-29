@@ -12,7 +12,11 @@ public class EnqueteAnswerHandler : IPacketHandler, IRequiresAuthenticatedSessio
 
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         await session.SendAsync(ResponseType, new EnqueteAnswerResponse(0).ToBytes(), ct);
     }

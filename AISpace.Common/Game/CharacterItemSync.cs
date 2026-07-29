@@ -22,18 +22,33 @@ internal static class CharacterItemSync
     /// </summary>
     public const uint InventoryListNum = 1;
 
-    public static uint ResolveObjId(IPlayerSession session) => session.CharacterId != 0 ? session.CharacterId : 1u;
+    public static uint ResolveObjId(IPlayerSession session) =>
+        session.CharacterId != 0 ? session.CharacterId : 1u;
 
-    public static async Task SendInventoryBootstrapAsync(IPlayerSession session, Character character, CancellationToken ct)
+    public static async Task SendInventoryBootstrapAsync(
+        IPlayerSession session,
+        Character character,
+        CancellationToken ct
+    )
     {
-        await session.SendAsync(PacketType.ItemGetListResponse, new ItemGetListResponse(0).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.ItemGetListResponse,
+            new ItemGetListResponse(0).ToBytes(),
+            ct
+        );
         await SendBootstrapAsync(session, character, ct);
     }
 
-    public static async Task SendBootstrapAsync(IPlayerSession session, Character character, CancellationToken ct)
+    public static async Task SendBootstrapAsync(
+        IPlayerSession session,
+        Character character,
+        CancellationToken ct
+    )
     {
         var objId = ResolveObjId(session);
-        var inventoryCounts = character.Inventory.Where(i => i.Quantity > 0).ToDictionary(i => i.ItemId, i => i.Quantity);
+        var inventoryCounts = character
+            .Inventory.Where(i => i.Quantity > 0)
+            .ToDictionary(i => i.ItemId, i => i.Quantity);
 
         // Seed primary item-table entries first.
         foreach (var stack in character.Inventory.OrderBy(i => i.ItemId))
@@ -54,16 +69,28 @@ internal static class CharacterItemSync
 
             // Avoid rewriting the same place/serial entry when inventory already created it.
             // Re-sending create with num=1 here can desync local counts and block unequip.
-            if (!inventoryCounts.TryGetValue(equip.ItemId, out var inventoryCount) || inventoryCount <= 0)
+            if (
+                !inventoryCounts.TryGetValue(equip.ItemId, out var inventoryCount)
+                || inventoryCount <= 0
+            )
             {
                 await SendPrimaryItemTableEntryAsync(session, equip.ItemId, 1, ct);
             }
 
-            await session.SendAsync(PacketType.ItemEquippedNotify, new ItemEquippedNotify(objId, serialId, socket).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.ItemEquippedNotify,
+                new ItemEquippedNotify(objId, serialId, socket).ToBytes(),
+                ct
+            );
         }
     }
 
-    public static async Task SendInventoryItemAsync(IPlayerSession session, int itemId, ushort quantity, CancellationToken ct)
+    public static async Task SendInventoryItemAsync(
+        IPlayerSession session,
+        int itemId,
+        ushort quantity,
+        CancellationToken ct
+    )
     {
         await SendPrimaryItemTableEntryAsync(session, itemId, quantity, ct);
     }
@@ -74,41 +101,85 @@ internal static class CharacterItemSync
     /// its 65531 event rebuilds the furniture slot list. A zero-valued
     /// recv_item_update_list alone leaves a stale selectable slot behind.
     /// </summary>
-    public static async Task SendFurnitureInventoryAvailabilityAsync(IPlayerSession session, int itemId, int quantity, CancellationToken ct)
+    public static async Task SendFurnitureInventoryAvailabilityAsync(
+        IPlayerSession session,
+        int itemId,
+        int quantity,
+        CancellationToken ct
+    )
     {
         var serialId = ResolveSerialId(itemId);
         if (quantity <= 0)
         {
-            await session.SendAsync(PacketType.ItemDeleteNotify, new ItemDeleteNotify(PrimaryItemTablePlace, serialId).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.ItemDeleteNotify,
+                new ItemDeleteNotify(PrimaryItemTablePlace, serialId).ToBytes(),
+                ct
+            );
             return;
         }
 
-        await SendPrimaryItemTableEntryAsync(session, itemId, (ushort)Math.Min(quantity, ushort.MaxValue), ct);
+        await SendPrimaryItemTableEntryAsync(
+            session,
+            itemId,
+            (ushort)Math.Min(quantity, ushort.MaxValue),
+            ct
+        );
     }
 
-    private static async Task SendInventoryCountAsync(IPlayerSession session, int itemId, int count, CancellationToken ct)
+    private static async Task SendInventoryCountAsync(
+        IPlayerSession session,
+        int itemId,
+        int count,
+        CancellationToken ct
+    )
     {
         var clamped = count <= 0 ? (ushort)0 : (ushort)Math.Min(count, ushort.MaxValue);
         await SendInventoryItemAsync(session, itemId, clamped, ct);
     }
 
-    public static async Task SendUnequippedAsync(IPlayerSession session, uint objId, EquippedItemChange change, CancellationToken ct)
+    public static async Task SendUnequippedAsync(
+        IPlayerSession session,
+        uint objId,
+        EquippedItemChange change,
+        CancellationToken ct
+    )
     {
         var serialId = ResolveSerialId(change.ItemId);
 
-        await session.SendAsync(PacketType.ItemRemovedNotify, new ItemRemovedNotify(objId, serialId, change.SocketBit).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.ItemRemovedNotify,
+            new ItemRemovedNotify(objId, serialId, change.SocketBit).ToBytes(),
+            ct
+        );
         await SendPrimaryItemTableEntryAsync(session, change.ItemId, (ushort)InventoryListNum, ct);
     }
 
-    public static async Task SendEquippedAsync(IPlayerSession session, uint objId, EquippedItemChange change, CancellationToken ct)
+    public static async Task SendEquippedAsync(
+        IPlayerSession session,
+        uint objId,
+        EquippedItemChange change,
+        CancellationToken ct
+    )
     {
         var serialId = ResolveSerialId(change.ItemId);
-        var socket = change.SocketBit != 0 ? change.SocketBit : ItemEntityMapper.ResolveBodyspot(change.ItemId, name: change.ItemName);
+        var socket =
+            change.SocketBit != 0
+                ? change.SocketBit
+                : ItemEntityMapper.ResolveBodyspot(change.ItemId, name: change.ItemName);
 
-        await session.SendAsync(PacketType.ItemEquippedNotify, new ItemEquippedNotify(objId, serialId, socket).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.ItemEquippedNotify,
+            new ItemEquippedNotify(objId, serialId, socket).ToBytes(),
+            ct
+        );
     }
 
-    public static async Task SendReplaceChangesAsync(IPlayerSession session, EquipReplaceResult result, CancellationToken ct)
+    public static async Task SendReplaceChangesAsync(
+        IPlayerSession session,
+        EquipReplaceResult result,
+        CancellationToken ct
+    )
     {
         var objId = ResolveObjId(session);
 
@@ -122,10 +193,23 @@ internal static class CharacterItemSync
             await SendInventoryCountAsync(session, itemId, count, ct);
     }
 
-    private static async Task SendPrimaryItemTableEntryAsync(IPlayerSession session, int itemId, ushort quantity, CancellationToken ct)
+    private static async Task SendPrimaryItemTableEntryAsync(
+        IPlayerSession session,
+        int itemId,
+        ushort quantity,
+        CancellationToken ct
+    )
     {
         var serialId = ResolveSerialId(itemId);
-        await session.SendAsync(PacketType.ItemCreateNotify, new ItemCreateNotify(PrimaryItemTablePlace, serialId, quantity, (uint)itemId).ToBytes(), ct);
-        await session.SendAsync(PacketType.ItemUpdateListNotify, new ItemUpdateListNotify(PrimaryItemTablePlace, serialId, quantity).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.ItemCreateNotify,
+            new ItemCreateNotify(PrimaryItemTablePlace, serialId, quantity, (uint)itemId).ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.ItemUpdateListNotify,
+            new ItemUpdateListNotify(PrimaryItemTablePlace, serialId, quantity).ToBytes(),
+            ct
+        );
     }
 }

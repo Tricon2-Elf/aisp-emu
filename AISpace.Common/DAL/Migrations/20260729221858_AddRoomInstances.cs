@@ -11,25 +11,61 @@ namespace AISpace.Common.DAL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(name: "FK_MyRoomFurniture_Characters_CharacterId", table: "MyRoomFurniture");
+            migrationBuilder.DropForeignKey(
+                name: "FK_MyRoomFurniture_Characters_CharacterId",
+                table: "MyRoomFurniture"
+            );
 
             migrationBuilder.CreateTable(
                 name: "Rooms",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     OwnerCharacterId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 45, nullable: false, defaultValue: "My Room"),
-                    Stage = table.Column<byte>(type: "INTEGER", nullable: false, defaultValue: (byte)0),
-                    Security = table.Column<uint>(type: "INTEGER", nullable: false, defaultValue: 0u),
-                    IsDefault = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    Name = table.Column<string>(
+                        type: "TEXT",
+                        maxLength: 45,
+                        nullable: false,
+                        defaultValue: "My Room"
+                    ),
+                    Stage = table.Column<byte>(
+                        type: "INTEGER",
+                        nullable: false,
+                        defaultValue: (byte)0
+                    ),
+                    Security = table.Column<uint>(
+                        type: "INTEGER",
+                        nullable: false,
+                        defaultValue: 0u
+                    ),
+                    IsDefault = table.Column<bool>(
+                        type: "INTEGER",
+                        nullable: false,
+                        defaultValue: false
+                    ),
+                    CreatedAt = table.Column<DateTime>(
+                        type: "TEXT",
+                        nullable: false,
+                        defaultValueSql: "CURRENT_TIMESTAMP"
+                    ),
+                    UpdatedAt = table.Column<DateTime>(
+                        type: "TEXT",
+                        nullable: false,
+                        defaultValueSql: "CURRENT_TIMESTAMP"
+                    ),
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Rooms", x => x.Id);
-                    table.ForeignKey(name: "FK_Rooms_Characters_OwnerCharacterId", column: x => x.OwnerCharacterId, principalTable: "Characters", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Rooms_Characters_OwnerCharacterId",
+                        column: x => x.OwnerCharacterId,
+                        principalTable: "Characters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -45,31 +81,87 @@ namespace AISpace.Common.DAL.Migrations
 
             migrationBuilder.DropColumn(name: "MyRoomSecurity", table: "Characters");
 
-            migrationBuilder.RenameColumn(name: "CharacterId", table: "MyRoomFurniture", newName: "RoomId");
+            migrationBuilder.RenameColumn(
+                name: "CharacterId",
+                table: "MyRoomFurniture",
+                newName: "RoomId"
+            );
 
-            migrationBuilder.AddColumn<uint>(name: "MyRoomId", table: "PendingMapTransfers", type: "INTEGER", nullable: false, defaultValue: 0u);
+            migrationBuilder.AddColumn<uint>(
+                name: "MyRoomId",
+                table: "PendingMapTransfers",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0u
+            );
 
-            migrationBuilder.AddColumn<int>(name: "CurrentRoomId", table: "Characters", type: "INTEGER", nullable: true);
+            migrationBuilder.AddColumn<int>(
+                name: "CurrentRoomId",
+                table: "Characters",
+                type: "INTEGER",
+                nullable: true
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_Characters_CurrentRoomId", table: "Characters", column: "CurrentRoomId");
+            migrationBuilder.CreateIndex(
+                name: "IX_Characters_CurrentRoomId",
+                table: "Characters",
+                column: "CurrentRoomId"
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_Rooms_OwnerCharacterId_IsDefault", table: "Rooms", columns: new[] { "OwnerCharacterId", "IsDefault" });
+            migrationBuilder.CreateIndex(
+                name: "IX_Rooms_OwnerCharacterId_IsDefault",
+                table: "Rooms",
+                columns: new[] { "OwnerCharacterId", "IsDefault" }
+            );
 
-            migrationBuilder.AddForeignKey(name: "FK_Characters_Rooms_CurrentRoomId", table: "Characters", column: "CurrentRoomId", principalTable: "Rooms", principalColumn: "Id", onDelete: ReferentialAction.SetNull);
+            migrationBuilder.AddForeignKey(
+                name: "FK_Characters_Rooms_CurrentRoomId",
+                table: "Characters",
+                column: "CurrentRoomId",
+                principalTable: "Rooms",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.SetNull
+            );
 
-            migrationBuilder.AddForeignKey(name: "FK_MyRoomFurniture_Rooms_RoomId", table: "MyRoomFurniture", column: "RoomId", principalTable: "Rooms", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+            migrationBuilder.AddForeignKey(
+                name: "FK_MyRoomFurniture_Rooms_RoomId",
+                table: "MyRoomFurniture",
+                column: "RoomId",
+                principalTable: "Rooms",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(name: "FK_Characters_Rooms_CurrentRoomId", table: "Characters");
+            migrationBuilder.DropForeignKey(
+                name: "FK_Characters_Rooms_CurrentRoomId",
+                table: "Characters"
+            );
 
-            migrationBuilder.DropForeignKey(name: "FK_MyRoomFurniture_Rooms_RoomId", table: "MyRoomFurniture");
+            migrationBuilder.DropForeignKey(
+                name: "FK_MyRoomFurniture_Rooms_RoomId",
+                table: "MyRoomFurniture"
+            );
 
-            migrationBuilder.AddColumn<string>(name: "MyRoomName", table: "Characters", type: "TEXT", maxLength: 45, nullable: false, defaultValue: "My Room");
+            migrationBuilder.AddColumn<string>(
+                name: "MyRoomName",
+                table: "Characters",
+                type: "TEXT",
+                maxLength: 45,
+                nullable: false,
+                defaultValue: "My Room"
+            );
 
-            migrationBuilder.AddColumn<uint>(name: "MyRoomSecurity", table: "Characters", type: "INTEGER", nullable: false, defaultValue: 0u);
+            migrationBuilder.AddColumn<uint>(
+                name: "MyRoomSecurity",
+                table: "Characters",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0u
+            );
 
             migrationBuilder.Sql(
                 """
@@ -91,11 +183,22 @@ namespace AISpace.Common.DAL.Migrations
 
             migrationBuilder.DropColumn(name: "MyRoomId", table: "PendingMapTransfers");
 
-            migrationBuilder.RenameColumn(name: "RoomId", table: "MyRoomFurniture", newName: "CharacterId");
+            migrationBuilder.RenameColumn(
+                name: "RoomId",
+                table: "MyRoomFurniture",
+                newName: "CharacterId"
+            );
 
             migrationBuilder.DropTable(name: "Rooms");
 
-            migrationBuilder.AddForeignKey(name: "FK_MyRoomFurniture_Characters_CharacterId", table: "MyRoomFurniture", column: "CharacterId", principalTable: "Characters", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+            migrationBuilder.AddForeignKey(
+                name: "FK_MyRoomFurniture_Characters_CharacterId",
+                table: "MyRoomFurniture",
+                column: "CharacterId",
+                principalTable: "Characters",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade
+            );
         }
     }
 }

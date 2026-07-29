@@ -13,7 +13,13 @@ public static class PasswordHasher
     public static string Hash(string password)
     {
         var salt = RandomNumberGenerator.GetBytes(SaltSize);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, Iterations, Algorithm, KeySize);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(
+            Encoding.UTF8.GetBytes(password),
+            salt,
+            Iterations,
+            Algorithm,
+            KeySize
+        );
 
         // Store format: {iterations}.{salt}.{hash} (Base64)
         return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
@@ -29,7 +35,13 @@ public static class PasswordHasher
         var salt = Convert.FromBase64String(parts[1]);
         var hash = Convert.FromBase64String(parts[2]);
 
-        var inputHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, Algorithm, hash.Length);
+        var inputHash = Rfc2898DeriveBytes.Pbkdf2(
+            password,
+            salt,
+            iterations,
+            Algorithm,
+            hash.Length
+        );
 
         // constant-time comparison
         return CryptographicOperations.FixedTimeEquals(hash, inputHash);

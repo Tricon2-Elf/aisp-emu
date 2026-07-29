@@ -13,22 +13,40 @@ namespace AISpace.Common.Tests;
 
 public class WorldSelectHandlerTests
 {
-    private static ServerOptions TestOptions() => new() { NetworkOptions = new NetworkOptions(), DbOptions = new DbOptions() };
+    private static ServerOptions TestOptions() =>
+        new() { NetworkOptions = new NetworkOptions(), DbOptions = new DbOptions() };
 
     [Fact]
     public async Task NotAuthenticated_SendsError()
     {
         var worldRepo = new Mock<AISpace.Common.DAL.Repositories.IWorldRepository>();
         var sessionRepo = new Mock<AISpace.Common.DAL.Repositories.IUserSessionRepository>();
-        var handler = new WorldSelectHandler(worldRepo.Object, sessionRepo.Object, NullLogger<WorldSelectHandler>.Instance, Options.Create(TestOptions()));
+        var handler = new WorldSelectHandler(
+            worldRepo.Object,
+            sessionRepo.Object,
+            NullLogger<WorldSelectHandler>.Instance,
+            Options.Create(TestOptions())
+        );
         var session = new CapturingPlayerSession { User = null };
 
         var w = new PacketWriter();
         w.Write(1u);
         await handler.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
-        sessionRepo.Verify(r => r.CreateAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal(
+            1u,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
+        sessionRepo.Verify(
+            r =>
+                r.CreateAsync(
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -37,7 +55,12 @@ public class WorldSelectHandlerTests
         var worldRepo = new Mock<AISpace.Common.DAL.Repositories.IWorldRepository>();
         worldRepo.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((World?)null);
         var sessionRepo = new Mock<AISpace.Common.DAL.Repositories.IUserSessionRepository>();
-        var handler = new WorldSelectHandler(worldRepo.Object, sessionRepo.Object, NullLogger<WorldSelectHandler>.Instance, Options.Create(TestOptions()));
+        var handler = new WorldSelectHandler(
+            worldRepo.Object,
+            sessionRepo.Object,
+            NullLogger<WorldSelectHandler>.Instance,
+            Options.Create(TestOptions())
+        );
         var session = new CapturingPlayerSession
         {
             User = new User { Id = 1, Username = "x" },
@@ -47,8 +70,20 @@ public class WorldSelectHandlerTests
         w.Write(999u);
         await handler.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
-        sessionRepo.Verify(r => r.CreateAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal(
+            1u,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
+        sessionRepo.Verify(
+            r =>
+                r.CreateAsync(
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Never
+        );
     }
 
     [Fact]
@@ -67,7 +102,14 @@ public class WorldSelectHandlerTests
 
         var sessionRepo = new Mock<AISpace.Common.DAL.Repositories.IUserSessionRepository>();
         sessionRepo
-            .Setup(r => r.CreateAsync(1, It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Setup(r =>
+                r.CreateAsync(
+                    1,
+                    It.IsAny<string>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<CancellationToken>()
+                )
+            )
             .ReturnsAsync(
                 new UserSession
                 {
@@ -79,7 +121,12 @@ public class WorldSelectHandlerTests
 
         var opts = TestOptions();
         opts.IPOverride = "10.0.0.1";
-        var handler = new WorldSelectHandler(worldRepo.Object, sessionRepo.Object, NullLogger<WorldSelectHandler>.Instance, Options.Create(opts));
+        var handler = new WorldSelectHandler(
+            worldRepo.Object,
+            sessionRepo.Object,
+            NullLogger<WorldSelectHandler>.Instance,
+            Options.Create(opts)
+        );
         var session = new CapturingPlayerSession
         {
             User = new User { Id = 1, Username = "x" },
@@ -89,8 +136,20 @@ public class WorldSelectHandlerTests
         w.Write(2u);
         await handler.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
-        sessionRepo.Verify(r => r.CreateAsync(1, It.IsAny<string>(), TimeSpan.FromHours(1), It.IsAny<CancellationToken>()), Times.Once);
-        Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        sessionRepo.Verify(
+            r =>
+                r.CreateAsync(
+                    1,
+                    It.IsAny<string>(),
+                    TimeSpan.FromHours(1),
+                    It.IsAny<CancellationToken>()
+                ),
+            Times.Once
+        );
+        Assert.Equal(
+            0u,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
         var parsed = ParseWorldSelectResponse(session.Sent[0].Payload);
         Assert.Equal("10.0.0.1", parsed.Ip);
         Assert.Equal((ushort)50052, parsed.Port);

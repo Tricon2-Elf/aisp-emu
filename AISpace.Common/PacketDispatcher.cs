@@ -12,22 +12,47 @@ public sealed class PacketDispatcher
     private readonly ILogger _missingPacketsLogger;
     private readonly Dictionary<(ServerType ServerType, PacketType PacketType), Type> _handlerTypes;
 
-    public PacketDispatcher(IServiceScopeFactory scopeFactory, ILogger<PacketDispatcher> logger, ILoggerFactory loggerFactory)
+    public PacketDispatcher(
+        IServiceScopeFactory scopeFactory,
+        ILogger<PacketDispatcher> logger,
+        ILoggerFactory loggerFactory
+    )
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
         _missingPacketsLogger = loggerFactory.CreateLogger("AISpace.MissingPackets");
         using var bootstrapScope = scopeFactory.CreateScope();
-        _handlerTypes = bootstrapScope.ServiceProvider.GetServices<IPacketHandler>().ToDictionary(h => (h.ServerType, h.RequestType), h => h.GetType());
+        _handlerTypes = bootstrapScope
+            .ServiceProvider.GetServices<IPacketHandler>()
+            .ToDictionary(h => (h.ServerType, h.RequestType), h => h.GetType());
     }
 
-    public async Task DispatchAsync(ServerType ServerType, PacketType type, byte[] payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task DispatchAsync(
+        ServerType ServerType,
+        PacketType type,
+        byte[] payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         if (!_handlerTypes.TryGetValue((ServerType, type), out var handlerType))
         {
-            var message = "No handler for {ServerType}:{PacketType} (payload length: {Length}). Raw data: {Hex}";
-            _logger.LogWarning(message, ServerType, type, payload.Length, BitConverter.ToString(payload));
-            _missingPacketsLogger.LogWarning(message, ServerType, type, payload.Length, BitConverter.ToString(payload));
+            var message =
+                "No handler for {ServerType}:{PacketType} (payload length: {Length}). Raw data: {Hex}";
+            _logger.LogWarning(
+                message,
+                ServerType,
+                type,
+                payload.Length,
+                BitConverter.ToString(payload)
+            );
+            _missingPacketsLogger.LogWarning(
+                message,
+                ServerType,
+                type,
+                payload.Length,
+                BitConverter.ToString(payload)
+            );
             return;
         }
 
@@ -35,7 +60,12 @@ public sealed class PacketDispatcher
         var handler = (IPacketHandler)scope.ServiceProvider.GetRequiredService(handlerType);
         if (handler is IRequiresAuthenticatedSession && !session.IsAuthenticated)
         {
-            _logger.LogWarning("Rejecting unauthenticated packet {ServerType}:{PacketType} from client {ClientId}", ServerType, type, session.ConnectionId);
+            _logger.LogWarning(
+                "Rejecting unauthenticated packet {ServerType}:{PacketType} from client {ClientId}",
+                ServerType,
+                type,
+                session.ConnectionId
+            );
             return;
         }
 

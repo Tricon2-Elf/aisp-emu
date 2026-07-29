@@ -34,7 +34,10 @@ public class CharaData(uint slotId, uint modelId, string name)
         Equips.Add(new ItemSlotInfo(id, socket));
     }
 
-    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<CharacterEquipSlot, uint> resolveSocket)
+    public void AddEquip(
+        IEnumerable<CharacterEquipSlot> equipment,
+        Func<CharacterEquipSlot, uint> resolveSocket
+    )
     {
         for (byte slot = 0; slot < EquipmentSlotCount; slot++)
         {
@@ -72,10 +75,17 @@ public class CharaData(uint slotId, uint modelId, string name)
     public static CharaData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"CharaData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"CharaData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
-        var result = new CharaData(reader.ReadUInt(), reader.ReadUInt(), reader.ReadFixedString(37, "utf-8"))
+        var result = new CharaData(
+            reader.ReadUInt(),
+            reader.ReadUInt(),
+            reader.ReadFixedString(37, "utf-8")
+        )
         {
             Visual = CharaVisual.FromBytes(reader.ReadBytes(19)),
             CharacterParameterId = reader.ReadUInt(),

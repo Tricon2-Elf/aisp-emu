@@ -8,16 +8,30 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRoboRepository roboRepository, SharedState state, ILogger<ItemTryEquipReplaceHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class ItemTryEquipReplaceHandler(
+    ICharacterRepository characterRepo,
+    IRoboRepository roboRepository,
+    SharedState state,
+    ILogger<ItemTryEquipReplaceHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemTryEquipReplaceRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipReplaceResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = ItemTryEquipReplaceRequest.FromBytes(payload.Span);
-        logger.LogInformation("Client {ConnectionId} ItemTryEquipReplace objId={ObjId} equipCount={Count}", session.ConnectionId, request.ObjId, request.Equips.Count);
+        logger.LogInformation(
+            "Client {ConnectionId} ItemTryEquipReplace objId={ObjId} equipCount={Count}",
+            session.ConnectionId,
+            request.ObjId,
+            request.Equips.Count
+        );
 
         if (session.CharacterId == 0)
         {
@@ -32,7 +46,11 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
 
         if (request.ObjId == session.CharacterId)
         {
-            var replaceResult = await characterRepo.ReplaceEquipmentAsync(characterId, resolvedEquips, ct);
+            var replaceResult = await characterRepo.ReplaceEquipmentAsync(
+                characterId,
+                resolvedEquips,
+                ct
+            );
             session.Character = await characterRepo.GetByIdAsync(characterId, ct);
 
             await SendReplaceSuccessAsync(session, request.ObjId, normalizedEquips, ct);
@@ -54,7 +72,12 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
             return;
         }
 
-        var robo = await roboRepository.ReplaceEquipmentAsync(characterId, roboId, resolvedEquips, ct);
+        var robo = await roboRepository.ReplaceEquipmentAsync(
+            characterId,
+            roboId,
+            resolvedEquips,
+            ct
+        );
         if (robo is null)
         {
             await session.SendAsync(ResponseType, new ItemTryEquipReplaceResponse(1).ToBytes(), ct);
@@ -63,7 +86,11 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
 
         await SendReplaceSuccessAsync(session, request.ObjId, normalizedEquips, ct);
 
-        var update = new NotifyUpdateRoboEquip(roboId, request.ObjId, TryEquipNotifyBuilder.FromRobo(robo)).ToBytes();
+        var update = new NotifyUpdateRoboEquip(
+            roboId,
+            request.ObjId,
+            TryEquipNotifyBuilder.FromRobo(robo)
+        ).ToBytes();
         foreach (var peer in state.GetAreaPeers(session, includeSelf: true))
             await peer.SendAsync(PacketType.NotifyUpdateRoboEquip, update, ct);
     }
@@ -81,18 +108,39 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
             .ToList();
     }
 
-    private static async Task SendReplaceSuccessAsync(IPlayerSession session, uint objectId, IReadOnlyList<ItemEquipEntry> equipment, CancellationToken ct)
+    private static async Task SendReplaceSuccessAsync(
+        IPlayerSession session,
+        uint objectId,
+        IReadOnlyList<ItemEquipEntry> equipment,
+        CancellationToken ct
+    )
     {
-        await session.SendAsync(PacketType.ItemTryEquipReplaceResponse, new ItemTryEquipReplaceResponse(0).ToBytes(), ct);
-        await session.SendAsync(PacketType.ItemTryEquipReplacedNotify, new ItemTryEquipReplacedNotify(objectId, equipment).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.ItemTryEquipReplaceResponse,
+            new ItemTryEquipReplaceResponse(0).ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.ItemTryEquipReplacedNotify,
+            new ItemTryEquipReplacedNotify(objectId, equipment).ToBytes(),
+            ct
+        );
     }
 
-    private static IReadOnlyList<ItemEquipEntry> ResolveEquipsForPersistence(IReadOnlyList<ItemEquipEntry> equips, Character? character)
+    private static IReadOnlyList<ItemEquipEntry> ResolveEquipsForPersistence(
+        IReadOnlyList<ItemEquipEntry> equips,
+        Character? character
+    )
     {
         if (character is null || equips.Count == 0)
             return equips;
 
-        var ownedItemIds = character.Inventory.Select(x => x.ItemId).Concat(character.Equipment.Select(x => x.ItemId)).Where(x => x > 0).Distinct().ToList();
+        var ownedItemIds = character
+            .Inventory.Select(x => x.ItemId)
+            .Concat(character.Equipment.Select(x => x.ItemId))
+            .Where(x => x > 0)
+            .Distinct()
+            .ToList();
         if (ownedItemIds.Count == 0)
             return equips;
 
@@ -105,14 +153,20 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
             .ToList();
     }
 
-    private static uint ResolveRequestItemId(uint requestItemId, uint socketBit, IReadOnlyList<int> ownedItemIds)
+    private static uint ResolveRequestItemId(
+        uint requestItemId,
+        uint socketBit,
+        IReadOnlyList<int> ownedItemIds
+    )
     {
         // Client try-equip packets can carry either full item id or serial id.
         // Accept both and map serial ids back to owned item ids deterministically.
         if (ownedItemIds.Contains((int)requestItemId))
             return requestItemId;
 
-        var candidates = ownedItemIds.Where(id => ResolveLegacySerialId(id) == requestItemId).ToList();
+        var candidates = ownedItemIds
+            .Where(id => ResolveLegacySerialId(id) == requestItemId)
+            .ToList();
         if (candidates.Count == 0)
             return requestItemId;
 
@@ -120,7 +174,9 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
             return (uint)candidates[0];
 
         // Disambiguate serial collisions using requested socket/bodyspot when possible.
-        var bySocket = candidates.Where(id => ItemEntityMapper.ResolveBodyspot(id) == socketBit).ToList();
+        var bySocket = candidates
+            .Where(id => ItemEntityMapper.ResolveBodyspot(id) == socketBit)
+            .ToList();
         if (bySocket.Count == 1)
             return (uint)bySocket[0];
 
@@ -143,7 +199,20 @@ public class ItemTryEquipReplaceHandler(ICharacterRepository characterRepo, IRob
 
     private static byte[] BuildAppearanceNotify(IPlayerSession session, Character character)
     {
-        var pos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
-        return AreasvEnterHandler.CreateNotify(character, session.CharacterId, 1, pos, checked((uint)session.ChannelId), session.MapId);
+        var pos = new MovementData(
+            session.X,
+            session.Y,
+            session.Z,
+            session.Rotation,
+            MovementType.Stopped
+        );
+        return AreasvEnterHandler.CreateNotify(
+            character,
+            session.CharacterId,
+            1,
+            pos,
+            checked((uint)session.ChannelId),
+            session.MapId
+        );
     }
 }

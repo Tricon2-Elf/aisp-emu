@@ -21,8 +21,15 @@ public class AreaRoboAiscriptStartHandlerTests
             await using (var seedDb = new MainContext(options))
             {
                 var objectId = RoboRepository.GetObjectId(1, 1);
-                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Owned Robo")) { OwnerAvatarId = 1 };
-                await new RoboRepository(seedDb).UpsertAsync(1, robo, TestContext.Current.CancellationToken);
+                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Owned Robo"))
+                {
+                    OwnerAvatarId = 1,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    1,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
             }
 
             await AssertResponseAsync(options, characterId: 1, roboId: 1, expectedResult: 0);
@@ -44,8 +51,15 @@ public class AreaRoboAiscriptStartHandlerTests
             await using (var seedDb = new MainContext(options))
             {
                 var objectId = RoboRepository.GetObjectId(2, 1);
-                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Other Robo")) { OwnerAvatarId = 2 };
-                await new RoboRepository(seedDb).UpsertAsync(2, robo, TestContext.Current.CancellationToken);
+                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Other Robo"))
+                {
+                    OwnerAvatarId = 2,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    2,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
             }
 
             await AssertResponseAsync(options, characterId: 1, roboId: 1, expectedResult: 1);
@@ -56,10 +70,18 @@ public class AreaRoboAiscriptStartHandlerTests
         }
     }
 
-    private static async Task AssertResponseAsync(Microsoft.EntityFrameworkCore.DbContextOptions<MainContext> options, uint characterId, uint roboId, uint expectedResult)
+    private static async Task AssertResponseAsync(
+        Microsoft.EntityFrameworkCore.DbContextOptions<MainContext> options,
+        uint characterId,
+        uint roboId,
+        uint expectedResult
+    )
     {
         await using var handlerDb = new MainContext(options);
-        var handler = new AreaRoboAiscriptStartHandler(new RoboRepository(handlerDb), NullLogger<AreaRoboAiscriptStartHandler>.Instance);
+        var handler = new AreaRoboAiscriptStartHandler(
+            new RoboRepository(handlerDb),
+            NullLogger<AreaRoboAiscriptStartHandler>.Instance
+        );
         var session = new CapturingPlayerSession { CharacterId = characterId };
         var writer = new PacketWriter();
         writer.Write(roboId);

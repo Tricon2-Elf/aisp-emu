@@ -2,7 +2,8 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public class AvatarProfileGetDataResponse(uint result, uint targetObjectId, ProfileData? profile) : IOutgoingPacket
+public class AvatarProfileGetDataResponse(uint result, uint targetObjectId, ProfileData? profile)
+    : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

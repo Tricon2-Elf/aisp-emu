@@ -29,7 +29,11 @@ public class WorldListHandlerTests
         var handler = new WorldListHandler(repo, NullLogger<WorldListHandler>.Instance);
         var session = new CapturingPlayerSession();
 
-        await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.WorldListResponse, session.Sent[0].Type);
@@ -38,13 +42,17 @@ public class WorldListHandlerTests
         Assert.Equal(1u, BinaryPrimitives.ReadUInt32LittleEndian(payload.AsSpan(4, 4)));
     }
 
-    private sealed class MockWorldRepository(List<World> worlds) : AISpace.Common.DAL.Repositories.IWorldRepository
+    private sealed class MockWorldRepository(List<World> worlds)
+        : AISpace.Common.DAL.Repositories.IWorldRepository
     {
-        public Task AddAsync(string name, string description, string address, ushort port) => Task.CompletedTask;
+        public Task AddAsync(string name, string description, string address, ushort port) =>
+            Task.CompletedTask;
 
-        public Task<World?> GetByIdAsync(int id) => Task.FromResult<World?>(worlds.FirstOrDefault(w => w.Id == id));
+        public Task<World?> GetByIdAsync(int id) =>
+            Task.FromResult<World?>(worlds.FirstOrDefault(w => w.Id == id));
 
-        public Task<World?> GetByNameAsync(string name) => Task.FromResult<World?>(worlds.FirstOrDefault(w => w.Name == name));
+        public Task<World?> GetByNameAsync(string name) =>
+            Task.FromResult<World?>(worlds.FirstOrDefault(w => w.Name == name));
 
         public Task<List<World>> GetAllAsync() => Task.FromResult(worlds);
     }

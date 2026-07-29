@@ -30,7 +30,14 @@ public class AreaShopBuyHandlerTests
             await using (var seed = new MainContext(options))
             {
                 seed.Users.Add(user);
-                seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                seed.Items.Add(
+                    new Item
+                    {
+                        Id = (int)itemId,
+                        Name = "Shop Item",
+                        Socket = 8,
+                    }
+                );
                 await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
@@ -71,8 +78,14 @@ public class AreaShopBuyHandlerTests
             Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.MoneyUpdatedNicopoint);
 
             await using var verify = new MainContext(options);
-            var persistedUser = await verify.Users.SingleAsync(u => u.Id == userId, TestContext.Current.CancellationToken);
-            var inventory = await verify.CharacterInventories.SingleAsync(i => i.CharacterId == characterId && i.ItemId == (int)itemId, TestContext.Current.CancellationToken);
+            var persistedUser = await verify.Users.SingleAsync(
+                u => u.Id == userId,
+                TestContext.Current.CancellationToken
+            );
+            var inventory = await verify.CharacterInventories.SingleAsync(
+                i => i.CharacterId == characterId && i.ItemId == (int)itemId,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(100, persistedUser.AiPoints);
             Assert.Equal(999, persistedUser.NicoPoints);
             Assert.Equal(2, inventory.Quantity);
@@ -97,7 +110,14 @@ public class AreaShopBuyHandlerTests
             await using (var seed = new MainContext(options))
             {
                 seed.Users.Add(user);
-                seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                seed.Items.Add(
+                    new Item
+                    {
+                        Id = (int)itemId,
+                        Name = "Shop Item",
+                        Socket = 8,
+                    }
+                );
                 await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
@@ -119,7 +139,10 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(itemId, 0, 0, 0)], ShopPriceType.NicoPoints);
+            var payload = BuildShopBuyPayload(
+                [new ShopBuyRequestedItem(itemId, 0, 0, 0)],
+                ShopPriceType.NicoPoints
+            );
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -131,7 +154,10 @@ public class AreaShopBuyHandlerTests
             Assert.Contains(session.Sent, p => p.Type == PacketType.MoneyUpdatedNicopoint);
 
             await using var verify = new MainContext(options);
-            var persistedUser = await verify.Users.SingleAsync(u => u.Id == userId, TestContext.Current.CancellationToken);
+            var persistedUser = await verify.Users.SingleAsync(
+                u => u.Id == userId,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(500, persistedUser.AiPoints);
             Assert.Equal(40, persistedUser.NicoPoints);
         }
@@ -155,7 +181,14 @@ public class AreaShopBuyHandlerTests
             await using (var seed = new MainContext(options))
             {
                 seed.Users.Add(user);
-                seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                seed.Items.Add(
+                    new Item
+                    {
+                        Id = (int)itemId,
+                        Name = "Shop Item",
+                        Socket = 8,
+                    }
+                );
                 await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
@@ -177,7 +210,10 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(itemId, 0, 0, 0)], ShopPriceType.AiPoints);
+            var payload = BuildShopBuyPayload(
+                [new ShopBuyRequestedItem(itemId, 0, 0, 0)],
+                ShopPriceType.AiPoints
+            );
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -186,8 +222,13 @@ public class AreaShopBuyHandlerTests
             Assert.Equal(20UL, responseReader.ReadULong());
 
             await using var verify = new MainContext(options);
-            var persistedUser = await verify.Users.SingleAsync(u => u.Id == userId, TestContext.Current.CancellationToken);
-            var inventoryRows = await verify.CharacterInventories.Where(i => i.CharacterId == characterId).ToListAsync(TestContext.Current.CancellationToken);
+            var persistedUser = await verify.Users.SingleAsync(
+                u => u.Id == userId,
+                TestContext.Current.CancellationToken
+            );
+            var inventoryRows = await verify
+                .CharacterInventories.Where(i => i.CharacterId == characterId)
+                .ToListAsync(TestContext.Current.CancellationToken);
             Assert.Equal(20, persistedUser.AiPoints);
             Assert.Equal(20, persistedUser.NicoPoints);
             Assert.Empty(inventoryRows);
@@ -212,7 +253,14 @@ public class AreaShopBuyHandlerTests
             await using (var seed = new MainContext(options))
             {
                 seed.Users.Add(user);
-                seed.Items.Add(new Item { Id = (int)itemId, Name = "Shop Item", Socket = 8 });
+                seed.Items.Add(
+                    new Item
+                    {
+                        Id = (int)itemId,
+                        Name = "Shop Item",
+                        Socket = 8,
+                    }
+                );
                 await SeedShopDataAsync(seed, itemId);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
@@ -234,7 +282,10 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(itemId, 0, 0, 0)], (ShopPriceType)99);
+            var payload = BuildShopBuyPayload(
+                [new ShopBuyRequestedItem(itemId, 0, 0, 0)],
+                (ShopPriceType)99
+            );
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -243,8 +294,13 @@ public class AreaShopBuyHandlerTests
             Assert.Equal(120UL, responseReader.ReadULong());
 
             await using var verify = new MainContext(options);
-            var persistedUser = await verify.Users.SingleAsync(u => u.Id == userId, TestContext.Current.CancellationToken);
-            var inventoryRows = await verify.CharacterInventories.Where(i => i.CharacterId == characterId).ToListAsync(TestContext.Current.CancellationToken);
+            var persistedUser = await verify.Users.SingleAsync(
+                u => u.Id == userId,
+                TestContext.Current.CancellationToken
+            );
+            var inventoryRows = await verify
+                .CharacterInventories.Where(i => i.CharacterId == characterId)
+                .ToListAsync(TestContext.Current.CancellationToken);
             Assert.Equal(120, persistedUser.AiPoints);
             Assert.Equal(120, persistedUser.NicoPoints);
             Assert.Empty(inventoryRows);
@@ -263,12 +319,24 @@ public class AreaShopBuyHandlerTests
         {
             const int userId = 5;
             const int characterId = 9005;
-            var user = CreateUserWithCharacter(userId, characterId, aiPoints: 1000, nicoPoints: 1000);
+            var user = CreateUserWithCharacter(
+                userId,
+                characterId,
+                aiPoints: 1000,
+                nicoPoints: 1000
+            );
 
             await using (var seed = new MainContext(options))
             {
                 seed.Users.Add(user);
-                seed.Items.Add(new Item { Id = 10100220, Name = "Shop Item", Socket = 8 });
+                seed.Items.Add(
+                    new Item
+                    {
+                        Id = 10100220,
+                        Name = "Shop Item",
+                        Socket = 8,
+                    }
+                );
                 await SeedShopDataAsync(seed, 10100220);
                 await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
@@ -290,7 +358,10 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(99999999, 0, 0, 0)], ShopPriceType.AiPoints);
+            var payload = BuildShopBuyPayload(
+                [new ShopBuyRequestedItem(99999999, 0, 0, 0)],
+                ShopPriceType.AiPoints
+            );
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -299,8 +370,13 @@ public class AreaShopBuyHandlerTests
             Assert.Equal(1000UL, responseReader.ReadULong());
 
             await using var verify = new MainContext(options);
-            var persistedUser = await verify.Users.SingleAsync(u => u.Id == userId, TestContext.Current.CancellationToken);
-            var inventoryRows = await verify.CharacterInventories.Where(i => i.CharacterId == characterId).ToListAsync(TestContext.Current.CancellationToken);
+            var persistedUser = await verify.Users.SingleAsync(
+                u => u.Id == userId,
+                TestContext.Current.CancellationToken
+            );
+            var inventoryRows = await verify
+                .CharacterInventories.Where(i => i.CharacterId == characterId)
+                .ToListAsync(TestContext.Current.CancellationToken);
             Assert.Equal(1000, persistedUser.AiPoints);
             Assert.Equal(1000, persistedUser.NicoPoints);
             Assert.Empty(inventoryRows);
@@ -311,7 +387,10 @@ public class AreaShopBuyHandlerTests
         }
     }
 
-    private static byte[] BuildShopBuyPayload(IReadOnlyList<ShopBuyRequestedItem> items, ShopPriceType priceType)
+    private static byte[] BuildShopBuyPayload(
+        IReadOnlyList<ShopBuyRequestedItem> items,
+        ShopPriceType priceType
+    )
     {
         var writer = new PacketWriter();
         writer.Write((uint)items.Count);
@@ -327,7 +406,12 @@ public class AreaShopBuyHandlerTests
         return writer.ToBytes();
     }
 
-    private static User CreateUserWithCharacter(int userId, int characterId, long aiPoints, long nicoPoints)
+    private static User CreateUserWithCharacter(
+        int userId,
+        int characterId,
+        long aiPoints,
+        long nicoPoints
+    )
     {
         var user = new User
         {

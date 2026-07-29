@@ -1,7 +1,8 @@
 namespace AISpace.Network.Packets.Area;
 
 /// <summary>Requests the cost of assigning a value to one of a Robo's five distributed status categories.</summary>
-public sealed class DistributeStatusPointAddRequest : IIncomingPacket<DistributeStatusPointAddRequest>
+public sealed class DistributeStatusPointAddRequest
+    : IIncomingPacket<DistributeStatusPointAddRequest>
 {
     public uint RoboId { get; init; }
     public uint Type { get; init; }

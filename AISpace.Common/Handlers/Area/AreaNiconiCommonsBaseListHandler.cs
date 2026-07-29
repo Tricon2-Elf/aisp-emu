@@ -12,7 +12,11 @@ public class AreaNiconiCommonsBaseListHandler : IPacketHandler, IRequiresAuthent
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var response = new NiconiCommonsBaseListResponse();
         await session.SendAsync(ResponseType, response.ToBytes(), ct);

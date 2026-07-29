@@ -10,7 +10,13 @@ namespace AISpace.Common.DAL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<uint>(name: "HomeIslandId", table: "Characters", type: "INTEGER", nullable: false, defaultValue: 0u);
+            migrationBuilder.AddColumn<uint>(
+                name: "HomeIslandId",
+                table: "Characters",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0u
+            );
         }
 
         /// <inheritdoc />

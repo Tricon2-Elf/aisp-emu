@@ -16,7 +16,38 @@ public class AreaRoboCreateHandlerTests
     public void RoboCreateRequest_ParsesNameVisualAndModel()
     {
         // Payload from client log: "Robot\0" + visual(19) + model 1002011
-        byte[] payload = [0x52, 0x6F, 0x62, 0x6F, 0x74, 0x00, 0x04, 0x00, 0x00, 0x00, 0x0C, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1B, 0x4A, 0x0F, 0x00];
+        byte[] payload =
+        [
+            0x52,
+            0x6F,
+            0x62,
+            0x6F,
+            0x74,
+            0x00,
+            0x04,
+            0x00,
+            0x00,
+            0x00,
+            0x0C,
+            0x0C,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x1B,
+            0x4A,
+            0x0F,
+            0x00,
+        ];
 
         var request = RoboCreateRequest.FromBytes(payload);
         Assert.Equal("Robot", request.Name);
@@ -31,7 +62,10 @@ public class AreaRoboCreateHandlerTests
         var chara = new CharaData(RoboRepository.GetObjectId(1, 1), 1002011, "Robot");
         var bytes = new RoboData(1, chara).ToBytes();
         Assert.Equal(RoboData.WireSize, bytes.Length);
-        Assert.Equal(sizeof(uint) + RoboData.WireSize, new RoboCreateResponse(0, new RoboData(1, chara)).ToBytes().Length);
+        Assert.Equal(
+            sizeof(uint) + RoboData.WireSize,
+            new RoboCreateResponse(0, new RoboData(1, chara)).ToBytes().Length
+        );
     }
 
     [Fact]
@@ -43,9 +77,43 @@ public class AreaRoboCreateHandlerTests
             await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
             await using var db = new MainContext(options);
             var repository = new RoboRepository(db);
-            var handler = new AreaRoboCreateHandler(repository, NullLogger<AreaRoboCreateHandler>.Instance);
+            var handler = new AreaRoboCreateHandler(
+                repository,
+                NullLogger<AreaRoboCreateHandler>.Instance
+            );
             var session = new CapturingPlayerSession { CharacterId = 42 };
-            byte[] payload = [0x52, 0x6F, 0x62, 0x6F, 0x74, 0x00, 0x04, 0x00, 0x00, 0x00, 0x0C, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1B, 0x4A, 0x0F, 0x00];
+            byte[] payload =
+            [
+                0x52,
+                0x6F,
+                0x62,
+                0x6F,
+                0x74,
+                0x00,
+                0x04,
+                0x00,
+                0x00,
+                0x00,
+                0x0C,
+                0x0C,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x1B,
+                0x4A,
+                0x0F,
+                0x00,
+            ];
 
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
@@ -59,7 +127,11 @@ public class AreaRoboCreateHandlerTests
             Assert.Equal(0u, reader.ReadUInt()); // state resting
 
             await using var restartedDb = new MainContext(options);
-            var stored = await new RoboRepository(restartedDb).GetAsync(42, 1, TestContext.Current.CancellationToken);
+            var stored = await new RoboRepository(restartedDb).GetAsync(
+                42,
+                1,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(stored);
             Assert.Equal(42u, stored.OwnerAvatarId);
             Assert.Equal(RoboRepository.GetObjectId(42, 1), stored.Chara.Visual.VisualId);

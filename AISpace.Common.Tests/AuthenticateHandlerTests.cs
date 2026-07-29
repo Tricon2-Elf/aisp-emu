@@ -21,11 +21,18 @@ public class AuthenticateHandlerTests
         created.SetPassword("pw");
 
         var userRepo = new Mock<AISpace.Common.DAL.Repositories.IUserRepository>();
-        userRepo.SetupSequence(r => r.GetByUsernameAsync("newbie")).ReturnsAsync((User?)null).ReturnsAsync(created);
+        userRepo
+            .SetupSequence(r => r.GetByUsernameAsync("newbie"))
+            .ReturnsAsync((User?)null)
+            .ReturnsAsync(created);
         userRepo.Setup(r => r.AddAsync("newbie", "pw")).Returns(Task.CompletedTask);
 
         var state = new SharedState();
-        var handler = new AuthenticateHandler(userRepo.Object, state, NullLogger<AuthenticateHandler>.Instance);
+        var handler = new AuthenticateHandler(
+            userRepo.Object,
+            state,
+            NullLogger<AuthenticateHandler>.Instance
+        );
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
         var w = new PacketWriter();
@@ -40,7 +47,10 @@ public class AuthenticateHandlerTests
         Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
-        Assert.Equal(7u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        Assert.Equal(
+            7u,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
     }
 
     [Fact]
@@ -52,7 +62,11 @@ public class AuthenticateHandlerTests
         var userRepo = new Mock<AISpace.Common.DAL.Repositories.IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("bob")).ReturnsAsync(user);
 
-        var handler = new AuthenticateHandler(userRepo.Object, new SharedState(), NullLogger<AuthenticateHandler>.Instance);
+        var handler = new AuthenticateHandler(
+            userRepo.Object,
+            new SharedState(),
+            NullLogger<AuthenticateHandler>.Instance
+        );
         var session = new CapturingPlayerSession();
         var req = new AuthenticateRequest("bob", "wrong");
 
@@ -62,7 +76,10 @@ public class AuthenticateHandlerTests
         Assert.Null(session.User);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateFailureResponse, session.Sent[0].Type);
-        Assert.Equal((uint)AuthResponseResult.InvalidCredentials, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        Assert.Equal(
+            (uint)AuthResponseResult.InvalidCredentials,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
     }
 
     [Fact]
@@ -75,7 +92,11 @@ public class AuthenticateHandlerTests
         userRepo.Setup(r => r.GetByUsernameAsync("alice")).ReturnsAsync(user);
 
         var state = new SharedState();
-        var handler = new AuthenticateHandler(userRepo.Object, state, NullLogger<AuthenticateHandler>.Instance);
+        var handler = new AuthenticateHandler(
+            userRepo.Object,
+            state,
+            NullLogger<AuthenticateHandler>.Instance
+        );
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
         var w = new PacketWriter();
@@ -88,7 +109,10 @@ public class AuthenticateHandlerTests
         Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
-        Assert.Equal(3u, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        Assert.Equal(
+            3u,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
     }
 
     [Fact]
@@ -106,7 +130,11 @@ public class AuthenticateHandlerTests
         var userRepo = new Mock<AISpace.Common.DAL.Repositories.IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("banned")).ReturnsAsync(user);
 
-        var handler = new AuthenticateHandler(userRepo.Object, new SharedState(), NullLogger<AuthenticateHandler>.Instance);
+        var handler = new AuthenticateHandler(
+            userRepo.Object,
+            new SharedState(),
+            NullLogger<AuthenticateHandler>.Instance
+        );
         var session = new CapturingPlayerSession();
         var req = new AuthenticateRequest("banned", "pw");
 
@@ -116,6 +144,9 @@ public class AuthenticateHandlerTests
         Assert.Null(session.User);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateFailureResponse, session.Sent[0].Type);
-        Assert.Equal((uint)AuthResponseResult.AccountBanned, BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4)));
+        Assert.Equal(
+            (uint)AuthResponseResult.AccountBanned,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
     }
 }

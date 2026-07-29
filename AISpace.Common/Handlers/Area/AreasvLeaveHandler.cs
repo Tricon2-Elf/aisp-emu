@@ -12,7 +12,11 @@ public class AreasvLeaveHandler : IPacketHandler, IRequiresAuthenticatedSession
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var response = new AreasvLeaveResponse();
         await session.SendAsync(ResponseType, response.ToBytes(), ct);

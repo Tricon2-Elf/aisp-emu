@@ -14,7 +14,14 @@ public class VceListenerParserTests
     public async Task ParseAndDispatchFrameAsync_FirstPacketNotVersionCheck_Disconnects()
     {
         var channel = Channel.CreateUnbounded<Packet>();
-        var listener = new VceListener(NullLogger<VceListener>.Instance, channel, "Test", 0, NullLoggerFactory.Instance, _ => { });
+        var listener = new VceListener(
+            NullLogger<VceListener>.Instance,
+            channel,
+            "Test",
+            0,
+            NullLoggerFactory.Instance,
+            _ => { }
+        );
         var (context, peer) = await CreateClientContextAsync();
         using (peer)
         using (context)
@@ -32,7 +39,14 @@ public class VceListenerParserTests
     public async Task ParseAndDispatchFrameAsync_MalformedSecondPacket_Disconnects()
     {
         var channel = Channel.CreateUnbounded<Packet>();
-        var listener = new VceListener(NullLogger<VceListener>.Instance, channel, "Test", 0, NullLoggerFactory.Instance, _ => { });
+        var listener = new VceListener(
+            NullLogger<VceListener>.Instance,
+            channel,
+            "Test",
+            0,
+            NullLoggerFactory.Instance,
+            _ => { }
+        );
         var (context, peer) = await CreateClientContextAsync();
         using (peer)
         using (context)
@@ -51,11 +65,20 @@ public class VceListenerParserTests
     [Theory]
     [InlineData(PacketType.RoboAiscriptStartRequest)]
     [InlineData(PacketType.RoboAiscriptEndRequest)]
-    public async Task ParseAndDispatchFrameAsync_RoboAiLifecyclePacket_LogsAtDebug(PacketType packetType)
+    public async Task ParseAndDispatchFrameAsync_RoboAiLifecyclePacket_LogsAtDebug(
+        PacketType packetType
+    )
     {
         var logger = new RecordingLogger<VceListener>();
         var channel = Channel.CreateUnbounded<Packet>();
-        var listener = new VceListener(logger, channel, "Area", 0, NullLoggerFactory.Instance, _ => { });
+        var listener = new VceListener(
+            logger,
+            channel,
+            "Area",
+            0,
+            NullLoggerFactory.Instance,
+            _ => { }
+        );
         var (context, peer) = await CreateClientContextAsync();
         using (peer)
         using (context)
@@ -64,8 +87,17 @@ public class VceListenerParserTests
             var frame = BuildSinglePacketFrame(packetType, [1, 0, 0, 0]);
             await InvokeParseAndDispatchFrameAsync(listener, context, frame, frame.Length);
 
-            Assert.Contains(logger.Entries, entry => entry.Level == LogLevel.Debug && entry.Message.Contains(packetType.ToString()));
-            Assert.DoesNotContain(logger.Entries, entry => entry.Level == LogLevel.Information && entry.Message.Contains(packetType.ToString()));
+            Assert.Contains(
+                logger.Entries,
+                entry =>
+                    entry.Level == LogLevel.Debug && entry.Message.Contains(packetType.ToString())
+            );
+            Assert.DoesNotContain(
+                logger.Entries,
+                entry =>
+                    entry.Level == LogLevel.Information
+                    && entry.Message.Contains(packetType.ToString())
+            );
         }
     }
 
@@ -78,10 +110,24 @@ public class VceListenerParserTests
         using (context)
         {
             context.encrypted = false;
-            await context.SendAsync(PacketType.RoboAiscriptStartResponse, new byte[8], TestContext.Current.CancellationToken);
+            await context.SendAsync(
+                PacketType.RoboAiscriptStartResponse,
+                new byte[8],
+                TestContext.Current.CancellationToken
+            );
 
-            Assert.Contains(logger.Entries, entry => entry.Level == LogLevel.Debug && entry.Message.Contains(nameof(PacketType.RoboAiscriptStartResponse)));
-            Assert.DoesNotContain(logger.Entries, entry => entry.Level == LogLevel.Information && entry.Message.Contains(nameof(PacketType.RoboAiscriptStartResponse)));
+            Assert.Contains(
+                logger.Entries,
+                entry =>
+                    entry.Level == LogLevel.Debug
+                    && entry.Message.Contains(nameof(PacketType.RoboAiscriptStartResponse))
+            );
+            Assert.DoesNotContain(
+                logger.Entries,
+                entry =>
+                    entry.Level == LogLevel.Information
+                    && entry.Message.Contains(nameof(PacketType.RoboAiscriptStartResponse))
+            );
         }
     }
 
@@ -104,7 +150,10 @@ public class VceListenerParserTests
         var frame = new byte[8];
         frame[0] = 0x00;
         frame[1] = 0x02;
-        BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(2, 2), (ushort)PacketType.VersionCheckRequest);
+        BinaryPrimitives.WriteUInt16LittleEndian(
+            frame.AsSpan(2, 2),
+            (ushort)PacketType.VersionCheckRequest
+        );
 
         frame[4] = 0x00;
         frame[5] = 0x0A;
@@ -113,18 +162,31 @@ public class VceListenerParserTests
         return frame;
     }
 
-    private static async Task InvokeParseAndDispatchFrameAsync(VceListener listener, ClientConnection context, byte[] cipher, int msgSize)
+    private static async Task InvokeParseAndDispatchFrameAsync(
+        VceListener listener,
+        ClientConnection context,
+        byte[] cipher,
+        int msgSize
+    )
     {
-        var method = typeof(VceListener).GetMethod("ParseAndDispatchFrameAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        var method = typeof(VceListener).GetMethod(
+            "ParseAndDispatchFrameAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic
+        );
         Assert.NotNull(method);
 
-        var taskObj = method!.Invoke(listener, [context, cipher, msgSize, TestContext.Current.CancellationToken]);
+        var taskObj = method!.Invoke(
+            listener,
+            [context, cipher, msgSize, TestContext.Current.CancellationToken]
+        );
         Assert.NotNull(taskObj);
 
         await (Task)taskObj!;
     }
 
-    private static async Task<(ClientConnection context, TcpClient peer)> CreateClientContextAsync(ILogger<ClientConnection>? logger = null)
+    private static async Task<(ClientConnection context, TcpClient peer)> CreateClientContextAsync(
+        ILogger<ClientConnection>? logger = null
+    )
     {
         var acceptor = new TcpListener(IPAddress.Loopback, 0);
         acceptor.Start();
@@ -132,8 +194,16 @@ public class VceListenerParserTests
         {
             var peer = new TcpClient();
             await peer.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)acceptor.LocalEndpoint).Port);
-            var serverSide = await acceptor.AcceptTcpClientAsync(TestContext.Current.CancellationToken);
-            var context = new ClientConnection(Guid.NewGuid(), serverSide.Client.RemoteEndPoint!, serverSide.GetStream(), logger ?? NullLogger<ClientConnection>.Instance, serverSide);
+            var serverSide = await acceptor.AcceptTcpClientAsync(
+                TestContext.Current.CancellationToken
+            );
+            var context = new ClientConnection(
+                Guid.NewGuid(),
+                serverSide.Client.RemoteEndPoint!,
+                serverSide.GetStream(),
+                logger ?? NullLogger<ClientConnection>.Instance,
+                serverSide
+            );
             return (context, peer);
         }
         finally
@@ -151,7 +221,13 @@ public class VceListenerParserTests
 
         public bool IsEnabled(LogLevel logLevel) => true;
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        )
         {
             Entries.Add((logLevel, formatter(state, exception)));
         }

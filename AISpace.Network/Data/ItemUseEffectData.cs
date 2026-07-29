@@ -19,7 +19,9 @@ public sealed class ItemUseEffectData
     public byte[] ToBytes()
     {
         if (Parameters.Length != ParameterCount)
-            throw new InvalidOperationException($"ItemUseEffectData must contain exactly {ParameterCount} parameters.");
+            throw new InvalidOperationException(
+                $"ItemUseEffectData must contain exactly {ParameterCount} parameters."
+            );
 
         var writer = new PacketWriter();
         writer.Write(ItemSerialId);
@@ -35,7 +37,10 @@ public sealed class ItemUseEffectData
     public static ItemUseEffectData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"ItemUseEffectData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"ItemUseEffectData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
         var result = new ItemUseEffectData

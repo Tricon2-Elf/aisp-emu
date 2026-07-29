@@ -3,11 +3,13 @@ using AISpace.Common.Game;
 
 namespace AISpace.Server;
 
-public class MsgServer(ILogger<MsgServer> logger, GameServerContext ctx, int port) : GameServerBase<MsgServer>(logger, ctx, port)
+public class MsgServer(ILogger<MsgServer> logger, GameServerContext ctx, int port)
+    : GameServerBase<MsgServer>(logger, ctx, port)
 {
     protected override ServerType ActiveServerType => ServerType.Msg;
 
-    protected override IEnumerable<Task> GetAdditionalLoops(CancellationToken ct) => [RunMessageLoop(ct)];
+    protected override IEnumerable<Task> GetAdditionalLoops(CancellationToken ct) =>
+        [RunMessageLoop(ct)];
 
     private async Task RunMessageLoop(CancellationToken ct)
     {

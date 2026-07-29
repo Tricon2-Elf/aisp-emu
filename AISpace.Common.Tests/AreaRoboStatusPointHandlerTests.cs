@@ -18,11 +18,22 @@ public class AreaRoboStatusPointHandlerTests
         {
             const int characterId = 42;
             const uint roboId = 1;
-            await TestDb.SeedCharacterAsync(options, characterId, TestContext.Current.CancellationToken);
+            await TestDb.SeedCharacterAsync(
+                options,
+                characterId,
+                TestContext.Current.CancellationToken
+            );
 
             await using var db = new MainContext(options);
             var repository = new RoboRepository(db);
-            var robo = new RoboData(roboId, new CharaData(RoboRepository.GetObjectId(characterId, roboId), 1002011, "Status Robo"))
+            var robo = new RoboData(
+                roboId,
+                new CharaData(
+                    RoboRepository.GetObjectId(characterId, roboId),
+                    1002011,
+                    "Status Robo"
+                )
+            )
             {
                 OwnerAvatarId = characterId,
                 AvailableStatusPoints = 10,
@@ -31,8 +42,15 @@ public class AreaRoboStatusPointHandlerTests
             await repository.UpsertAsync(characterId, robo, TestContext.Current.CancellationToken);
 
             var session = new CapturingPlayerSession { CharacterId = characterId };
-            var addHandler = new AreaDistributeStatusPointAddHandler(repository, NullLogger<AreaDistributeStatusPointAddHandler>.Instance);
-            await addHandler.HandleAsync(BuildUIntPayload(roboId, 2, 4), session, TestContext.Current.CancellationToken);
+            var addHandler = new AreaDistributeStatusPointAddHandler(
+                repository,
+                NullLogger<AreaDistributeStatusPointAddHandler>.Instance
+            );
+            await addHandler.HandleAsync(
+                BuildUIntPayload(roboId, 2, 4),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Collection(
                 session.Sent,
@@ -48,8 +66,15 @@ public class AreaRoboStatusPointHandlerTests
             );
 
             session.Sent.Clear();
-            var finishHandler = new AreaDistributeStatusPointFinishHandler(repository, NullLogger<AreaDistributeStatusPointFinishHandler>.Instance);
-            await finishHandler.HandleAsync(BuildUIntPayload(roboId, 2, 3, 1, 0, 0), session, TestContext.Current.CancellationToken);
+            var finishHandler = new AreaDistributeStatusPointFinishHandler(
+                repository,
+                NullLogger<AreaDistributeStatusPointFinishHandler>.Instance
+            );
+            await finishHandler.HandleAsync(
+                BuildUIntPayload(roboId, 2, 3, 1, 0, 0),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Collection(
                 session.Sent,
@@ -62,7 +87,11 @@ public class AreaRoboStatusPointHandlerTests
                 }
             );
 
-            var stored = await repository.GetAsync(characterId, roboId, TestContext.Current.CancellationToken);
+            var stored = await repository.GetAsync(
+                characterId,
+                roboId,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(stored);
             Assert.Equal([2u, 3u, 1u, 0u, 0u], stored.DistributedStatusPoints);
             Assert.Equal(7u, stored.AvailableStatusPoints);
@@ -81,13 +110,24 @@ public class AreaRoboStatusPointHandlerTests
         {
             const int characterId = 42;
             const uint roboId = 1;
-            await TestDb.SeedCharacterAsync(options, characterId, TestContext.Current.CancellationToken);
+            await TestDb.SeedCharacterAsync(
+                options,
+                characterId,
+                TestContext.Current.CancellationToken
+            );
 
             await using var db = new MainContext(options);
             var repository = new RoboRepository(db);
             await repository.UpsertAsync(
                 characterId,
-                new RoboData(roboId, new CharaData(RoboRepository.GetObjectId(characterId, roboId), 1002011, "Status Robo"))
+                new RoboData(
+                    roboId,
+                    new CharaData(
+                        RoboRepository.GetObjectId(characterId, roboId),
+                        1002011,
+                        "Status Robo"
+                    )
+                )
                 {
                     OwnerAvatarId = characterId,
                     AvailableStatusPoints = 2,
@@ -97,21 +137,43 @@ public class AreaRoboStatusPointHandlerTests
             );
 
             var session = new CapturingPlayerSession { CharacterId = characterId };
-            var addHandler = new AreaDistributeStatusPointAddHandler(repository, NullLogger<AreaDistributeStatusPointAddHandler>.Instance);
+            var addHandler = new AreaDistributeStatusPointAddHandler(
+                repository,
+                NullLogger<AreaDistributeStatusPointAddHandler>.Instance
+            );
 
-            await addHandler.HandleAsync(BuildUIntPayload(roboId, 5, 1), session, TestContext.Current.CancellationToken);
+            await addHandler.HandleAsync(
+                BuildUIntPayload(roboId, 5, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(1u, new PacketReader(Assert.Single(session.Sent).Payload).ReadUInt());
 
             session.Sent.Clear();
-            await addHandler.HandleAsync(BuildUIntPayload(2, 0, 1), session, TestContext.Current.CancellationToken);
+            await addHandler.HandleAsync(
+                BuildUIntPayload(2, 0, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(1u, new PacketReader(Assert.Single(session.Sent).Payload).ReadUInt());
 
             session.Sent.Clear();
-            var finishHandler = new AreaDistributeStatusPointFinishHandler(repository, NullLogger<AreaDistributeStatusPointFinishHandler>.Instance);
-            await finishHandler.HandleAsync(BuildUIntPayload(roboId, 3, 0, 0, 0, 0), session, TestContext.Current.CancellationToken);
+            var finishHandler = new AreaDistributeStatusPointFinishHandler(
+                repository,
+                NullLogger<AreaDistributeStatusPointFinishHandler>.Instance
+            );
+            await finishHandler.HandleAsync(
+                BuildUIntPayload(roboId, 3, 0, 0, 0, 0),
+                session,
+                TestContext.Current.CancellationToken
+            );
             Assert.Equal(1u, new PacketReader(Assert.Single(session.Sent).Payload).ReadUInt());
 
-            var stored = await repository.GetAsync(characterId, roboId, TestContext.Current.CancellationToken);
+            var stored = await repository.GetAsync(
+                characterId,
+                roboId,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(stored);
             Assert.Equal([0u, 0u, 0u, 0u, 0u], stored.DistributedStatusPoints);
             Assert.Equal(2u, stored.AvailableStatusPoints);

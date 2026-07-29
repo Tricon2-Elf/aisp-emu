@@ -52,7 +52,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("Users");
             e.HasKey(x => x.Id);
             e.Property(x => x.Username).HasMaxLength(64).IsRequired();
-            e.Property(x => x.PasswordHash).HasColumnName("PasswordHash").HasMaxLength(512).IsRequired();
+            e.Property(x => x.PasswordHash)
+                .HasColumnName("PasswordHash")
+                .HasMaxLength(512)
+                .IsRequired();
             e.Property(x => x.AiPoints).HasDefaultValue(0L);
             e.Property(x => x.NicoPoints).HasDefaultValue(0L);
             e.Property(x => x.IsBanned).HasDefaultValue(false);
@@ -60,7 +63,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.Username).IsUnique();
 
-            e.HasMany(x => x.Sessions).WithOne(s => s.User).HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Sessions)
+                .WithOne(s => s.User)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Character>(e =>
@@ -69,10 +75,19 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.HasIndex(x => x.Name).IsUnique();
-            e.Property(x => x.CharadollPersonality).HasConversion<byte>().HasDefaultValue(CharadollPersonality.None).HasSentinel(CharadollPersonality.None);
+            e.Property(x => x.CharadollPersonality)
+                .HasConversion<byte>()
+                .HasDefaultValue(CharadollPersonality.None)
+                .HasSentinel(CharadollPersonality.None);
 
-            e.HasOne(x => x.User).WithMany(u => u.Characters).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.CurrentRoom).WithMany().HasForeignKey(x => x.CurrentRoomId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.User)
+                .WithMany(u => u.Characters)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.CurrentRoom)
+                .WithMany()
+                .HasForeignKey(x => x.CurrentRoomId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         b.Entity<Room>(e =>
@@ -85,7 +100,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.IsDefault).HasDefaultValue(false);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            e.HasOne(x => x.OwnerCharacter).WithMany(x => x.Rooms).HasForeignKey(x => x.OwnerCharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.OwnerCharacter)
+                .WithMany(x => x.Rooms)
+                .HasForeignKey(x => x.OwnerCharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.OwnerCharacterId, x.IsDefault });
         });
 
@@ -93,8 +111,14 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("MyRoomFurniture");
             e.HasKey(x => new { x.RoomId, x.FurnitureId });
-            e.HasOne(x => x.Room).WithMany(x => x.Furniture).HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne<Furniture>().WithMany().HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Room)
+                .WithMany(x => x.Furniture)
+                .HasForeignKey(x => x.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Furniture>()
+                .WithMany()
+                .HasForeignKey(x => x.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         b.Entity<CharacterEventStatus>(e =>
@@ -102,7 +126,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("CharacterEventStatuses");
             e.HasKey(x => new { x.CharacterId, x.EventKey });
             e.Property(x => x.EventKey).HasMaxLength(128).IsRequired();
-            e.HasOne(x => x.Character).WithMany().HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Character)
+                .WithMany()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.CharacterId);
         });
 
@@ -121,7 +148,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("Furniture");
             e.HasKey(x => x.ItemId);
             e.Property(x => x.PlacementFlags).HasConversion<uint>();
-            e.HasOne(x => x.Item).WithOne(x => x.Furniture).HasForeignKey<Furniture>(x => x.ItemId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Item)
+                .WithOne(x => x.Furniture)
+                .HasForeignKey<Furniture>(x => x.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<CharacterInventory>(e =>
@@ -129,7 +159,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("CharacterInventory");
             e.HasKey(x => new { x.CharacterId, x.ItemId });
 
-            e.HasOne(x => x.Character).WithMany(c => c.Inventory).HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Character)
+                .WithMany(c => c.Inventory)
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             e.Property(x => x.Quantity).HasDefaultValue(1);
         });
@@ -139,7 +172,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("CharacterEquipment");
             e.HasKey(x => new { x.CharacterId, x.SlotIndex });
 
-            e.HasOne(x => x.Character).WithMany(c => c.Equipment).HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Character)
+                .WithMany(c => c.Equipment)
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Robo>(e =>
@@ -148,11 +184,19 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => new { x.CharacterId, x.RoboId });
             e.Property(x => x.Name).HasMaxLength(37).IsRequired();
             e.Property(x => x.BloodType).HasConversion<uint>();
-            e.Property(x => x.UserStatusText).HasMaxLength(UserStatusData.StatusTextLength).IsRequired();
+            e.Property(x => x.UserStatusText)
+                .HasMaxLength(UserStatusData.StatusTextLength)
+                .IsRequired();
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            e.HasOne(x => x.Character).WithMany(c => c.Robos).HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.TpsBattleData).WithOne(x => x.Robo).HasForeignKey<RoboTpsBattleData>(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Character)
+                .WithMany(c => c.Robos)
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.TpsBattleData)
+                .WithOne(x => x.Robo)
+                .HasForeignKey<RoboTpsBattleData>(x => new { x.CharacterId, x.RoboId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<RoboTpsBattleData>(e =>
@@ -170,7 +214,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.RoboId,
                 x.SlotIndex,
             });
-            e.HasOne(x => x.Robo).WithMany(x => x.Equipment).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Robo)
+                .WithMany(x => x.Equipment)
+                .HasForeignKey(x => new { x.CharacterId, x.RoboId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<RoboItemUseEffect>(e =>
@@ -182,7 +229,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.RoboId,
                 x.SlotIndex,
             });
-            e.HasOne(x => x.Robo).WithMany(x => x.ItemUseEffects).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Robo)
+                .WithMany(x => x.ItemUseEffects)
+                .HasForeignKey(x => new { x.CharacterId, x.RoboId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<RoboBattleAbility>(e =>
@@ -196,7 +246,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.AbilityIndex,
             });
             e.Property(x => x.AbilitySet).HasConversion<byte>();
-            e.HasOne(x => x.TpsBattleData).WithMany(x => x.BattleAbilities).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.TpsBattleData)
+                .WithMany(x => x.BattleAbilities)
+                .HasForeignKey(x => new { x.CharacterId, x.RoboId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<RoboDistributedStatusPoint>(e =>
@@ -208,7 +261,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.RoboId,
                 x.StatusIndex,
             });
-            e.HasOne(x => x.Robo).WithMany(x => x.DistributedStatusPoints).HasForeignKey(x => new { x.CharacterId, x.RoboId }).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Robo)
+                .WithMany(x => x.DistributedStatusPoints)
+                .HasForeignKey(x => new { x.CharacterId, x.RoboId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<UserSession>(e =>
@@ -269,7 +325,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.IsEnabled).HasDefaultValue(true);
             e.HasIndex(x => new { x.ShopId, x.ItemId }).IsUnique();
             e.HasIndex(x => new { x.ShopId, x.SortOrder });
-            e.HasOne(x => x.Shop).WithMany(x => x.Items).HasForeignKey(x => x.ShopId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Shop)
+                .WithMany(x => x.Items)
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Npc>(e =>
@@ -287,7 +346,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.EventKey).HasMaxLength(128);
             e.HasIndex(x => x.NpcObjectId).IsUnique();
             e.HasIndex(x => new { x.MapId, x.SortOrder });
-            e.HasOne(x => x.Shop).WithMany(x => x.Npcs).HasForeignKey(x => x.ShopId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.Shop)
+                .WithMany(x => x.Npcs)
+                .HasForeignKey(x => x.ShopId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         b.Entity<NpcEquipment>(e =>
@@ -295,7 +357,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("NpcEquipment");
             e.HasKey(x => x.Id);
             e.HasIndex(x => new { x.NpcId, x.SlotIndex }).IsUnique();
-            e.HasOne(x => x.Npc).WithMany(x => x.Equipment).HasForeignKey(x => x.NpcId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Npc)
+                .WithMany(x => x.Equipment)
+                .HasForeignKey(x => x.NpcId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<GameChannel>(e =>

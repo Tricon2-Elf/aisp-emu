@@ -12,7 +12,11 @@ public class AreaUccVoiceBaseListHandler : IPacketHandler, IRequiresAuthenticate
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var response = new UccVoiceBaseListResponse();
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
