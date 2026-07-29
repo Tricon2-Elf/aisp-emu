@@ -33,7 +33,7 @@ public class AvatarDataResponse(uint avatarId, string name, uint modelId, uint i
     {
         var writer = new PacketWriter();
         writer.Write(avatarId); // AvatarId
-        writer.Write(name);
+        writer.Write(name, "utf-8");
         writer.Write(modelId);
         writer.Write(Visual.ToBytes());
         writer.Write(islandId);
