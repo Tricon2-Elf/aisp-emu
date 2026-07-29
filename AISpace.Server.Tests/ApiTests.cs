@@ -544,7 +544,7 @@ public class ApiKeyMiddlewareTests
     [InlineData("secret", "", 401)]
     [InlineData("secret", "wrong", 401)]
     [InlineData("secret", "secret", null)]
-    public async Task AuthLogic_ValidatesCorrectly(
+    public void AuthLogic_ValidatesCorrectly(
         string configuredKey,
         string headerValue,
         int? expectedStatusCode
@@ -586,7 +586,7 @@ public class ApiKeyMiddlewareTests
     }
 
     [Fact]
-    public async Task NonApiPath_SkipsAuth()
+    public void NonApiPath_SkipsAuth()
     {
         var ctx = new DefaultHttpContext();
         ctx.Request.Path = "/healthz";
