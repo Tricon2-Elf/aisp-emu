@@ -1,4 +1,4 @@
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Data;
 
 /// <summary>
 /// recv_event_select_init select_type — client UI variant for in-event selection.

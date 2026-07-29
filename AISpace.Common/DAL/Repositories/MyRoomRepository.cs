@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using AISpace.Common.DAL.Entities;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,7 @@ public interface IMyRoomRepository
     Task<IReadOnlyList<Furniture>> GetFurnitureCatalogAsync(CancellationToken ct = default);
     Task<IReadOnlyList<MyRoomFurniture>> GetFurnitureAsync(int characterId, CancellationToken ct = default);
     Task<MyRoomFurniture?> GetFurnitureAsync(int characterId, uint furnitureId, CancellationToken ct = default);
+    Task<IReadOnlyDictionary<int, int>> GetAvailableFurnitureInventoryAsync(int characterId, CancellationToken ct = default);
     Task<bool> CanPlaceFurnitureAsync(int characterId, int itemId, uint placementLimit, CancellationToken ct = default);
     Task<MyRoomFurniture?> TryAddFurnitureAsync(MyRoomFurniture furniture, uint placementLimit, CancellationToken ct = default);
     Task<bool> UpdateFurnitureAsync(int characterId, uint furnitureId, float x, float y, float z, byte directionX, byte directionY, CancellationToken ct = default);
@@ -28,6 +30,20 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
     public async Task<IReadOnlyList<MyRoomFurniture>> GetFurnitureAsync(int characterId, CancellationToken ct = default) => await db.MyRoomFurniture.AsNoTracking().Where(x => x.CharacterId == characterId).OrderBy(x => x.FurnitureId).ToListAsync(ct);
 
     public Task<MyRoomFurniture?> GetFurnitureAsync(int characterId, uint furnitureId, CancellationToken ct = default) => db.MyRoomFurniture.AsNoTracking().SingleOrDefaultAsync(x => x.CharacterId == characterId && x.FurnitureId == furnitureId, ct);
+
+    public async Task<IReadOnlyDictionary<int, int>> GetAvailableFurnitureInventoryAsync(int characterId, CancellationToken ct = default)
+    {
+        var owned = await db.CharacterInventories.AsNoTracking().Where(x => x.CharacterId == characterId && db.Furniture.Any(furniture => furniture.ItemId == x.ItemId)).ToDictionaryAsync(x => x.ItemId, x => x.Quantity, ct);
+        var placed = await db.MyRoomFurniture.AsNoTracking().Where(x => x.CharacterId == characterId).GroupBy(x => x.ItemId).Select(group => new { ItemId = group.Key, Quantity = group.Count() }).ToListAsync(ct);
+
+        foreach (var stack in placed)
+        {
+            owned.TryGetValue(stack.ItemId, out var ownedQuantity);
+            owned[stack.ItemId] = Math.Max(0, ownedQuantity - stack.Quantity);
+        }
+
+        return owned;
+    }
 
     public async Task<bool> CanPlaceFurnitureAsync(int characterId, int itemId, uint placementLimit, CancellationToken ct = default)
     {

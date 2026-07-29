@@ -2,6 +2,7 @@ using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
@@ -114,6 +115,8 @@ public sealed class AreaMyRoomSetFurnitureHandler(IMyRoomRepository myRoomReposi
         if (furniture is not null)
         {
             await MyRoomFurnitureNotification.BroadcastToRoomAsync(state, session, request.RoomId, PacketType.NotifyMyRoomSetFurniture, new NotifyMyRoomSetFurniture(MyRoomFurnitureMapper.ToPacket(furniture)).ToBytes(), includeSource: true, ct);
+            var inventory = await myRoomRepository.GetAvailableFurnitureInventoryAsync(characterId, ct);
+            await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(session, itemId, inventory.GetValueOrDefault(itemId), ct);
             logger.LogInformation("Committed MyRoom furniture {FurnitureId} for character {CharacterId}, item {ItemId} at ({X}, {Y}, {Z})", furniture.FurnitureId, session.CharacterId, request.SerialId, request.Transform.X, request.Transform.Y, request.Transform.Z);
         }
     }
@@ -137,7 +140,11 @@ public sealed class AreaMyRoomRemoveFurnitureHandler(IMyRoomRepository myRoomRep
         var removed = await myRoomRepository.RemoveFurnitureAsync(checked((int)session.CharacterId), request.FurnitureId, ct);
         await session.SendAsync(ResponseType, new MyRoomRemoveFurnitureResponse(removed is null ? 1u : 0u).ToBytes(), ct);
         if (removed is not null)
+        {
             await MyRoomFurnitureNotification.BroadcastToRoomAsync(state, session, request.RoomId, PacketType.NotifyMyRoomRemoveFurniture, new NotifyMyRoomRemoveFurniture(request.RoomId, request.FurnitureId).ToBytes(), includeSource: false, ct);
+            var inventory = await myRoomRepository.GetAvailableFurnitureInventoryAsync(checked((int)session.CharacterId), ct);
+            await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(session, removed.ItemId, inventory.GetValueOrDefault(removed.ItemId), ct);
+        }
     }
 }
 

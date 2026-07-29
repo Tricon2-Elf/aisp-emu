@@ -6,5 +6,11 @@ public sealed class NotifyMyRoomUseFurniture(uint roomId, uint furnitureId) : IO
     public uint RoomId { get; } = roomId;
     public uint FurnitureId { get; } = furnitureId;
 
-    public byte[] ToBytes() => MyRoomFurniturePacketEncoding.WritePair(RoomId, FurnitureId);
+    public byte[] ToBytes()
+    {
+        var writer = new PacketWriter();
+        writer.Write(RoomId);
+        writer.Write(FurnitureId);
+        return writer.ToBytes();
+    }
 }

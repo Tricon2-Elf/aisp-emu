@@ -5,5 +5,10 @@ public sealed class MyRoomSetFurnitureResponse(uint result) : IOutgoingPacket
 {
     public uint Result { get; } = result;
 
-    public byte[] ToBytes() => MyRoomFurniturePacketEncoding.WriteResult(Result);
+    public byte[] ToBytes()
+    {
+        var writer = new PacketWriter();
+        writer.Write(Result);
+        return writer.ToBytes();
+    }
 }

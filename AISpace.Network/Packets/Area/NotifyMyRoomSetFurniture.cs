@@ -1,3 +1,5 @@
+using AISpace.Network.Data;
+
 namespace AISpace.Network.Packets.Area;
 
 public sealed class NotifyMyRoomSetFurniture(MyRoomFurnitureData furniture) : IOutgoingPacket

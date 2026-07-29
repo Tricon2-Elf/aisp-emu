@@ -1,4 +1,4 @@
-using AISpace.Network.Packets.Area;
+using AISpace.Network.Data;
 
 namespace AISpace.Common.DAL.Entities;
 

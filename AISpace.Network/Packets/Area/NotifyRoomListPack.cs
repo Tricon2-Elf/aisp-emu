@@ -1,3 +1,5 @@
+using AISpace.Network.Data;
+
 namespace AISpace.Network.Packets.Area;
 
 /// <summary>

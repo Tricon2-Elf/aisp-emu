@@ -5,6 +5,7 @@ using AISpace.Common.Game;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -59,6 +60,10 @@ public class AreaMyRoomEditingHandlerTests
                 {
                     Assert.Equal(PacketType.NotifyMyRoomSetFurniture, setNotification.Type);
                     AssertFurniture(setNotification.Payload, roomId: 42, furnitureId: 1, serialId: 7001, x: 1f, y: 2f, z: 3f, directionX: 4, directionY: 5);
+                },
+                inventoryUpdate =>
+                {
+                    AssertFurnitureUnavailable(inventoryUpdate, itemId: 7001);
                 }
             );
             var setNotification = Assert.Single(roomPeer.Sent);
@@ -95,9 +100,16 @@ public class AreaMyRoomEditingHandlerTests
             var removeHandler = new AreaMyRoomRemoveFurnitureHandler(repository, state);
             await removeHandler.HandleAsync(BuildPairPayload(42, 1), session, TestContext.Current.CancellationToken);
 
-            var removeResponse = Assert.Single(session.Sent);
-            Assert.Equal(PacketType.MyRoomRemoveFurnitureResponse, removeResponse.Type);
-            Assert.Equal(0u, new PacketReader(removeResponse.Payload).ReadUInt());
+            Assert.Collection(
+                session.Sent,
+                removeResponse =>
+                {
+                    Assert.Equal(PacketType.MyRoomRemoveFurnitureResponse, removeResponse.Type);
+                    Assert.Equal(0u, new PacketReader(removeResponse.Payload).ReadUInt());
+                },
+                itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1),
+                inventoryUpdate => AssertInventoryCount(inventoryUpdate, itemId: 7001, quantity: 1)
+            );
             var removeNotification = Assert.Single(roomPeer.Sent);
             Assert.Equal(PacketType.NotifyMyRoomRemoveFurniture, removeNotification.Type);
             var removeReader = new PacketReader(removeNotification.Payload);
@@ -248,6 +260,42 @@ public class AreaMyRoomEditingHandlerTests
         session.PendingMyRoomFurnitureItemId = 7001;
         await new AreaMyRoomEndFurnitureHandler(NullLogger<AreaMyRoomEndFurnitureHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
         Assert.Null(session.PendingMyRoomFurnitureItemId);
+    }
+
+    [Fact]
+    public async Task GetFurniture_ResynchronizesAvailableInventoryBeforeEditingStarts()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            await SeedFurnitureInventoryAsync(options, 42, 7001, 2);
+
+            await using var db = new MainContext(options);
+            db.MyRoomFurniture.Add(
+                new MyRoomFurniture
+                {
+                    CharacterId = 42,
+                    FurnitureId = 1,
+                    ItemId = 7001,
+                }
+            );
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var session = CreateSession();
+            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(db), new MyRoomRepository(db));
+            var writer = new PacketWriter();
+            writer.Write(session.MapId);
+            writer.Write(checked((uint)session.ChannelId));
+
+            await handler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+
+            Assert.Collection(session.Sent, furniture => Assert.Equal(PacketType.MyRoomNotifyFurniture, furniture.Type), itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1), inventoryUpdate => AssertInventoryCount(inventoryUpdate, itemId: 7001, quantity: 1), response => Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     [Fact]
@@ -444,5 +492,33 @@ public class AreaMyRoomEditingHandlerTests
         Assert.Equal(directionX, reader.ReadByte());
         Assert.Equal(directionY, reader.ReadByte());
         Assert.Equal(1u, reader.ReadUInt());
+    }
+
+    private static void AssertInventoryCount((PacketType Type, byte[] Payload) packet, uint itemId, uint quantity)
+    {
+        Assert.Equal(PacketType.ItemUpdateListNotify, packet.Type);
+        var reader = new PacketReader(packet.Payload);
+        Assert.Equal(CharacterItemSync.PrimaryItemTablePlace, reader.ReadUInt());
+        Assert.Equal(itemId, reader.ReadUInt());
+        Assert.Equal(quantity, reader.ReadUInt());
+    }
+
+    private static void AssertFurnitureUnavailable((PacketType Type, byte[] Payload) packet, uint itemId)
+    {
+        Assert.Equal(PacketType.ItemDeleteNotify, packet.Type);
+        var reader = new PacketReader(packet.Payload);
+        Assert.Equal(CharacterItemSync.PrimaryItemTablePlace, reader.ReadUInt());
+        Assert.Equal(itemId, reader.ReadUInt());
+    }
+
+    private static void AssertInventoryItemCreated((PacketType Type, byte[] Payload) packet, uint itemId, ushort quantity)
+    {
+        Assert.Equal(PacketType.ItemCreateNotify, packet.Type);
+        var reader = new PacketReader(packet.Payload);
+        Assert.Equal(CharacterItemSync.PrimaryItemTablePlace, reader.ReadUInt());
+        Assert.Equal(itemId, reader.ReadUInt());
+        Assert.Equal(quantity, reader.ReadUShort());
+        Assert.Equal(itemId, reader.ReadUInt());
+        Assert.Equal(0ul, reader.ReadULong());
     }
 }

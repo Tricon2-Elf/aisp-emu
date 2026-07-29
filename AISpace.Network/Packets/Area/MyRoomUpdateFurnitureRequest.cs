@@ -1,3 +1,5 @@
+using AISpace.Network.Data;
+
 namespace AISpace.Network.Packets.Area;
 
 /// <summary>send_myroom_update_furniture (0x6405): room ID, placed-furniture ID, position, and two direction bytes.</summary>

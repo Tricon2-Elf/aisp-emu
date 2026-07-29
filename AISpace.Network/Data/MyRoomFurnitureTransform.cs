@@ -1,4 +1,4 @@
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Data;
 
 /// <summary>
 /// Position and direction portion shared by the set/update furniture requests.
@@ -8,9 +8,9 @@ public readonly record struct MyRoomFurnitureTransform(float X, float Y, float Z
 {
     public const int WireSize = 14;
 
-    internal static MyRoomFurnitureTransform Read(ref PacketReader reader) => new(reader.ReadFloat(), reader.ReadFloat(), reader.ReadFloat(), reader.ReadByte(), reader.ReadByte());
+    public static MyRoomFurnitureTransform Read(ref PacketReader reader) => new(reader.ReadFloat(), reader.ReadFloat(), reader.ReadFloat(), reader.ReadByte(), reader.ReadByte());
 
-    internal void Write(PacketWriter writer)
+    public void Write(PacketWriter writer)
     {
         writer.Write(X);
         writer.Write(Y);

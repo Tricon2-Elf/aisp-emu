@@ -3,6 +3,7 @@ using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Common.Game.ServerScripts;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
@@ -98,6 +99,6 @@ public class AreaEventAccessNpcHandler(INpcRepository npcRepository, IShopReposi
         await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
         await session.SendAsync(PacketType.NotifySupplyNpcExec, new NotifySupplyNpcExec(npcObjectId).ToBytes(), ct);
         await session.SendAsync(PacketType.ShopStartedNotify, new ShopStartedNotify(npcObjectId, npc.Shop.DisplayName, checked((uint)npc.Shop.BannerVisualId)).ToBytes(), ct);
-        await session.SendAsync(PacketType.ShopItemNotify, new ShopItemNotify(shopItems.Select(x => new ShopItemNotify.ShopItem((uint)x.ItemId, checked((ulong)x.AiPrice), checked((ulong)x.NicoPrice))).ToList()).ToBytes(), ct);
+        await session.SendAsync(PacketType.ShopItemNotify, new ShopItemNotify(shopItems.Select(x => new ShopItemEntry((uint)x.ItemId, checked((ulong)x.AiPrice), checked((ulong)x.NicoPrice))).ToList()).ToBytes(), ct);
     }
 }

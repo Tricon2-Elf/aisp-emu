@@ -1,4 +1,4 @@
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Data;
 
 [Flags]
 public enum FurniturePlacementFlags : uint

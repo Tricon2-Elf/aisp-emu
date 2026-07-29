@@ -1,4 +1,4 @@
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Data;
 
 /// <summary>
 /// One room entry consumed by <c>sub_798920</c>. The client stores each entry in a
