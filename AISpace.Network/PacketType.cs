@@ -110,6 +110,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_adventure_download_list", ImplementationState.Implemented)]
     GetAdventureDownloadListRequest = 0x3FE2,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_adventure_work_list", ImplementationState.Implemented)]
+    GetAdventureWorkListRequest = 0x32C8,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_ai_download_list", ImplementationState.Implemented)]
     AiDownloadListGetRequest = 0x1D3F,
 
@@ -1033,6 +1036,9 @@ public enum PacketType : ushort
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_download_list_r", ImplementationState.Implemented)]
     GetAdventureDownloadListResponse = 0xA39A,
+
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_work_list_r", ImplementationState.Implemented)]
+    GetAdventureWorkListResponse = 0xEA66,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_upload_list_r", ImplementationState.NotImplemented)]
     GetAdventureUploadListResponse = 0x49B5,
