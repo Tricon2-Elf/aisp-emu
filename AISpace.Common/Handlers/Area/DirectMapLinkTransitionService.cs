@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Area;
 
-public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository, ICharacterRepository characterRepository, IMapLinkRepository mapLinkRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, SharedState state, ILogger<DirectMapLinkTransitionService> logger)
+public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository, ICharacterRepository characterRepository, IMyRoomRepository myRoomRepository, IMapLinkRepository mapLinkRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, SharedState state, ILogger<DirectMapLinkTransitionService> logger)
 {
     private const uint SelectorSuccess = 0;
     private const uint SelectorFailure = 1;
@@ -196,6 +196,12 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         if (character == null)
             return false;
 
+        if (MyRoomInfo.IsMyRoomMap(destinationMapId))
+        {
+            var room = await myRoomRepository.GetOrCreateDefaultRoomAsync(character.Id, ct);
+            return room is not null && await TryTeleportToRoomAsync(session, room, ct);
+        }
+
         var destinationMap = await mapRepository.GetByMapIdAsync(destinationMapId, ct);
         if (destinationMap == null)
             return false;
@@ -208,6 +214,32 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         var notifyChangeMap = destinationMapId == session.MapId ? null : CreateNotifyChangeMap((uint)channelId.Value, destinationMapId, destinationMap, areaServerInfo);
 
         await CompleteMapTransitionAsync(session, character, destinationMapId, (uint)channelId.Value, destinationMap, notifyChangeMap, sendMapEnterResponse: notifyChangeMap == null, ct);
+        return true;
+    }
+
+    public async Task<bool> TryTeleportToRoomAsync(IPlayerSession session, DAL.Entities.Room room, CancellationToken ct = default)
+    {
+        if (room.Id <= 0 || !Enum.IsDefined(room.Stage))
+            return false;
+
+        var character = await ResolveCharacterAsync(session, ct);
+        if (character == null)
+            return false;
+
+        var destinationMapId = MyRoomInfo.GetMapId(room.Stage);
+        var destinationMap = await mapRepository.GetByMapIdAsync(destinationMapId, ct);
+        if (destinationMap == null)
+            return false;
+
+        var channelId = await ResolveChannelIdForMapAsync(destinationMapId, ct);
+        if (channelId == null)
+            return false;
+
+        var areaServerInfo = await ResolveAreaServerInfoForNotifyAsync(session.ChannelId, channelId.Value, ct);
+        var shouldReload = destinationMapId != session.MapId || session.MyRoomId != checked((uint)room.Id);
+        var notifyChangeMap = shouldReload ? CreateNotifyChangeMap((uint)channelId.Value, destinationMapId, destinationMap, areaServerInfo) : null;
+
+        await CompleteMapTransitionAsync(session, character, destinationMapId, (uint)channelId.Value, destinationMap, notifyChangeMap, sendMapEnterResponse: notifyChangeMap == null, ct, room);
         return true;
     }
 
@@ -232,8 +264,35 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         return groupMatch?.ChannelNum ?? channels.OrderBy(channel => channel.ChannelNum).First().ChannelNum;
     }
 
-    public async Task CompleteMapTransitionAsync(IPlayerSession session, DAL.Entities.Character character, uint destinationMapId, uint destinationChannelId, DAL.Entities.Map destinationMap, NotifyChangeMap? notifyChangeMap, bool sendMapEnterResponse, CancellationToken ct = default)
+    public async Task CompleteMapTransitionAsync(IPlayerSession session, DAL.Entities.Character character, uint destinationMapId, uint destinationChannelId, DAL.Entities.Map destinationMap, NotifyChangeMap? notifyChangeMap, bool sendMapEnterResponse, CancellationToken ct = default, DAL.Entities.Room? destinationRoom = null)
     {
+        if (MyRoomInfo.IsMyRoomMap(destinationMapId))
+        {
+            destinationRoom ??= await myRoomRepository.GetOrCreateDefaultRoomAsync(character.Id, ct);
+            if (destinationRoom is null)
+            {
+                logger.LogWarning("Cannot enter MyRoom map {MapId} for character {CharacterId}: no room could be resolved", destinationMapId, character.Id);
+                return;
+            }
+
+            var roomMapId = MyRoomInfo.GetMapId(destinationRoom.Stage);
+            if (roomMapId != destinationMapId)
+            {
+                var roomMap = await mapRepository.GetByMapIdAsync(roomMapId, ct);
+                var roomChannelId = await ResolveChannelIdForMapAsync(roomMapId, ct);
+                if (roomMap is null || roomChannelId is null)
+                {
+                    logger.LogWarning("Cannot enter room {RoomId}: map {MapId} for stage {Stage} is unavailable", destinationRoom.Id, roomMapId, destinationRoom.Stage);
+                    return;
+                }
+
+                var roomAreaServerInfo = await ResolveAreaServerInfoForNotifyAsync(session.ChannelId, roomChannelId.Value, ct);
+                var roomNotify = CreateNotifyChangeMap((uint)roomChannelId.Value, roomMapId, roomMap, roomAreaServerInfo);
+                await CompleteMapTransitionAsync(session, character, roomMapId, (uint)roomChannelId.Value, roomMap, roomNotify, sendMapEnterResponse: false, ct, destinationRoom);
+                return;
+            }
+        }
+
         if (notifyChangeMap != null)
             session.IsMapTransitionPending = true;
 
@@ -242,8 +301,9 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         await state.BroadcastAreaDisappearAsync(session, ct);
         await state.ClearRemoteRobosAsync(session, ct);
 
-        var updatedCharacter = await characterRepository.UpdateCurrentMapAsync(character.Id, destinationMapId, ct) ?? character;
+        var updatedCharacter = await characterRepository.UpdateCurrentLocationAsync(character.Id, destinationMapId, destinationRoom?.Id, ct) ?? character;
         updatedCharacter.CurrentMapId = destinationMapId;
+        updatedCharacter.CurrentRoomId = destinationRoom?.Id;
 
         var spawnX = notifyChangeMap?.PositionX ?? destinationMap.SpawnX;
         var spawnY = notifyChangeMap?.PositionY ?? destinationMap.SpawnY;
@@ -253,7 +313,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
         session.Character = updatedCharacter;
         session.CharacterId = (uint)updatedCharacter.Id;
         session.MapId = destinationMapId;
-        session.MyRoomOwnerId = MyRoomInfo.IsMyRoomMap(destinationMapId) ? session.CharacterId : 0;
+        session.MyRoomId = destinationRoom is null ? 0 : checked((uint)destinationRoom.Id);
         session.PendingMyRoomFurnitureItemId = null;
         session.ChannelId = (int)destinationChannelId;
         session.X = spawnX;
@@ -269,7 +329,10 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
         var userCharacter = session.User?.Characters.FirstOrDefault(candidate => candidate.Id == updatedCharacter.Id);
         if (userCharacter != null)
+        {
             userCharacter.CurrentMapId = destinationMapId;
+            userCharacter.CurrentRoomId = destinationRoom?.Id;
+        }
 
         if (notifyChangeMap != null)
         {
@@ -277,7 +340,7 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
 
             if (session.User != null && await RequiresAreaServerReconnectAsync(sourceChannelId, (int)destinationChannelId, ct))
             {
-                state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(session.User.Id, destinationMapId, (int)destinationChannelId, spawnX, spawnY, spawnZ, spawnRotation));
+                state.SetPendingAreaTransition(new SharedState.PendingMapTransfer(session.User.Id, destinationMapId, (int)destinationChannelId, spawnX, spawnY, spawnZ, spawnRotation, session.MyRoomId));
             }
         }
 
@@ -304,11 +367,11 @@ public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository,
                     Animation = notifyChangeMap.Animation,
                     Flag = notifyChangeMap.Flag,
                     AreaServerInfo = notifyChangeMap.AreaServerInfo,
-                    Room = new MyRoomData(session.CharacterId, session.CharacterId, MyRoomInfo.GetRoomStage(destinationMapId), updatedCharacter.MyRoomName, updatedCharacter.MyRoomSecurity),
+                    Room = new MyRoomData(checked((uint)destinationRoom!.Id), checked((uint)destinationRoom.OwnerCharacterId), destinationRoom.Stage, destinationRoom.Name, destinationRoom.Security),
                     FadeFlag = notifyChangeMap.FadeFlag,
                 };
 
-                logger.LogInformation("Sending NotifyChangeMyRoom for user {UserId} to MyRoom map {MapId} (stage {Stage}, owner {OwnerId})", session.User?.Id ?? session.UserId, destinationMapId, notifyChangeMyRoom.Room.RoomStage, notifyChangeMyRoom.Room.OwnerId);
+                logger.LogInformation("Sending NotifyChangeMyRoom for user {UserId} to room {RoomId} on map {MapId} (stage {Stage}, owner character {OwnerCharacterId})", session.User?.Id ?? session.UserId, notifyChangeMyRoom.Room.RoomId, destinationMapId, notifyChangeMyRoom.Room.RoomStage, notifyChangeMyRoom.Room.OwnerCharacterId);
                 await session.SendAsync(PacketType.NotifyChangeMyRoom, notifyChangeMyRoom.ToBytes(), ct);
             }
             else

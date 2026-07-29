@@ -768,6 +768,7 @@ public class AreaShopNpcHandlersTests
         new(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MyRoomRepository(db),
             new MapLinkRepository(db),
             new ChannelRepository(db),
             Options.Create(

@@ -12,7 +12,7 @@ using Character = AISpace.Common.DAL.Entities.Character;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepository userRepo, ICharacterRepository characterRepo, IItemBaseListCache itemBaseListCache, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepository userRepo, ICharacterRepository characterRepo, IMyRoomRepository myRoomRepository, IItemBaseListCache itemBaseListCache, DirectMapLinkTransitionService directMapLinkTransitionService, ILogger<CmdExecHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private const float SpawnSpread = 50.0f;
     private const float JumpDistance = 100f;
@@ -91,15 +91,59 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
             }
 
             areaClient.Character = character;
-            var destinationMapId = MyRoomInfo.BaseMapId;
-            if (!await directMapLinkTransitionService.TryTeleportToMapAsync(areaClient, destinationMapId, ct))
+
+            DAL.Entities.Room? room;
+            if (cmd == "room" && request.Arguments.Count > 0 && string.Equals(request.Arguments[0], "create", StringComparison.OrdinalIgnoreCase))
             {
-                logger.LogWarning("CmdExecHandler: myroom teleport to map {MapId} failed for user {UserId} (character {CharacterId})", destinationMapId, session.User?.Id ?? session.UserId, areaClient.CharacterId);
+                if (!TryParseRoomStage(request.Arguments.Count > 1 ? request.Arguments[1] : null, out var stage))
+                {
+                    logger.LogWarning("CmdExecHandler: room create requires a tatami size of 6, 8, 10, or 12 for character {CharacterId}", areaClient.CharacterId);
+                    return;
+                }
+
+                var roomName = request.Arguments.Count > 2 ? string.Join(' ', request.Arguments.Skip(2)) : "My Room";
+                if (roomName.Length > 45)
+                {
+                    logger.LogWarning("CmdExecHandler: room create name is longer than 45 characters for character {CharacterId}", areaClient.CharacterId);
+                    return;
+                }
+
+                room = await myRoomRepository.CreateRoomAsync(character.Id, stage, roomName, ct);
+                if (room is null)
+                {
+                    logger.LogWarning("CmdExecHandler: failed to create room for character {CharacterId}", areaClient.CharacterId);
+                    return;
+                }
+            }
+            else if (cmd == "room" && request.Arguments.Count > 0)
+            {
+                if (!int.TryParse(request.Arguments[0], out var roomId) || roomId <= 0)
+                {
+                    logger.LogWarning("CmdExecHandler: room requires a positive room ID for character {CharacterId}", areaClient.CharacterId);
+                    return;
+                }
+
+                room = await myRoomRepository.GetRoomAsync(roomId, ct);
+                if (room is null)
+                {
+                    logger.LogWarning("CmdExecHandler: room {RoomId} does not exist for character {CharacterId}", roomId, areaClient.CharacterId);
+                    return;
+                }
             }
             else
             {
-                logger.LogInformation("CmdExecHandler: teleported user {UserId} (character {CharacterId}) to MyRoom map {MapId}", session.User?.Id ?? session.UserId, areaClient.CharacterId, destinationMapId);
+                room = await myRoomRepository.GetOrCreateDefaultRoomAsync(character.Id, ct);
+                if (room is null)
+                {
+                    logger.LogWarning("CmdExecHandler: could not resolve the default room for character {CharacterId}", areaClient.CharacterId);
+                    return;
+                }
             }
+
+            if (!await directMapLinkTransitionService.TryTeleportToRoomAsync(areaClient, room, ct))
+                logger.LogWarning("CmdExecHandler: room teleport failed for user {UserId} (character {CharacterId}, room {RoomId})", session.User?.Id ?? session.UserId, areaClient.CharacterId, room.Id);
+            else
+                logger.LogInformation("CmdExecHandler: teleported user {UserId} (character {CharacterId}) to room {RoomId} owned by character {OwnerCharacterId} on stage {Stage}", session.User?.Id ?? session.UserId, areaClient.CharacterId, room.Id, room.OwnerCharacterId, room.Stage);
 
             return;
         }
@@ -321,6 +365,19 @@ public class CmdExecHandler(SharedState state, IMapRepository mapRepo, IUserRepo
                 logger.LogWarning("CmdExecHandler: escape requires an active area session for user {UserId}", session.User?.Id ?? session.UserId);
             }
         }
+    }
+
+    private static bool TryParseRoomStage(string? value, out MyRoomStage stage)
+    {
+        stage = value switch
+        {
+            "6" => MyRoomStage.SixTatami,
+            "8" => MyRoomStage.EightTatami,
+            "10" => MyRoomStage.TenTatami,
+            "12" => MyRoomStage.TwelveTatami,
+            _ => (MyRoomStage)byte.MaxValue,
+        };
+        return Enum.IsDefined(stage);
     }
 
     private IPlayerSession? ResolveAreaClient(IPlayerSession msgSession)

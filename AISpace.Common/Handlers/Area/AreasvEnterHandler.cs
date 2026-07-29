@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, IChannelRepository channelRepo, ICharacterRepository characterRepo, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
+public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapRepository mapRepo, IChannelRepository channelRepo, ICharacterRepository characterRepo, IMyRoomRepository myRoomRepository, SharedState state, ILogger<AreasvEnterHandler> logger) : IPacketHandler
 {
     private const float SpawnSpread = 50.0f;
     private const int MainChannelNum = 1;
@@ -51,6 +51,19 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         var hasPendingTransition = state.TryTakePendingAreaTransition(session.User.Id, out var pendingTransition);
         if (hasPendingTransition)
             mapId = pendingTransition.MapId;
+
+        DAL.Entities.Room? room = null;
+        if (MyRoomInfo.IsMyRoomMap(mapId))
+        {
+            if (hasPendingTransition && pendingTransition.MyRoomId != 0)
+                room = await myRoomRepository.GetRoomAsync(checked((int)pendingTransition.MyRoomId), ct);
+            else if (chara.CurrentRoomId is > 0)
+                room = await myRoomRepository.GetRoomAsync(chara.CurrentRoomId.Value, ct);
+
+            room ??= await myRoomRepository.GetOrCreateDefaultRoomAsync(chara.Id, ct);
+            if (room is not null)
+                mapId = MyRoomInfo.GetMapId(room.Stage);
+        }
 
         var map = await mapRepo.GetByMapIdAsync(mapId, ct);
 
@@ -114,7 +127,7 @@ public class AreasvEnterHandler(IUserSessionRepository _sessionRepo, IMapReposit
         session.Character = chara;
         session.CharacterId = charId;
         session.MapId = mapId;
-        session.MyRoomOwnerId = MyRoomInfo.IsMyRoomMap(mapId) ? charId : 0;
+        session.MyRoomId = room is null ? 0 : checked((uint)room.Id);
         session.PendingMyRoomFurnitureItemId = null;
 
         state.RegisterClient(ServerType.Area, session);

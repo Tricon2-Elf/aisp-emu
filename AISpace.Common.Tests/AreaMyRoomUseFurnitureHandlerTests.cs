@@ -13,7 +13,12 @@ public class AreaMyRoomUseFurnitureHandlerTests
     public async Task CatalogFurnitureUse_IsAcknowledgedWithoutOpeningStorage()
     {
         var handler = new AreaMyRoomUseFurnitureHandler(NullLogger<AreaMyRoomUseFurnitureHandler>.Instance);
-        var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
+        var session = new CapturingPlayerSession
+        {
+            MapId = MyRoomInfo.BaseMapId,
+            MyRoomId = 42,
+            CharacterId = 42,
+        };
 
         await handler.HandleAsync(BuildRequest(42, 77, 1), session, TestContext.Current.CancellationToken);
 
@@ -38,7 +43,12 @@ public class AreaMyRoomUseFurnitureHandlerTests
     public async Task WrongRoom_RejectsWithoutStorage()
     {
         var handler = new AreaMyRoomUseFurnitureHandler(NullLogger<AreaMyRoomUseFurnitureHandler>.Instance);
-        var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
+        var session = new CapturingPlayerSession
+        {
+            MapId = MyRoomInfo.BaseMapId,
+            MyRoomId = 42,
+            CharacterId = 42,
+        };
 
         await handler.HandleAsync(BuildRequest(99, 77, 1), session, TestContext.Current.CancellationToken);
 

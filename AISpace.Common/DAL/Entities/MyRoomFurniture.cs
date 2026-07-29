@@ -2,8 +2,8 @@ namespace AISpace.Common.DAL.Entities;
 
 public sealed class MyRoomFurniture
 {
-    public int CharacterId { get; set; }
-    public Character Character { get; set; } = default!;
+    public int RoomId { get; set; }
+    public Room Room { get; set; } = default!;
     public uint FurnitureId { get; set; }
     public int ItemId { get; set; }
     public float PositionX { get; set; }

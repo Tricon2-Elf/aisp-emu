@@ -17,7 +17,7 @@ public class AreaMyRoomUseFurnitureHandler(ILogger<AreaMyRoomUseFurnitureHandler
     {
         var request = MyRoomUseFurnitureRequest.FromBytes(payload.Span);
 
-        if (!MyRoomInfo.IsMyRoomMap(session.MapId) || request.RoomId != session.CharacterId)
+        if (!MyRoomInfo.IsMyRoomMap(session.MapId) || session.MyRoomId == 0 || request.RoomId != session.MyRoomId)
         {
             logger.LogWarning("Rejected MyRoomUseFurniture for character {CharacterId} on map {MapId}: roomId {RoomId} furnId {FurnId}", session.CharacterId, session.MapId, request.RoomId, request.FurnId);
             await session.SendAsync(ResponseType, new MyRoomUseFurnitureResponse(1).ToBytes(), ct);

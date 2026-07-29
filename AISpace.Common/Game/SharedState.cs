@@ -109,8 +109,11 @@ public class SharedState
 
     public IReadOnlyList<IPlayerSession> GetAreaPeers(IPlayerSession session, bool includeSelf = false)
     {
-        var peers = GetAreaSessions(session.MapId, session.ChannelId);
-        return includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId).ToList();
+        IEnumerable<IPlayerSession> peers = GetAreaSessions(session.MapId, session.ChannelId);
+        if (MyRoomInfo.IsMyRoomMap(session.MapId))
+            peers = session.MyRoomId == 0 ? [] : peers.Where(other => other.MyRoomId == session.MyRoomId);
+
+        return (includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId)).ToList();
     }
 
     public static RoboData PrepareOwnedRobo(RoboData robo, IPlayerSession owner)
@@ -254,5 +257,5 @@ public class SharedState
         return sessions;
     }
 
-    public readonly record struct PendingMapTransfer(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, int Rotation);
+    public readonly record struct PendingMapTransfer(int UserId, uint MapId, int ChannelId, float X, float Y, float Z, int Rotation, uint MyRoomId = 0);
 }

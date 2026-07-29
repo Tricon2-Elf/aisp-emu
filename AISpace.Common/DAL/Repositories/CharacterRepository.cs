@@ -12,6 +12,7 @@ public interface ICharacterRepository
     Task<Character?> GetByNameAsync(string name, CancellationToken ct = default);
     Task<Character> CreateAsync(string name, int userId, uint modelId, BloodType bloodType, DateTime birthday, int Gender, uint faceType, uint hairStyle, CancellationToken ct = default);
     Task<Character?> UpdateCurrentMapAsync(int characterId, uint mapId, CancellationToken ct = default);
+    Task<Character?> UpdateCurrentLocationAsync(int characterId, uint mapId, int? roomId, CancellationToken ct = default);
     Task<Character?> UpdateHomeIslandAsync(int characterId, uint homeIslandId, CancellationToken ct = default);
     Task<Character?> CompleteHomeRegistrationAsync(int characterId, uint homeIslandId, CharadollPersonality personality, CancellationToken ct = default);
     Task AddInventoryAsync(int characterId, int itemId, int quantity, CancellationToken ct = default);
@@ -40,12 +41,22 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             FaceType = faceType,
             Hairstyle = hairStyle,
         };
+        c.Rooms.Add(
+            new Room
+            {
+                Name = "My Room",
+                Stage = AISpace.Network.MyRoomStage.SixTatami,
+                IsDefault = true,
+            }
+        );
         db.Characters.Add(c);
         await db.SaveChangesAsync(ct);
         return c;
     }
 
-    public async Task<Character?> UpdateCurrentMapAsync(int characterId, uint mapId, CancellationToken ct = default)
+    public Task<Character?> UpdateCurrentMapAsync(int characterId, uint mapId, CancellationToken ct = default) => UpdateCurrentLocationAsync(characterId, mapId, null, ct);
+
+    public async Task<Character?> UpdateCurrentLocationAsync(int characterId, uint mapId, int? roomId, CancellationToken ct = default)
     {
         var character = await db.Characters.Include(c => c.Inventory).ThenInclude(ci => ci.Item).Include(c => c.Equipment).ThenInclude(ce => ce.Item).SingleOrDefaultAsync(c => c.Id == characterId, ct);
 
@@ -53,6 +64,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             return null;
 
         character.CurrentMapId = mapId;
+        character.CurrentRoomId = roomId;
         await db.SaveChangesAsync(ct);
         return character;
     }
@@ -161,7 +173,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             return;
 
         var remainingQuantity = Math.Max(0, existing.Quantity - quantity);
-        var placedQuantity = itemId < 0 ? 0 : await db.MyRoomFurniture.CountAsync(x => x.CharacterId == characterId && x.ItemId == itemId, ct);
+        var placedQuantity = itemId < 0 ? 0 : await db.MyRoomFurniture.CountAsync(x => x.Room.OwnerCharacterId == characterId && x.ItemId == itemId, ct);
         if (remainingQuantity < placedQuantity)
             throw new InvalidOperationException($"Cannot remove furniture item {itemId} from character {characterId}: {placedQuantity} owned copies are currently placed in MyRoom.");
 
@@ -174,10 +186,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
 
     public async Task<EquipReplaceResult> ReplaceEquipmentAsync(int characterId, IEnumerable<ItemEquipEntry> equips, CancellationToken ct = default)
     {
-        var existing = await db
-            .CharacterEquipments.Include(e => e.Item)
-            .Where(x => x.CharacterId == characterId)
-            .ToListAsync(ct);
+        var existing = await db.CharacterEquipments.Include(e => e.Item).Where(x => x.CharacterId == characterId).ToListAsync(ct);
 
         var newBySlot = new Dictionary<byte, ItemEquipEntry>();
         foreach (var equip in equips)
@@ -202,13 +211,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             if (newBySlot.TryGetValue(old.SlotIndex, out var replacement) && replacement.ItemId == (uint)old.ItemId)
                 continue;
 
-            removed.Add(
-                new EquippedItemChange(
-                    old.ItemId,
-                    old.Item?.Name,
-                    ItemEntityMapper.ResolveBodyspot(old.ItemId, name: old.Item?.Name)
-                )
-            );
+            removed.Add(new EquippedItemChange(old.ItemId, old.Item?.Name, ItemEntityMapper.ResolveBodyspot(old.ItemId, name: old.Item?.Name)));
         }
 
         foreach (var (slotIndex, equip) in newBySlot)
@@ -239,9 +242,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         }
 
         var changedItemIds = removed.Select(x => x.ItemId).Concat(added.Select(x => x.ItemId)).Distinct().ToList();
-        var inventoryByItemId = await db
-            .CharacterInventories.Where(i => i.CharacterId == characterId && changedItemIds.Contains(i.ItemId))
-            .ToDictionaryAsync(i => i.ItemId, ct);
+        var inventoryByItemId = await db.CharacterInventories.Where(i => i.CharacterId == characterId && changedItemIds.Contains(i.ItemId)).ToDictionaryAsync(i => i.ItemId, ct);
 
         // Validate ownership before mutating: newly equipped items must be owned, accounting for
         // items that are unequipped in this same replacement and returned to inventory first.
@@ -249,9 +250,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         foreach (var change in removed)
             availableByItemId[change.ItemId] = availableByItemId.GetValueOrDefault(change.ItemId) + 1;
 
-        var requiredByItemId = pendingAdds
-            .GroupBy(x => (int)x.Equip.ItemId)
-            .ToDictionary(g => g.Key, g => g.Count());
+        var requiredByItemId = pendingAdds.GroupBy(x => (int)x.Equip.ItemId).ToDictionary(g => g.Key, g => g.Count());
 
         foreach (var (itemId, required) in requiredByItemId)
         {
@@ -305,9 +304,7 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         }
 
         await db.SaveChangesAsync(ct);
-        var countsByItemId = await db
-            .CharacterInventories.Where(i => i.CharacterId == characterId && changedItemIds.Contains(i.ItemId))
-            .ToDictionaryAsync(i => i.ItemId, i => i.Quantity, ct);
+        var countsByItemId = await db.CharacterInventories.Where(i => i.CharacterId == characterId && changedItemIds.Contains(i.ItemId)).ToDictionaryAsync(i => i.ItemId, i => i.Quantity, ct);
 
         foreach (var itemId in changedItemIds)
         {

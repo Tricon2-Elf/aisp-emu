@@ -16,12 +16,10 @@ public sealed class AreaMyRoomUpdateNameHandler(IMyRoomRepository myRoomReposito
 
     public override async Task<MyRoomUpdateNameResponse?> HandleAsync(MyRoomUpdateNameRequest request, IPlayerSession session, CancellationToken ct = default)
     {
-        if (!MyRoomRequestValidation.IsOwnerInRoom(request.RoomId, session))
+        if (!await MyRoomRequestValidation.IsOwnerInRoomAsync(request.RoomId, session, myRoomRepository, ct))
             return new MyRoomUpdateNameResponse(1);
 
-        var updated = await myRoomRepository.UpdateNameAsync(checked((int)session.CharacterId), request.Name, ct);
-        if (updated && session.Character is not null)
-            session.Character.MyRoomName = request.Name;
+        var updated = await myRoomRepository.UpdateNameAsync(checked((int)request.RoomId), checked((int)session.CharacterId), request.Name, ct);
 
         return new MyRoomUpdateNameResponse(updated ? 0u : 1u);
     }
@@ -35,12 +33,10 @@ public sealed class AreaMyRoomUpdateSecurityHandler(IMyRoomRepository myRoomRepo
 
     public override async Task<MyRoomUpdateSecurityResponse?> HandleAsync(MyRoomUpdateSecurityRequest request, IPlayerSession session, CancellationToken ct = default)
     {
-        if (!MyRoomRequestValidation.IsOwnerInRoom(request.RoomId, session))
+        if (!await MyRoomRequestValidation.IsOwnerInRoomAsync(request.RoomId, session, myRoomRepository, ct))
             return new MyRoomUpdateSecurityResponse(1);
 
-        var updated = await myRoomRepository.UpdateSecurityAsync(checked((int)session.CharacterId), request.Security, ct);
-        if (updated && session.Character is not null)
-            session.Character.MyRoomSecurity = request.Security;
+        var updated = await myRoomRepository.UpdateSecurityAsync(checked((int)request.RoomId), checked((int)session.CharacterId), request.Security, ct);
 
         return new MyRoomUpdateSecurityResponse(updated ? 0u : 1u);
     }
@@ -55,7 +51,7 @@ public sealed class AreaMyRoomSetFurnitureHandler(IMyRoomRepository myRoomReposi
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = MyRoomSetFurnitureRequest.FromBytes(payload.Span);
-        if (!MyRoomRequestValidation.IsOwnerInRoom(request.RoomId, session))
+        if (!await MyRoomRequestValidation.IsOwnerInRoomAsync(request.RoomId, session, myRoomRepository, ct))
         {
             session.PendingMyRoomFurnitureItemId = null;
             await session.SendAsync(ResponseType, new MyRoomSetFurnitureResponse(1).ToBytes(), ct);
@@ -80,7 +76,7 @@ public sealed class AreaMyRoomSetFurnitureHandler(IMyRoomRepository myRoomReposi
         // eventual server notification to remove the preview.
         if (request.Transform == default)
         {
-            var canPlace = await myRoomRepository.CanPlaceFurnitureAsync(characterId, itemId, placementLimit, ct);
+            var canPlace = await myRoomRepository.CanPlaceFurnitureAsync(characterId, checked((int)request.RoomId), itemId, placementLimit, ct);
             session.PendingMyRoomFurnitureItemId = canPlace ? request.SerialId : null;
             await session.SendAsync(ResponseType, new MyRoomSetFurnitureResponse(canPlace ? 0u : 1u).ToBytes(), ct);
             logger.LogInformation("MyRoom furniture preview {Result} for character {CharacterId}, item {ItemId}", canPlace ? "accepted" : "rejected", session.CharacterId, request.SerialId);
@@ -97,9 +93,10 @@ public sealed class AreaMyRoomSetFurnitureHandler(IMyRoomRepository myRoomReposi
 
         session.PendingMyRoomFurnitureItemId = null;
         var furniture = await myRoomRepository.TryAddFurnitureAsync(
+            characterId,
             new MyRoomFurniture
             {
-                CharacterId = characterId,
+                RoomId = checked((int)request.RoomId),
                 ItemId = itemId,
                 PositionX = request.Transform.X,
                 PositionY = request.Transform.Y,
@@ -131,13 +128,13 @@ public sealed class AreaMyRoomRemoveFurnitureHandler(IMyRoomRepository myRoomRep
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = MyRoomRemoveFurnitureRequest.FromBytes(payload.Span);
-        if (!MyRoomRequestValidation.IsOwnerInRoom(request.RoomId, session))
+        if (!await MyRoomRequestValidation.IsOwnerInRoomAsync(request.RoomId, session, myRoomRepository, ct))
         {
             await session.SendAsync(ResponseType, new MyRoomRemoveFurnitureResponse(1).ToBytes(), ct);
             return;
         }
 
-        var removed = await myRoomRepository.RemoveFurnitureAsync(checked((int)session.CharacterId), request.FurnitureId, ct);
+        var removed = await myRoomRepository.RemoveFurnitureAsync(checked((int)request.RoomId), request.FurnitureId, ct);
         await session.SendAsync(ResponseType, new MyRoomRemoveFurnitureResponse(removed is null ? 1u : 0u).ToBytes(), ct);
         if (removed is not null)
         {
@@ -157,14 +154,14 @@ public sealed class AreaMyRoomUpdateFurnitureHandler(IMyRoomRepository myRoomRep
     public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
     {
         var request = MyRoomUpdateFurnitureRequest.FromBytes(payload.Span);
-        if (!MyRoomRequestValidation.IsOwnerInRoom(request.RoomId, session))
+        if (!await MyRoomRequestValidation.IsOwnerInRoomAsync(request.RoomId, session, myRoomRepository, ct))
         {
             await session.SendAsync(ResponseType, new MyRoomUpdateFurnitureResponse(1).ToBytes(), ct);
             return;
         }
 
         var transform = request.Transform;
-        var updated = await myRoomRepository.UpdateFurnitureAsync(checked((int)session.CharacterId), request.FurnitureId, transform.X, transform.Y, transform.Z, transform.DirectionX, transform.DirectionY, ct);
+        var updated = await myRoomRepository.UpdateFurnitureAsync(checked((int)request.RoomId), request.FurnitureId, transform.X, transform.Y, transform.Z, transform.DirectionX, transform.DirectionY, ct);
         await session.SendAsync(ResponseType, new MyRoomUpdateFurnitureResponse(updated ? 0u : 1u).ToBytes(), ct);
         if (updated)
             await MyRoomFurnitureNotification.BroadcastToRoomAsync(state, session, request.RoomId, PacketType.NotifyMyRoomUpdateFurniture, new NotifyMyRoomUpdateFurniture(request.RoomId, request.FurnitureId, transform).ToBytes(), includeSource: false, ct);
@@ -173,19 +170,25 @@ public sealed class AreaMyRoomUpdateFurnitureHandler(IMyRoomRepository myRoomRep
 
 internal static class MyRoomRequestValidation
 {
-    public static bool IsOwnerInRoom(uint roomId, IPlayerSession session) => session.CharacterId != 0 && roomId == session.CharacterId && roomId == session.MyRoomOwnerId && MyRoomInfo.IsMyRoomMap(session.MapId);
+    public static async Task<bool> IsOwnerInRoomAsync(uint roomId, IPlayerSession session, IMyRoomRepository myRoomRepository, CancellationToken ct)
+    {
+        if (session.CharacterId == 0 || roomId == 0 || roomId != session.MyRoomId || !MyRoomInfo.IsMyRoomMap(session.MapId) || roomId > int.MaxValue)
+            return false;
+
+        return await myRoomRepository.IsOwnerAsync(checked((int)roomId), checked((int)session.CharacterId), ct);
+    }
 }
 
 internal static class MyRoomFurnitureMapper
 {
-    public static MyRoomFurnitureData ToPacket(MyRoomFurniture furniture) => new(checked((uint)furniture.CharacterId), furniture.FurnitureId, PlacementState: 0, checked((uint)furniture.ItemId), furniture.PositionX, furniture.PositionY, furniture.PositionZ, furniture.DirectionX, furniture.DirectionY, Active: 1);
+    public static MyRoomFurnitureData ToPacket(MyRoomFurniture furniture) => new(checked((uint)furniture.RoomId), furniture.FurnitureId, PlacementState: 0, checked((uint)furniture.ItemId), furniture.PositionX, furniture.PositionY, furniture.PositionZ, furniture.DirectionX, furniture.DirectionY, Active: 1);
 }
 
 internal static class MyRoomFurnitureNotification
 {
     public static async Task BroadcastToRoomAsync(SharedState state, IPlayerSession source, uint roomId, PacketType packetType, byte[] payload, bool includeSource, CancellationToken ct)
     {
-        var recipients = state.GetAreaPeers(source, includeSource).Where(peer => peer.MyRoomOwnerId == roomId);
+        var recipients = state.GetAreaPeers(source, includeSource).Where(peer => peer.MyRoomId == roomId);
         foreach (var peer in recipients)
             await peer.SendAsync(packetType, payload, ct);
     }
