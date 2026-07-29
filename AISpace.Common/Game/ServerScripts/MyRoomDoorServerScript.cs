@@ -1,5 +1,4 @@
 using AISpace.Common.DAL.Repositories;
-using AISpace.Common.Handlers.Area;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;

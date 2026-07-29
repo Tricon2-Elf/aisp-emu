@@ -18,18 +18,3 @@ public abstract class PingHandlerBase(ILogger logger) : IPacketHandler
         await session.SendAsync(PacketType.Ping, new PingResponse(ping.Time).ToBytes(), ct);
     }
 }
-
-public class AuthPingHandler(ILogger<AuthPingHandler> logger) : PingHandlerBase(logger)
-{
-    public override ServerType ServerType => ServerType.Auth;
-}
-
-public class MsgPingHandler(ILogger<MsgPingHandler> logger) : PingHandlerBase(logger)
-{
-    public override ServerType ServerType => ServerType.Msg;
-}
-
-public class AreaPingHandler(ILogger<AreaPingHandler> logger) : PingHandlerBase(logger)
-{
-    public override ServerType ServerType => ServerType.Area;
-}
