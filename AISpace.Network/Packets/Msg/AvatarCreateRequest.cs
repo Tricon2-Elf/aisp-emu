@@ -14,7 +14,7 @@ public class AvatarCreateRequest : IIncomingPacket<AvatarCreateRequest>
         var reader = new PacketReader(data);
         var createRequest = new AvatarCreateRequest
         {
-            AvatarName = reader.ReadString(),
+            AvatarName = reader.ReadString("utf-8"),
             modelId = reader.ReadUInt(),
             visual = CharaVisual.FromBytes(reader.ReadBytes(19)),
             slotId = reader.ReadUInt(),
