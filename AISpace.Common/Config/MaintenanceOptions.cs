@@ -11,5 +11,6 @@ public class MaintenanceOptions
     public int[] WarningMinutes { get; set; } = [30, 15, 10, 5, 1];
 
     /// <summary>Warning message template. {0} is replaced with the minutes remaining.</summary>
-    public string Message { get; set; } = "Server maintenance in {0} minute(s). You will be disconnected.";
+    public string Message { get; set; } =
+        "Server maintenance in {0} minute(s). You will be disconnected.";
 }

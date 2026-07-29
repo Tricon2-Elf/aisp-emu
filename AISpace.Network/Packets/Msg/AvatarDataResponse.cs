@@ -2,7 +2,13 @@ using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class AvatarDataResponse(uint avatarId, string name, uint modelId, uint islandId, uint slotId) : IOutgoingPacket
+public class AvatarDataResponse(
+    uint avatarId,
+    string name,
+    uint modelId,
+    uint islandId,
+    uint slotId
+) : IOutgoingPacket
 {
     public CharaVisual Visual = new(BloodType.A, 1, 1, 1, 2, 0, 0);
     public List<ItemSlotInfo> Equips = new(30);
@@ -14,7 +20,10 @@ public class AvatarDataResponse(uint avatarId, string name, uint modelId, uint i
         Equips.Add(new ItemSlotInfo(id, socket));
     }
 
-    public void AddEquip(IEnumerable<CharacterEquipSlot> equipment, Func<CharacterEquipSlot, uint> resolveSocket)
+    public void AddEquip(
+        IEnumerable<CharacterEquipSlot> equipment,
+        Func<CharacterEquipSlot, uint> resolveSocket
+    )
     {
         for (byte slot = 0; slot < 30; slot++)
         {

@@ -45,5 +45,6 @@ public class PlayerSession : IPlayerSession
     public ISet<uint> VisibleRemoteRoboObjectIds { get; } = new HashSet<uint>();
     public bool IsAuthenticated => User != null;
 
-    public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) => ClientConnection.SendAsync(type, payload, ct);
+    public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) =>
+        ClientConnection.SendAsync(type, payload, ct);
 }

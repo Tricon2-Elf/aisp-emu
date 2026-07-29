@@ -10,7 +10,11 @@ public class AreasvEnterRequest : IIncomingPacket<AreasvEnterRequest>
     public static AreasvEnterRequest FromBytes(ReadOnlySpan<byte> data)
     {
         PacketReader reader = new(data);
-        AreasvEnterRequest req = new() { UserID = reader.ReadUInt(), OTP = reader.ReadFixedString(20, "ASCII") };
+        AreasvEnterRequest req = new()
+        {
+            UserID = reader.ReadUInt(),
+            OTP = reader.ReadFixedString(20, "ASCII"),
+        };
         return req;
     }
 }

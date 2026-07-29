@@ -9,17 +9,26 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleCreateHandler(MainContext db) : PacketHandlerBase<CircleCreateRequest, CircleCreateResponse>, IRequiresAuthenticatedSession
+public class CircleCreateHandler(MainContext db)
+    : PacketHandlerBase<CircleCreateRequest, CircleCreateResponse>,
+        IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.CircleCreateRequest;
     public override PacketType ResponseType => PacketType.CircleCreateResponse;
     public override ServerType ServerType => ServerType.Msg;
 
-    public override async Task<CircleCreateResponse?> HandleAsync(CircleCreateRequest request, IPlayerSession session, CancellationToken ct = default)
+    public override async Task<CircleCreateResponse?> HandleAsync(
+        CircleCreateRequest request,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         if (session.User == null)
             return new CircleCreateResponse(1, null);
-        var character = await db.Characters.FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
+        var character = await db.Characters.FirstOrDefaultAsync(
+            c => c.Id == session.CharacterId,
+            ct
+        );
         if (character == null)
             return new CircleCreateResponse(1, null);
         if (character.CircleId != null)

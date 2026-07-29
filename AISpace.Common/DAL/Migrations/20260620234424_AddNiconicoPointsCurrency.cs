@@ -15,15 +15,14 @@ namespace AISpace.Common.DAL.Migrations
                 table: "Users",
                 type: "INTEGER",
                 nullable: false,
-                defaultValue: 0L);
+                defaultValue: 0L
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "NiconicoPoints",
-                table: "Users");
+            migrationBuilder.DropColumn(name: "NiconicoPoints", table: "Users");
         }
     }
 }

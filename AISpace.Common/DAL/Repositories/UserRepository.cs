@@ -12,9 +12,18 @@ public interface IUserRepository
     Task SetBannedAsync(int userId, bool isBanned, string? reason = null);
     Task UpdatePasswordAsync(int userId, string newPassword);
     Task DeleteAsync(int userId);
-    Task<IReadOnlyList<User>> GetAllAsync(string? search = null, int? skip = null, int? take = null);
+    Task<IReadOnlyList<User>> GetAllAsync(
+        string? search = null,
+        int? skip = null,
+        int? take = null
+    );
     Task<int> CountAsync(string? search = null);
-    Task<User?> AddMoneyAsync(int userId, long aiDelta, long nicoDelta, CancellationToken ct = default);
+    Task<User?> AddMoneyAsync(
+        int userId,
+        long aiDelta,
+        long nicoDelta,
+        CancellationToken ct = default
+    );
 }
 
 public class UserRepository(MainContext db) : IUserRepository
@@ -23,7 +32,14 @@ public class UserRepository(MainContext db) : IUserRepository
 
     public async Task<User?> AuthenticateAsync(string username, string password)
     {
-        var user = await _db.Users.Include(u => u.Characters).ThenInclude(c => c.Inventory).ThenInclude(i => i.Item).Include(u => u.Characters).ThenInclude(c => c.Equipment).ThenInclude(e => e.Item).SingleOrDefaultAsync(u => u.Username == username);
+        var user = await _db
+            .Users.Include(u => u.Characters)
+                .ThenInclude(c => c.Inventory)
+                    .ThenInclude(i => i.Item)
+            .Include(u => u.Characters)
+                .ThenInclude(c => c.Equipment)
+                    .ThenInclude(e => e.Item)
+            .SingleOrDefaultAsync(u => u.Username == username);
         if (user is null)
             return null;
 
@@ -41,12 +57,26 @@ public class UserRepository(MainContext db) : IUserRepository
 
     public async Task<User?> GetByUsernameAsync(string username)
     {
-        return await _db.Users.Include(u => u.Characters).ThenInclude(c => c.Inventory).ThenInclude(i => i.Item).Include(u => u.Characters).ThenInclude(c => c.Equipment).ThenInclude(e => e.Item).FirstOrDefaultAsync(u => u.Username == username);
+        return await _db
+            .Users.Include(u => u.Characters)
+                .ThenInclude(c => c.Inventory)
+                    .ThenInclude(i => i.Item)
+            .Include(u => u.Characters)
+                .ThenInclude(c => c.Equipment)
+                    .ThenInclude(e => e.Item)
+            .FirstOrDefaultAsync(u => u.Username == username);
     }
 
     public async Task<User?> GetById(int userId)
     {
-        return await _db.Users.Include(u => u.Characters).ThenInclude(c => c.Inventory).ThenInclude(i => i.Item).Include(u => u.Characters).ThenInclude(c => c.Equipment).ThenInclude(e => e.Item).FirstOrDefaultAsync(u => u.Id == userId);
+        return await _db
+            .Users.Include(u => u.Characters)
+                .ThenInclude(c => c.Inventory)
+                    .ThenInclude(i => i.Item)
+            .Include(u => u.Characters)
+                .ThenInclude(c => c.Equipment)
+                    .ThenInclude(e => e.Item)
+            .FirstOrDefaultAsync(u => u.Id == userId);
     }
 
     public async Task SetBannedAsync(int userId, bool isBanned, string? reason = null)
@@ -81,7 +111,11 @@ public class UserRepository(MainContext db) : IUserRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task<IReadOnlyList<User>> GetAllAsync(string? search = null, int? skip = null, int? take = null)
+    public async Task<IReadOnlyList<User>> GetAllAsync(
+        string? search = null,
+        int? skip = null,
+        int? take = null
+    )
     {
         var query = _db.Users.AsQueryable();
 
@@ -108,7 +142,12 @@ public class UserRepository(MainContext db) : IUserRepository
         return await query.CountAsync();
     }
 
-    public async Task<User?> AddMoneyAsync(int userId, long aiDelta, long nicoDelta, CancellationToken ct = default)
+    public async Task<User?> AddMoneyAsync(
+        int userId,
+        long aiDelta,
+        long nicoDelta,
+        CancellationToken ct = default
+    )
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null)

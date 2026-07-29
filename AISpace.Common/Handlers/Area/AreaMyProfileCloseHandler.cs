@@ -9,7 +9,11 @@ public class AreaMyProfileCloseHandler : IPacketHandler, IRequiresAuthenticatedS
     public PacketType ResponseType => (PacketType)0;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         await Task.CompletedTask;
     }

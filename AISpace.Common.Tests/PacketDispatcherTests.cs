@@ -18,7 +18,8 @@ public class PacketDispatcherTests
         public int InvokeCount { get; set; }
     }
 
-    private sealed class RecordingAuthAuthenticateHandler(HandlerInvocationSink sink) : IPacketHandler
+    private sealed class RecordingAuthAuthenticateHandler(HandlerInvocationSink sink)
+        : IPacketHandler
     {
         public PacketType RequestType => PacketType.AuthenticateRequest;
 
@@ -26,7 +27,11 @@ public class PacketDispatcherTests
 
         public ServerType ServerType => ServerType.Auth;
 
-        public Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+        public Task HandleAsync(
+            ReadOnlyMemory<byte> payload,
+            IPlayerSession session,
+            CancellationToken ct = default
+        )
         {
             sink.InvokeCount++;
             sink.LastSession = session;
@@ -42,14 +47,20 @@ public class PacketDispatcherTests
 
         public ServerType ServerType => ServerType.Auth;
 
-        public Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+        public Task HandleAsync(
+            ReadOnlyMemory<byte> payload,
+            IPlayerSession session,
+            CancellationToken ct = default
+        )
         {
             sink.InvokeCount++;
             return Task.CompletedTask;
         }
     }
 
-    private sealed class AuthRequiredPingHandler(HandlerInvocationSink sink) : IPacketHandler, IRequiresAuthenticatedSession
+    private sealed class AuthRequiredPingHandler(HandlerInvocationSink sink)
+        : IPacketHandler,
+            IRequiresAuthenticatedSession
     {
         public PacketType RequestType => PacketType.Ping;
 
@@ -57,7 +68,11 @@ public class PacketDispatcherTests
 
         public ServerType ServerType => ServerType.Auth;
 
-        public Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+        public Task HandleAsync(
+            ReadOnlyMemory<byte> payload,
+            IPlayerSession session,
+            CancellationToken ct = default
+        )
         {
             sink.InvokeCount++;
             sink.LastSession = session;
@@ -81,7 +96,13 @@ public class PacketDispatcherTests
         var dispatcher = provider.GetRequiredService<PacketDispatcher>();
         var session = new CapturingPlayerSession();
 
-        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.AuthenticateRequest, [], session, TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(
+            ServerType.Auth,
+            PacketType.AuthenticateRequest,
+            [],
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(1, sink.InvokeCount);
         Assert.Same(session, sink.LastSession);
@@ -102,7 +123,13 @@ public class PacketDispatcherTests
         await using var provider = services.BuildServiceProvider();
         var dispatcher = provider.GetRequiredService<PacketDispatcher>();
 
-        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.AuthenticateRequest, [], new CapturingPlayerSession(), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(
+            ServerType.Auth,
+            PacketType.AuthenticateRequest,
+            [],
+            new CapturingPlayerSession(),
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, sink.InvokeCount);
     }
@@ -122,7 +149,13 @@ public class PacketDispatcherTests
         await using var provider = services.BuildServiceProvider();
         var dispatcher = provider.GetRequiredService<PacketDispatcher>();
 
-        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.Ping, [], new CapturingPlayerSession(), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(
+            ServerType.Auth,
+            PacketType.Ping,
+            [],
+            new CapturingPlayerSession(),
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, sink.InvokeCount);
     }
@@ -146,7 +179,13 @@ public class PacketDispatcherTests
             User = new User { Id = 1, Username = "test" },
         };
 
-        await dispatcher.DispatchAsync(ServerType.Auth, PacketType.Ping, [], session, TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(
+            ServerType.Auth,
+            PacketType.Ping,
+            [],
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(1, sink.InvokeCount);
         Assert.Same(session, sink.LastSession);

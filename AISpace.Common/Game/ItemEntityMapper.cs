@@ -54,7 +54,8 @@ internal static class ItemEntityMapper
         return 0;
     }
 
-    public static uint ResolveBodyspot(Item item) => ResolveBodyspot(item.Id, item.Socket, item.Name);
+    public static uint ResolveBodyspot(Item item) =>
+        ResolveBodyspot(item.Id, item.Socket, item.Name);
 
     public static uint ResolveBodyspot(uint itemId) => ResolveBodyspot((int)itemId);
 
@@ -93,7 +94,9 @@ internal static class ItemEntityMapper
                 return (uint)WardrobeSocketBit.LowerBodyLayer2;
         }
 
-        return itemId == 10200100 ? (uint)WardrobeSocketBit.LowerBodyLayer2 : (uint)WardrobeSocketBit.LowerBodyLayer1;
+        return itemId == 10200100
+            ? (uint)WardrobeSocketBit.LowerBodyLayer2
+            : (uint)WardrobeSocketBit.LowerBodyLayer1;
     }
 
     public static ItemData ToItemBaseListData(Item item)
@@ -120,14 +123,21 @@ internal static class ItemEntityMapper
         };
     }
 
-    public static uint ResolveInventoryTabCategory(int itemId, string? name = null) => ResolveCatalogCategory(itemId, name);
+    public static uint ResolveInventoryTabCategory(int itemId, string? name = null) =>
+        ResolveCatalogCategory(itemId, name);
 
     private static uint ResolveCatalogCategory(int itemId, string? name)
     {
         if (itemId is < 10_000_000 or >= 200_000_000)
             return (uint)WardrobeCategoryId.None;
 
-        if (!string.IsNullOrEmpty(name) && (name.Contains("コート", StringComparison.Ordinal) || name.Contains("アウター", StringComparison.Ordinal)))
+        if (
+            !string.IsNullOrEmpty(name)
+            && (
+                name.Contains("コート", StringComparison.Ordinal)
+                || name.Contains("アウター", StringComparison.Ordinal)
+            )
+        )
             return (uint)WardrobeCategoryId.Coat;
 
         return (itemId / 100_000) switch
@@ -148,7 +158,11 @@ internal static class ItemEntityMapper
     {
         if (!string.IsNullOrEmpty(name))
         {
-            if (name.Contains("Yシャツ", StringComparison.Ordinal) || name.Contains("ワイシャツ", StringComparison.Ordinal) || name.Contains("ブラウス", StringComparison.Ordinal))
+            if (
+                name.Contains("Yシャツ", StringComparison.Ordinal)
+                || name.Contains("ワイシャツ", StringComparison.Ordinal)
+                || name.Contains("ブラウス", StringComparison.Ordinal)
+            )
                 return (uint)WardrobeCategoryId.DressShirt;
         }
 

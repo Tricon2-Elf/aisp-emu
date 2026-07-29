@@ -13,12 +13,18 @@ public class CircleGetDataHandler(MainContext db) : IPacketHandler, IRequiresAut
     public PacketType ResponseType => PacketType.CircleGetDataResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var list = new List<CircleData>();
 
         // Reload the character
-        var cha = await db.Characters.Include(c => c.Circle).FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
+        var cha = await db
+            .Characters.Include(c => c.Circle)
+            .FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
 
         if (cha != null && cha.Circle != null)
         {

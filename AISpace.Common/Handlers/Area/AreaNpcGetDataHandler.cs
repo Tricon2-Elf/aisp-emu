@@ -7,7 +7,9 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaNpcGetDataHandler(INpcRepository npcRepository)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.NpcGetDataRequest;
 
@@ -15,7 +17,11 @@ public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandle
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var response = new NpcGetDataResponse();
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
@@ -32,7 +38,15 @@ public class AreaNpcGetDataHandler(INpcRepository npcRepository) : IPacketHandle
         var pos = new MovementData(npc.X, npc.Y, npc.Z, npc.Rotation, MovementType.Stopped);
         var npcChara = new CharaData(objectId, modelId, npc.Name) { Movement = pos };
         npcChara.Visual.VisualId = objectId;
-        npcChara.AddEquip(npc.Equipment.OrderBy(x => x.SortOrder).ThenBy(x => x.SlotIndex).Select(x => new CharacterEquipSlot(checked((byte)x.SlotIndex), checked((uint)x.ItemId))), ItemEntityMapper.ResolveEquipSocket);
+        npcChara.AddEquip(
+            npc.Equipment.OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.SlotIndex)
+                .Select(x => new CharacterEquipSlot(
+                    checked((byte)x.SlotIndex),
+                    checked((uint)x.ItemId)
+                )),
+            ItemEntityMapper.ResolveEquipSocket
+        );
 
         var npcPacket = new NpcNotifyData(0, objectId, npcChara).ToBytes();
         return session.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);

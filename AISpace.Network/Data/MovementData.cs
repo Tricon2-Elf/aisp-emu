@@ -35,6 +35,12 @@ public class MovementData(float x, float y, float z, int rotation, MovementType 
     public static MovementData FromBytes(ReadOnlySpan<byte> source)
     {
         var reader = new PacketReader(source);
-        return new MovementData(reader.ReadFloat(), reader.ReadFloat(), reader.ReadFloat(), YawEncoding.FromWireSByte(reader.ReadSByte()), (MovementType)reader.ReadByte());
+        return new MovementData(
+            reader.ReadFloat(),
+            reader.ReadFloat(),
+            reader.ReadFloat(),
+            YawEncoding.FromWireSByte(reader.ReadSByte()),
+            (MovementType)reader.ReadByte()
+        );
     }
 }

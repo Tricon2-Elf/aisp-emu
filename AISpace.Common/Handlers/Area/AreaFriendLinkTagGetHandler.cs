@@ -10,7 +10,11 @@ public class AreaFriendLinkTagGetHandler : IPacketHandler, IRequiresAuthenticate
     public PacketType ResponseType => PacketType.FriendLinkTagGetResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var req = FriendLinkTagGetRequest.FromBytes(payload.Span);
         var response = new FriendLinkTagGetResponse(0, req.TargetObjectId);

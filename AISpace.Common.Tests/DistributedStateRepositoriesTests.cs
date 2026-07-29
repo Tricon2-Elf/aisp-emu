@@ -67,7 +67,12 @@ public class DistributedStateRepositoriesTests
             Assert.Equal(expected.ChannelId, firstTransition.ChannelId);
 
             await using var verify = new MainContext(options);
-            Assert.False(await verify.PendingMapTransfers.AnyAsync(row => row.UserId == 12, TestContext.Current.CancellationToken));
+            Assert.False(
+                await verify.PendingMapTransfers.AnyAsync(
+                    row => row.UserId == 12,
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {

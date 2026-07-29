@@ -16,14 +16,26 @@ public sealed class AreaSelectInitIslandEndHandler(
     public PacketType ResponseType => PacketType.SelectInitIslandStart;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = SelectInitIslandEndRequest.FromBytes(payload.Span);
-        logger.LogInformation("SelectInitIslandEndRequest from user {UserId}: island {IslandId}", session.User?.Id ?? session.UserId, request.IslandId);
+        logger.LogInformation(
+            "SelectInitIslandEndRequest from user {UserId}: island {IslandId}",
+            session.User?.Id ?? session.UserId,
+            request.IslandId
+        );
 
         if (await serverScriptDispatcher.TryHandlePacketAsync(RequestType, payload, session, ct))
             return;
 
-        await directMapLinkTransitionService.OpenPendingAreaMapSelectionAsync(session, request.IslandId, ct);
+        await directMapLinkTransitionService.OpenPendingAreaMapSelectionAsync(
+            session,
+            request.IslandId,
+            ct
+        );
     }
 }

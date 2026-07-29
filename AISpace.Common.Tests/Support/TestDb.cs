@@ -8,7 +8,10 @@ namespace AISpace.Common.Tests.Support;
 internal static class TestDb
 {
     /// <summary>Opens an in-memory SQLite connection and builds a <see cref="MainContext"/> schema. Caller disposes the connection.</summary>
-    public static (SqliteConnection Connection, DbContextOptions<MainContext> Options) CreateInMemoryMainContext()
+    public static (
+        SqliteConnection Connection,
+        DbContextOptions<MainContext> Options
+    ) CreateInMemoryMainContext()
     {
         var connection = new SqliteConnection("DataSource=:memory:");
         connection.Open();
@@ -20,7 +23,11 @@ internal static class TestDb
         return (connection, options);
     }
 
-    public static async Task SeedCharacterAsync(DbContextOptions<MainContext> options, int characterId, CancellationToken ct = default)
+    public static async Task SeedCharacterAsync(
+        DbContextOptions<MainContext> options,
+        int characterId,
+        CancellationToken ct = default
+    )
     {
         await using var db = new MainContext(options);
         var user = new User { Id = characterId, Username = $"user-{characterId}" };
@@ -46,7 +53,8 @@ internal static class TestDb
     }
 }
 
-internal sealed class TestMainContextFactory(DbContextOptions<MainContext> options) : IDbContextFactory<MainContext>
+internal sealed class TestMainContextFactory(DbContextOptions<MainContext> options)
+    : IDbContextFactory<MainContext>
 {
     public MainContext CreateDbContext() => new(options);
 }

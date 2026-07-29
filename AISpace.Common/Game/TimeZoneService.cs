@@ -15,7 +15,14 @@ public static class TimeZoneService
 {
     private static readonly long ServerStartTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-    private static readonly (DayPhase Phase, int Duration)[] Phases = [(DayPhase.EarlyMorning, 900), (DayPhase.Morning, 1800), (DayPhase.Day, 3600), (DayPhase.Evening, 900), (DayPhase.Night, 1800)];
+    private static readonly (DayPhase Phase, int Duration)[] Phases =
+    [
+        (DayPhase.EarlyMorning, 900),
+        (DayPhase.Morning, 1800),
+        (DayPhase.Day, 3600),
+        (DayPhase.Evening, 900),
+        (DayPhase.Night, 1800),
+    ];
 
     private static readonly int CycleDuration = Phases.Sum(p => p.Duration);
 

@@ -10,8 +10,18 @@ public interface IRoboRepository
     Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<IReadOnlyList<RoboData>> GetAllAsync(int characterId, CancellationToken ct = default);
-    Task<RoboData?> ReplaceEquipmentAsync(int characterId, uint roboId, IReadOnlyList<ItemEquipEntry> equips, CancellationToken ct = default);
-    Task<bool> ReplaceDistributedStatusPointsAsync(int characterId, uint roboId, IReadOnlyList<uint> values, CancellationToken ct = default);
+    Task<RoboData?> ReplaceEquipmentAsync(
+        int characterId,
+        uint roboId,
+        IReadOnlyList<ItemEquipEntry> equips,
+        CancellationToken ct = default
+    );
+    Task<bool> ReplaceDistributedStatusPointsAsync(
+        int characterId,
+        uint roboId,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default
+    );
     Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default);
 }
 
@@ -24,18 +34,29 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
     public static uint GetObjectId(uint ownerCharacterId, uint roboId)
     {
         if (roboId is 0 or > MaximumRobosPerCharacter)
-            throw new ArgumentOutOfRangeException(nameof(roboId), roboId, $"Robo IDs must be between 1 and {MaximumRobosPerCharacter}.");
+            throw new ArgumentOutOfRangeException(
+                nameof(roboId),
+                roboId,
+                $"Robo IDs must be between 1 and {MaximumRobosPerCharacter}."
+            );
 
-        var objectId = checked(ObjectIdBase + checked(ownerCharacterId * MaximumRobosPerCharacter) + roboId - 1);
+        var objectId = checked(
+            ObjectIdBase + checked(ownerCharacterId * MaximumRobosPerCharacter) + roboId - 1
+        );
         if (objectId > MaximumClientObjectId)
-            throw new ArgumentOutOfRangeException(nameof(ownerCharacterId), ownerCharacterId, "Character ID is too large for the client object-ID namespace.");
+            throw new ArgumentOutOfRangeException(
+                nameof(ownerCharacterId),
+                ownerCharacterId,
+                "Character ID is too large for the client object-ID namespace."
+            );
 
         return objectId;
     }
 
     public static bool TryGetRoboId(uint ownerCharacterId, uint objectId, out uint roboId)
     {
-        var firstObjectId = (ulong)ObjectIdBase + (ulong)ownerCharacterId * MaximumRobosPerCharacter;
+        var firstObjectId =
+            (ulong)ObjectIdBase + (ulong)ownerCharacterId * MaximumRobosPerCharacter;
         if (firstObjectId > MaximumClientObjectId || (ulong)objectId < firstObjectId)
         {
             roboId = 0;
@@ -55,38 +76,67 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
 
     public Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default)
     {
-        return db.Robos.AsNoTracking().AnyAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        return db
+            .Robos.AsNoTracking()
+            .AnyAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
     }
 
-    public async Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default)
+    public async Task<RoboData?> GetAsync(
+        int characterId,
+        uint roboId,
+        CancellationToken ct = default
+    )
     {
-        var entity = await WithDetails(db.Robos.AsNoTracking()).SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        var entity = await WithDetails(db.Robos.AsNoTracking())
+            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
         return entity is null ? null : ToRoboData(entity);
     }
 
-    public async Task<IReadOnlyList<RoboData>> GetAllAsync(int characterId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<RoboData>> GetAllAsync(
+        int characterId,
+        CancellationToken ct = default
+    )
     {
-        var entities = await WithDetails(db.Robos.AsNoTracking()).Where(x => x.CharacterId == characterId).OrderBy(x => x.RoboId).ToListAsync(ct);
+        var entities = await WithDetails(db.Robos.AsNoTracking())
+            .Where(x => x.CharacterId == characterId)
+            .OrderBy(x => x.RoboId)
+            .ToListAsync(ct);
         return entities.Select(ToRoboData).ToList();
     }
 
-    public async Task<RoboData?> ReplaceEquipmentAsync(int characterId, uint roboId, IReadOnlyList<ItemEquipEntry> equips, CancellationToken ct = default)
+    public async Task<RoboData?> ReplaceEquipmentAsync(
+        int characterId,
+        uint roboId,
+        IReadOnlyList<ItemEquipEntry> equips,
+        CancellationToken ct = default
+    )
     {
         if (equips.Count > CharaData.EquipmentSlotCount)
-            throw new InvalidDataException($"Robo equipment cannot contain more than {CharaData.EquipmentSlotCount} entries.");
+            throw new InvalidDataException(
+                $"Robo equipment cannot contain more than {CharaData.EquipmentSlotCount} entries."
+            );
 
-        var entity = await WithDetails(db.Robos).SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        var entity = await WithDetails(db.Robos)
+            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
         if (entity is null)
             return null;
 
         var equipmentBySlot = new Dictionary<byte, ItemEquipEntry>();
         foreach (var equip in equips)
         {
-            if (equip.ItemId == 0 || !EquipSlotMapper.TryResolveSlotIndex(equip.ItemId, equip.SocketBit, out var slotIndex))
+            if (
+                equip.ItemId == 0
+                || !EquipSlotMapper.TryResolveSlotIndex(
+                    equip.ItemId,
+                    equip.SocketBit,
+                    out var slotIndex
+                )
+            )
                 continue;
 
             var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId);
-            equipmentBySlot[slotIndex] = socket == 0 ? equip : new ItemEquipEntry(equip.ItemId, socket);
+            equipmentBySlot[slotIndex] =
+                socket == 0 ? equip : new ItemEquipEntry(equip.ItemId, socket);
         }
 
         foreach (var row in entity.Equipment)
@@ -108,16 +158,29 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         return ToRoboData(entity);
     }
 
-    public async Task<bool> ReplaceDistributedStatusPointsAsync(int characterId, uint roboId, IReadOnlyList<uint> values, CancellationToken ct = default)
+    public async Task<bool> ReplaceDistributedStatusPointsAsync(
+        int characterId,
+        uint roboId,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default
+    )
     {
         if (values.Count != RoboData.DistributedStatusPointCount)
-            throw new ArgumentException($"Exactly {RoboData.DistributedStatusPointCount} distributed status-point values are required.", nameof(values));
+            throw new ArgumentException(
+                $"Exactly {RoboData.DistributedStatusPointCount} distributed status-point values are required.",
+                nameof(values)
+            );
 
-        var entity = await db.Robos.Include(x => x.DistributedStatusPoints).SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        var entity = await db
+            .Robos.Include(x => x.DistributedStatusPoints)
+            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
         if (entity is null)
             return false;
 
-        var previouslyDistributed = entity.DistributedStatusPoints.Aggregate(0UL, (total, point) => total + point.Value);
+        var previouslyDistributed = entity.DistributedStatusPoints.Aggregate(
+            0UL,
+            (total, point) => total + point.Value
+        );
         var newlyDistributed = values.Aggregate(0UL, (total, value) => total + value);
         var totalBudget = (ulong)entity.AvailableStatusPoints + previouslyDistributed;
         if (newlyDistributed > totalBudget)
@@ -139,7 +202,8 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
     {
         Validate(characterId, robo);
 
-        var entity = await WithDetails(db.Robos).SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == robo.RoboId, ct);
+        var entity = await WithDetails(db.Robos)
+            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == robo.RoboId, ct);
         var now = DateTime.UtcNow;
         if (entity is null)
         {
@@ -148,7 +212,11 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
                 CharacterId = characterId,
                 RoboId = robo.RoboId,
                 CreatedAt = now,
-                TpsBattleData = new RoboTpsBattleData { CharacterId = characterId, RoboId = robo.RoboId },
+                TpsBattleData = new RoboTpsBattleData
+                {
+                    CharacterId = characterId,
+                    RoboId = robo.RoboId,
+                },
             };
             db.Robos.Add(entity);
         }
@@ -165,20 +233,33 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
 
     private static IQueryable<Robo> WithDetails(IQueryable<Robo> query)
     {
-        return query.Include(x => x.TpsBattleData).ThenInclude(x => x.BattleAbilities).Include(x => x.Equipment).Include(x => x.ItemUseEffects).Include(x => x.DistributedStatusPoints);
+        return query
+            .Include(x => x.TpsBattleData)
+                .ThenInclude(x => x.BattleAbilities)
+            .Include(x => x.Equipment)
+            .Include(x => x.ItemUseEffects)
+            .Include(x => x.DistributedStatusPoints);
     }
 
     private static void Validate(int characterId, RoboData robo)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(characterId);
         if (robo.Character.Equips.Count > CharaData.EquipmentSlotCount)
-            throw new InvalidOperationException($"RoboData cannot contain more than {CharaData.EquipmentSlotCount} equipment slots.");
+            throw new InvalidOperationException(
+                $"RoboData cannot contain more than {CharaData.EquipmentSlotCount} equipment slots."
+            );
         if (robo.ItemUseEffects.Length != RoboData.ItemUseEffectCount)
-            throw new InvalidOperationException($"RoboData must contain exactly {RoboData.ItemUseEffectCount} item-use effects.");
+            throw new InvalidOperationException(
+                $"RoboData must contain exactly {RoboData.ItemUseEffectCount} item-use effects."
+            );
         if (robo.ItemUseEffects.Any(x => x.Parameters.Length != ItemUseEffectData.ParameterCount))
-            throw new InvalidOperationException($"Each ItemUseEffectData must contain exactly {ItemUseEffectData.ParameterCount} parameters.");
+            throw new InvalidOperationException(
+                $"Each ItemUseEffectData must contain exactly {ItemUseEffectData.ParameterCount} parameters."
+            );
         if (robo.DistributedStatusPoints.Length != RoboData.DistributedStatusPointCount)
-            throw new InvalidOperationException($"RoboData must contain exactly {RoboData.DistributedStatusPointCount} distributed status-point values.");
+            throw new InvalidOperationException(
+                $"RoboData must contain exactly {RoboData.DistributedStatusPointCount} distributed status-point values."
+            );
 
         ValidateAbilityValues(robo.Character.Battle.BaseAbilities);
         ValidateAbilityValues(robo.Character.Battle.AbilityModifierType0);
@@ -189,7 +270,9 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
     private static void ValidateAbilityValues(BattleAbilityValues abilities)
     {
         if (abilities.Values.Length != BattleAbilityValues.Count)
-            throw new InvalidOperationException($"BattleAbilityValues must contain exactly {BattleAbilityValues.Count} values.");
+            throw new InvalidOperationException(
+                $"BattleAbilityValues must contain exactly {BattleAbilityValues.Count} values."
+            );
     }
 
     private static void CopyScalarData(Robo entity, RoboData source)
@@ -281,7 +364,10 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         }
     }
 
-    private static void SynchronizeItemUseEffects(Robo entity, IReadOnlyList<ItemUseEffectData> source)
+    private static void SynchronizeItemUseEffects(
+        Robo entity,
+        IReadOnlyList<ItemUseEffectData> source
+    )
     {
         for (byte slotIndex = 0; slotIndex < RoboData.ItemUseEffectCount; slotIndex++)
         {
@@ -311,19 +397,44 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         }
     }
 
-    private static void SynchronizeBattleAbilities(RoboTpsBattleData tpsBattleData, TpsBattleData battle)
+    private static void SynchronizeBattleAbilities(
+        RoboTpsBattleData tpsBattleData,
+        TpsBattleData battle
+    )
     {
-        SynchronizeBattleAbilitySet(tpsBattleData, RoboBattleAbilitySet.Base, battle.BaseAbilities.Values);
-        SynchronizeBattleAbilitySet(tpsBattleData, RoboBattleAbilitySet.ModifierType0, battle.AbilityModifierType0.Values);
-        SynchronizeBattleAbilitySet(tpsBattleData, RoboBattleAbilitySet.ModifierType1, battle.AbilityModifierType1.Values);
-        SynchronizeBattleAbilitySet(tpsBattleData, RoboBattleAbilitySet.ModifierType2, battle.AbilityModifierType2.Values);
+        SynchronizeBattleAbilitySet(
+            tpsBattleData,
+            RoboBattleAbilitySet.Base,
+            battle.BaseAbilities.Values
+        );
+        SynchronizeBattleAbilitySet(
+            tpsBattleData,
+            RoboBattleAbilitySet.ModifierType0,
+            battle.AbilityModifierType0.Values
+        );
+        SynchronizeBattleAbilitySet(
+            tpsBattleData,
+            RoboBattleAbilitySet.ModifierType1,
+            battle.AbilityModifierType1.Values
+        );
+        SynchronizeBattleAbilitySet(
+            tpsBattleData,
+            RoboBattleAbilitySet.ModifierType2,
+            battle.AbilityModifierType2.Values
+        );
     }
 
-    private static void SynchronizeBattleAbilitySet(RoboTpsBattleData tpsBattleData, RoboBattleAbilitySet abilitySet, IReadOnlyList<uint> source)
+    private static void SynchronizeBattleAbilitySet(
+        RoboTpsBattleData tpsBattleData,
+        RoboBattleAbilitySet abilitySet,
+        IReadOnlyList<uint> source
+    )
     {
         for (byte abilityIndex = 0; abilityIndex < BattleAbilityValues.Count; abilityIndex++)
         {
-            var row = tpsBattleData.BattleAbilities.SingleOrDefault(x => x.AbilitySet == abilitySet && x.AbilityIndex == abilityIndex);
+            var row = tpsBattleData.BattleAbilities.SingleOrDefault(x =>
+                x.AbilitySet == abilitySet && x.AbilityIndex == abilityIndex
+            );
             if (row is null)
             {
                 row = new RoboBattleAbility
@@ -342,9 +453,15 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
 
     private static void SynchronizeDistributedStatusPoints(Robo entity, IReadOnlyList<uint> source)
     {
-        for (byte statusIndex = 0; statusIndex < RoboData.DistributedStatusPointCount; statusIndex++)
+        for (
+            byte statusIndex = 0;
+            statusIndex < RoboData.DistributedStatusPointCount;
+            statusIndex++
+        )
         {
-            var row = entity.DistributedStatusPoints.SingleOrDefault(x => x.StatusIndex == statusIndex);
+            var row = entity.DistributedStatusPoints.SingleOrDefault(x =>
+                x.StatusIndex == statusIndex
+            );
             if (row is null)
             {
                 row = new RoboDistributedStatusPoint
@@ -368,7 +485,15 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
 
         var character = new CharaData(objectId, entity.ModelId, entity.Name)
         {
-            Visual = new CharaVisual(entity.BloodType, entity.BirthMonth, entity.BirthDay, entity.Gender, objectId, entity.Face, entity.Hairstyle),
+            Visual = new CharaVisual(
+                entity.BloodType,
+                entity.BirthMonth,
+                entity.BirthDay,
+                entity.Gender,
+                objectId,
+                entity.Face,
+                entity.Hairstyle
+            ),
             CharacterParameterId = entity.ParameterId,
             TpsActionReferenceX = tpsBattleData.ActionReferenceX,
             TpsActionReferenceY = tpsBattleData.ActionReferenceY,
@@ -402,9 +527,18 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
                     MaximumPenalty = tpsBattleData.TankMaximumPenalty,
                 },
                 BaseAbilities = ToBattleAbilityValues(tpsBattleData, RoboBattleAbilitySet.Base),
-                AbilityModifierType0 = ToBattleAbilityValues(tpsBattleData, RoboBattleAbilitySet.ModifierType0),
-                AbilityModifierType1 = ToBattleAbilityValues(tpsBattleData, RoboBattleAbilitySet.ModifierType1),
-                AbilityModifierType2 = ToBattleAbilityValues(tpsBattleData, RoboBattleAbilitySet.ModifierType2),
+                AbilityModifierType0 = ToBattleAbilityValues(
+                    tpsBattleData,
+                    RoboBattleAbilitySet.ModifierType0
+                ),
+                AbilityModifierType1 = ToBattleAbilityValues(
+                    tpsBattleData,
+                    RoboBattleAbilitySet.ModifierType1
+                ),
+                AbilityModifierType2 = ToBattleAbilityValues(
+                    tpsBattleData,
+                    RoboBattleAbilitySet.ModifierType2
+                ),
                 StatusEffectFlags = tpsBattleData.StatusEffectFlags,
                 ActionFlags = tpsBattleData.ActionFlags,
                 ActiveSkillId = tpsBattleData.ActiveSkillId,
@@ -451,35 +585,76 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             AiScriptId = entity.AiScriptId,
             ItemUseEffects = itemUseEffects,
             AvailableStatusPoints = entity.AvailableStatusPoints,
-            DistributedStatusPoints = entity.DistributedStatusPoints.OrderBy(x => x.StatusIndex).Select(x => x.Value).ToArray(),
-            UserStatus = new UserStatusData { StatusText = entity.UserStatusText, StatusIconId = entity.UserStatusIconId },
+            DistributedStatusPoints = entity
+                .DistributedStatusPoints.OrderBy(x => x.StatusIndex)
+                .Select(x => x.Value)
+                .ToArray(),
+            UserStatus = new UserStatusData
+            {
+                StatusText = entity.UserStatusText,
+                StatusIconId = entity.UserStatusIconId,
+            },
         };
     }
 
-    private static BattleAbilityValues ToBattleAbilityValues(RoboTpsBattleData tpsBattleData, RoboBattleAbilitySet abilitySet)
+    private static BattleAbilityValues ToBattleAbilityValues(
+        RoboTpsBattleData tpsBattleData,
+        RoboBattleAbilitySet abilitySet
+    )
     {
-        return new BattleAbilityValues { Values = tpsBattleData.BattleAbilities.Where(x => x.AbilitySet == abilitySet).OrderBy(x => x.AbilityIndex).Select(x => x.Value).ToArray() };
+        return new BattleAbilityValues
+        {
+            Values = tpsBattleData
+                .BattleAbilities.Where(x => x.AbilitySet == abilitySet)
+                .OrderBy(x => x.AbilityIndex)
+                .Select(x => x.Value)
+                .ToArray(),
+        };
     }
 
     private static void ValidateStoredCollections(Robo entity)
     {
-        if (entity.Equipment.Count != CharaData.EquipmentSlotCount || entity.Equipment.Any(x => x.SlotIndex >= CharaData.EquipmentSlotCount))
+        if (
+            entity.Equipment.Count != CharaData.EquipmentSlotCount
+            || entity.Equipment.Any(x => x.SlotIndex >= CharaData.EquipmentSlotCount)
+        )
             throw InvalidStoredData(entity, $"{entity.Equipment.Count} equipment rows");
-        if (entity.ItemUseEffects.Count != RoboData.ItemUseEffectCount || entity.ItemUseEffects.Any(x => x.SlotIndex >= RoboData.ItemUseEffectCount))
+        if (
+            entity.ItemUseEffects.Count != RoboData.ItemUseEffectCount
+            || entity.ItemUseEffects.Any(x => x.SlotIndex >= RoboData.ItemUseEffectCount)
+        )
             throw InvalidStoredData(entity, $"{entity.ItemUseEffects.Count} item-use effect rows");
-        if (entity.DistributedStatusPoints.Count != RoboData.DistributedStatusPointCount || entity.DistributedStatusPoints.Any(x => x.StatusIndex >= RoboData.DistributedStatusPointCount))
-            throw InvalidStoredData(entity, $"{entity.DistributedStatusPoints.Count} distributed status-point rows");
+        if (
+            entity.DistributedStatusPoints.Count != RoboData.DistributedStatusPointCount
+            || entity.DistributedStatusPoints.Any(x =>
+                x.StatusIndex >= RoboData.DistributedStatusPointCount
+            )
+        )
+            throw InvalidStoredData(
+                entity,
+                $"{entity.DistributedStatusPoints.Count} distributed status-point rows"
+            );
         if (entity.TpsBattleData is null)
             throw InvalidStoredData(entity, "no TPS battle-data row");
 
         var validSets = Enum.GetValues<RoboBattleAbilitySet>();
         var expectedAbilityCount = validSets.Length * BattleAbilityValues.Count;
-        if (entity.TpsBattleData.BattleAbilities.Count != expectedAbilityCount || entity.TpsBattleData.BattleAbilities.Any(x => !validSets.Contains(x.AbilitySet) || x.AbilityIndex >= BattleAbilityValues.Count))
-            throw InvalidStoredData(entity, $"{entity.TpsBattleData.BattleAbilities.Count} battle-ability rows");
+        if (
+            entity.TpsBattleData.BattleAbilities.Count != expectedAbilityCount
+            || entity.TpsBattleData.BattleAbilities.Any(x =>
+                !validSets.Contains(x.AbilitySet) || x.AbilityIndex >= BattleAbilityValues.Count
+            )
+        )
+            throw InvalidStoredData(
+                entity,
+                $"{entity.TpsBattleData.BattleAbilities.Count} battle-ability rows"
+            );
     }
 
     private static InvalidDataException InvalidStoredData(Robo entity, string detail)
     {
-        return new InvalidDataException($"Stored Robo {entity.RoboId} for character {entity.CharacterId} has an invalid fixed collection: {detail}.");
+        return new InvalidDataException(
+            $"Stored Robo {entity.RoboId} for character {entity.CharacterId} has an invalid fixed collection: {detail}."
+        );
     }
 }

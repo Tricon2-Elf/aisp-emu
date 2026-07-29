@@ -6,7 +6,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Auth;
 
-public class AuthenticateHandler(IUserRepository userRepo, SharedState state, ILogger<AuthenticateHandler> logger) : PacketHandlerBase<AuthenticateRequest, AuthenticateResponse>
+public class AuthenticateHandler(
+    IUserRepository userRepo,
+    SharedState state,
+    ILogger<AuthenticateHandler> logger
+) : PacketHandlerBase<AuthenticateRequest, AuthenticateResponse>
 {
     private readonly ILogger<AuthenticateHandler> _logger = logger;
 
@@ -14,7 +18,11 @@ public class AuthenticateHandler(IUserRepository userRepo, SharedState state, IL
     public override PacketType ResponseType => PacketType.AuthenticateResponse;
     public override ServerType ServerType => ServerType.Auth;
 
-    public override async Task<AuthenticateResponse?> HandleAsync(AuthenticateRequest request, IPlayerSession session, CancellationToken ct = default)
+    public override async Task<AuthenticateResponse?> HandleAsync(
+        AuthenticateRequest request,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         _logger.LogInformation($"Auth request: {request.Username}");
 
@@ -32,8 +40,14 @@ public class AuthenticateHandler(IUserRepository userRepo, SharedState state, IL
             if (!user.VerifyPassword(request.Password))
             {
                 _logger.LogWarning($"Auth failed: Wrong password for user '{request.Username}'");
-                var failResp = new AuthenticateFailureResponse(AuthResponseResult.InvalidCredentials);
-                await session.SendAsync(PacketType.AuthenticateFailureResponse, failResp.ToBytes(), ct);
+                var failResp = new AuthenticateFailureResponse(
+                    AuthResponseResult.InvalidCredentials
+                );
+                await session.SendAsync(
+                    PacketType.AuthenticateFailureResponse,
+                    failResp.ToBytes(),
+                    ct
+                );
                 return null;
             }
         }
@@ -43,7 +57,9 @@ public class AuthenticateHandler(IUserRepository userRepo, SharedState state, IL
 
         if (user.IsBanned)
         {
-            _logger.LogWarning($"Auth rejected: User '{user.Username}' is banned. Reason: {user.BanReason}");
+            _logger.LogWarning(
+                $"Auth rejected: User '{user.Username}' is banned. Reason: {user.BanReason}"
+            );
             var banResp = new AuthenticateFailureResponse(AuthResponseResult.AccountBanned);
             await session.SendAsync(PacketType.AuthenticateFailureResponse, banResp.ToBytes(), ct);
             return null;

@@ -24,20 +24,46 @@ public class AreaRoboPresenceTests
             await using (var seedDb = new MainContext(options))
             {
                 var objectId = RoboRepository.GetObjectId(1, 1);
-                var robo = new RoboData(1, new CharaData(objectId, 1002011, "Following Robo"), (uint)RoboState.Accompanying) { OwnerAvatarId = 1 };
-                await new RoboRepository(seedDb).UpsertAsync(1, robo, TestContext.Current.CancellationToken);
+                var robo = new RoboData(
+                    1,
+                    new CharaData(objectId, 1002011, "Following Robo"),
+                    (uint)RoboState.Accompanying
+                )
+                {
+                    OwnerAvatarId = 1,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    1,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
 
                 var peerObjectId = RoboRepository.GetObjectId(2, 1);
-                var peerRobo = new RoboData(1, new CharaData(peerObjectId, 1002011, "Peer Robo"), (uint)RoboState.Accompanying) { OwnerAvatarId = 2 };
-                await new RoboRepository(seedDb).UpsertAsync(2, peerRobo, TestContext.Current.CancellationToken);
+                var peerRobo = new RoboData(
+                    1,
+                    new CharaData(peerObjectId, 1002011, "Peer Robo"),
+                    (uint)RoboState.Accompanying
+                )
+                {
+                    OwnerAvatarId = 2,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    2,
+                    peerRobo,
+                    TestContext.Current.CancellationToken
+                );
             }
 
             AISpace.Common.DAL.Entities.Character ownerCharacter;
             AISpace.Common.DAL.Entities.Character peerCharacter;
             await using (var characterDb = new MainContext(options))
             {
-                ownerCharacter = await characterDb.Characters.AsNoTracking().SingleAsync(x => x.Id == 1, TestContext.Current.CancellationToken);
-                peerCharacter = await characterDb.Characters.AsNoTracking().SingleAsync(x => x.Id == 2, TestContext.Current.CancellationToken);
+                ownerCharacter = await characterDb
+                    .Characters.AsNoTracking()
+                    .SingleAsync(x => x.Id == 1, TestContext.Current.CancellationToken);
+                peerCharacter = await characterDb
+                    .Characters.AsNoTracking()
+                    .SingleAsync(x => x.Id == 2, TestContext.Current.CancellationToken);
             }
 
             var state = new SharedState();
@@ -65,8 +91,17 @@ public class AreaRoboPresenceTests
             peer.AccompanyingRoboIds.Add(1);
 
             await using var handlerDb = new MainContext(options);
-            var handler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance, null, new RoboRepository(handlerDb));
-            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, owner, TestContext.Current.CancellationToken);
+            var handler = new AreaMapDataEnterEndHandler(
+                state,
+                NullLogger<AreaMapDataEnterEndHandler>.Instance,
+                null,
+                new RoboRepository(handlerDb)
+            );
+            await handler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                owner,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Collection(
                 peer.Sent,

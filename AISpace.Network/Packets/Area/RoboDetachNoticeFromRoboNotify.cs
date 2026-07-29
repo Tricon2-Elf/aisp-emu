@@ -4,7 +4,8 @@ namespace AISpace.Network.Packets.Area;
 /// Clears the avatar-side relationship after a Robo-side interaction detach.
 /// Payload: UInt RoboId + UInt AvatarObjectId.
 /// </summary>
-public sealed class RoboDetachNoticeFromRoboNotify(uint roboId, uint avatarObjectId) : IOutgoingPacket
+public sealed class RoboDetachNoticeFromRoboNotify(uint roboId, uint avatarObjectId)
+    : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

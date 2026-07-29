@@ -15,7 +15,11 @@ public interface IPacketHandler
     PacketType RequestType { get; }
     PacketType ResponseType { get; }
     ServerType ServerType { get; }
-    Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default);
+    Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    );
 }
 
 public interface IRequiresAuthenticatedSession;
@@ -28,9 +32,17 @@ public abstract class PacketHandlerBase<TRequest, TResponse> : IPacketHandler
     public abstract PacketType ResponseType { get; }
     public abstract ServerType ServerType { get; }
 
-    public abstract Task<TResponse?> HandleAsync(TRequest request, IPlayerSession session, CancellationToken ct = default);
+    public abstract Task<TResponse?> HandleAsync(
+        TRequest request,
+        IPlayerSession session,
+        CancellationToken ct = default
+    );
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = TRequest.FromBytes(payload.Span);
         var response = await HandleAsync(request, session, ct);

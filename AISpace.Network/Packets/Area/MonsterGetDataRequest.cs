@@ -2,7 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public sealed class MonsterGetDataRequest(uint mapId, uint channelId) : IIncomingPacket<MonsterGetDataRequest>
+public sealed class MonsterGetDataRequest(uint mapId, uint channelId)
+    : IIncomingPacket<MonsterGetDataRequest>
 {
     public uint MapId { get; } = mapId;
     public uint ChannelId { get; } = channelId;

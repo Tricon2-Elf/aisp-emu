@@ -4,7 +4,18 @@ namespace AISpace.Network.Data;
 /// The 34-byte Furniture structure consumed by recv_notify_myroom_furniture and
 /// recv_notify_myroom_set_furniture. Direction values are already wire bytes.
 /// </summary>
-public readonly record struct MyRoomFurnitureData(uint RoomId, uint FurnitureId, uint PlacementState, uint SerialId, float X, float Y, float Z, byte DirectionX, byte DirectionY, uint Active)
+public readonly record struct MyRoomFurnitureData(
+    uint RoomId,
+    uint FurnitureId,
+    uint PlacementState,
+    uint SerialId,
+    float X,
+    float Y,
+    float Z,
+    byte DirectionX,
+    byte DirectionY,
+    uint Active
+)
 {
     public const int WireSize = 34;
 

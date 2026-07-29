@@ -13,5 +13,6 @@ internal static class DefaultClothingItems
     /// </summary>
     public static bool IsEquippedOnlyItem(int itemId) => itemId / 100_000 == 107;
 
-    public static IEnumerable<int> WardrobeInventoryForGender(int gender) => ForGender(gender).Where(id => !IsEquippedOnlyItem(id));
+    public static IEnumerable<int> WardrobeInventoryForGender(int gender) =>
+        ForGender(gender).Where(id => !IsEquippedOnlyItem(id));
 }

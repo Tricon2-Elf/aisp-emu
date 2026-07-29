@@ -11,7 +11,8 @@ public interface IPendingMapTransferRepository
     int CleanupExpired();
 }
 
-public sealed class PendingMapTransferRepository(IDbContextFactory<MainContext> factory) : IPendingMapTransferRepository
+public sealed class PendingMapTransferRepository(IDbContextFactory<MainContext> factory)
+    : IPendingMapTransferRepository
 {
     public void Upsert(SharedState.PendingMapTransfer transfer, TimeSpan ttl)
     {
@@ -70,7 +71,16 @@ public sealed class PendingMapTransferRepository(IDbContextFactory<MainContext> 
             return false;
         }
 
-        transfer = new SharedState.PendingMapTransfer(row.UserId, row.MapId, row.ChannelId, row.X, row.Y, row.Z, row.Rotation, row.MyRoomId);
+        transfer = new SharedState.PendingMapTransfer(
+            row.UserId,
+            row.MapId,
+            row.ChannelId,
+            row.X,
+            row.Y,
+            row.Z,
+            row.Rotation,
+            row.MyRoomId
+        );
         db.PendingMapTransfers.Remove(row);
         db.SaveChanges();
         tx.Commit();

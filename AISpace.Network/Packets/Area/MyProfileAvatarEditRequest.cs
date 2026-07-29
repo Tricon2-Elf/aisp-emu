@@ -2,7 +2,15 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public class MyProfileAvatarEditRequest(string like1, string like2, string like3, string likeDesc1, string likeDesc2, string likeDesc3, string avatarDesc) : IIncomingPacket<MyProfileAvatarEditRequest>
+public class MyProfileAvatarEditRequest(
+    string like1,
+    string like2,
+    string like3,
+    string likeDesc1,
+    string likeDesc2,
+    string likeDesc3,
+    string avatarDesc
+) : IIncomingPacket<MyProfileAvatarEditRequest>
 {
     public string Like1 { get; } = like1;
     public string Like2 { get; } = like2;

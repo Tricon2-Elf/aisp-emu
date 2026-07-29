@@ -7,7 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Auth;
 
-public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> logger)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.WorldListRequest;
     public PacketType ResponseType => PacketType.WorldListResponse;
@@ -16,7 +18,11 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
     private readonly IWorldRepository _worldRepository = repo;
     private readonly ILogger<WorldListHandler> _logger = logger;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var worlds = await _worldRepository.GetAllAsync();
         var worldDataList = worlds

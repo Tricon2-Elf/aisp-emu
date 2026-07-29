@@ -43,18 +43,50 @@ public sealed class GameServerHealthRegistry
 
     public void AddServer(ServerType serverType, int port)
     {
-        _entries.TryAdd(serverType, new ServerHealthEntry(ToDisplayName(serverType), port, "starting", null, DateTime.UtcNow, null));
+        _entries.TryAdd(
+            serverType,
+            new ServerHealthEntry(
+                ToDisplayName(serverType),
+                port,
+                "starting",
+                null,
+                DateTime.UtcNow,
+                null
+            )
+        );
     }
 
     public void MarkListening(ServerType serverType, int port)
     {
         var now = DateTime.UtcNow;
-        _entries.AddOrUpdate(serverType, _ => new ServerHealthEntry(ToDisplayName(serverType), port, "healthy", null, now, now), (_, existing) => existing with { Port = port, ReportedState = "healthy", LastError = null, LastHeartbeatUtc = now });
+        _entries.AddOrUpdate(
+            serverType,
+            _ => new ServerHealthEntry(ToDisplayName(serverType), port, "healthy", null, now, now),
+            (_, existing) =>
+                existing with
+                {
+                    Port = port,
+                    ReportedState = "healthy",
+                    LastError = null,
+                    LastHeartbeatUtc = now,
+                }
+        );
     }
 
     public void MarkUnhealthy(ServerType serverType, string reason)
     {
-        _entries.AddOrUpdate(serverType, _ => new ServerHealthEntry(ToDisplayName(serverType), 0, "unhealthy", reason, DateTime.UtcNow, null), (_, existing) => existing with { ReportedState = "unhealthy", LastError = reason });
+        _entries.AddOrUpdate(
+            serverType,
+            _ => new ServerHealthEntry(
+                ToDisplayName(serverType),
+                0,
+                "unhealthy",
+                reason,
+                DateTime.UtcNow,
+                null
+            ),
+            (_, existing) => existing with { ReportedState = "unhealthy", LastError = reason }
+        );
     }
 
     public void RecordHeartbeat(ServerType serverType)
@@ -127,7 +159,10 @@ public sealed class GameServerHealthRegistry
     public HealthReport GetHealthReport()
     {
         var now = DateTime.UtcNow;
-        var servers = _entries.ToDictionary(kv => ToJsonKey(kv.Key), kv => EvaluateServer(kv.Value, now));
+        var servers = _entries.ToDictionary(
+            kv => ToJsonKey(kv.Key),
+            kv => EvaluateServer(kv.Value, now)
+        );
         var process = EvaluateProcess(servers, now);
         return new HealthReport(servers, process);
     }
@@ -146,30 +181,67 @@ public sealed class GameServerHealthRegistry
 
         if (entry.ReportedState == "healthy" && listenerAccepting == false)
         {
-            return ToInfo(entry, "unhealthy", "listener not accepting", listenerAccepting, clientLoad);
+            return ToInfo(
+                entry,
+                "unhealthy",
+                "listener not accepting",
+                listenerAccepting,
+                clientLoad
+            );
         }
 
-        if (entry.ReportedState == "healthy" && clientLoad is { MaxHandlers: > 0 } load && load.ActiveHandlers >= load.MaxHandlers)
+        if (
+            entry.ReportedState == "healthy"
+            && clientLoad is { MaxHandlers: > 0 } load
+            && load.ActiveHandlers >= load.MaxHandlers
+        )
         {
-            return ToInfo(entry, "unhealthy", "client handler slots exhausted", listenerAccepting, clientLoad);
+            return ToInfo(
+                entry,
+                "unhealthy",
+                "client handler slots exhausted",
+                listenerAccepting,
+                clientLoad
+            );
         }
 
         if (entry.ReportedState == "healthy")
         {
-            if (entry.LastHeartbeatUtc is null || now - entry.LastHeartbeatUtc.Value > _stalenessThreshold)
+            if (
+                entry.LastHeartbeatUtc is null
+                || now - entry.LastHeartbeatUtc.Value > _stalenessThreshold
+            )
             {
-                return ToInfo(entry, "unhealthy", $"heartbeat stale (>{_stalenessThreshold.TotalSeconds:0}s)", listenerAccepting, clientLoad);
+                return ToInfo(
+                    entry,
+                    "unhealthy",
+                    $"heartbeat stale (>{_stalenessThreshold.TotalSeconds:0}s)",
+                    listenerAccepting,
+                    clientLoad
+                );
             }
         }
-        else if (entry.ReportedState == "starting" && now - entry.RegisteredAtUtc > _stalenessThreshold)
+        else if (
+            entry.ReportedState == "starting"
+            && now - entry.RegisteredAtUtc > _stalenessThreshold
+        )
         {
-            return ToInfo(entry, "unhealthy", "timed out while starting", listenerAccepting, clientLoad);
+            return ToInfo(
+                entry,
+                "unhealthy",
+                "timed out while starting",
+                listenerAccepting,
+                clientLoad
+            );
         }
 
         return ToInfo(entry, entry.ReportedState, entry.LastError, listenerAccepting, clientLoad);
     }
 
-    private ProcessHealthInfo EvaluateProcess(IReadOnlyDictionary<string, ServerHealthInfo> servers, DateTime now)
+    private ProcessHealthInfo EvaluateProcess(
+        IReadOnlyDictionary<string, ServerHealthInfo> servers,
+        DateTime now
+    )
     {
         DateTime lastSchedulerTickUtc;
         TimeSpan lastSchedulerLag;
@@ -186,7 +258,14 @@ public sealed class GameServerHealthRegistry
 
         if (lastSchedulerTickUtc == default)
         {
-            return new ProcessHealthInfo("unhealthy", "scheduler has not ticked yet", null, null, Math.Round(processCpuPercent, 1), totalActiveHandlers);
+            return new ProcessHealthInfo(
+                "unhealthy",
+                "scheduler has not ticked yet",
+                null,
+                null,
+                Math.Round(processCpuPercent, 1),
+                totalActiveHandlers
+            );
         }
 
         if (now - lastSchedulerTickUtc > _schedulerMaxStale)
@@ -213,7 +292,11 @@ public sealed class GameServerHealthRegistry
             );
         }
 
-        if (_idleMaxProcessCpuPercent > 0 && totalActiveHandlers <= _idleMaxActiveHandlers && processCpuPercent > _idleMaxProcessCpuPercent)
+        if (
+            _idleMaxProcessCpuPercent > 0
+            && totalActiveHandlers <= _idleMaxActiveHandlers
+            && processCpuPercent > _idleMaxProcessCpuPercent
+        )
         {
             return new ProcessHealthInfo(
                 "unhealthy",
@@ -225,20 +308,74 @@ public sealed class GameServerHealthRegistry
             );
         }
 
-        return new ProcessHealthInfo("healthy", null, lastSchedulerTickUtc, Math.Round(lastSchedulerLag.TotalSeconds, 2), Math.Round(processCpuPercent, 1), totalActiveHandlers);
+        return new ProcessHealthInfo(
+            "healthy",
+            null,
+            lastSchedulerTickUtc,
+            Math.Round(lastSchedulerLag.TotalSeconds, 2),
+            Math.Round(processCpuPercent, 1),
+            totalActiveHandlers
+        );
     }
 
-    private static ServerHealthInfo ToInfo(ServerHealthEntry entry, string state, string? lastError, bool? listenerAccepting, VceClientLoad? clientLoad) => new(entry.Name, entry.Port, state, lastError, entry.LastHeartbeatUtc, listenerAccepting, clientLoad?.ActiveHandlers, clientLoad?.AvailableSlots, clientLoad?.MaxHandlers);
+    private static ServerHealthInfo ToInfo(
+        ServerHealthEntry entry,
+        string state,
+        string? lastError,
+        bool? listenerAccepting,
+        VceClientLoad? clientLoad
+    ) =>
+        new(
+            entry.Name,
+            entry.Port,
+            state,
+            lastError,
+            entry.LastHeartbeatUtc,
+            listenerAccepting,
+            clientLoad?.ActiveHandlers,
+            clientLoad?.AvailableSlots,
+            clientLoad?.MaxHandlers
+        );
 
     private static string ToDisplayName(ServerType serverType) => $"{serverType}Server";
 
-    private static string ToJsonKey(ServerType serverType) => char.ToLowerInvariant(serverType.ToString()[0]) + serverType.ToString()[1..] + "Server";
+    private static string ToJsonKey(ServerType serverType) =>
+        char.ToLowerInvariant(serverType.ToString()[0]) + serverType.ToString()[1..] + "Server";
 
-    private sealed record ServerHealthEntry(string Name, int Port, string ReportedState, string? LastError, DateTime RegisteredAtUtc, DateTime? LastHeartbeatUtc, Func<bool>? AcceptCheck = null, Func<VceClientLoad>? ClientLoadCheck = null);
+    private sealed record ServerHealthEntry(
+        string Name,
+        int Port,
+        string ReportedState,
+        string? LastError,
+        DateTime RegisteredAtUtc,
+        DateTime? LastHeartbeatUtc,
+        Func<bool>? AcceptCheck = null,
+        Func<VceClientLoad>? ClientLoadCheck = null
+    );
 }
 
-public sealed record ServerHealthInfo(string Name, int Port, string State, string? LastError, DateTime? LastHeartbeatUtc, bool? ListenerAccepting, int? ActiveHandlers = null, int? AvailableSlots = null, int? MaxHandlers = null);
+public sealed record ServerHealthInfo(
+    string Name,
+    int Port,
+    string State,
+    string? LastError,
+    DateTime? LastHeartbeatUtc,
+    bool? ListenerAccepting,
+    int? ActiveHandlers = null,
+    int? AvailableSlots = null,
+    int? MaxHandlers = null
+);
 
-public sealed record ProcessHealthInfo(string State, string? LastError, DateTime? LastSchedulerTickUtc, double? SchedulerLagSeconds, double? ProcessCpuPercent, int TotalActiveHandlers);
+public sealed record ProcessHealthInfo(
+    string State,
+    string? LastError,
+    DateTime? LastSchedulerTickUtc,
+    double? SchedulerLagSeconds,
+    double? ProcessCpuPercent,
+    int TotalActiveHandlers
+);
 
-public sealed record HealthReport(IReadOnlyDictionary<string, ServerHealthInfo> Servers, ProcessHealthInfo Process);
+public sealed record HealthReport(
+    IReadOnlyDictionary<string, ServerHealthInfo> Servers,
+    ProcessHealthInfo Process
+);

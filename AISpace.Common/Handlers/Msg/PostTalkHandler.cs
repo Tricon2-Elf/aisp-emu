@@ -10,7 +10,11 @@ public class PostTalkHandler(SharedState state) : IPacketHandler, IRequiresAuthe
     public PacketType ResponseType => PacketType.PostTalkResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var chatRequest = PostTalkRequest.FromBytes(payload.Span);
 
@@ -24,7 +28,12 @@ public class PostTalkHandler(SharedState state) : IPacketHandler, IRequiresAuthe
             fromId = areaSession?.CharacterId ?? 0;
         }
 
-        var forwardPacket = new TalkForwardNotify(fromId, chatRequest.DistID, chatRequest.Message, chatRequest.BalloonID);
+        var forwardPacket = new TalkForwardNotify(
+            fromId,
+            chatRequest.DistID,
+            chatRequest.Message,
+            chatRequest.BalloonID
+        );
         byte[] broadcastData = forwardPacket.ToBytes();
 
         foreach (var client in state.GetServerClients(ServerType.Msg))

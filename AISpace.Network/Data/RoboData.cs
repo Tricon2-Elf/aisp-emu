@@ -24,7 +24,8 @@ public sealed class RoboData(uint roboId, CharaData character, uint state = 0)
 
     public ushort AiScriptId { get; set; }
     public CharaData Character { get; set; } = character;
-    public ItemUseEffectData[] ItemUseEffects { get; set; } = Enumerable.Range(0, ItemUseEffectCount).Select(_ => new ItemUseEffectData()).ToArray();
+    public ItemUseEffectData[] ItemUseEffects { get; set; } =
+        Enumerable.Range(0, ItemUseEffectCount).Select(_ => new ItemUseEffectData()).ToArray();
     public uint EmotionId { get; set; }
     public uint AvailableStatusPoints { get; set; }
     public uint[] DistributedStatusPoints { get; set; } = new uint[DistributedStatusPointCount];
@@ -39,9 +40,13 @@ public sealed class RoboData(uint roboId, CharaData character, uint state = 0)
     public byte[] ToBytes()
     {
         if (ItemUseEffects.Length != ItemUseEffectCount)
-            throw new InvalidOperationException($"RoboData must contain exactly {ItemUseEffectCount} item-use effects.");
+            throw new InvalidOperationException(
+                $"RoboData must contain exactly {ItemUseEffectCount} item-use effects."
+            );
         if (DistributedStatusPoints.Length != DistributedStatusPointCount)
-            throw new InvalidOperationException($"RoboData must contain exactly {DistributedStatusPointCount} distributed status-point values.");
+            throw new InvalidOperationException(
+                $"RoboData must contain exactly {DistributedStatusPointCount} distributed status-point values."
+            );
 
         PacketWriter writer = new();
         writer.Write(RoboId);
@@ -63,7 +68,10 @@ public sealed class RoboData(uint roboId, CharaData character, uint state = 0)
     public static RoboData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"RoboData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"RoboData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
         var roboId = reader.ReadUInt();

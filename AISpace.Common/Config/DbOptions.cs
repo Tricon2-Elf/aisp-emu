@@ -11,7 +11,8 @@ public sealed class DbOptions
     public string Provider { get; set; } = "sqlite";
     public string ConnectionString { get; set; } = DefaultConnectionString;
 
-    public string EffectiveConnectionString => string.IsNullOrWhiteSpace(ConnectionString) ? DefaultConnectionString : ConnectionString;
+    public string EffectiveConnectionString =>
+        string.IsNullOrWhiteSpace(ConnectionString) ? DefaultConnectionString : ConnectionString;
 
     public void EnsureDataDirectoryExists()
     {
@@ -29,6 +30,11 @@ public sealed class DbOptions
         if (!Provider.Equals("sqlite", StringComparison.OrdinalIgnoreCase))
             throw new NotSupportedException($"Database provider '{Provider}' is not supported.");
 
-        optionsBuilder.UseSqlite(EffectiveConnectionString, b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)).AddInterceptors(new SqlitePragmaConnectionInterceptor());
+        optionsBuilder
+            .UseSqlite(
+                EffectiveConnectionString,
+                b => b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
+            )
+            .AddInterceptors(new SqlitePragmaConnectionInterceptor());
     }
 }

@@ -41,8 +41,14 @@ public class AvatarCreationFlowTests
             };
 
             await using var runDb = new MainContext(options);
-            var characterRepository = new CharacterRepository(runDb, NullLogger<CharacterRepository>.Instance);
-            var createHandler = new AvatarCreateHandler(NullLogger<AvatarCreateHandler>.Instance, characterRepository);
+            var characterRepository = new CharacterRepository(
+                runDb,
+                NullLogger<CharacterRepository>.Instance
+            );
+            var createHandler = new AvatarCreateHandler(
+                NullLogger<AvatarCreateHandler>.Instance,
+                characterRepository
+            );
             var createResponse = await createHandler.HandleAsync(
                 new AvatarCreateRequest
                 {
@@ -73,8 +79,15 @@ public class AvatarCreationFlowTests
             );
 
             session.Sent.Clear();
-            var getDataHandler = new AvatarGetDataHandler(NullLogger<AvatarGetDataHandler>.Instance, characterRepository);
-            await getDataHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            var getDataHandler = new AvatarGetDataHandler(
+                NullLogger<AvatarGetDataHandler>.Instance,
+                characterRepository
+            );
+            await getDataHandler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Collection(
                 session.Sent,

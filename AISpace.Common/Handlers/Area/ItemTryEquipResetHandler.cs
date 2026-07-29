@@ -7,16 +7,28 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class ItemTryEquipResetHandler(ICharacterRepository characterRepo, IRoboRepository roboRepository, ILogger<ItemTryEquipResetHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class ItemTryEquipResetHandler(
+    ICharacterRepository characterRepo,
+    IRoboRepository roboRepository,
+    ILogger<ItemTryEquipResetHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemTryEquipResetRequest;
     public PacketType ResponseType => PacketType.ItemTryEquipResetResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = ItemTryEquipResetRequest.FromBytes(payload.Span);
-        logger.LogInformation("Client {Id} requested ItemTryEquipReset for ObjId: {ObjId}", session.ConnectionId, request.ObjId);
+        logger.LogInformation(
+            "Client {Id} requested ItemTryEquipReset for ObjId: {ObjId}",
+            session.ConnectionId,
+            request.ObjId
+        );
 
         if (session.CharacterId == 0)
         {
@@ -47,6 +59,10 @@ public class ItemTryEquipResetHandler(ICharacterRepository characterRepo, IRoboR
         // Cancel (sub_529380): client reverts locally via sub_528770, sends reset, keeps wardrobe open.
         // Echo the persisted target equipment so recv_item_try_equip_replaced re-applies the entry outfit.
         await session.SendAsync(ResponseType, new ItemTryEquipResetResponse(0).ToBytes(), ct);
-        await session.SendAsync(PacketType.ItemTryEquipReplacedNotify, new ItemTryEquipReplacedNotify(request.ObjId, equipment).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.ItemTryEquipReplacedNotify,
+            new ItemTryEquipReplacedNotify(request.ObjId, equipment).ToBytes(),
+            ct
+        );
     }
 }

@@ -10,7 +10,11 @@ public class AreaTrashboxCloseHandler : IPacketHandler, IRequiresAuthenticatedSe
     public PacketType ResponseType => PacketType.TrashboxCloseResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var response = new TrashboxCloseResponse(1);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);

@@ -8,13 +8,20 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class ChannelListGetHandler(IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo) : IPacketHandler, IRequiresAuthenticatedSession
+public class ChannelListGetHandler(
+    IOptions<ServerOptions> serverOptions,
+    IChannelRepository channelRepo
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ChannelListGetRequest;
     public PacketType ResponseType => PacketType.ChannelListGetResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var dbChannels = await channelRepo.GetAllAsync(ct);
         var channels = dbChannels
@@ -22,7 +29,12 @@ public class ChannelListGetHandler(IOptions<ServerOptions> serverOptions, IChann
             {
                 var maxUsers = c.MaxUsers != 0 ? c.MaxUsers : 1000u;
                 var currentUsers = c.CurrentUsers > maxUsers ? maxUsers : c.CurrentUsers;
-                return new ChannelInfo((uint)c.ChannelNum, currentUsers, maxUsers, new ServerInfo(serverOptions.Value.ResolveAddress(c.IP), c.Port));
+                return new ChannelInfo(
+                    (uint)c.ChannelNum,
+                    currentUsers,
+                    maxUsers,
+                    new ServerInfo(serverOptions.Value.ResolveAddress(c.IP), c.Port)
+                );
             })
             .ToList();
 

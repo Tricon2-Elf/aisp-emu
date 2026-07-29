@@ -1,6 +1,7 @@
 namespace AISpace.Network.Packets.Area;
 
-public sealed class BattleTargetLockRequest(uint targetObjectId) : IIncomingPacket<BattleTargetLockRequest>
+public sealed class BattleTargetLockRequest(uint targetObjectId)
+    : IIncomingPacket<BattleTargetLockRequest>
 {
     public uint TargetObjectId { get; } = targetObjectId;
 

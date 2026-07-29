@@ -10,6 +10,10 @@ public class MapLinkGetDataRequest : IIncomingPacket<MapLinkGetDataRequest>
     public static MapLinkGetDataRequest FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
-        return new MapLinkGetDataRequest { MapId = reader.ReadUInt(), ChannelId = reader.ReadUInt() };
+        return new MapLinkGetDataRequest
+        {
+            MapId = reader.ReadUInt(),
+            ChannelId = reader.ReadUInt(),
+        };
     }
 }

@@ -10,7 +10,11 @@ public class AreaTimeZoneGetHandler : IPacketHandler, IRequiresAuthenticatedSess
     public PacketType ResponseType => PacketType.TimeZoneGetResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var t = TimeZoneService.GetServerTime();
         var resp = new TimeZoneGetResponse(0, (uint)t.Phase, t.Current, t.Max, 1);

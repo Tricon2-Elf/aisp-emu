@@ -20,23 +20,58 @@ public class AreaRoboConversationHandlerTests
             await using (var seedDb = new MainContext(options))
             {
                 var objectId = RoboRepository.GetObjectId(1, 1);
-                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Conversation Robo")) { OwnerAvatarId = 1 };
-                await new RoboRepository(seedDb).UpsertAsync(1, robo, TestContext.Current.CancellationToken);
+                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Conversation Robo"))
+                {
+                    OwnerAvatarId = 1,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    1,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
             }
 
             await using var handlerDb = new MainContext(options);
             var repository = new RoboRepository(handlerDb);
-            var attachHandler = new AreaRoboAttachHandler(repository, NullLogger<AreaRoboAttachHandler>.Instance);
-            var attachReplyHandler = new AreaRoboAttachRequestRHandler(repository, NullLogger<AreaRoboAttachRequestRHandler>.Instance);
-            var talkHandler = new AreaRoboTalkPostHandler(repository, NullLogger<AreaRoboTalkPostHandler>.Instance);
-            var detachHandler = new AreaRoboDetachFromAvatarHandler(repository, NullLogger<AreaRoboDetachFromAvatarHandler>.Instance);
+            var attachHandler = new AreaRoboAttachHandler(
+                repository,
+                NullLogger<AreaRoboAttachHandler>.Instance
+            );
+            var attachReplyHandler = new AreaRoboAttachRequestRHandler(
+                repository,
+                NullLogger<AreaRoboAttachRequestRHandler>.Instance
+            );
+            var talkHandler = new AreaRoboTalkPostHandler(
+                repository,
+                NullLogger<AreaRoboTalkPostHandler>.Instance
+            );
+            var detachHandler = new AreaRoboDetachFromAvatarHandler(
+                repository,
+                NullLogger<AreaRoboDetachFromAvatarHandler>.Instance
+            );
             var session = new CapturingPlayerSession { CharacterId = 1 };
             const string message = "ご一緒にお出かけでもしませんか？";
 
-            await attachHandler.HandleAsync(BuildPayload(1), session, TestContext.Current.CancellationToken);
-            await attachReplyHandler.HandleAsync(BuildPayload(1, 0), session, TestContext.Current.CancellationToken);
-            await talkHandler.HandleAsync(BuildTalkPayload(1, message), session, TestContext.Current.CancellationToken);
-            await detachHandler.HandleAsync(BuildPayload(1), session, TestContext.Current.CancellationToken);
+            await attachHandler.HandleAsync(
+                BuildPayload(1),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            await attachReplyHandler.HandleAsync(
+                BuildPayload(1, 0),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            await talkHandler.HandleAsync(
+                BuildTalkPayload(1, message),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            await detachHandler.HandleAsync(
+                BuildPayload(1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Collection(
                 session.Sent,
@@ -84,14 +119,35 @@ public class AreaRoboConversationHandlerTests
             await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
             await using var db = new MainContext(options);
             var repository = new RoboRepository(db);
-            var talkHandler = new AreaRoboTalkPostHandler(repository, NullLogger<AreaRoboTalkPostHandler>.Instance);
-            var detachHandler = new AreaRoboDetachFromAvatarHandler(repository, NullLogger<AreaRoboDetachFromAvatarHandler>.Instance);
-            var roboSideDetachHandler = new AreaRoboDetachFromRoboHandler(repository, NullLogger<AreaRoboDetachFromRoboHandler>.Instance);
+            var talkHandler = new AreaRoboTalkPostHandler(
+                repository,
+                NullLogger<AreaRoboTalkPostHandler>.Instance
+            );
+            var detachHandler = new AreaRoboDetachFromAvatarHandler(
+                repository,
+                NullLogger<AreaRoboDetachFromAvatarHandler>.Instance
+            );
+            var roboSideDetachHandler = new AreaRoboDetachFromRoboHandler(
+                repository,
+                NullLogger<AreaRoboDetachFromRoboHandler>.Instance
+            );
             var session = new CapturingPlayerSession { CharacterId = 1 };
 
-            await talkHandler.HandleAsync(BuildTalkPayload(99, "unowned"), session, TestContext.Current.CancellationToken);
-            await detachHandler.HandleAsync(BuildPayload(99), session, TestContext.Current.CancellationToken);
-            await roboSideDetachHandler.HandleAsync(BuildPayload(99), session, TestContext.Current.CancellationToken);
+            await talkHandler.HandleAsync(
+                BuildTalkPayload(99, "unowned"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            await detachHandler.HandleAsync(
+                BuildPayload(99),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            await roboSideDetachHandler.HandleAsync(
+                BuildPayload(99),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Empty(session.Sent);
         }
@@ -111,24 +167,45 @@ public class AreaRoboConversationHandlerTests
             await using (var seedDb = new MainContext(options))
             {
                 var objectId = RoboRepository.GetObjectId(42, 1);
-                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Retry Robo")) { OwnerAvatarId = 42 };
-                await new RoboRepository(seedDb).UpsertAsync(42, robo, TestContext.Current.CancellationToken);
+                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Retry Robo"))
+                {
+                    OwnerAvatarId = 42,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    42,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
             }
 
             await using var handlerDb = new MainContext(options);
             var repository = new RoboRepository(handlerDb);
-            var detachHandler = new AreaRoboDetachFromRoboHandler(repository, NullLogger<AreaRoboDetachFromRoboHandler>.Instance);
-            var attachHandler = new AreaRoboAttachHandler(repository, NullLogger<AreaRoboAttachHandler>.Instance);
+            var detachHandler = new AreaRoboDetachFromRoboHandler(
+                repository,
+                NullLogger<AreaRoboDetachFromRoboHandler>.Instance
+            );
+            var attachHandler = new AreaRoboAttachHandler(
+                repository,
+                NullLogger<AreaRoboAttachHandler>.Instance
+            );
             var session = new CapturingPlayerSession { CharacterId = 42 };
 
-            await detachHandler.HandleAsync(BuildPayload(1), session, TestContext.Current.CancellationToken);
+            await detachHandler.HandleAsync(
+                BuildPayload(1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             var detachNotice = Assert.Single(session.Sent);
             Assert.Equal(PacketType.RoboDetachNoticeFromRoboNotify, detachNotice.Type);
             AssertUInts(detachNotice.Payload, 1, 42);
 
             session.Sent.Clear();
-            await attachHandler.HandleAsync(BuildPayload(1), session, TestContext.Current.CancellationToken);
+            await attachHandler.HandleAsync(
+                BuildPayload(1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             var attachRequest = Assert.Single(session.Sent);
             Assert.Equal(PacketType.RoboAttachRequestNotify, attachRequest.Type);

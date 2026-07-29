@@ -10,9 +10,21 @@ namespace AISpace.Common.DAL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(name: "IconId", table: "Items", type: "INTEGER", nullable: false, defaultValue: 1);
+            migrationBuilder.AddColumn<int>(
+                name: "IconId",
+                table: "Items",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 1
+            );
 
-            migrationBuilder.AddColumn<int>(name: "Socket", table: "Items", type: "INTEGER", nullable: false, defaultValue: 0);
+            migrationBuilder.AddColumn<int>(
+                name: "Socket",
+                table: "Items",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0
+            );
         }
 
         /// <inheritdoc />

@@ -71,7 +71,9 @@ public class PacketWriter : IPacketWriter
         _stream.Write(buffer);
     }
 
-    public void WriteFixedJisString(string value, int length) => WriteFixedString(value, length, "Shift_JIS");
+    public void WriteFixedJisString(string value, int length) =>
+        WriteFixedString(value, length, "Shift_JIS");
 
-    public void WriteFixedAsciiString(string value, int length) => WriteFixedString(value, length, "ASCII");
+    public void WriteFixedAsciiString(string value, int length) =>
+        WriteFixedString(value, length, "ASCII");
 }

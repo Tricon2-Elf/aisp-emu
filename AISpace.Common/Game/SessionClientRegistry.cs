@@ -13,7 +13,9 @@ public sealed class SessionClientRegistry : ISessionClientRegistry
         switch (serverType)
         {
             case ServerType.Area:
-                var ghost = _areaClients.Values.FirstOrDefault(existing => existing.CharacterId == session.CharacterId);
+                var ghost = _areaClients.Values.FirstOrDefault(existing =>
+                    existing.CharacterId == session.CharacterId
+                );
                 if (ghost != null && ghost.ConnectionId != session.ConnectionId)
                     _areaClients.TryRemove(ghost.ConnectionId, out _);
 
@@ -26,7 +28,11 @@ public sealed class SessionClientRegistry : ISessionClientRegistry
                 _authClients[session.ConnectionId] = session;
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(serverType), serverType, "Unsupported server type.");
+                throw new ArgumentOutOfRangeException(
+                    nameof(serverType),
+                    serverType,
+                    "Unsupported server type."
+                );
         }
     }
 
@@ -49,7 +55,11 @@ public sealed class SessionClientRegistry : ISessionClientRegistry
             ServerType.Auth => _authClients,
             ServerType.Area => _areaClients,
             ServerType.Msg => _msgClients,
-            _ => throw new ArgumentOutOfRangeException(nameof(serverType), serverType, "Unsupported server type."),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(serverType),
+                serverType,
+                "Unsupported server type."
+            ),
         };
     }
 }

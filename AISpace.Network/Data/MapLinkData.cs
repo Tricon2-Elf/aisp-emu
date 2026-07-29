@@ -18,7 +18,14 @@ public class MapLinkData
 
     public MapLinkData() { }
 
-    public MapLinkData(float positionX, float positionY, float positionZ, int yaw, float length, float depth)
+    public MapLinkData(
+        float positionX,
+        float positionY,
+        float positionZ,
+        int yaw,
+        float length,
+        float depth
+    )
     {
         PositionX = positionX;
         PositionY = positionY;

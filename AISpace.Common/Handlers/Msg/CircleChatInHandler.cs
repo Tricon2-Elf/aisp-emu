@@ -5,13 +5,19 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleChatInHandler(ILogger<CircleChatInHandler> logger) : PacketHandlerBase<CircleChatInRequest, CircleChatInResponse>, IRequiresAuthenticatedSession
+public class CircleChatInHandler(ILogger<CircleChatInHandler> logger)
+    : PacketHandlerBase<CircleChatInRequest, CircleChatInResponse>,
+        IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.CircleChatInRequest;
     public override PacketType ResponseType => PacketType.CircleChatInResponse;
     public override ServerType ServerType => ServerType.Msg;
 
-    public override async Task<CircleChatInResponse?> HandleAsync(CircleChatInRequest request, IPlayerSession session, CancellationToken ct = default)
+    public override async Task<CircleChatInResponse?> HandleAsync(
+        CircleChatInRequest request,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         // Логика:
         // 1. Check if the player is in the specified circle (request.CircleId).
@@ -19,7 +25,9 @@ public class CircleChatInHandler(ILogger<CircleChatInHandler> logger) : PacketHa
         // 3. Return success.
 
         // If there is no full support for circles in memory, simply return success.
-        logger.LogInformation($"Player {session.CharacterId} entering circle chat {request.CircleId}");
+        logger.LogInformation(
+            $"Player {session.CharacterId} entering circle chat {request.CircleId}"
+        );
 
         return new CircleChatInResponse(0); // 0 = success
     }

@@ -28,7 +28,10 @@ public sealed class CharacterMapData
     public static CharacterMapData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"CharacterMapData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"CharacterMapData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
         return new CharacterMapData

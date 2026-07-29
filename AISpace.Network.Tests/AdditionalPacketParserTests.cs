@@ -8,7 +8,8 @@ namespace AISpace.Network.Tests;
 
 public class AdditionalPacketParserTests
 {
-    public static IEnumerable<object[]> VersionChecks => new[] { new object[] { 1u, 2u, 3u }, new object[] { 0u, 0u, uint.MaxValue } };
+    public static IEnumerable<object[]> VersionChecks =>
+        new[] { new object[] { 1u, 2u, 3u }, new object[] { 0u, 0u, uint.MaxValue } };
 
     [Theory]
     [MemberData(nameof(VersionChecks))]
@@ -146,7 +147,9 @@ public class AdditionalPacketParserTests
 
         Assert.Equal(3u, reader.ReadUInt());
 
-        var first = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
+        var first = NotifySelectMapEntry.FromBytes(
+            reader.ReadBytes(NotifySelectMapEntry.PacketSize)
+        );
         Assert.Equal(10990110u, first.MapId);
         Assert.Equal((ushort)50054, first.AreaServerInfo.Port);
         Assert.Equal("localhost", first.AreaServerInfo.IP);
@@ -162,7 +165,9 @@ public class AdditionalPacketParserTests
         Assert.Equal(0x11111111u, first.Unknown1);
         Assert.Equal(0x22222222u, first.Unknown2);
 
-        var second = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
+        var second = NotifySelectMapEntry.FromBytes(
+            reader.ReadBytes(NotifySelectMapEntry.PacketSize)
+        );
         Assert.Equal(10990200u, second.MapId);
         Assert.Equal((ushort)50055, second.AreaServerInfo.Port);
         Assert.Equal("192.168.0.10", second.AreaServerInfo.IP);
@@ -175,7 +180,9 @@ public class AdditionalPacketParserTests
         Assert.Equal((byte)4, second.Yaw);
         Assert.Equal((byte)5, second.Animation);
 
-        var third = NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize));
+        var third = NotifySelectMapEntry.FromBytes(
+            reader.ReadBytes(NotifySelectMapEntry.PacketSize)
+        );
         Assert.Equal(10990210u, third.MapId);
         Assert.Equal((ushort)50056, third.AreaServerInfo.Port);
         Assert.Equal("10.0.0.5", third.AreaServerInfo.IP);
@@ -327,7 +334,9 @@ public class AdditionalPacketParserTests
             ChannelId = 1,
         };
 
-        var parsed = EventAreaMapSelectExecRRequest.FromBytes(OutgoingPacketTestParsers.EventAreaMapSelectExecRRequestToBytes(packet));
+        var parsed = EventAreaMapSelectExecRRequest.FromBytes(
+            OutgoingPacketTestParsers.EventAreaMapSelectExecRRequestToBytes(packet)
+        );
 
         Assert.Equal(0u, parsed.Result);
         Assert.Equal(10990200u, parsed.MapId);
@@ -337,7 +346,9 @@ public class AdditionalPacketParserTests
     [Fact]
     public void EventAreaMapSelectCloseNotify_ToBytes_WritesResult()
     {
-        var parsed = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(new EventAreaMapSelectCloseNotify(1).ToBytes());
+        var parsed = OutgoingPacketTestParsers.ParseEventAreaMapSelectCloseNotify(
+            new EventAreaMapSelectCloseNotify(1).ToBytes()
+        );
         Assert.Equal(1u, parsed.Result);
     }
 
@@ -414,7 +425,9 @@ public class AdditionalPacketParserTests
     {
         var packet = new SelectInitIslandEndRequest { IslandId = 3 };
 
-        var parsed = SelectInitIslandEndRequest.FromBytes(OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(packet));
+        var parsed = SelectInitIslandEndRequest.FromBytes(
+            OutgoingPacketTestParsers.SelectInitIslandEndRequestToBytes(packet)
+        );
 
         Assert.Equal(3u, parsed.IslandId);
     }

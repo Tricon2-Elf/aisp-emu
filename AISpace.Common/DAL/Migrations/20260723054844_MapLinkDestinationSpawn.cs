@@ -10,13 +10,33 @@ namespace AISpace.Common.DAL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<int>(name: "DestinationSpawnRotation", table: "MapLinks", type: "INTEGER", nullable: true);
+            migrationBuilder.AddColumn<int>(
+                name: "DestinationSpawnRotation",
+                table: "MapLinks",
+                type: "INTEGER",
+                nullable: true
+            );
 
-            migrationBuilder.AddColumn<float>(name: "DestinationSpawnX", table: "MapLinks", type: "REAL", nullable: true);
+            migrationBuilder.AddColumn<float>(
+                name: "DestinationSpawnX",
+                table: "MapLinks",
+                type: "REAL",
+                nullable: true
+            );
 
-            migrationBuilder.AddColumn<float>(name: "DestinationSpawnY", table: "MapLinks", type: "REAL", nullable: true);
+            migrationBuilder.AddColumn<float>(
+                name: "DestinationSpawnY",
+                table: "MapLinks",
+                type: "REAL",
+                nullable: true
+            );
 
-            migrationBuilder.AddColumn<float>(name: "DestinationSpawnZ", table: "MapLinks", type: "REAL", nullable: true);
+            migrationBuilder.AddColumn<float>(
+                name: "DestinationSpawnZ",
+                table: "MapLinks",
+                type: "REAL",
+                nullable: true
+            );
         }
 
         /// <inheritdoc />

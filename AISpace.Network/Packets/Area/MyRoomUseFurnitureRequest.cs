@@ -9,7 +9,8 @@ namespace AISpace.Network.Packets.Area;
 ///   UInt FurnId   - furniture serial id
 ///   UInt Reason   - 1 when furniture ActiveFlag byte (+164) is 0, else 0
 /// </summary>
-public class MyRoomUseFurnitureRequest(uint roomId, uint furnId, uint reason) : IIncomingPacket<MyRoomUseFurnitureRequest>
+public class MyRoomUseFurnitureRequest(uint roomId, uint furnId, uint reason)
+    : IIncomingPacket<MyRoomUseFurnitureRequest>
 {
     public const int WireSize = 12;
 
@@ -20,9 +21,15 @@ public class MyRoomUseFurnitureRequest(uint roomId, uint furnId, uint reason) : 
     public static MyRoomUseFurnitureRequest FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length != WireSize)
-            throw new InvalidDataException($"{nameof(MyRoomUseFurnitureRequest)} requires exactly {WireSize} bytes, received {data.Length}.");
+            throw new InvalidDataException(
+                $"{nameof(MyRoomUseFurnitureRequest)} requires exactly {WireSize} bytes, received {data.Length}."
+            );
 
         var reader = new PacketReader(data);
-        return new MyRoomUseFurnitureRequest(reader.ReadUInt(), reader.ReadUInt(), reader.ReadUInt());
+        return new MyRoomUseFurnitureRequest(
+            reader.ReadUInt(),
+            reader.ReadUInt(),
+            reader.ReadUInt()
+        );
     }
 }

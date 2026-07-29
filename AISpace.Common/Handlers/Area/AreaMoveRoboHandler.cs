@@ -6,16 +6,26 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMoveRoboHandler(IRoboRepository roboRepository, SharedState state) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMoveRoboHandler(IRoboRepository roboRepository, SharedState state)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MoveRoboRequest;
     public PacketType ResponseType => (PacketType)0;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = MoveRoboRequest.FromBytes(payload.Span);
-        var robo = await roboRepository.GetAsync(checked((int)session.CharacterId), request.RoboId, ct);
+        var robo = await roboRepository.GetAsync(
+            checked((int)session.CharacterId),
+            request.RoboId,
+            ct
+        );
         if (robo is null || !session.AccompanyingRoboIds.Contains(request.RoboId))
             return;
 

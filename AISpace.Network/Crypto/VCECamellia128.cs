@@ -8,7 +8,15 @@ public sealed class VCECamellia128
     // 26 subkeys for Camellia-128 in RustCrypto's key schedule layout.
     private readonly ulong[] _k = new ulong[26];
 
-    private static readonly ulong[] SIGMAS = [0xA09E667F3BCC908BUL, 0xB67AE8584CAA73B2UL, 0xC6EF372FE94F82BEUL, 0x54FF53A5F1D36F1CUL, 0x10E527FADE682D1DUL, 0xB05688C2B3E6C1FDUL];
+    private static readonly ulong[] SIGMAS =
+    [
+        0xA09E667F3BCC908BUL,
+        0xB67AE8584CAA73B2UL,
+        0xC6EF372FE94F82BEUL,
+        0x54FF53A5F1D36F1CUL,
+        0x10E527FADE682D1DUL,
+        0xB05688C2B3E6C1FDUL,
+    ];
 
     private static readonly byte[][] SBOXES =
     [
@@ -1266,5 +1274,6 @@ public sealed class VCECamellia128
 
     private static ulong ReadU64BE(ReadOnlySpan<byte> s) => BinaryPrimitives.ReadUInt64BigEndian(s);
 
-    private static void WriteU64BE(Span<byte> dest, ulong value) => BinaryPrimitives.WriteUInt64BigEndian(dest, value);
+    private static void WriteU64BE(Span<byte> dest, ulong value) =>
+        BinaryPrimitives.WriteUInt64BigEndian(dest, value);
 }

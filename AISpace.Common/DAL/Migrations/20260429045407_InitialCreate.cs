@@ -15,13 +15,23 @@ namespace AISpace.Common.DAL.Migrations
                 name: "Channels",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     ChannelNum = table.Column<int>(type: "INTEGER", nullable: false),
                     Port = table.Column<ushort>(type: "INTEGER", nullable: false),
                     IP = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
                     CurrentUsers = table.Column<uint>(type: "INTEGER", nullable: false),
-                    MaxUsers = table.Column<uint>(type: "INTEGER", nullable: false, defaultValue: 1000u),
-                    MapId = table.Column<uint>(type: "INTEGER", nullable: false, defaultValue: 10990100u),
+                    MaxUsers = table.Column<uint>(
+                        type: "INTEGER",
+                        nullable: false,
+                        defaultValue: 1000u
+                    ),
+                    MapId = table.Column<uint>(
+                        type: "INTEGER",
+                        nullable: false,
+                        defaultValue: 10990100u
+                    ),
                 },
                 constraints: table =>
                 {
@@ -33,7 +43,9 @@ namespace AISpace.Common.DAL.Migrations
                 name: "Circles",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     LeaderCharacterId = table.Column<int>(type: "INTEGER", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                 },
@@ -45,7 +57,13 @@ namespace AISpace.Common.DAL.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Items",
-                columns: table => new { Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true), Name = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false) },
+                columns: table => new
+                {
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
+                },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Items", x => x.Id);
@@ -56,7 +74,9 @@ namespace AISpace.Common.DAL.Migrations
                 name: "MapLinks",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     SourceMapId = table.Column<long>(type: "INTEGER", nullable: false),
                     ChannelId = table.Column<long>(type: "INTEGER", nullable: false),
                     PositionX = table.Column<float>(type: "REAL", nullable: false),
@@ -65,7 +85,11 @@ namespace AISpace.Common.DAL.Migrations
                     Yaw = table.Column<byte>(type: "INTEGER", nullable: false),
                     Length = table.Column<float>(type: "REAL", nullable: false),
                     Depth = table.Column<float>(type: "REAL", nullable: false),
-                    DestinationMapIds = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    DestinationMapIds = table.Column<string>(
+                        type: "TEXT",
+                        maxLength: 256,
+                        nullable: false
+                    ),
                     Behavior = table.Column<int>(type: "INTEGER", nullable: false),
                     SortOrder = table.Column<int>(type: "INTEGER", nullable: false),
                     IsEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
@@ -80,7 +104,9 @@ namespace AISpace.Common.DAL.Migrations
                 name: "Maps",
                 columns: table => new
                 {
-                    MapId = table.Column<long>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    MapId = table
+                        .Column<long>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
                     SpawnX = table.Column<float>(type: "REAL", nullable: false),
                     SpawnY = table.Column<float>(type: "REAL", nullable: false),
@@ -97,7 +123,9 @@ namespace AISpace.Common.DAL.Migrations
                 name: "PendingMapTransfers",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    UserId = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     MapId = table.Column<uint>(type: "INTEGER", nullable: false),
                     ChannelId = table.Column<int>(type: "INTEGER", nullable: false),
                     X = table.Column<float>(type: "REAL", nullable: false),
@@ -139,10 +167,20 @@ namespace AISpace.Common.DAL.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Username = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
-                    PasswordHash = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
-                    NpsPoints = table.Column<long>(type: "INTEGER", nullable: false, defaultValue: 0L),
+                    PasswordHash = table.Column<string>(
+                        type: "TEXT",
+                        maxLength: 512,
+                        nullable: false
+                    ),
+                    NpsPoints = table.Column<long>(
+                        type: "INTEGER",
+                        nullable: false,
+                        defaultValue: 0L
+                    ),
                 },
                 constraints: table =>
                 {
@@ -154,7 +192,9 @@ namespace AISpace.Common.DAL.Migrations
                 name: "Worlds",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
                     Address = table.Column<string>(type: "TEXT", nullable: false),
@@ -170,7 +210,9 @@ namespace AISpace.Common.DAL.Migrations
                 name: "Characters",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
                     ModelId = table.Column<uint>(type: "INTEGER", nullable: false),
                     BloodType = table.Column<uint>(type: "INTEGER", nullable: false),
@@ -192,8 +234,19 @@ namespace AISpace.Common.DAL.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Characters", x => x.Id);
-                    table.ForeignKey(name: "FK_Characters_Circles_CircleId", column: x => x.CircleId, principalTable: "Circles", principalColumn: "Id");
-                    table.ForeignKey(name: "FK_Characters_Users_UserId", column: x => x.UserId, principalTable: "Users", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Characters_Circles_CircleId",
+                        column: x => x.CircleId,
+                        principalTable: "Circles",
+                        principalColumn: "Id"
+                    );
+                    table.ForeignKey(
+                        name: "FK_Characters_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -201,7 +254,9 @@ namespace AISpace.Common.DAL.Migrations
                 name: "UserSessions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false).Annotation("Sqlite:Autoincrement", true),
+                    Id = table
+                        .Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     OTP = table.Column<string>(type: "TEXT", maxLength: 16, nullable: false),
                     ExpiresAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UserId = table.Column<int>(type: "INTEGER", nullable: false),
@@ -209,7 +264,13 @@ namespace AISpace.Common.DAL.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_UserSessions", x => x.Id);
-                    table.ForeignKey(name: "FK_UserSessions_Users_UserId", column: x => x.UserId, principalTable: "Users", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserSessions_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -223,9 +284,24 @@ namespace AISpace.Common.DAL.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CharacterEquipment", x => new { x.CharacterId, x.SlotIndex });
-                    table.ForeignKey(name: "FK_CharacterEquipment_Characters_CharacterId", column: x => x.CharacterId, principalTable: "Characters", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(name: "FK_CharacterEquipment_Items_ItemId", column: x => x.ItemId, principalTable: "Items", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey(
+                        "PK_CharacterEquipment",
+                        x => new { x.CharacterId, x.SlotIndex }
+                    );
+                    table.ForeignKey(
+                        name: "FK_CharacterEquipment_Characters_CharacterId",
+                        column: x => x.CharacterId,
+                        principalTable: "Characters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
+                    table.ForeignKey(
+                        name: "FK_CharacterEquipment_Items_ItemId",
+                        column: x => x.ItemId,
+                        principalTable: "Items",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -240,36 +316,103 @@ namespace AISpace.Common.DAL.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CharacterInventory", x => new { x.CharacterId, x.ItemId });
-                    table.ForeignKey(name: "FK_CharacterInventory_Characters_CharacterId", column: x => x.CharacterId, principalTable: "Characters", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(name: "FK_CharacterInventory_Items_ItemId", column: x => x.ItemId, principalTable: "Items", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CharacterInventory_Characters_CharacterId",
+                        column: x => x.CharacterId,
+                        principalTable: "Characters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
+                    table.ForeignKey(
+                        name: "FK_CharacterInventory_Items_ItemId",
+                        column: x => x.ItemId,
+                        principalTable: "Items",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
-            migrationBuilder.CreateIndex(name: "IX_CharacterEquipment_ItemId", table: "CharacterEquipment", column: "ItemId");
+            migrationBuilder.CreateIndex(
+                name: "IX_CharacterEquipment_ItemId",
+                table: "CharacterEquipment",
+                column: "ItemId"
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_CharacterInventory_ItemId", table: "CharacterInventory", column: "ItemId");
+            migrationBuilder.CreateIndex(
+                name: "IX_CharacterInventory_ItemId",
+                table: "CharacterInventory",
+                column: "ItemId"
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_Characters_CircleId", table: "Characters", column: "CircleId");
+            migrationBuilder.CreateIndex(
+                name: "IX_Characters_CircleId",
+                table: "Characters",
+                column: "CircleId"
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_Characters_Name", table: "Characters", column: "Name", unique: true);
+            migrationBuilder.CreateIndex(
+                name: "IX_Characters_Name",
+                table: "Characters",
+                column: "Name",
+                unique: true
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_Characters_UserId", table: "Characters", column: "UserId");
+            migrationBuilder.CreateIndex(
+                name: "IX_Characters_UserId",
+                table: "Characters",
+                column: "UserId"
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_MapLinks_SourceMapId_ChannelId_SortOrder", table: "MapLinks", columns: new[] { "SourceMapId", "ChannelId", "SortOrder" });
+            migrationBuilder.CreateIndex(
+                name: "IX_MapLinks_SourceMapId_ChannelId_SortOrder",
+                table: "MapLinks",
+                columns: new[] { "SourceMapId", "ChannelId", "SortOrder" }
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_PendingMapTransfers_ExpiresAtUtc", table: "PendingMapTransfers", column: "ExpiresAtUtc");
+            migrationBuilder.CreateIndex(
+                name: "IX_PendingMapTransfers_ExpiresAtUtc",
+                table: "PendingMapTransfers",
+                column: "ExpiresAtUtc"
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_SessionPresences_ServerType_CharacterId", table: "SessionPresences", columns: new[] { "ServerType", "CharacterId" });
+            migrationBuilder.CreateIndex(
+                name: "IX_SessionPresences_ServerType_CharacterId",
+                table: "SessionPresences",
+                columns: new[] { "ServerType", "CharacterId" }
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_SessionPresences_ServerType_MapId_ChannelId", table: "SessionPresences", columns: new[] { "ServerType", "MapId", "ChannelId" });
+            migrationBuilder.CreateIndex(
+                name: "IX_SessionPresences_ServerType_MapId_ChannelId",
+                table: "SessionPresences",
+                columns: new[] { "ServerType", "MapId", "ChannelId" }
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_SessionPresences_ServerType_UserId", table: "SessionPresences", columns: new[] { "ServerType", "UserId" });
+            migrationBuilder.CreateIndex(
+                name: "IX_SessionPresences_ServerType_UserId",
+                table: "SessionPresences",
+                columns: new[] { "ServerType", "UserId" }
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_SessionPresences_UpdatedAtUtc", table: "SessionPresences", column: "UpdatedAtUtc");
+            migrationBuilder.CreateIndex(
+                name: "IX_SessionPresences_UpdatedAtUtc",
+                table: "SessionPresences",
+                column: "UpdatedAtUtc"
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_Users_Username", table: "Users", column: "Username", unique: true);
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Username",
+                table: "Users",
+                column: "Username",
+                unique: true
+            );
 
-            migrationBuilder.CreateIndex(name: "IX_UserSessions_UserId_OTP", table: "UserSessions", columns: new[] { "UserId", "OTP" }, unique: true);
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSessions_UserId_OTP",
+                table: "UserSessions",
+                columns: new[] { "UserId", "OTP" },
+                unique: true
+            );
         }
 
         /// <inheritdoc />

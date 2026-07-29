@@ -10,9 +10,22 @@ namespace AISpace.Common.DAL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(name: "MyRoomName", table: "Characters", type: "TEXT", maxLength: 45, nullable: false, defaultValue: "My Room");
+            migrationBuilder.AddColumn<string>(
+                name: "MyRoomName",
+                table: "Characters",
+                type: "TEXT",
+                maxLength: 45,
+                nullable: false,
+                defaultValue: "My Room"
+            );
 
-            migrationBuilder.AddColumn<uint>(name: "MyRoomSecurity", table: "Characters", type: "INTEGER", nullable: false, defaultValue: 0u);
+            migrationBuilder.AddColumn<uint>(
+                name: "MyRoomSecurity",
+                table: "Characters",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0u
+            );
 
             migrationBuilder.CreateTable(
                 name: "Furniture",
@@ -25,7 +38,13 @@ namespace AISpace.Common.DAL.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Furniture", x => x.ItemId);
-                    table.ForeignKey(name: "FK_Furniture_Items_ItemId", column: x => x.ItemId, principalTable: "Items", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Furniture_Items_ItemId",
+                        column: x => x.ItemId,
+                        principalTable: "Items",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
@@ -44,13 +63,32 @@ namespace AISpace.Common.DAL.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MyRoomFurniture", x => new { x.CharacterId, x.FurnitureId });
-                    table.ForeignKey(name: "FK_MyRoomFurniture_Characters_CharacterId", column: x => x.CharacterId, principalTable: "Characters", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(name: "FK_MyRoomFurniture_Furniture_ItemId", column: x => x.ItemId, principalTable: "Furniture", principalColumn: "ItemId", onDelete: ReferentialAction.Restrict);
+                    table.PrimaryKey(
+                        "PK_MyRoomFurniture",
+                        x => new { x.CharacterId, x.FurnitureId }
+                    );
+                    table.ForeignKey(
+                        name: "FK_MyRoomFurniture_Characters_CharacterId",
+                        column: x => x.CharacterId,
+                        principalTable: "Characters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
+                    table.ForeignKey(
+                        name: "FK_MyRoomFurniture_Furniture_ItemId",
+                        column: x => x.ItemId,
+                        principalTable: "Furniture",
+                        principalColumn: "ItemId",
+                        onDelete: ReferentialAction.Restrict
+                    );
                 }
             );
 
-            migrationBuilder.CreateIndex(name: "IX_MyRoomFurniture_ItemId", table: "MyRoomFurniture", column: "ItemId");
+            migrationBuilder.CreateIndex(
+                name: "IX_MyRoomFurniture_ItemId",
+                table: "MyRoomFurniture",
+                column: "ItemId"
+            );
         }
 
         /// <inheritdoc />

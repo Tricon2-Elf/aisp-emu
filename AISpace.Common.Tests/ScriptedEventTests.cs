@@ -51,7 +51,11 @@ public class ScriptedEventTests
                 ChannelId = 1,
             };
 
-            var started = await service.TryStartOnMovementAsync(session, [new MovementPositionSample(-9200f, 2f, -16887f)], TestContext.Current.CancellationToken);
+            var started = await service.TryStartOnMovementAsync(
+                session,
+                [new MovementPositionSample(-9200f, 2f, -16887f)],
+                TestContext.Current.CancellationToken
+            );
 
             Assert.True(started);
             Assert.Equal(ScriptedEvents.Keys.IntroductionRin01, session.ActiveEventKey);
@@ -76,7 +80,11 @@ public class ScriptedEventTests
             await SeedCharacterAsync(options, 9002);
             await using var db = new MainContext(options);
             var eventRepo = new CharacterEventRepository(db);
-            await eventRepo.MarkCompletedAsync(9002, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken);
+            await eventRepo.MarkCompletedAsync(
+                9002,
+                ScriptedEvents.Keys.IntroductionRin01,
+                TestContext.Current.CancellationToken
+            );
 
             var service = CreateTriggerService(eventRepo);
             var session = new CapturingPlayerSession
@@ -87,7 +95,11 @@ public class ScriptedEventTests
                 ChannelId = 1,
             };
 
-            var started = await service.TryStartOnMovementAsync(session, [new MovementPositionSample(-9200f, 2f, -16887f)], TestContext.Current.CancellationToken);
+            var started = await service.TryStartOnMovementAsync(
+                session,
+                [new MovementPositionSample(-9200f, 2f, -16887f)],
+                TestContext.Current.CancellationToken
+            );
 
             Assert.False(started);
             Assert.Null(session.ActiveEventKey);
@@ -117,7 +129,11 @@ public class ScriptedEventTests
                 ChannelId = 1,
             };
 
-            var started = await service.TryStartOnMovementAsync(session, [new MovementPositionSample(0f, 2f, 0f)], TestContext.Current.CancellationToken);
+            var started = await service.TryStartOnMovementAsync(
+                session,
+                [new MovementPositionSample(0f, 2f, 0f)],
+                TestContext.Current.CancellationToken
+            );
 
             Assert.False(started);
             Assert.Null(session.ActiveEventKey);
@@ -148,11 +164,24 @@ public class ScriptedEventTests
                 ActiveEventCompletionPolicy = EventCompletionPolicy.Once,
             };
 
-            var handler = new AreaEventFadeInHandler(eventRepo, NullLogger<AreaEventFadeInHandler>.Instance);
-            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);
+            var handler = new AreaEventFadeInHandler(
+                eventRepo,
+                NullLogger<AreaEventFadeInHandler>.Instance
+            );
+            await handler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                areaSession,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(areaSession.ActiveEventKey);
-            Assert.True(await eventRepo.HasCompletedAsync(42, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken));
+            Assert.True(
+                await eventRepo.HasCompletedAsync(
+                    42,
+                    ScriptedEvents.Keys.IntroductionRin01,
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
@@ -180,11 +209,24 @@ public class ScriptedEventTests
                 ActiveEventCompletionPolicy = EventCompletionPolicy.Replayable,
             };
 
-            var handler = new AreaEventFadeInHandler(eventRepo, NullLogger<AreaEventFadeInHandler>.Instance);
-            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, areaSession, TestContext.Current.CancellationToken);
+            var handler = new AreaEventFadeInHandler(
+                eventRepo,
+                NullLogger<AreaEventFadeInHandler>.Instance
+            );
+            await handler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                areaSession,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(areaSession.ActiveEventKey);
-            Assert.False(await eventRepo.HasCompletedAsync(43, ScriptedEvents.Keys.IntroductionRin02, TestContext.Current.CancellationToken));
+            Assert.False(
+                await eventRepo.HasCompletedAsync(
+                    43,
+                    ScriptedEvents.Keys.IntroductionRin02,
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
@@ -202,11 +244,17 @@ public class ScriptedEventTests
             ActiveEventKey = ScriptedEvents.Keys.IntroductionRin01,
             ActiveEventKind = NpcEventKind.ClientScript,
         };
-        var handler = new AreaEventScriptPlayHandler(NullLogger<AreaEventScriptPlayHandler>.Instance);
+        var handler = new AreaEventScriptPlayHandler(
+            NullLogger<AreaEventScriptPlayHandler>.Instance
+        );
 
         var writer = new PacketWriter();
         writer.Write(1u);
-        await handler.HandleAsync(writer.ToBytes(), areaSession, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            writer.ToBytes(),
+            areaSession,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Null(areaSession.ActiveEventKey);
     }
@@ -222,11 +270,24 @@ public class ScriptedEventTests
             await using var db = new MainContext(options);
             var repo = new CharacterEventRepository(db);
 
-            await repo.MarkCompletedAsync(77, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken);
-            await repo.MarkCompletedAsync(77, ScriptedEvents.Keys.IntroductionRin01, TestContext.Current.CancellationToken);
+            await repo.MarkCompletedAsync(
+                77,
+                ScriptedEvents.Keys.IntroductionRin01,
+                TestContext.Current.CancellationToken
+            );
+            await repo.MarkCompletedAsync(
+                77,
+                ScriptedEvents.Keys.IntroductionRin01,
+                TestContext.Current.CancellationToken
+            );
 
             await using var verify = new MainContext(options);
-            Assert.Equal(1, await verify.CharacterEventStatuses.CountAsync(TestContext.Current.CancellationToken));
+            Assert.Equal(
+                1,
+                await verify.CharacterEventStatuses.CountAsync(
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
@@ -234,11 +295,17 @@ public class ScriptedEventTests
         }
     }
 
-    private static ScriptedEventTriggerService CreateTriggerService(MainContext db) => CreateTriggerService(new CharacterEventRepository(db));
+    private static ScriptedEventTriggerService CreateTriggerService(MainContext db) =>
+        CreateTriggerService(new CharacterEventRepository(db));
 
-    private static ScriptedEventTriggerService CreateTriggerService(CharacterEventRepository eventRepo) => new(eventRepo, NullLogger<ScriptedEventTriggerService>.Instance);
+    private static ScriptedEventTriggerService CreateTriggerService(
+        CharacterEventRepository eventRepo
+    ) => new(eventRepo, NullLogger<ScriptedEventTriggerService>.Instance);
 
-    private static async Task SeedCharacterAsync(DbContextOptions<MainContext> options, int characterId)
+    private static async Task SeedCharacterAsync(
+        DbContextOptions<MainContext> options,
+        int characterId
+    )
     {
         await using var db = new MainContext(options);
         var user = new User { Id = 1, Username = $"user-{characterId}" };

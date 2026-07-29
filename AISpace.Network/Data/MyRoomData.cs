@@ -1,6 +1,12 @@
 namespace AISpace.Network.Data;
 
-public class MyRoomData(uint roomId, uint ownerCharacterId, MyRoomStage roomStage, string roomName = "My Room", uint security = 0)
+public class MyRoomData(
+    uint roomId,
+    uint ownerCharacterId,
+    MyRoomStage roomStage,
+    string roomName = "My Room",
+    uint security = 0
+)
 {
     public uint RoomId = roomId;
     public uint OwnerCharacterId = ownerCharacterId;

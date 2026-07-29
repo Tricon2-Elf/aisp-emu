@@ -23,9 +23,16 @@ public sealed class UserStatusData
     public static UserStatusData FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length < WireSize)
-            throw new ArgumentException($"UserStatusData requires at least {WireSize} bytes.", nameof(data));
+            throw new ArgumentException(
+                $"UserStatusData requires at least {WireSize} bytes.",
+                nameof(data)
+            );
 
         var reader = new PacketReader(data);
-        return new UserStatusData { StatusText = reader.ReadFixedString(StatusTextLength, "utf-8"), StatusIconId = reader.ReadUInt() };
+        return new UserStatusData
+        {
+            StatusText = reader.ReadFixedString(StatusTextLength, "utf-8"),
+            StatusIconId = reader.ReadUInt(),
+        };
     }
 }

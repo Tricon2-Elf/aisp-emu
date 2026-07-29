@@ -1,6 +1,10 @@
 namespace AISpace.Network.Packets.Area;
 
-public sealed class BattleTargetLockNotify(uint actionObjectId, uint targetObjectId, uint lockMode = 1) : IOutgoingPacket
+public sealed class BattleTargetLockNotify(
+    uint actionObjectId,
+    uint targetObjectId,
+    uint lockMode = 1
+) : IOutgoingPacket
 {
     public uint ActionObjectId { get; } = actionObjectId;
     public uint TargetObjectId { get; } = targetObjectId;

@@ -12,6 +12,10 @@ public sealed class RoboTalkPostRequest : IIncomingPacket<RoboTalkPostRequest>
     public static RoboTalkPostRequest FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
-        return new RoboTalkPostRequest { RoboId = reader.ReadUInt(), Message = reader.ReadString("utf-8") };
+        return new RoboTalkPostRequest
+        {
+            RoboId = reader.ReadUInt(),
+            Message = reader.ReadString("utf-8"),
+        };
     }
 }

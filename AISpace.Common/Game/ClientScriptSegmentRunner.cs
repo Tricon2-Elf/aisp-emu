@@ -13,7 +13,10 @@ public enum ClientScriptSegmentStatus : byte
     Failed = 3,
 }
 
-public readonly record struct ClientScriptSegmentResult(ClientScriptSegmentStatus Status, uint Result = 0);
+public readonly record struct ClientScriptSegmentResult(
+    ClientScriptSegmentStatus Status,
+    uint Result = 0
+);
 
 public sealed class ClientScriptSegmentRunner
 {
@@ -21,17 +24,35 @@ public sealed class ClientScriptSegmentRunner
     private const string FadeInStep = "ClientScriptSegment.FadeIn";
     private const string ScriptKeyDataKey = "clientScriptSegment.scriptKey";
 
-    public async Task BeginAsync(IPlayerSession session, string clientScriptKey, CancellationToken ct = default)
+    public async Task BeginAsync(
+        IPlayerSession session,
+        string clientScriptKey,
+        CancellationToken ct = default
+    )
     {
-        if (session.ActiveEventKind != NpcEventKind.ServerScript || session.ServerScriptState is null)
-            throw new InvalidOperationException("Client script segments require an active server script.");
+        if (
+            session.ActiveEventKind != NpcEventKind.ServerScript
+            || session.ServerScriptState is null
+        )
+            throw new InvalidOperationException(
+                "Client script segments require an active server script."
+            );
 
         session.ServerScriptState.Step = ScriptPlayStep;
         session.ServerScriptState.Data[ScriptKeyDataKey] = clientScriptKey;
-        await session.SendAsync(PacketType.EventScriptPlayNotify, new EventScriptPlayNotify(ScriptedEvents.GetScriptLabel(clientScriptKey)).ToBytes(), ct);
+        await session.SendAsync(
+            PacketType.EventScriptPlayNotify,
+            new EventScriptPlayNotify(ScriptedEvents.GetScriptLabel(clientScriptKey)).ToBytes(),
+            ct
+        );
     }
 
-    public async Task<ClientScriptSegmentResult> TryHandleAsync(PacketType packetType, ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task<ClientScriptSegmentResult> TryHandleAsync(
+        PacketType packetType,
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var state = session.ServerScriptState;
         if (session.ActiveEventKind != NpcEventKind.ServerScript || state is null)
@@ -41,10 +62,17 @@ public sealed class ClientScriptSegmentRunner
         {
             var request = EventScriptPlayRequest.FromBytes(payload.Span);
             if (request.Result != 0)
-                return new ClientScriptSegmentResult(ClientScriptSegmentStatus.Failed, request.Result);
+                return new ClientScriptSegmentResult(
+                    ClientScriptSegmentStatus.Failed,
+                    request.Result
+                );
 
             state.Step = FadeInStep;
-            await session.SendAsync(PacketType.EventFadeInNotify, new EventFadeNotify(1f, 255, 255, 255).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.EventFadeInNotify,
+                new EventFadeNotify(1f, 255, 255, 255).ToBytes(),
+                ct
+            );
             return new ClientScriptSegmentResult(ClientScriptSegmentStatus.InProgress);
         }
 

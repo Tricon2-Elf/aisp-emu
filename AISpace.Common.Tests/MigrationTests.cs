@@ -10,6 +10,9 @@ public class MigrationTests
     {
         using var db = new MainContextFactory().CreateDbContext([]);
 
-        Assert.False(db.Database.HasPendingModelChanges(), "MainContext has pending model changes. Run ./scripts/generate-migration.sh <MigrationName>.");
+        Assert.False(
+            db.Database.HasPendingModelChanges(),
+            "MainContext has pending model changes. Run ./scripts/generate-migration.sh <MigrationName>."
+        );
     }
 }

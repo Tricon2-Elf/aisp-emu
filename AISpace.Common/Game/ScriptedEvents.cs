@@ -17,7 +17,9 @@ public static class ScriptedEvents
         public const string Bat0101021 = "bat_01_01_02_1";
     }
 
-    private static readonly Dictionary<string, string> ScriptLabels = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> ScriptLabels = new(
+        StringComparer.OrdinalIgnoreCase
+    )
     {
         [Keys.IntroductionRin01] = "./script/event/introdution_rin_01.csv",
         [Keys.IntroductionRin02] = "./script/event/introdution_rin_02.csv",
@@ -32,5 +34,8 @@ public static class ScriptedEvents
         [Keys.Bat0101021] = "./script/tps_event/bat_01_01_02_1.csv",
     };
 
-    public static string GetScriptLabel(string eventKey) => ScriptLabels.TryGetValue(eventKey, out var label) ? label : $"./script/event/{eventKey}.csv";
+    public static string GetScriptLabel(string eventKey) =>
+        ScriptLabels.TryGetValue(eventKey, out var label)
+            ? label
+            : $"./script/event/{eventKey}.csv";
 }

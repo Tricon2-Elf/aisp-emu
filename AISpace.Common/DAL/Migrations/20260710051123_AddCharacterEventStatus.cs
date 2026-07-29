@@ -21,12 +21,25 @@ namespace AISpace.Common.DAL.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CharacterEventStatuses", x => new { x.CharacterId, x.EventKey });
-                    table.ForeignKey(name: "FK_CharacterEventStatuses_Characters_CharacterId", column: x => x.CharacterId, principalTable: "Characters", principalColumn: "Id", onDelete: ReferentialAction.Cascade);
+                    table.PrimaryKey(
+                        "PK_CharacterEventStatuses",
+                        x => new { x.CharacterId, x.EventKey }
+                    );
+                    table.ForeignKey(
+                        name: "FK_CharacterEventStatuses_Characters_CharacterId",
+                        column: x => x.CharacterId,
+                        principalTable: "Characters",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade
+                    );
                 }
             );
 
-            migrationBuilder.CreateIndex(name: "IX_CharacterEventStatuses_CharacterId", table: "CharacterEventStatuses", column: "CharacterId");
+            migrationBuilder.CreateIndex(
+                name: "IX_CharacterEventStatuses_CharacterId",
+                table: "CharacterEventStatuses",
+                column: "CharacterId"
+            );
         }
 
         /// <inheritdoc />

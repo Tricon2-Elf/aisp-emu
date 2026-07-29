@@ -30,6 +30,8 @@ internal static class TryEquipNotifyBuilder
     /// </summary>
     public static List<ItemEquipEntry> FromRobo(RoboData robo)
     {
-        return robo.Character.Equips.Select(equip => new ItemEquipEntry(equip.ItemId, equip.Socket)).ToList();
+        return robo
+            .Character.Equips.Select(equip => new ItemEquipEntry(equip.ItemId, equip.Socket))
+            .ToList();
     }
 }

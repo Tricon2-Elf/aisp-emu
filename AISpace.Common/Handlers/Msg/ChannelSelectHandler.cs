@@ -12,16 +12,29 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IServiceScopeFactory scopeFactory, IOptions<ServerOptions> serverOptions, IChannelRepository channelRepo) : IPacketHandler, IRequiresAuthenticatedSession
+public class ChannelSelectHandler(
+    ILogger<ChannelSelectHandler> logger,
+    IServiceScopeFactory scopeFactory,
+    IOptions<ServerOptions> serverOptions,
+    IChannelRepository channelRepo
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ChannelSelectRequest;
     public PacketType ResponseType => PacketType.ChannelSelectResponse;
     public ServerType ServerType => ServerType.Msg;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var request = ChannelSelectRequest.FromBytes(payload.Span);
-        logger.LogInformation("ChannelSelectRequest from user {UserId}: ChannelID {ChannelId}", session.User?.Id ?? 0, request.ChannelID);
+        logger.LogInformation(
+            "ChannelSelectRequest from user {UserId}: ChannelID {ChannelId}",
+            session.User?.Id ?? 0,
+            request.ChannelID
+        );
 
         var channel = await channelRepo.GetByChannelNumAsync((int)request.ChannelID, ct);
         if (channel == null)
@@ -35,7 +48,12 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
         string resolvedIp = serverOptions.Value.ResolveAddress(channel.IP);
         var serverInfo = new ServerInfo(resolvedIp, channel.Port);
         uint mapId = channel.MapId;
-        logger.LogInformation("ChannelSelect: sending Area server {ResolvedIp}:{Port} (MapId={MapId})", resolvedIp, channel.Port, mapId);
+        logger.LogInformation(
+            "ChannelSelect: sending Area server {ResolvedIp}:{Port} (MapId={MapId})",
+            resolvedIp,
+            channel.Port,
+            mapId
+        );
 
         session.ChannelId = channel.ChannelNum;
         session.MapId = mapId;
@@ -45,7 +63,10 @@ public class ChannelSelectHandler(ILogger<ChannelSelectHandler> logger, IService
             var db = scope.ServiceProvider.GetRequiredService<MainContext>();
             if (session.User != null)
             {
-                var character = await db.Characters.FirstOrDefaultAsync(c => c.UserId == session.User.Id, ct);
+                var character = await db.Characters.FirstOrDefaultAsync(
+                    c => c.UserId == session.User.Id,
+                    ct
+                );
                 if (character != null)
                 {
                     character.CurrentMapId = mapId;

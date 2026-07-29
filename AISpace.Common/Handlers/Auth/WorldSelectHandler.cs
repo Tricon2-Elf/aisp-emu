@@ -10,7 +10,12 @@ using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Handlers.Auth;
 
-public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionRepository sessionRepo, ILogger<WorldSelectHandler> logger, IOptions<ServerOptions> serverOptions) : IPacketHandler, IRequiresAuthenticatedSession
+public class WorldSelectHandler(
+    IWorldRepository worldRepo,
+    IUserSessionRepository sessionRepo,
+    ILogger<WorldSelectHandler> logger,
+    IOptions<ServerOptions> serverOptions
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     private readonly IWorldRepository _worldRepository = worldRepo;
     private readonly IUserSessionRepository _sessionRepo = sessionRepo;
@@ -20,7 +25,11 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
     public PacketType ResponseType => PacketType.WorldSelectResponse;
     public ServerType ServerType => ServerType.Auth;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var WorldSelectReq = WorldSelectRequest.FromBytes(payload.Span);
         var selectedWorldID = (int)WorldSelectReq.WorldID;
@@ -28,7 +37,10 @@ public class WorldSelectHandler(IWorldRepository worldRepo, IUserSessionReposito
         var world = await _worldRepository.GetByIdAsync(selectedWorldID);
         if (world == null)
         {
-            _logger.LogWarning("WorldSelectRequest: world {WorldId} not found. Sending error response.", selectedWorldID);
+            _logger.LogWarning(
+                "WorldSelectRequest: world {WorldId} not found. Sending error response.",
+                selectedWorldID
+            );
             var errResp = new WorldSelectResponse(1, "", 0, "");
             await session.SendAsync(PacketType.WorldSelectResponse, errResp.ToBytes(), ct);
             return;

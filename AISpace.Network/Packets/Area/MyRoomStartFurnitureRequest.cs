@@ -14,7 +14,9 @@ public class MyRoomStartFurnitureRequest(uint roomId) : IIncomingPacket<MyRoomSt
     public static MyRoomStartFurnitureRequest FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length != WireSize)
-            throw new InvalidDataException($"{nameof(MyRoomStartFurnitureRequest)} requires exactly {WireSize} bytes, received {data.Length}.");
+            throw new InvalidDataException(
+                $"{nameof(MyRoomStartFurnitureRequest)} requires exactly {WireSize} bytes, received {data.Length}."
+            );
 
         var reader = new PacketReader(data);
         return new MyRoomStartFurnitureRequest(reader.ReadUInt());

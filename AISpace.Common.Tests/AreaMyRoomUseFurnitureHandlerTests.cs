@@ -12,7 +12,9 @@ public class AreaMyRoomUseFurnitureHandlerTests
     [Fact]
     public async Task CatalogFurnitureUse_IsAcknowledgedWithoutOpeningStorage()
     {
-        var handler = new AreaMyRoomUseFurnitureHandler(NullLogger<AreaMyRoomUseFurnitureHandler>.Instance);
+        var handler = new AreaMyRoomUseFurnitureHandler(
+            NullLogger<AreaMyRoomUseFurnitureHandler>.Instance
+        );
         var session = new CapturingPlayerSession
         {
             MapId = MyRoomInfo.BaseMapId,
@@ -20,7 +22,11 @@ public class AreaMyRoomUseFurnitureHandlerTests
             CharacterId = 42,
         };
 
-        await handler.HandleAsync(BuildRequest(42, 77, 1), session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildRequest(42, 77, 1),
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Collection(
             session.Sent,
@@ -42,7 +48,9 @@ public class AreaMyRoomUseFurnitureHandlerTests
     [Fact]
     public async Task WrongRoom_RejectsWithoutStorage()
     {
-        var handler = new AreaMyRoomUseFurnitureHandler(NullLogger<AreaMyRoomUseFurnitureHandler>.Instance);
+        var handler = new AreaMyRoomUseFurnitureHandler(
+            NullLogger<AreaMyRoomUseFurnitureHandler>.Instance
+        );
         var session = new CapturingPlayerSession
         {
             MapId = MyRoomInfo.BaseMapId,
@@ -50,7 +58,11 @@ public class AreaMyRoomUseFurnitureHandlerTests
             CharacterId = 42,
         };
 
-        await handler.HandleAsync(BuildRequest(99, 77, 1), session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildRequest(99, 77, 1),
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.MyRoomUseFurnitureResponse, session.Sent[0].Type);

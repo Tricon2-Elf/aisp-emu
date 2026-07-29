@@ -6,7 +6,9 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaEquipOrderListHandler(ICharacterRepository characterRepo) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaEquipOrderListHandler(ICharacterRepository characterRepo)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EquipOrderListRequest;
 
@@ -14,7 +16,11 @@ public class AreaEquipOrderListHandler(ICharacterRepository characterRepo) : IPa
 
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var gender = 1;
         if (session.CharacterId != 0)
@@ -24,7 +30,10 @@ public class AreaEquipOrderListHandler(ICharacterRepository characterRepo) : IPa
                 gender = cha.Gender;
         }
 
-        var response = new EquipOrderListResponse { CharaOrders = CharaOrderData.ForGender(gender) };
+        var response = new EquipOrderListResponse
+        {
+            CharaOrders = CharaOrderData.ForGender(gender),
+        };
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

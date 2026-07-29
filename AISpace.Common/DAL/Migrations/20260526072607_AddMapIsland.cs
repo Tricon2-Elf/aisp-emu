@@ -10,7 +10,14 @@ namespace AISpace.Common.DAL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(name: "Island", table: "Maps", type: "TEXT", maxLength: 32, nullable: false, defaultValue: "");
+            migrationBuilder.AddColumn<string>(
+                name: "Island",
+                table: "Maps",
+                type: "TEXT",
+                maxLength: 32,
+                nullable: false,
+                defaultValue: ""
+            );
         }
 
         /// <inheritdoc />

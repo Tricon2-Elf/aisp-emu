@@ -11,7 +11,11 @@ public class AreaEmotionGetBaseListHandler : IPacketHandler, IRequiresAuthentica
     public PacketType ResponseType => PacketType.EmotionGetBaseListResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         var emotions = new List<EmotionData>();
 

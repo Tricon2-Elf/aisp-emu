@@ -9,13 +9,22 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEnterEndHandler> logger, ServerScriptDispatcher? serverScriptDispatcher = null, IRoboRepository? roboRepository = null) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMapDataEnterEndHandler(
+    SharedState state,
+    ILogger<AreaMapDataEnterEndHandler> logger,
+    ServerScriptDispatcher? serverScriptDispatcher = null,
+    IRoboRepository? roboRepository = null
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapDataEnterEndRequest;
     public PacketType ResponseType => PacketType.MapDataEnterEndResponse;
     public ServerType ServerType => ServerType.Area;
 
-    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
     {
         session.IsMapTransitionPending = false;
         await session.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
@@ -23,16 +32,44 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
         var myChar = session.Character ?? session.User!.Characters.FirstOrDefault();
         if (myChar != null)
         {
-            var myPos = new MovementData(session.X, session.Y, session.Z, session.Rotation, MovementType.Stopped);
+            var myPos = new MovementData(
+                session.X,
+                session.Y,
+                session.Z,
+                session.Rotation,
+                MovementType.Stopped
+            );
             IReadOnlyList<RoboData> accompanyingRobos = [];
             if (roboRepository is not null)
-                accompanyingRobos = (await roboRepository.GetAllAsync(checked((int)session.CharacterId), ct)).Where(x => session.AccompanyingRoboIds.Contains(x.RoboId)).ToList();
+                accompanyingRobos = (
+                    await roboRepository.GetAllAsync(checked((int)session.CharacterId), ct)
+                )
+                    .Where(x => session.AccompanyingRoboIds.Contains(x.RoboId))
+                    .ToList();
 
-            var spawnMeForPeersPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 1, myPos, checked((uint)session.ChannelId), session.MapId);
+            var spawnMeForPeersPacket = AreasvEnterHandler.CreateNotify(
+                myChar,
+                session.CharacterId,
+                1,
+                myPos,
+                checked((uint)session.ChannelId),
+                session.MapId
+            );
             if (session.NeedsPostLoadSelfAvatarNotify)
             {
-                logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}", session.ConnectionId, myChar.Id);
-                var spawnMeForSelfPacket = AreasvEnterHandler.CreateNotify(myChar, session.CharacterId, 0, myPos, checked((uint)session.ChannelId), session.MapId);
+                logger.LogInformation(
+                    "Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}",
+                    session.ConnectionId,
+                    myChar.Id
+                );
+                var spawnMeForSelfPacket = AreasvEnterHandler.CreateNotify(
+                    myChar,
+                    session.CharacterId,
+                    0,
+                    myPos,
+                    checked((uint)session.ChannelId),
+                    session.MapId
+                );
                 await session.SendAsync(PacketType.AvatarNotifyData, spawnMeForSelfPacket, ct);
                 session.NeedsPostLoadSelfAvatarNotify = false;
             }
@@ -43,25 +80,57 @@ public class AreaMapDataEnterEndHandler(SharedState state, ILogger<AreaMapDataEn
                 {
                     var remoteRobo = SharedState.PrepareRemoteRobo(robo, session);
                     if (other.VisibleRemoteRoboObjectIds.Add(remoteRobo.Character.SlotId))
-                        await other.SendAsync(PacketType.NotifyRoboData, new NotifyRoboData(0, remoteRobo).ToBytes(), ct);
+                        await other.SendAsync(
+                            PacketType.NotifyRoboData,
+                            new NotifyRoboData(0, remoteRobo).ToBytes(),
+                            ct
+                        );
                 }
-                logger.LogInformation("Sending AvatarNotifyData to {ConnectionId} for othercharacter {CharacterId}", other.ConnectionId, myChar.Id);
+                logger.LogInformation(
+                    "Sending AvatarNotifyData to {ConnectionId} for othercharacter {CharacterId}",
+                    other.ConnectionId,
+                    myChar.Id
+                );
                 var otherChar = other.Character ?? other.User?.Characters.FirstOrDefault();
                 if (otherChar != null)
                 {
-                    var otherPos = new MovementData(other.X, other.Y, other.Z, other.Rotation, MovementType.Stopped);
-                    var spawnOtherForMe = AreasvEnterHandler.CreateNotify(otherChar, other.CharacterId, 1, otherPos, checked((uint)other.ChannelId), other.MapId);
+                    var otherPos = new MovementData(
+                        other.X,
+                        other.Y,
+                        other.Z,
+                        other.Rotation,
+                        MovementType.Stopped
+                    );
+                    var spawnOtherForMe = AreasvEnterHandler.CreateNotify(
+                        otherChar,
+                        other.CharacterId,
+                        1,
+                        otherPos,
+                        checked((uint)other.ChannelId),
+                        other.MapId
+                    );
                     await session.SendAsync(PacketType.AvatarNotifyData, spawnOtherForMe, ct);
                 }
 
                 if (roboRepository is not null)
                 {
-                    var otherRobos = await roboRepository.GetAllAsync(checked((int)other.CharacterId), ct);
-                    foreach (var robo in otherRobos.Where(x => other.AccompanyingRoboIds.Contains(x.RoboId)))
+                    var otherRobos = await roboRepository.GetAllAsync(
+                        checked((int)other.CharacterId),
+                        ct
+                    );
+                    foreach (
+                        var robo in otherRobos.Where(x =>
+                            other.AccompanyingRoboIds.Contains(x.RoboId)
+                        )
+                    )
                     {
                         var remoteRobo = SharedState.PrepareRemoteRobo(robo, other);
                         if (session.VisibleRemoteRoboObjectIds.Add(remoteRobo.Character.SlotId))
-                            await session.SendAsync(PacketType.NotifyRoboData, new NotifyRoboData(0, remoteRobo).ToBytes(), ct);
+                            await session.SendAsync(
+                                PacketType.NotifyRoboData,
+                                new NotifyRoboData(0, remoteRobo).ToBytes(),
+                                ct
+                            );
                     }
                 }
             }

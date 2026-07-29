@@ -1,8 +1,8 @@
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
-using AISpace.Network.Data;
 using AISpace.Common.Tests.Support;
+using AISpace.Network.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -64,12 +64,23 @@ public class RepositoryIntegrationTests
             Assert.NotNull(user);
 
             var db = new MainContext(options);
-            var sessionRepo = new UserSessionRepository(db, NullLogger<UserSessionRepository>.Instance);
+            var sessionRepo = new UserSessionRepository(
+                db,
+                NullLogger<UserSessionRepository>.Instance
+            );
             const string otp = "1234567890123456";
 
-            await sessionRepo.CreateAsync(user!.Id, otp, TimeSpan.FromHours(1), TestContext.Current.CancellationToken);
+            await sessionRepo.CreateAsync(
+                user!.Id,
+                otp,
+                TimeSpan.FromHours(1),
+                TestContext.Current.CancellationToken
+            );
 
-            var valid = await sessionRepo.GetValidSessionAsync(otp, TestContext.Current.CancellationToken);
+            var valid = await sessionRepo.GetValidSessionAsync(
+                otp,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(valid);
             Assert.Equal(user.Id, valid!.UserId);
             Assert.NotNull(valid.User);
@@ -91,10 +102,18 @@ public class RepositoryIntegrationTests
             var user = await userRepo.GetByUsernameAsync("carl");
 
             var db = new MainContext(options);
-            var sessionRepo = new UserSessionRepository(db, NullLogger<UserSessionRepository>.Instance);
+            var sessionRepo = new UserSessionRepository(
+                db,
+                NullLogger<UserSessionRepository>.Instance
+            );
             const string otp = "abcdefghijklmnop";
 
-            await sessionRepo.CreateAsync(user!.Id, otp, TimeSpan.FromHours(1), TestContext.Current.CancellationToken);
+            await sessionRepo.CreateAsync(
+                user!.Id,
+                otp,
+                TimeSpan.FromHours(1),
+                TestContext.Current.CancellationToken
+            );
 
             await using (var ctx = new MainContext(options))
             {
@@ -103,7 +122,9 @@ public class RepositoryIntegrationTests
                 await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
-            Assert.Null(await sessionRepo.GetValidSessionAsync(otp, TestContext.Current.CancellationToken));
+            Assert.Null(
+                await sessionRepo.GetValidSessionAsync(otp, TestContext.Current.CancellationToken)
+            );
         }
         finally
         {
@@ -135,13 +156,27 @@ public class RepositoryIntegrationTests
 
             await using (var db = new MainContext(options))
             {
-                await MapRepository.EnsureSeedMapsPresentAsync(db, Path.Combine(AppContext.BaseDirectory, "seedData", "maps.json"), TestContext.Current.CancellationToken);
+                await MapRepository.EnsureSeedMapsPresentAsync(
+                    db,
+                    Path.Combine(AppContext.BaseDirectory, "seedData", "maps.json"),
+                    TestContext.Current.CancellationToken
+                );
             }
 
             await using (var verifyDb = new MainContext(options))
             {
-                Assert.NotNull(await verifyDb.Maps.FirstOrDefaultAsync(map => map.MapId == 10990200, TestContext.Current.CancellationToken));
-                Assert.NotNull(await verifyDb.Maps.FirstOrDefaultAsync(map => map.MapId == 10990210, TestContext.Current.CancellationToken));
+                Assert.NotNull(
+                    await verifyDb.Maps.FirstOrDefaultAsync(
+                        map => map.MapId == 10990200,
+                        TestContext.Current.CancellationToken
+                    )
+                );
+                Assert.NotNull(
+                    await verifyDb.Maps.FirstOrDefaultAsync(
+                        map => map.MapId == 10990210,
+                        TestContext.Current.CancellationToken
+                    )
+                );
             }
         }
         finally
@@ -182,16 +217,43 @@ public class RepositoryIntegrationTests
                     }
                 );
 
-                db.Items.AddRange(new Item { Id = oldTopId, Name = "Old Top", Socket = 8 }, new Item { Id = requestedTopId, Name = "Requested Top", Socket = 8 });
-                db.CharacterEquipments.Add(new CharacterEquipment { CharacterId = characterId, SlotIndex = 1, ItemId = oldTopId });
+                db.Items.AddRange(
+                    new Item
+                    {
+                        Id = oldTopId,
+                        Name = "Old Top",
+                        Socket = 8,
+                    },
+                    new Item
+                    {
+                        Id = requestedTopId,
+                        Name = "Requested Top",
+                        Socket = 8,
+                    }
+                );
+                db.CharacterEquipments.Add(
+                    new CharacterEquipment
+                    {
+                        CharacterId = characterId,
+                        SlotIndex = 1,
+                        ItemId = oldTopId,
+                    }
+                );
 
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             }
 
-            var repo = new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance);
+            var repo = new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            );
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                repo.ReplaceEquipmentAsync(characterId, [new ItemEquipEntry((uint)requestedTopId, 8)], TestContext.Current.CancellationToken)
+                repo.ReplaceEquipmentAsync(
+                    characterId,
+                    [new ItemEquipEntry((uint)requestedTopId, 8)],
+                    TestContext.Current.CancellationToken
+                )
             );
 
             await using (var verifyDb = new MainContext(options))
@@ -204,7 +266,9 @@ public class RepositoryIntegrationTests
                 Assert.Single(equips);
                 Assert.Equal(oldTopId, equips[0].ItemId);
 
-                var inventories = await verifyDb.CharacterInventories.Where(x => x.CharacterId == characterId).ToListAsync(TestContext.Current.CancellationToken);
+                var inventories = await verifyDb
+                    .CharacterInventories.Where(x => x.CharacterId == characterId)
+                    .ToListAsync(TestContext.Current.CancellationToken);
                 Assert.Empty(inventories);
             }
         }
@@ -213,5 +277,4 @@ public class RepositoryIntegrationTests
             await connection.DisposeAsync();
         }
     }
-
 }

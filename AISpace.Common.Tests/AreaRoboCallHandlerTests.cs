@@ -20,7 +20,10 @@ public class AreaRoboCallHandlerTests
         {
             await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
             var objectId = RoboRepository.GetObjectId(1, 1);
-            var chara = new CharaData(objectId, 1002011, "Robot") { Visual = new CharaVisual(BloodType.A, 1, 1, 0, objectId, 0, 10930010) };
+            var chara = new CharaData(objectId, 1002011, "Robot")
+            {
+                Visual = new CharaVisual(BloodType.A, 1, 1, 0, objectId, 0, 10930010),
+            };
             await using (var seedDb = new MainContext(options))
             {
                 await new RoboRepository(seedDb).UpsertAsync(
@@ -37,7 +40,10 @@ public class AreaRoboCallHandlerTests
 
             await using (var handlerDb = new MainContext(options))
             {
-                var handler = new AreaRoboCallHandler(new RoboRepository(handlerDb), NullLogger<AreaRoboCallHandler>.Instance);
+                var handler = new AreaRoboCallHandler(
+                    new RoboRepository(handlerDb),
+                    NullLogger<AreaRoboCallHandler>.Instance
+                );
                 var session = new CapturingPlayerSession
                 {
                     CharacterId = 1,
@@ -52,7 +58,11 @@ public class AreaRoboCallHandlerTests
                 var writer = new PacketWriter();
                 writer.Write(1u);
 
-                await handler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+                await handler.HandleAsync(
+                    writer.ToBytes(),
+                    session,
+                    TestContext.Current.CancellationToken
+                );
 
                 Assert.Empty(session.AccompanyingRoboIds);
                 Assert.Collection(
@@ -64,7 +74,9 @@ public class AreaRoboCallHandlerTests
                         Assert.Equal(1u, stateReader.ReadUInt());
                         Assert.Equal(objectId, stateReader.ReadUInt());
                         Assert.Equal((uint)RoboState.InMyRoom, stateReader.ReadUInt());
-                        var map = CharacterMapData.FromBytes(stateReader.ReadBytes(CharacterMapData.WireSize));
+                        var map = CharacterMapData.FromBytes(
+                            stateReader.ReadBytes(CharacterMapData.WireSize)
+                        );
                         Assert.Equal(3u, map.ChannelId);
                         Assert.Equal(40000001u, map.MapId);
                         Assert.Equal(10f, map.Movement.X);
@@ -83,7 +95,11 @@ public class AreaRoboCallHandlerTests
             }
 
             await using var restartedDb = new MainContext(options);
-            var stored = await new RoboRepository(restartedDb).GetAsync(1, 1, TestContext.Current.CancellationToken);
+            var stored = await new RoboRepository(restartedDb).GetAsync(
+                1,
+                1,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(stored);
             Assert.Equal((uint)RoboState.InMyRoom, stored.State);
             Assert.Equal(1u, stored.OwnerAvatarId);

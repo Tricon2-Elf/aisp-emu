@@ -41,16 +41,22 @@ internal static class OutgoingPacketTestParsers
         };
     }
 
-    public static EventAreaMapSelectExecNotify ParseEventAreaMapSelectExecNotify(ReadOnlySpan<byte> data)
+    public static EventAreaMapSelectExecNotify ParseEventAreaMapSelectExecNotify(
+        ReadOnlySpan<byte> data
+    )
     {
         var reader = new PacketReader(data);
         var count = reader.ReadUInt();
         if (count > 4)
-            throw new InvalidDataException($"Area map selection count {count} exceeds client maximum of 4.");
+            throw new InvalidDataException(
+                $"Area map selection count {count} exceeds client maximum of 4."
+            );
 
         var entries = new List<NotifySelectMapEntry>((int)count);
         for (var index = 0; index < count; index++)
-            entries.Add(NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize)));
+            entries.Add(
+                NotifySelectMapEntry.FromBytes(reader.ReadBytes(NotifySelectMapEntry.PacketSize))
+            );
 
         return new EventAreaMapSelectExecNotify
         {
@@ -60,36 +66,52 @@ internal static class OutgoingPacketTestParsers
         };
     }
 
-    public static EventAreaMapSelectCloseNotify ParseEventAreaMapSelectCloseNotify(ReadOnlySpan<byte> data)
+    public static EventAreaMapSelectCloseNotify ParseEventAreaMapSelectCloseNotify(
+        ReadOnlySpan<byte> data
+    )
     {
         var reader = new PacketReader(data);
         return new EventAreaMapSelectCloseNotify(reader.ReadUInt());
     }
 
-    public static SelectInitIslandStartNotify ParseSelectInitIslandStartNotify(ReadOnlySpan<byte> data)
+    public static SelectInitIslandStartNotify ParseSelectInitIslandStartNotify(
+        ReadOnlySpan<byte> data
+    )
     {
         var reader = new PacketReader(data);
         var count = reader.ReadUInt();
         if (count > 5)
-            throw new InvalidDataException($"Island bootstrap count {count} exceeds client maximum of 5.");
+            throw new InvalidDataException(
+                $"Island bootstrap count {count} exceeds client maximum of 5."
+            );
 
         var islands = new List<SelectInitIslandEntry>((int)count);
         for (var index = 0; index < count; index++)
-            islands.Add(SelectInitIslandEntry.FromBytes(reader.ReadBytes(SelectInitIslandEntry.PacketSize)));
+            islands.Add(
+                SelectInitIslandEntry.FromBytes(reader.ReadBytes(SelectInitIslandEntry.PacketSize))
+            );
 
         return new SelectInitIslandStartNotify { Islands = islands };
     }
 
-    public static EventIslandSelectExecNotify ParseEventIslandSelectExecNotify(ReadOnlySpan<byte> data)
+    public static EventIslandSelectExecNotify ParseEventIslandSelectExecNotify(
+        ReadOnlySpan<byte> data
+    )
     {
         var reader = new PacketReader(data);
         var count = reader.ReadUInt();
         if (count > 5)
-            throw new InvalidDataException($"Event island selection count {count} exceeds client maximum of 5.");
+            throw new InvalidDataException(
+                $"Event island selection count {count} exceeds client maximum of 5."
+            );
 
         var islands = new List<EventIslandSelectEntry>((int)count);
         for (var index = 0; index < count; index++)
-            islands.Add(EventIslandSelectEntry.FromBytes(reader.ReadBytes(EventIslandSelectEntry.PacketSize)));
+            islands.Add(
+                EventIslandSelectEntry.FromBytes(
+                    reader.ReadBytes(EventIslandSelectEntry.PacketSize)
+                )
+            );
 
         return new EventIslandSelectExecNotify { Islands = islands };
     }

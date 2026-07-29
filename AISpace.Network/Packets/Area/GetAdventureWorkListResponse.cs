@@ -6,7 +6,8 @@ namespace AISpace.Network.Packets.Area;
 /// recv_get_adventure_work_list_r contains a result, sheet number, work count,
 /// and zero or more 16-byte work records. This response represents an empty list.
 /// </summary>
-public sealed class GetAdventureWorkListResponse(uint result = 0, uint sheetNumber = 0) : IOutgoingPacket
+public sealed class GetAdventureWorkListResponse(uint result = 0, uint sheetNumber = 0)
+    : IOutgoingPacket
 {
     public uint Result { get; } = result;
     public uint SheetNumber { get; } = sheetNumber;

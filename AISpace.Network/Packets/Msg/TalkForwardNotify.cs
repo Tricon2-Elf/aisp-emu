@@ -2,7 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class TalkForwardNotify(uint fromId, uint distId, string message, uint balloonId) : IOutgoingPacket
+public class TalkForwardNotify(uint fromId, uint distId, string message, uint balloonId)
+    : IOutgoingPacket
 {
     public uint FromId = fromId;
     public uint DistId = distId;

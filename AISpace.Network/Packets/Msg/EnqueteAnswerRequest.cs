@@ -17,7 +17,11 @@ public class EnqueteAnswerRequest : IIncomingPacket<EnqueteAnswerRequest>
             QuestionIds.Add(reader.ReadUInt());
         for (int i = 0; i < reader.ReadUInt(); i++)
             answerIds.Add(reader.ReadUInt());
-        var AnswerRequest = new EnqueteAnswerRequest { EnqueteIds = QuestionIds, AnswerIds = answerIds };
+        var AnswerRequest = new EnqueteAnswerRequest
+        {
+            EnqueteIds = QuestionIds,
+            AnswerIds = answerIds,
+        };
 
         return AnswerRequest;
     }

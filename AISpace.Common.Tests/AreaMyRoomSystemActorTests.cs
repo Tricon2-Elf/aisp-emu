@@ -19,7 +19,15 @@ public class AreaMyRoomSystemActorTests
     private const uint DoorModelId = 8_000_990;
     private const uint WardrobeModelId = 8_000_030;
 
-    private static readonly (uint MapId, uint DoorObjectId, float DoorX, float DoorZ, uint WardrobeObjectId, float WardrobeX, float WardrobeZ)[] RoomActorDefs =
+    private static readonly (
+        uint MapId,
+        uint DoorObjectId,
+        float DoorX,
+        float DoorZ,
+        uint WardrobeObjectId,
+        float WardrobeX,
+        float WardrobeZ
+    )[] RoomActorDefs =
     [
         (MyRoomInfo.SixTatamiMapId, 0x5FFF_FF01, 80f, -258f, 0x5FFF_FF02, -73f, -197f),
         (MyRoomInfo.EightTatamiMapId, 0x5FFF_FF11, 130f, -258f, 0x5FFF_FF12, -123f, -197f),
@@ -33,14 +41,30 @@ public class AreaMyRoomSystemActorTests
         {
             var data = new TheoryData<uint, uint, float, float, uint, float, float>();
             foreach (var row in RoomActorDefs)
-                data.Add(row.MapId, row.DoorObjectId, row.DoorX, row.DoorZ, row.WardrobeObjectId, row.WardrobeX, row.WardrobeZ);
+                data.Add(
+                    row.MapId,
+                    row.DoorObjectId,
+                    row.DoorX,
+                    row.DoorZ,
+                    row.WardrobeObjectId,
+                    row.WardrobeX,
+                    row.WardrobeZ
+                );
             return data;
         }
     }
 
     [Theory]
     [MemberData(nameof(RoomActors))]
-    public async Task NpcGetData_SendsNativeDoorAndWardrobeForEveryRoomSize(uint mapId, uint doorObjectId, float doorX, float doorZ, uint wardrobeObjectId, float wardrobeX, float wardrobeZ)
+    public async Task NpcGetData_SendsNativeDoorAndWardrobeForEveryRoomSize(
+        uint mapId,
+        uint doorObjectId,
+        float doorX,
+        float doorZ,
+        uint wardrobeObjectId,
+        float wardrobeX,
+        float wardrobeZ
+    )
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -50,10 +74,17 @@ public class AreaMyRoomSystemActorTests
             var handler = new AreaNpcGetDataHandler(new NpcRepository(db));
             var session = new CapturingPlayerSession { MapId = mapId };
 
-            await handler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(PacketType.NpcGetDataResponse, session.Sent[0].Type);
-            var actors = session.Sent.Where(packet => packet.Type == PacketType.NpcNotifyData).Select(packet => ReadActor(packet.Payload)).ToDictionary(actor => actor.ObjectId);
+            var actors = session
+                .Sent.Where(packet => packet.Type == PacketType.NpcNotifyData)
+                .Select(packet => ReadActor(packet.Payload))
+                .ToDictionary(actor => actor.ObjectId);
             Assert.Equal(2, actors.Count);
 
             var door = actors[doorObjectId];
@@ -112,11 +143,32 @@ public class AreaMyRoomSystemActorTests
             var eventRepository = new CharacterEventRepository(db);
             var state = new SharedState();
             var dispatcher = CreateDispatcher(db, state);
-            var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(db), new ShopRepository(db), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
-            var scriptPlayHandler = new AreaEventScriptPlayHandler(NullLogger<AreaEventScriptPlayHandler>.Instance, dispatcher);
-            var fadeInHandler = new AreaEventFadeInHandler(eventRepository, NullLogger<AreaEventFadeInHandler>.Instance, dispatcher);
-            var mapEnterHandler = new AreaMapEnterHandler(new MapRepository(db), CreateDirectMapLinkTransitionService(db, state), NullLogger<AreaMapEnterHandler>.Instance, dispatcher);
-            var mapDataEnterEndHandler = new AreaMapDataEnterEndHandler(state, NullLogger<AreaMapDataEnterEndHandler>.Instance, dispatcher);
+            var accessHandler = new AreaEventAccessNpcHandler(
+                new NpcRepository(db),
+                new ShopRepository(db),
+                dispatcher,
+                NullLogger<AreaEventAccessNpcHandler>.Instance
+            );
+            var scriptPlayHandler = new AreaEventScriptPlayHandler(
+                NullLogger<AreaEventScriptPlayHandler>.Instance,
+                dispatcher
+            );
+            var fadeInHandler = new AreaEventFadeInHandler(
+                eventRepository,
+                NullLogger<AreaEventFadeInHandler>.Instance,
+                dispatcher
+            );
+            var mapEnterHandler = new AreaMapEnterHandler(
+                new MapRepository(db),
+                CreateDirectMapLinkTransitionService(db, state),
+                NullLogger<AreaMapEnterHandler>.Instance,
+                dispatcher
+            );
+            var mapDataEnterEndHandler = new AreaMapDataEnterEndHandler(
+                state,
+                NullLogger<AreaMapDataEnterEndHandler>.Instance,
+                dispatcher
+            );
             var session = new CapturingPlayerSession
             {
                 MapId = MyRoomInfo.TwelveTatamiMapId,
@@ -129,12 +181,26 @@ public class AreaMyRoomSystemActorTests
             session.User!.Characters.Add(character);
             session.Character = character;
 
-            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF31), session, TestContext.Current.CancellationToken);
+            await accessHandler.HandleAsync(
+                BuildEventAccessNpcPayload(0x5FFF_FF31),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
             Assert.Equal(EventCompletionPolicy.Once, session.ActiveEventCompletionPolicy);
-            Assert.Equal("./script/sys_event/002.csv", ReadScriptLabel(Assert.Single(session.Sent, packet => packet.Type == PacketType.EventScriptPlayNotify).Payload));
+            Assert.Equal(
+                "./script/sys_event/002.csv",
+                ReadScriptLabel(
+                    Assert
+                        .Single(
+                            session.Sent,
+                            packet => packet.Type == PacketType.EventScriptPlayNotify
+                        )
+                        .Payload
+                )
+            );
 
             await CompleteClientScriptSegmentAsync(scriptPlayHandler, fadeInHandler, session);
             Assert.Equal("./script/tps_event/bat_01_01_01_1.csv", ReadLastScriptLabel(session));
@@ -148,23 +214,52 @@ public class AreaMyRoomSystemActorTests
             Assert.Equal(MyRoomDoorServerScript.AkihabaraUdxMapId, session.MapId);
             Assert.True(session.IsMapTransitionPending);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
-            Assert.Equal(3, session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify));
+            Assert.Equal(
+                3,
+                session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify)
+            );
 
             // The real client sends MapDataEnterEnd before MapEnter. Loading the assets alone is not enough:
             // EventScriptPlayNotify would be ignored while the client is still in its map-entry state machine.
-            await mapDataEnterEndHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+            await mapDataEnterEndHandler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                session,
+                TestContext.Current.CancellationToken
+            );
             Assert.False(session.IsMapTransitionPending);
-            Assert.Equal(3, session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify));
+            Assert.Equal(
+                3,
+                session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify)
+            );
 
-            await mapEnterHandler.HandleAsync(BuildMapEnterPayload(MyRoomDoorServerScript.AkihabaraUdxMapId, (uint)session.ChannelId), session, TestContext.Current.CancellationToken);
+            await mapEnterHandler.HandleAsync(
+                BuildMapEnterPayload(
+                    MyRoomDoorServerScript.AkihabaraUdxMapId,
+                    (uint)session.ChannelId
+                ),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
             Assert.Equal("./script/tps_event/bat_01_01_02_1.csv", ReadLastScriptLabel(session));
-            Assert.Equal(4, session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify));
-            Assert.Equal(2, session.Sent.Count(packet => packet.Type == PacketType.EventStartNotify));
-            var mapEnterResponseIndex = session.Sent.FindLastIndex(packet => packet.Type == PacketType.MapEnterResponse);
-            var restartedEventIndex = session.Sent.FindLastIndex(packet => packet.Type == PacketType.EventStartNotify);
-            var finalScriptIndex = session.Sent.FindLastIndex(packet => packet.Type == PacketType.EventScriptPlayNotify);
+            Assert.Equal(
+                4,
+                session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify)
+            );
+            Assert.Equal(
+                2,
+                session.Sent.Count(packet => packet.Type == PacketType.EventStartNotify)
+            );
+            var mapEnterResponseIndex = session.Sent.FindLastIndex(packet =>
+                packet.Type == PacketType.MapEnterResponse
+            );
+            var restartedEventIndex = session.Sent.FindLastIndex(packet =>
+                packet.Type == PacketType.EventStartNotify
+            );
+            var finalScriptIndex = session.Sent.FindLastIndex(packet =>
+                packet.Type == PacketType.EventScriptPlayNotify
+            );
             Assert.True(mapEnterResponseIndex < restartedEventIndex);
             Assert.True(restartedEventIndex < finalScriptIndex);
 
@@ -172,7 +267,13 @@ public class AreaMyRoomSystemActorTests
 
             Assert.Null(session.ActiveEventKey);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-            Assert.True(await eventRepository.HasCompletedAsync(character.Id, ServerEvents.Keys.MyRoomDoor, TestContext.Current.CancellationToken));
+            Assert.True(
+                await eventRepository.HasCompletedAsync(
+                    character.Id,
+                    ServerEvents.Keys.MyRoomDoor,
+                    TestContext.Current.CancellationToken
+                )
+            );
             Assert.Equal(MyRoomInfo.TwelveTatamiMapId, session.MapId);
             Assert.True(session.IsMapTransitionPending);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyChangeMyRoom);
@@ -208,11 +309,23 @@ public class AreaMyRoomSystemActorTests
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
             var eventRepository = new CharacterEventRepository(db);
-            await eventRepository.MarkCompletedAsync(character.Id, ServerEvents.Keys.MyRoomDoor, TestContext.Current.CancellationToken);
+            await eventRepository.MarkCompletedAsync(
+                character.Id,
+                ServerEvents.Keys.MyRoomDoor,
+                TestContext.Current.CancellationToken
+            );
 
             var dispatcher = CreateDispatcher(db);
-            var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(db), new ShopRepository(db), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
-            var selectHandler = new AreaEventSelectExecRHandler(dispatcher, NullLogger<AreaEventSelectExecRHandler>.Instance);
+            var accessHandler = new AreaEventAccessNpcHandler(
+                new NpcRepository(db),
+                new ShopRepository(db),
+                dispatcher,
+                NullLogger<AreaEventAccessNpcHandler>.Instance
+            );
+            var selectHandler = new AreaEventSelectExecRHandler(
+                dispatcher,
+                NullLogger<AreaEventSelectExecRHandler>.Instance
+            );
             var session = new CapturingPlayerSession
             {
                 MapId = MyRoomInfo.BaseMapId,
@@ -223,25 +336,56 @@ public class AreaMyRoomSystemActorTests
             };
             user.Characters.Add(character);
 
-            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
+            await accessHandler.HandleAsync(
+                BuildEventAccessNpcPayload(0x5FFF_FF01),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
-            Assert.Equal(0u, ReadResult(session.Sent.Single(packet => packet.Type == PacketType.EventAccessNpcResponse).Payload));
+            Assert.Equal(
+                0u,
+                ReadResult(
+                    session
+                        .Sent.Single(packet => packet.Type == PacketType.EventAccessNpcResponse)
+                        .Payload
+                )
+            );
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventStartNotify);
-            var popupOptions = session.Sent.Where(packet => packet.Type == PacketType.EventSelectPushNotify).ToArray();
+            var popupOptions = session
+                .Sent.Where(packet => packet.Type == PacketType.EventSelectPushNotify)
+                .ToArray();
             Assert.Equal(2, popupOptions.Length);
-            Assert.Equal("Return to Shopping Area", new PacketReader(popupOptions[0].Payload).ReadString("utf-8"));
+            Assert.Equal(
+                "Return to Shopping Area",
+                new PacketReader(popupOptions[0].Payload).ReadString("utf-8")
+            );
             Assert.Equal("Close", new PacketReader(popupOptions[1].Payload).ReadString("utf-8"));
 
-            await selectHandler.HandleAsync(BuildEventSelectionPayload(1), session, TestContext.Current.CancellationToken);
+            await selectHandler.HandleAsync(
+                BuildEventSelectionPayload(1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(MyRoomInfo.BaseMapId, session.MapId);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type is PacketType.NotifyChangeMap or PacketType.NotifyChangeMyRoom);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type is PacketType.NotifyChangeMap or PacketType.NotifyChangeMyRoom
+            );
 
             session.Sent.Clear();
-            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF01), session, TestContext.Current.CancellationToken);
-            await selectHandler.HandleAsync(BuildEventSelectionPayload(0), session, TestContext.Current.CancellationToken);
+            await accessHandler.HandleAsync(
+                BuildEventAccessNpcPayload(0x5FFF_FF01),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            await selectHandler.HandleAsync(
+                BuildEventSelectionPayload(0),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(10_020_200u, session.MapId);
@@ -264,8 +408,16 @@ public class AreaMyRoomSystemActorTests
             await using var db = new MainContext(options);
             await SeedMyRoomActorsAsync(db);
             var dispatcher = CreateDispatcher(db);
-            var accessHandler = new AreaEventAccessNpcHandler(new NpcRepository(db), new ShopRepository(db), dispatcher, NullLogger<AreaEventAccessNpcHandler>.Instance);
-            var selectHandler = new AreaEventSelectExecRHandler(dispatcher, NullLogger<AreaEventSelectExecRHandler>.Instance);
+            var accessHandler = new AreaEventAccessNpcHandler(
+                new NpcRepository(db),
+                new ShopRepository(db),
+                dispatcher,
+                NullLogger<AreaEventAccessNpcHandler>.Instance
+            );
+            var selectHandler = new AreaEventSelectExecRHandler(
+                dispatcher,
+                NullLogger<AreaEventSelectExecRHandler>.Instance
+            );
             var session = new CapturingPlayerSession
             {
                 MapId = MyRoomInfo.BaseMapId,
@@ -273,24 +425,53 @@ public class AreaMyRoomSystemActorTests
                 User = new User { AiPoints = 12_345 },
             };
 
-            await accessHandler.HandleAsync(BuildEventAccessNpcPayload(0x5FFF_FF02), session, TestContext.Current.CancellationToken);
+            await accessHandler.HandleAsync(
+                BuildEventAccessNpcPayload(0x5FFF_FF02),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.MyRoomWardrobe, session.ActiveEventKey);
             Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
             Assert.Equal(EventCompletionPolicy.Replayable, session.ActiveEventCompletionPolicy);
-            Assert.Equal(0u, ReadResult(session.Sent.Single(packet => packet.Type == PacketType.EventAccessNpcResponse).Payload));
+            Assert.Equal(
+                0u,
+                ReadResult(
+                    session
+                        .Sent.Single(packet => packet.Type == PacketType.EventAccessNpcResponse)
+                        .Payload
+                )
+            );
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventStartNotify);
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSelectInitNotify);
-            var optionsPackets = session.Sent.Where(packet => packet.Type == PacketType.EventSelectPushNotify).ToArray();
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.EventSelectInitNotify
+            );
+            var optionsPackets = session
+                .Sent.Where(packet => packet.Type == PacketType.EventSelectPushNotify)
+                .ToArray();
             Assert.Equal(2, optionsPackets.Length);
-            Assert.Equal("倉庫を利用する", new PacketReader(optionsPackets[0].Payload).ReadString("utf-8"));
-            Assert.Equal("使用しない", new PacketReader(optionsPackets[1].Payload).ReadString("utf-8"));
+            Assert.Equal(
+                "倉庫を利用する",
+                new PacketReader(optionsPackets[0].Payload).ReadString("utf-8")
+            );
+            Assert.Equal(
+                "使用しない",
+                new PacketReader(optionsPackets[1].Payload).ReadString("utf-8")
+            );
 
-            await selectHandler.HandleAsync(BuildEventSelectionPayload(0), session, TestContext.Current.CancellationToken);
+            await selectHandler.HandleAsync(
+                BuildEventSelectionPayload(0),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
-            var storage = Assert.Single(session.Sent, packet => packet.Type == PacketType.StorageOpenedNotify);
+            var storage = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.StorageOpenedNotify
+            );
             Assert.Equal(12_345ul, new PacketReader(storage.Payload).ReadULong());
         }
         finally
@@ -306,14 +487,28 @@ public class AreaMyRoomSystemActorTests
         try
         {
             await using var db = new MainContext(options);
-            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(db), new MyRoomRepository(db));
-            var session = new CapturingPlayerSession { MapId = MyRoomInfo.BaseMapId, CharacterId = 42 };
+            var handler = new AreaMyRoomGetFurnitureHandler(
+                new RoboRepository(db),
+                new MyRoomRepository(db)
+            );
+            var session = new CapturingPlayerSession
+            {
+                MapId = MyRoomInfo.BaseMapId,
+                CharacterId = 42,
+            };
 
-            await handler.HandleAsync(BuildMyRoomGetFurniturePayload(session.MapId, session.ChannelId), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildMyRoomGetFurniturePayload(session.MapId, session.ChannelId),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             var response = Assert.Single(session.Sent);
             Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.MyRoomNotifyFurniture);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.MyRoomNotifyFurniture
+            );
         }
         finally
         {
@@ -337,13 +532,23 @@ public class AreaMyRoomSystemActorTests
         {
             await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
             var objectId = RoboRepository.GetObjectId(42, 1);
-            var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Room Robo"), state: 0) { OwnerAvatarId = 42 };
+            var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Room Robo"), state: 0)
+            {
+                OwnerAvatarId = 42,
+            };
 
             await using (var writeDb = new MainContext(options))
-                await new RoboRepository(writeDb).UpsertAsync(42, robo, TestContext.Current.CancellationToken);
+                await new RoboRepository(writeDb).UpsertAsync(
+                    42,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
 
             await using var handlerDb = new MainContext(options);
-            var handler = new AreaMyRoomGetFurnitureHandler(new RoboRepository(handlerDb), new MyRoomRepository(handlerDb));
+            var handler = new AreaMyRoomGetFurnitureHandler(
+                new RoboRepository(handlerDb),
+                new MyRoomRepository(handlerDb)
+            );
             var session = new CapturingPlayerSession
             {
                 MapId = MyRoomInfo.TwelveTatamiMapId,
@@ -357,7 +562,11 @@ public class AreaMyRoomSystemActorTests
             };
             session.AccompanyingRoboIds.Add(1);
 
-            await handler.HandleAsync(BuildMyRoomGetFurniturePayload(session.MapId, session.ChannelId), session, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildMyRoomGetFurniturePayload(session.MapId, session.ChannelId),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Empty(session.AccompanyingRoboIds);
             Assert.Collection(
@@ -369,7 +578,9 @@ public class AreaMyRoomSystemActorTests
                     Assert.Equal(1u, reader.ReadUInt());
                     Assert.Equal(objectId, reader.ReadUInt());
                     Assert.Equal(1u, reader.ReadUInt());
-                    var map = CharacterMapData.FromBytes(reader.ReadBytes(CharacterMapData.WireSize));
+                    var map = CharacterMapData.FromBytes(
+                        reader.ReadBytes(CharacterMapData.WireSize)
+                    );
                     Assert.Equal(3u, map.ChannelId);
                     Assert.Equal(MyRoomInfo.TwelveTatamiMapId, map.MapId);
                     Assert.Equal(173f, map.Movement.X);
@@ -382,7 +593,11 @@ public class AreaMyRoomSystemActorTests
             );
 
             await using var verifyDb = new MainContext(options);
-            var stored = await new RoboRepository(verifyDb).GetAsync(42, 1, TestContext.Current.CancellationToken);
+            var stored = await new RoboRepository(verifyDb).GetAsync(
+                42,
+                1,
+                TestContext.Current.CancellationToken
+            );
             Assert.NotNull(stored);
             Assert.Equal(0u, stored.State);
         }
@@ -396,8 +611,28 @@ public class AreaMyRoomSystemActorTests
     {
         foreach (var row in RoomActorDefs)
         {
-            db.Npcs.Add(CreateActor(row.MapId, row.DoorObjectId, DoorModelId, row.DoorX, row.DoorZ, ServerEvents.Keys.MyRoomDoor, NpcEventKind.ServerScript));
-            db.Npcs.Add(CreateActor(row.MapId, row.WardrobeObjectId, WardrobeModelId, row.WardrobeX, row.WardrobeZ, ServerEvents.Keys.MyRoomWardrobe, NpcEventKind.ServerScript));
+            db.Npcs.Add(
+                CreateActor(
+                    row.MapId,
+                    row.DoorObjectId,
+                    DoorModelId,
+                    row.DoorX,
+                    row.DoorZ,
+                    ServerEvents.Keys.MyRoomDoor,
+                    NpcEventKind.ServerScript
+                )
+            );
+            db.Npcs.Add(
+                CreateActor(
+                    row.MapId,
+                    row.WardrobeObjectId,
+                    WardrobeModelId,
+                    row.WardrobeX,
+                    row.WardrobeZ,
+                    ServerEvents.Keys.MyRoomWardrobe,
+                    NpcEventKind.ServerScript
+                )
+            );
         }
 
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -435,7 +670,15 @@ public class AreaMyRoomSystemActorTests
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    private static Npc CreateActor(uint mapId, uint objectId, uint modelId, float x, float z, string? eventKey = null, NpcEventKind eventKind = NpcEventKind.None) =>
+    private static Npc CreateActor(
+        uint mapId,
+        uint objectId,
+        uint modelId,
+        float x,
+        float z,
+        string? eventKey = null,
+        NpcEventKind eventKind = NpcEventKind.None
+    ) =>
         new()
         {
             MapId = mapId,
@@ -456,16 +699,36 @@ public class AreaMyRoomSystemActorTests
             IsEnabled = true,
         };
 
-    private static ServerScriptDispatcher CreateDispatcher(MainContext db, SharedState? state = null)
+    private static ServerScriptDispatcher CreateDispatcher(
+        MainContext db,
+        SharedState? state = null
+    )
     {
         state ??= new SharedState();
-        var serverScriptSession = new ServerScriptSession(new CharacterEventRepository(db), NullLogger<ServerScriptSession>.Instance);
-        var doorScript = new MyRoomDoorServerScript(new ClientScriptSegmentRunner(), serverScriptSession, CreateDirectMapLinkTransitionService(db, state), new CharacterEventRepository(db), new MyRoomRepository(db), NullLogger<MyRoomDoorServerScript>.Instance);
+        var serverScriptSession = new ServerScriptSession(
+            new CharacterEventRepository(db),
+            NullLogger<ServerScriptSession>.Instance
+        );
+        var doorScript = new MyRoomDoorServerScript(
+            new ClientScriptSegmentRunner(),
+            serverScriptSession,
+            CreateDirectMapLinkTransitionService(db, state),
+            new CharacterEventRepository(db),
+            new MyRoomRepository(db),
+            NullLogger<MyRoomDoorServerScript>.Instance
+        );
         var wardrobeScript = new MyRoomWardrobeServerScript(serverScriptSession);
-        return new ServerScriptDispatcher([doorScript, wardrobeScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        return new ServerScriptDispatcher(
+            [doorScript, wardrobeScript],
+            serverScriptSession,
+            NullLogger<ServerScriptDispatcher>.Instance
+        );
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state) =>
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(
+        MainContext db,
+        SharedState state
+    ) =>
         new(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
@@ -484,10 +747,22 @@ public class AreaMyRoomSystemActorTests
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
 
-    private static async Task CompleteClientScriptSegmentAsync(AreaEventScriptPlayHandler scriptPlayHandler, AreaEventFadeInHandler fadeInHandler, CapturingPlayerSession session)
+    private static async Task CompleteClientScriptSegmentAsync(
+        AreaEventScriptPlayHandler scriptPlayHandler,
+        AreaEventFadeInHandler fadeInHandler,
+        CapturingPlayerSession session
+    )
     {
-        await scriptPlayHandler.HandleAsync(BuildUIntPayload(0), session, TestContext.Current.CancellationToken);
-        await fadeInHandler.HandleAsync(ReadOnlyMemory<byte>.Empty, session, TestContext.Current.CancellationToken);
+        await scriptPlayHandler.HandleAsync(
+            BuildUIntPayload(0),
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await fadeInHandler.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
     }
 
     private static byte[] BuildUIntPayload(uint value)
@@ -505,11 +780,14 @@ public class AreaMyRoomSystemActorTests
         return writer.ToBytes();
     }
 
-    private static string ReadScriptLabel(byte[] payload) => new PacketReader(payload).ReadString("utf-8");
+    private static string ReadScriptLabel(byte[] payload) =>
+        new PacketReader(payload).ReadString("utf-8");
 
     private static string ReadLastScriptLabel(CapturingPlayerSession session)
     {
-        var scriptPlay = session.Sent.Last(packet => packet.Type == PacketType.EventScriptPlayNotify);
+        var scriptPlay = session.Sent.Last(packet =>
+            packet.Type == PacketType.EventScriptPlayNotify
+        );
         return ReadScriptLabel(scriptPlay.Payload);
     }
 
@@ -554,5 +832,13 @@ public class AreaMyRoomSystemActorTests
         return new ActorPacket(objectId, slotId, modelId, x, y, z, rotation);
     }
 
-    private sealed record ActorPacket(uint ObjectId, uint SlotId, uint ModelId, float X, float Y, float Z, int Rotation);
+    private sealed record ActorPacket(
+        uint ObjectId,
+        uint SlotId,
+        uint ModelId,
+        float X,
+        float Y,
+        float Z,
+        int Rotation
+    );
 }

@@ -7,7 +7,9 @@ public class FurnitureGetBaseListRequest : IIncomingPacket<FurnitureGetBaseListR
     public static FurnitureGetBaseListRequest FromBytes(ReadOnlySpan<byte> data)
     {
         if (!data.IsEmpty)
-            throw new InvalidDataException($"{nameof(FurnitureGetBaseListRequest)} requires an empty payload, received {data.Length} bytes.");
+            throw new InvalidDataException(
+                $"{nameof(FurnitureGetBaseListRequest)} requires an empty payload, received {data.Length} bytes."
+            );
 
         return new FurnitureGetBaseListRequest();
     }

@@ -104,21 +104,41 @@ public class ItemTryEquipReplaceHandlerTests
                 ChannelId = 1,
             };
             state.RegisterClient(ServerType.Area, session);
-            var repo = new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance);
+            var repo = new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            );
             var roboRepository = new RoboRepository(new MainContext(options));
-            var handler = new ItemTryEquipReplaceHandler(repo, roboRepository, state, NullLogger<ItemTryEquipReplaceHandler>.Instance);
+            var handler = new ItemTryEquipReplaceHandler(
+                repo,
+                roboRepository,
+                state,
+                NullLogger<ItemTryEquipReplaceHandler>.Instance
+            );
 
-            var payload = BuildReplaceRequestPayload(objId: characterId, equips: [new ItemEquipEntry((uint)newTopId, 8)]);
+            var payload = BuildReplaceRequestPayload(
+                objId: characterId,
+                equips: [new ItemEquipEntry((uint)newTopId, 8)]
+            );
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             Assert.NotNull(session.Character);
             Assert.NotSame(staleCharacter, session.Character);
             Assert.Contains(session.Character!.Equipment, e => e.ItemId == newTopId);
             Assert.DoesNotContain(session.Character.Equipment, e => e.ItemId == oldTopId);
-            Assert.Contains(session.Character.Inventory, i => i.ItemId == oldTopId && i.Quantity == 1);
+            Assert.Contains(
+                session.Character.Inventory,
+                i => i.ItemId == oldTopId && i.Quantity == 1
+            );
 
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.ItemTryEquipReplaceResponse);
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.ItemTryEquipReplacedNotify);
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.ItemTryEquipReplaceResponse
+            );
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.ItemTryEquipReplacedNotify
+            );
         }
         finally
         {
@@ -212,11 +232,22 @@ public class ItemTryEquipReplaceHandlerTests
             state.RegisterClient(ServerType.Area, actor);
             state.RegisterClient(ServerType.Area, peer);
 
-            var repo = new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance);
+            var repo = new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            );
             var roboRepository = new RoboRepository(new MainContext(options));
-            var handler = new ItemTryEquipReplaceHandler(repo, roboRepository, state, NullLogger<ItemTryEquipReplaceHandler>.Instance);
+            var handler = new ItemTryEquipReplaceHandler(
+                repo,
+                roboRepository,
+                state,
+                NullLogger<ItemTryEquipReplaceHandler>.Instance
+            );
 
-            var payload = BuildReplaceRequestPayload(objId: (uint)characterId, equips: [new ItemEquipEntry((uint)newTopId, 8)]);
+            var payload = BuildReplaceRequestPayload(
+                objId: (uint)characterId,
+                equips: [new ItemEquipEntry((uint)newTopId, 8)]
+            );
             await handler.HandleAsync(payload, actor, TestContext.Current.CancellationToken);
 
             Assert.Contains(peer.Sent, packet => packet.Type == PacketType.AvatarNotifyData);
@@ -239,7 +270,11 @@ public class ItemTryEquipReplaceHandlerTests
             const int newRoboTopId = 10100220;
             var roboObjectId = RoboRepository.GetObjectId(characterId, 1);
 
-            await TestDb.SeedCharacterAsync(options, characterId, TestContext.Current.CancellationToken);
+            await TestDb.SeedCharacterAsync(
+                options,
+                characterId,
+                TestContext.Current.CancellationToken
+            );
             await using (var db = new MainContext(options))
             {
                 db.Items.AddRange(
@@ -282,7 +317,11 @@ public class ItemTryEquipReplaceHandlerTests
 
                 var roboCharacter = new CharaData(roboObjectId, 1002011, "Wardrobe Robo");
                 roboCharacter.AddEquip((uint)oldRoboTopId, 8);
-                await new RoboRepository(db).UpsertAsync(characterId, new RoboData(1, roboCharacter) { OwnerAvatarId = characterId }, TestContext.Current.CancellationToken);
+                await new RoboRepository(db).UpsertAsync(
+                    characterId,
+                    new RoboData(1, roboCharacter) { OwnerAvatarId = characterId },
+                    TestContext.Current.CancellationToken
+                );
             }
 
             var state = new SharedState();
@@ -303,24 +342,52 @@ public class ItemTryEquipReplaceHandlerTests
             state.RegisterClient(ServerType.Area, actor);
             state.RegisterClient(ServerType.Area, peer);
 
-            var characterRepository = new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance);
+            var characterRepository = new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            );
             var roboRepository = new RoboRepository(new MainContext(options));
-            var handler = new ItemTryEquipReplaceHandler(characterRepository, roboRepository, state, NullLogger<ItemTryEquipReplaceHandler>.Instance);
+            var handler = new ItemTryEquipReplaceHandler(
+                characterRepository,
+                roboRepository,
+                state,
+                NullLogger<ItemTryEquipReplaceHandler>.Instance
+            );
 
-            await handler.HandleAsync(BuildReplaceRequestPayload(roboObjectId, [new ItemEquipEntry(newRoboTopId, 8)]), actor, TestContext.Current.CancellationToken);
+            await handler.HandleAsync(
+                BuildReplaceRequestPayload(roboObjectId, [new ItemEquipEntry(newRoboTopId, 8)]),
+                actor,
+                TestContext.Current.CancellationToken
+            );
 
             await using (var verificationDb = new MainContext(options))
             {
-                var avatarEquipment = await verificationDb.CharacterEquipments.SingleAsync(TestContext.Current.CancellationToken);
+                var avatarEquipment = await verificationDb.CharacterEquipments.SingleAsync(
+                    TestContext.Current.CancellationToken
+                );
                 Assert.Equal(oldAvatarTopId, avatarEquipment.ItemId);
 
-                var storedRobo = await new RoboRepository(verificationDb).GetAsync(characterId, 1, TestContext.Current.CancellationToken);
+                var storedRobo = await new RoboRepository(verificationDb).GetAsync(
+                    characterId,
+                    1,
+                    TestContext.Current.CancellationToken
+                );
                 Assert.NotNull(storedRobo);
                 Assert.Equal((uint)newRoboTopId, storedRobo.Character.Equips[0].ItemId);
-                Assert.All(storedRobo.Character.Equips.Skip(1), equip => Assert.Equal(0u, equip.ItemId));
+                Assert.All(
+                    storedRobo.Character.Equips.Skip(1),
+                    equip => Assert.Equal(0u, equip.ItemId)
+                );
             }
 
-            Assert.DoesNotContain(actor.Sent, packet => packet.Type is PacketType.ItemEquippedNotify or PacketType.ItemRemovedNotify or PacketType.AvatarNotifyData);
+            Assert.DoesNotContain(
+                actor.Sent,
+                packet =>
+                    packet.Type
+                        is PacketType.ItemEquippedNotify
+                            or PacketType.ItemRemovedNotify
+                            or PacketType.AvatarNotifyData
+            );
             Assert.Collection(
                 actor.Sent,
                 packet => Assert.Equal(PacketType.ItemTryEquipReplaceResponse, packet.Type),
@@ -331,7 +398,10 @@ public class ItemTryEquipReplaceHandlerTests
                 },
                 packet => AssertRoboEquipmentUpdate(packet, roboObjectId, newRoboTopId)
             );
-            Assert.Collection(peer.Sent, packet => AssertRoboEquipmentUpdate(packet, roboObjectId, newRoboTopId));
+            Assert.Collection(
+                peer.Sent,
+                packet => AssertRoboEquipmentUpdate(packet, roboObjectId, newRoboTopId)
+            );
         }
         finally
         {
@@ -353,12 +423,24 @@ public class ItemTryEquipReplaceHandlerTests
 
         var characterRepository = new Mock<ICharacterRepository>();
         var roboRepository = new Mock<IRoboRepository>();
-        roboRepository.Setup(x => x.GetAsync(checked((int)characterId), roboId, It.IsAny<CancellationToken>())).ReturnsAsync(new RoboData(roboId, roboCharacter) { OwnerAvatarId = characterId });
+        roboRepository
+            .Setup(x =>
+                x.GetAsync(checked((int)characterId), roboId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(new RoboData(roboId, roboCharacter) { OwnerAvatarId = characterId });
 
-        var handler = new ItemTryEquipResetHandler(characterRepository.Object, roboRepository.Object, NullLogger<ItemTryEquipResetHandler>.Instance);
+        var handler = new ItemTryEquipResetHandler(
+            characterRepository.Object,
+            roboRepository.Object,
+            NullLogger<ItemTryEquipResetHandler>.Instance
+        );
         var session = new CapturingPlayerSession { CharacterId = characterId };
 
-        await handler.HandleAsync(BuildSingleUIntPayload(roboObjectId), session, TestContext.Current.CancellationToken);
+        await handler.HandleAsync(
+            BuildSingleUIntPayload(roboObjectId),
+            session,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Collection(
             session.Sent,
@@ -386,11 +468,18 @@ public class ItemTryEquipReplaceHandlerTests
         const uint roboId = 1;
         var roboObjectId = RoboRepository.GetObjectId(characterId, roboId);
         var roboRepository = new Mock<IRoboRepository>();
-        roboRepository.Setup(x => x.ExistsAsync(checked((int)characterId), roboId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        roboRepository
+            .Setup(x =>
+                x.ExistsAsync(checked((int)characterId), roboId, It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(true);
         var session = new CapturingPlayerSession { CharacterId = characterId };
         var payload = BuildSingleUIntPayload(roboObjectId);
 
-        var startHandler = new ItemEquipStartHandler(roboRepository.Object, NullLogger<ItemEquipStartHandler>.Instance);
+        var startHandler = new ItemEquipStartHandler(
+            roboRepository.Object,
+            NullLogger<ItemEquipStartHandler>.Instance
+        );
         await startHandler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
         Assert.Collection(
             session.Sent,
@@ -404,7 +493,10 @@ public class ItemTryEquipReplaceHandlerTests
         );
 
         session.Sent.Clear();
-        var fixHandler = new ItemTryEquipFixHandler(roboRepository.Object, NullLogger<ItemTryEquipFixHandler>.Instance);
+        var fixHandler = new ItemTryEquipFixHandler(
+            roboRepository.Object,
+            NullLogger<ItemTryEquipFixHandler>.Instance
+        );
         await fixHandler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
         Assert.Collection(
             session.Sent,
@@ -416,7 +508,10 @@ public class ItemTryEquipReplaceHandlerTests
         );
 
         session.Sent.Clear();
-        var endHandler = new ItemEquipEndHandler(roboRepository.Object, NullLogger<ItemEquipEndHandler>.Instance);
+        var endHandler = new ItemEquipEndHandler(
+            roboRepository.Object,
+            NullLogger<ItemEquipEndHandler>.Instance
+        );
         await endHandler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
         Assert.Collection(
             session.Sent,
@@ -438,7 +533,10 @@ public class ItemTryEquipReplaceHandlerTests
         var session = new CapturingPlayerSession { CharacterId = characterId };
         var payload = BuildSingleUIntPayload(unownedObjectId);
 
-        await new ItemEquipStartHandler(roboRepository.Object, NullLogger<ItemEquipStartHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
+        await new ItemEquipStartHandler(
+            roboRepository.Object,
+            NullLogger<ItemEquipStartHandler>.Instance
+        ).HandleAsync(payload, session, TestContext.Current.CancellationToken);
         Assert.Collection(
             session.Sent,
             packet =>
@@ -449,7 +547,10 @@ public class ItemTryEquipReplaceHandlerTests
         );
 
         session.Sent.Clear();
-        await new ItemTryEquipFixHandler(roboRepository.Object, NullLogger<ItemTryEquipFixHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
+        await new ItemTryEquipFixHandler(
+            roboRepository.Object,
+            NullLogger<ItemTryEquipFixHandler>.Instance
+        ).HandleAsync(payload, session, TestContext.Current.CancellationToken);
         Assert.Collection(
             session.Sent,
             packet =>
@@ -460,7 +561,10 @@ public class ItemTryEquipReplaceHandlerTests
         );
 
         session.Sent.Clear();
-        await new ItemEquipEndHandler(roboRepository.Object, NullLogger<ItemEquipEndHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
+        await new ItemEquipEndHandler(
+            roboRepository.Object,
+            NullLogger<ItemEquipEndHandler>.Instance
+        ).HandleAsync(payload, session, TestContext.Current.CancellationToken);
         Assert.Collection(
             session.Sent,
             packet =>
@@ -471,7 +575,10 @@ public class ItemTryEquipReplaceHandlerTests
         );
     }
 
-    private static byte[] BuildReplaceRequestPayload(uint objId, IReadOnlyList<ItemEquipEntry> equips)
+    private static byte[] BuildReplaceRequestPayload(
+        uint objId,
+        IReadOnlyList<ItemEquipEntry> equips
+    )
     {
         var writer = new PacketWriter();
         writer.Write(objId);
@@ -488,13 +595,21 @@ public class ItemTryEquipReplaceHandlerTests
         return writer.ToBytes();
     }
 
-    private static void AssertObjectPacket((PacketType Type, byte[] Payload) packet, PacketType expectedType, uint expectedObjectId)
+    private static void AssertObjectPacket(
+        (PacketType Type, byte[] Payload) packet,
+        PacketType expectedType,
+        uint expectedObjectId
+    )
     {
         Assert.Equal(expectedType, packet.Type);
         Assert.Equal(expectedObjectId, new PacketReader(packet.Payload).ReadUInt());
     }
 
-    private static void AssertRoboEquipmentUpdate((PacketType Type, byte[] Payload) packet, uint expectedObjectId, uint expectedTopId)
+    private static void AssertRoboEquipmentUpdate(
+        (PacketType Type, byte[] Payload) packet,
+        uint expectedObjectId,
+        uint expectedTopId
+    )
     {
         Assert.Equal(PacketType.NotifyUpdateRoboEquip, packet.Type);
         var reader = new PacketReader(packet.Payload);

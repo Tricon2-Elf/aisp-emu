@@ -15,11 +15,15 @@ internal static class ApiKeyAuthExtensions
             {
                 if (context.Request.Path.StartsWithSegments("/api"))
                 {
-                    var apiSettings = context.RequestServices.GetRequiredService<IOptions<ApiSettings>>().Value;
+                    var apiSettings = context
+                        .RequestServices.GetRequiredService<IOptions<ApiSettings>>()
+                        .Value;
                     if (string.IsNullOrEmpty(apiSettings.ApiKey))
                     {
                         context.Response.StatusCode = 401;
-                        await context.Response.WriteAsJsonAsync(new { error = "API key not configured" });
+                        await context.Response.WriteAsJsonAsync(
+                            new { error = "API key not configured" }
+                        );
                         return;
                     }
 

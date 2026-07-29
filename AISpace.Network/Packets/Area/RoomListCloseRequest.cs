@@ -10,7 +10,9 @@ public sealed class RoomListCloseRequest(uint roomId) : IIncomingPacket<RoomList
     public static RoomListCloseRequest FromBytes(ReadOnlySpan<byte> data)
     {
         if (data.Length != WireSize)
-            throw new InvalidDataException($"{nameof(RoomListCloseRequest)} requires exactly {WireSize} bytes, received {data.Length}.");
+            throw new InvalidDataException(
+                $"{nameof(RoomListCloseRequest)} requires exactly {WireSize} bytes, received {data.Length}."
+            );
 
         return new RoomListCloseRequest(new PacketReader(data).ReadUInt());
     }

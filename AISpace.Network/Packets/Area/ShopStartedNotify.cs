@@ -2,7 +2,8 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Area;
 
-public sealed class ShopStartedNotify(uint npcObjectId, string name, uint visualId) : IOutgoingPacket
+public sealed class ShopStartedNotify(uint npcObjectId, string name, uint visualId)
+    : IOutgoingPacket
 {
     public byte[] ToBytes()
     {

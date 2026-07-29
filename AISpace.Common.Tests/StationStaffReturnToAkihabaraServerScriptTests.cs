@@ -29,17 +29,32 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
                 ChannelId = 1,
             };
 
-            await dispatcher.StartAsync(session, ServerEvents.Keys.StationStaffReturnToAkihabara, CreateContext(), EventCompletionPolicy.Replayable, TestContext.Current.CancellationToken);
+            await dispatcher.StartAsync(
+                session,
+                ServerEvents.Keys.StationStaffReturnToAkihabara,
+                CreateContext(),
+                EventCompletionPolicy.Replayable,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Equal(ServerEvents.Keys.StationStaffReturnToAkihabara, session.ActiveEventKey);
-            var message = Assert.Single(session.Sent, packet => packet.Type == PacketType.EventMessageNotify);
+            var message = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.EventMessageNotify
+            );
             var reader = new PacketReader(message.Payload);
             Assert.Equal(1342177294u, reader.ReadUInt());
             Assert.Equal("駅員 (Station Staff)", reader.ReadString("utf-8"));
             Assert.Equal("I'll take you to Akihabara", reader.ReadString("utf-8"));
-            Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventMessageCloseNotify);
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.EventMessageCloseNotify
+            );
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventSyncNotify);
-            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyChangeMap
+            );
         }
         finally
         {
@@ -99,12 +114,25 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
             };
             state.RegisterClient(ServerType.Area, session);
 
-            await dispatcher.StartAsync(session, ServerEvents.Keys.StationStaffReturnToAkihabara, CreateContext(), EventCompletionPolicy.Replayable, TestContext.Current.CancellationToken);
+            await dispatcher.StartAsync(
+                session,
+                ServerEvents.Keys.StationStaffReturnToAkihabara,
+                CreateContext(),
+                EventCompletionPolicy.Replayable,
+                TestContext.Current.CancellationToken
+            );
 
-            var syncHandler = new AreaEventSyncRHandler(dispatcher, NullLogger<AreaEventSyncRHandler>.Instance);
+            var syncHandler = new AreaEventSyncRHandler(
+                dispatcher,
+                NullLogger<AreaEventSyncRHandler>.Instance
+            );
             var writer = new PacketWriter();
             writer.Write(0u);
-            await syncHandler.HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+            await syncHandler.HandleAsync(
+                writer.ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
             Assert.Null(session.ActiveEventKey);
             Assert.Equal(StationStaffReturnToAkihabaraServerScript.AkihabaraMapId, session.MapId);
@@ -119,12 +147,26 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
 
     private static ServerScriptDispatcher CreateDispatcher(MainContext db, SharedState state)
     {
-        var serverScriptSession = new ServerScriptSession(new CharacterEventRepository(db), NullLogger<ServerScriptSession>.Instance);
-        var script = new StationStaffReturnToAkihabaraServerScript(serverScriptSession, CreateDirectMapLinkTransitionService(db, state), NullLogger<StationStaffReturnToAkihabaraServerScript>.Instance);
-        return new ServerScriptDispatcher([script], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
+        var serverScriptSession = new ServerScriptSession(
+            new CharacterEventRepository(db),
+            NullLogger<ServerScriptSession>.Instance
+        );
+        var script = new StationStaffReturnToAkihabaraServerScript(
+            serverScriptSession,
+            CreateDirectMapLinkTransitionService(db, state),
+            NullLogger<StationStaffReturnToAkihabaraServerScript>.Instance
+        );
+        return new ServerScriptDispatcher(
+            [script],
+            serverScriptSession,
+            NullLogger<ServerScriptDispatcher>.Instance
+        );
     }
 
-    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(MainContext db, SharedState state) =>
+    private static DirectMapLinkTransitionService CreateDirectMapLinkTransitionService(
+        MainContext db,
+        SharedState state
+    ) =>
         new(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),

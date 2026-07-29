@@ -11,7 +11,9 @@ public class RoboGetListResponse(IReadOnlyList<RoboData>? robos = null) : IOutgo
     {
         var list = robos ?? [];
         if (list.Count > MaximumRoboCount)
-            throw new InvalidOperationException($"RoboGetListResponse cannot contain more than {MaximumRoboCount} owned Robos.");
+            throw new InvalidOperationException(
+                $"RoboGetListResponse cannot contain more than {MaximumRoboCount} owned Robos."
+            );
 
         var writer = new PacketWriter();
         writer.Write(0u); // Result
