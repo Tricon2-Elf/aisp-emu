@@ -107,6 +107,9 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_upload_rate_r", ImplementationState.Implemented)]
     AdventureUploadRateGetResponse = 0x9061,
 
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_adventure_download_list", ImplementationState.Implemented)]
+    GetAdventureDownloadListRequest = 0x3FE2,
+
     [PacketMetadata(PacketServerType.Area, PacketDirection.ClientToServer, "send_get_ai_download_list", ImplementationState.Implemented)]
     AiDownloadListGetRequest = 0x1D3F,
 
@@ -1028,7 +1031,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_gachaticket_exchange_open", ImplementationState.NotImplemented)]
     GachaTicketExchangeOpenNotify = 0x7D14,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_download_list_r", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_download_list_r", ImplementationState.Implemented)]
     GetAdventureDownloadListResponse = 0xA39A,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_get_adventure_upload_list_r", ImplementationState.NotImplemented)]
