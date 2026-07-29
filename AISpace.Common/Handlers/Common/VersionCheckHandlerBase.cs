@@ -17,18 +17,3 @@ public abstract class VersionCheckHandlerBase : IPacketHandler
         await session.SendAsync(ResponseType, resp.ToBytes(), ct);
     }
 }
-
-public class AuthVersionCheckHandler : VersionCheckHandlerBase
-{
-    public override ServerType ServerType => ServerType.Auth;
-}
-
-public class MsgVersionCheckHandler : VersionCheckHandlerBase
-{
-    public override ServerType ServerType => ServerType.Msg;
-}
-
-public class AreaVersionCheckHandler : VersionCheckHandlerBase
-{
-    public override ServerType ServerType => ServerType.Area;
-}

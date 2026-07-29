@@ -1,0 +1,28 @@
+using AISpace.Common.DAL.Repositories;
+using AISpace.Common.Game;
+using AISpace.Network;
+using AISpace.Network.Packets.Area;
+using Microsoft.Extensions.Logging;
+
+namespace AISpace.Common.Handlers.Area;
+
+public sealed class AreaRoboDetachFromAvatarHandler(IRoboRepository roboRepository, ILogger<AreaRoboDetachFromAvatarHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+{
+    public PacketType RequestType => PacketType.RoboDetachFromAvatarRequest;
+    public PacketType ResponseType => PacketType.RoboDetachNoticeFromAvatarNotify;
+    public ServerType ServerType => ServerType.Area;
+
+    public async Task HandleAsync(ReadOnlyMemory<byte> payload, IPlayerSession session, CancellationToken ct = default)
+    {
+        var request = RoboDetachFromAvatarRequest.FromBytes(payload.Span);
+        var owned = session.CharacterId != 0 && await roboRepository.ExistsAsync(checked((int)session.CharacterId), request.RoboId, ct);
+        if (!owned)
+        {
+            logger.LogWarning("Rejected Robo conversation detach for character {CharacterId}: Robo {RoboId} is not owned by the character", session.CharacterId, request.RoboId);
+            return;
+        }
+
+        logger.LogDebug("Ending Robo conversation for character {CharacterId}: Robo {RoboId}, avatar object {AvatarObjectId}", session.CharacterId, request.RoboId, session.CharacterId);
+        await session.SendAsync(ResponseType, new RoboDetachNoticeFromAvatarNotify(request.RoboId, session.CharacterId).ToBytes(), ct);
+    }
+}

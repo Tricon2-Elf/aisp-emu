@@ -1,13 +1,12 @@
 using AISpace.Common.Config;
 using AISpace.Common.DAL.Repositories;
-using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace AISpace.Common.Handlers.Area;
+namespace AISpace.Common.Game;
 
 public sealed class DirectMapLinkTransitionService(IMapRepository mapRepository, ICharacterRepository characterRepository, IMyRoomRepository myRoomRepository, IMapLinkRepository mapLinkRepository, IChannelRepository channelRepository, IOptions<ServerOptions> serverOptions, SharedState state, ILogger<DirectMapLinkTransitionService> logger)
 {
