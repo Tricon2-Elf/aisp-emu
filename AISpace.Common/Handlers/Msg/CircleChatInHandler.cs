@@ -26,7 +26,7 @@ public class CircleChatInHandler(ILogger<CircleChatInHandler> logger)
 
         // If there is no full support for circles in memory, simply return success.
         logger.LogInformation(
-            $"Player {session.CharacterId} entering circle chat {request.CircleId}"
+            "Player {CharacterId} entering circle chat {CircleId}", session.CharacterId, request.CircleId
         );
 
         return Task.FromResult<CircleChatInResponse?>(new CircleChatInResponse(0)); // 0 = success
