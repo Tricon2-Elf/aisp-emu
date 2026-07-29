@@ -290,12 +290,14 @@ public class ItemTryEquipReplaceHandlerTests
             {
                 CharacterId = characterId,
                 MapId = 20000000,
+                MyRoomId = characterId,
                 ChannelId = 1,
             };
             var peer = new CapturingPlayerSession
             {
                 CharacterId = 22003,
                 MapId = 20000000,
+                MyRoomId = characterId,
                 ChannelId = 1,
             };
             state.RegisterClient(ServerType.Area, actor);

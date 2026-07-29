@@ -22,7 +22,12 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
         {
             await using var db = new MainContext(options);
             var dispatcher = CreateDispatcher(db, new SharedState());
-            var session = new CapturingPlayerSession { CharacterId = 1, MapId = 10030200, ChannelId = 1 };
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = 1,
+                MapId = 10030200,
+                ChannelId = 1,
+            };
 
             await dispatcher.StartAsync(session, ServerEvents.Keys.StationStaffReturnToAkihabara, CreateContext(), EventCompletionPolicy.Replayable, TestContext.Current.CancellationToken);
 
@@ -123,6 +128,7 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
         new(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MyRoomRepository(db),
             new MapLinkRepository(db),
             new ChannelRepository(db),
             Options.Create(

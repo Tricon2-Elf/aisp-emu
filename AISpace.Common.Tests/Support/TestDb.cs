@@ -25,15 +25,22 @@ internal static class TestDb
         await using var db = new MainContext(options);
         var user = new User { Id = characterId, Username = $"user-{characterId}" };
         user.SetPassword("pw");
-        user.Characters.Add(
-            new Character
+        var character = new Character
+        {
+            Id = characterId,
+            Name = $"character-{characterId}",
+            UserId = characterId,
+            Birthdate = new DateTime(2000, 1, 1),
+        };
+        character.Rooms.Add(
+            new Room
             {
                 Id = characterId,
-                Name = $"character-{characterId}",
-                UserId = characterId,
-                Birthdate = new DateTime(2000, 1, 1),
+                Name = "My Room",
+                IsDefault = true,
             }
         );
+        user.Characters.Add(character);
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
     }

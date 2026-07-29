@@ -25,6 +25,7 @@ public sealed class PendingMapTransferRepository(IDbContextFactory<MainContext> 
                 {
                     UserId = transfer.UserId,
                     MapId = transfer.MapId,
+                    MyRoomId = transfer.MyRoomId,
                     ChannelId = transfer.ChannelId,
                     X = transfer.X,
                     Y = transfer.Y,
@@ -38,6 +39,7 @@ public sealed class PendingMapTransferRepository(IDbContextFactory<MainContext> 
         else
         {
             existing.MapId = transfer.MapId;
+            existing.MyRoomId = transfer.MyRoomId;
             existing.ChannelId = transfer.ChannelId;
             existing.X = transfer.X;
             existing.Y = transfer.Y;
@@ -68,7 +70,7 @@ public sealed class PendingMapTransferRepository(IDbContextFactory<MainContext> 
             return false;
         }
 
-        transfer = new SharedState.PendingMapTransfer(row.UserId, row.MapId, row.ChannelId, row.X, row.Y, row.Z, row.Rotation);
+        transfer = new SharedState.PendingMapTransfer(row.UserId, row.MapId, row.ChannelId, row.X, row.Y, row.Z, row.Rotation, row.MyRoomId);
         db.PendingMapTransfers.Remove(row);
         db.SaveChanges();
         tx.Commit();

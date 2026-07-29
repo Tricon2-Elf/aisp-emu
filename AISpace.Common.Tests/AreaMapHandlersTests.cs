@@ -1495,7 +1495,7 @@ public class AreaMapHandlersTests
 
             var session = new CapturingPlayerSession();
             await using var handlerDb = new MainContext(options);
-            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), new SharedState(), NullLogger<AreasvEnterHandler>.Instance);
+            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), new MyRoomRepository(handlerDb), new SharedState(), NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
 
@@ -1555,7 +1555,7 @@ public class AreaMapHandlersTests
 
             var session = new CapturingPlayerSession();
             await using var handlerDb = new MainContext(options);
-            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), state, NullLogger<AreasvEnterHandler>.Instance);
+            var handler = new AreasvEnterHandler(new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance), new MapRepository(handlerDb), new ChannelRepository(handlerDb), new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance), new MyRoomRepository(handlerDb), state, NullLogger<AreasvEnterHandler>.Instance);
 
             await handler.HandleAsync(BuildAreasvEnterPayload((uint)user.Id, otp), session, TestContext.Current.CancellationToken);
 
@@ -2065,6 +2065,8 @@ public class AreaMapHandlersTests
         var state = new SharedState();
         var sender = CreateSession(CreateUserWithCharacter(1, 42, "emotion-user", "Emotion User", 20000000), 20000000, 1);
         var sameAreaPeer = CreateSession(CreateUserWithCharacter(2, 5002, "same-peer", "Same Peer", 20000000), 20000000, 1);
+        sender.MyRoomId = 42;
+        sameAreaPeer.MyRoomId = 42;
         var roboObjectId = RoboRepository.GetObjectId(sender.CharacterId, 1);
         var roboRepository = new Mock<IRoboRepository>();
         roboRepository.Setup(x => x.ExistsAsync(checked((int)sender.CharacterId), 1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -2273,6 +2275,7 @@ public class AreaMapHandlersTests
         return new DirectMapLinkTransitionService(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MyRoomRepository(db),
             new MapLinkRepository(db),
             new ChannelRepository(db),
             Options.Create(

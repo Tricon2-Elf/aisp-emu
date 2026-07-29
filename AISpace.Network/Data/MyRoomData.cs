@@ -1,8 +1,8 @@
 namespace AISpace.Network.Data;
 
-public class MyRoomData(uint ownerId, uint ownerCharacterId, MyRoomStage roomStage, string roomName = "My Room", uint security = 0)
+public class MyRoomData(uint roomId, uint ownerCharacterId, MyRoomStage roomStage, string roomName = "My Room", uint security = 0)
 {
-    public uint OwnerId = ownerId;
+    public uint RoomId = roomId;
     public uint OwnerCharacterId = ownerCharacterId;
     public string RoomName = roomName;
     public MyRoomStage RoomStage = roomStage;
@@ -12,7 +12,7 @@ public class MyRoomData(uint ownerId, uint ownerCharacterId, MyRoomStage roomSta
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write(OwnerId);
+        writer.Write(RoomId);
         writer.Write(OwnerCharacterId);
         writer.Write((uint)0);
         writer.WriteFixedJisString(RoomName, 46);

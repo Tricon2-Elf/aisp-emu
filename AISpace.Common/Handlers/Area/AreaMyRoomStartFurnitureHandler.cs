@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMyRoomStartFurnitureHandler(ILogger<AreaMyRoomStartFurnitureHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaMyRoomStartFurnitureHandler(IMyRoomRepository myRoomRepository, ILogger<AreaMyRoomStartFurnitureHandler> logger) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyRoomStartFurnitureRequest;
 
@@ -17,7 +18,7 @@ public class AreaMyRoomStartFurnitureHandler(ILogger<AreaMyRoomStartFurnitureHan
     {
         var request = MyRoomStartFurnitureRequest.FromBytes(payload.Span);
 
-        if (!MyRoomInfo.IsMyRoomMap(session.MapId) || request.RoomId != session.CharacterId)
+        if (!await MyRoomRequestValidation.IsOwnerInRoomAsync(request.RoomId, session, myRoomRepository, ct))
         {
             logger.LogWarning("Rejected MyRoomStartFurniture for character {CharacterId} on map {MapId}: roomId {RoomId}", session.CharacterId, session.MapId, request.RoomId);
             await session.SendAsync(ResponseType, new MyRoomStartFurnitureResponse(1, 0).ToBytes(), ct);

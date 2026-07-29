@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Game.ServerScripts;
 
-public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScriptSegmentRunner, ServerScriptSession serverScriptSession, DirectMapLinkTransitionService directMapLinkTransitionService, ICharacterEventRepository characterEventRepository, ILogger<MyRoomDoorServerScript> logger) : IServerScript
+public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScriptSegmentRunner, ServerScriptSession serverScriptSession, DirectMapLinkTransitionService directMapLinkTransitionService, ICharacterEventRepository characterEventRepository, IMyRoomRepository myRoomRepository, ILogger<MyRoomDoorServerScript> logger) : IServerScript
 {
     public const uint AkihabaraUdxMapId = 40_990_200;
 
@@ -21,6 +21,7 @@ public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScrip
     private const uint EventFailure = 1;
     private const string SegmentPhaseDataKey = "myroomDoor.segmentPhase";
     private const string ReturnMyRoomMapDataKey = "myroomDoor.returnMyRoomMapId";
+    private const string ReturnMyRoomIdDataKey = "myroomDoor.returnMyRoomId";
     private const string UdxMapDataReadyDataKey = "myroomDoor.udxMapDataReady";
     private const string UdxMapEnterAcknowledgedDataKey = "myroomDoor.udxMapEnterAcknowledged";
     private const string CompletedDoorSelectionStep = "completedDoorSelection";
@@ -48,6 +49,7 @@ public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScrip
         }
 
         state.Data[ReturnMyRoomMapDataKey] = MyRoomInfo.IsMyRoomMap(session.MapId) ? session.MapId : MyRoomInfo.BaseMapId;
+        state.Data[ReturnMyRoomIdDataKey] = session.MyRoomId;
         state.Data[SegmentPhaseDataKey] = PhaseCharadoll;
         logger.LogInformation("Starting client script segment {ClientScriptKey} for character {CharacterId} on My Room door", ScriptedEvents.Keys.SysEvent002, session.CharacterId);
         await clientScriptSegmentRunner.BeginAsync(session, ScriptedEvents.Keys.SysEvent002, ct);
@@ -121,8 +123,11 @@ public sealed class MyRoomDoorServerScript(ClientScriptSegmentRunner clientScrip
         if (string.Equals(phase, PhaseTpsBat0101021, StringComparison.Ordinal))
         {
             var returnMapId = state.Data.TryGetValue(ReturnMyRoomMapDataKey, out var rawReturnMapId) && rawReturnMapId is uint storedMapId && MyRoomInfo.IsMyRoomMap(storedMapId) ? storedMapId : MyRoomInfo.BaseMapId;
+            var returnRoomId = state.Data.TryGetValue(ReturnMyRoomIdDataKey, out var rawReturnRoomId) && rawReturnRoomId is uint storedRoomId && storedRoomId <= int.MaxValue ? checked((int)storedRoomId) : 0;
             await serverScriptSession.CompleteAsync(session, 0, markComplete: true, ct);
-            if (!await directMapLinkTransitionService.TryTeleportToMapAsync(session, returnMapId, ct))
+            var returnRoom = returnRoomId == 0 ? null : await myRoomRepository.GetRoomAsync(returnRoomId, ct);
+            var returned = returnRoom is not null ? await directMapLinkTransitionService.TryTeleportToRoomAsync(session, returnRoom, ct) : await directMapLinkTransitionService.TryTeleportToMapAsync(session, returnMapId, ct);
+            if (!returned)
                 logger.LogWarning("Server script {EventKey} completed for character {CharacterId}, but teleport back to MyRoom map {DestinationMapId} failed", EventKey, session.CharacterId, returnMapId);
             return true;
         }

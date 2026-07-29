@@ -30,7 +30,7 @@ public class AreaMyRoomEditingHandlerTests
             roomPeer.CharacterId = 43;
             var otherRoomPeer = CreateSession();
             otherRoomPeer.CharacterId = 44;
-            otherRoomPeer.MyRoomOwnerId = 44;
+            otherRoomPeer.MyRoomId = 44;
             var state = new SharedState();
             state.RegisterClient(ServerType.Area, session);
             state.RegisterClient(ServerType.Area, roomPeer);
@@ -143,14 +143,12 @@ public class AreaMyRoomEditingHandlerTests
             await ((IPacketHandler)nameHandler).HandleAsync(BuildNamePayload(42, "テスト部屋"), session, TestContext.Current.CancellationToken);
             await ((IPacketHandler)securityHandler).HandleAsync(BuildPairPayload(42, 2), session, TestContext.Current.CancellationToken);
 
-            Assert.Equal("テスト部屋", session.Character.MyRoomName);
-            Assert.Equal(2u, session.Character.MyRoomSecurity);
             Assert.All(session.Sent, packet => Assert.Equal(0u, new PacketReader(packet.Payload).ReadUInt()));
 
             db.ChangeTracker.Clear();
-            var stored = await db.Characters.SingleAsync(character => character.Id == 42, TestContext.Current.CancellationToken);
-            Assert.Equal("テスト部屋", stored.MyRoomName);
-            Assert.Equal(2u, stored.MyRoomSecurity);
+            var stored = await db.Rooms.SingleAsync(room => room.Id == 42, TestContext.Current.CancellationToken);
+            Assert.Equal("テスト部屋", stored.Name);
+            Assert.Equal(2u, stored.Security);
         }
         finally
         {
@@ -250,16 +248,28 @@ public class AreaMyRoomEditingHandlerTests
     [Fact]
     public async Task StartAndEndFurniture_ClearPendingPreviewReservation()
     {
-        var session = CreateSession();
-        session.PendingMyRoomFurnitureItemId = 7001;
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var session = CreateSession();
+            session.PendingMyRoomFurnitureItemId = 7001;
 
-        var payload = BuildRoomPayload(session.CharacterId);
-        await new AreaMyRoomStartFurnitureHandler(NullLogger<AreaMyRoomStartFurnitureHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
-        Assert.Null(session.PendingMyRoomFurnitureItemId);
+            var payload = BuildRoomPayload(session.MyRoomId);
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            await using var db = new MainContext(options);
+            var repository = new MyRoomRepository(db);
 
-        session.PendingMyRoomFurnitureItemId = 7001;
-        await new AreaMyRoomEndFurnitureHandler(NullLogger<AreaMyRoomEndFurnitureHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
-        Assert.Null(session.PendingMyRoomFurnitureItemId);
+            await new AreaMyRoomStartFurnitureHandler(repository, NullLogger<AreaMyRoomStartFurnitureHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
+            Assert.Null(session.PendingMyRoomFurnitureItemId);
+
+            session.PendingMyRoomFurnitureItemId = 7001;
+            await new AreaMyRoomEndFurnitureHandler(repository, NullLogger<AreaMyRoomEndFurnitureHandler>.Instance).HandleAsync(payload, session, TestContext.Current.CancellationToken);
+            Assert.Null(session.PendingMyRoomFurnitureItemId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     [Fact]
@@ -275,7 +285,7 @@ public class AreaMyRoomEditingHandlerTests
             db.MyRoomFurniture.Add(
                 new MyRoomFurniture
                 {
-                    CharacterId = 42,
+                    RoomId = 42,
                     FurnitureId = 1,
                     ItemId = 7001,
                 }
@@ -345,7 +355,7 @@ public class AreaMyRoomEditingHandlerTests
             db.MyRoomFurniture.Add(
                 new MyRoomFurniture
                 {
-                    CharacterId = 42,
+                    RoomId = 42,
                     FurnitureId = 1,
                     ItemId = 7001,
                 }
@@ -410,12 +420,50 @@ public class AreaMyRoomEditingHandlerTests
         }
     }
 
+    [Fact]
+    public async Task FurnitureInventory_IsSharedAcrossAllRoomsOwnedByTheCharacter()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            await SeedFurnitureInventoryAsync(options, 42, 7001, 1);
+
+            await using var db = new MainContext(options);
+            db.Rooms.Add(
+                new Room
+                {
+                    Id = 43,
+                    OwnerCharacterId = 42,
+                    Name = "Second Room",
+                    Stage = MyRoomStage.EightTatami,
+                }
+            );
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var repository = new MyRoomRepository(db);
+            var placed = await repository.TryAddFurnitureAsync(42, new MyRoomFurniture { RoomId = 42, ItemId = 7001 }, 700, TestContext.Current.CancellationToken);
+
+            Assert.NotNull(placed);
+            Assert.False(await repository.CanPlaceFurnitureAsync(42, 43, 7001, 700, TestContext.Current.CancellationToken));
+            Assert.Equal(0, (await repository.GetAvailableFurnitureInventoryAsync(42, TestContext.Current.CancellationToken))[7001]);
+
+            await repository.RemoveFurnitureAsync(42, placed.FurnitureId, TestContext.Current.CancellationToken);
+
+            Assert.True(await repository.CanPlaceFurnitureAsync(42, 43, 7001, 700, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static CapturingPlayerSession CreateSession() =>
         new()
         {
             CharacterId = 42,
             MapId = MyRoomInfo.BaseMapId,
-            MyRoomOwnerId = 42,
+            MyRoomId = 42,
             ChannelId = 1,
         };
 

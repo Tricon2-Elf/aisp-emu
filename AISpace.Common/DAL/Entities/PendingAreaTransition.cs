@@ -4,6 +4,7 @@ public class PendingMapTransfer
 {
     public int UserId { get; set; }
     public uint MapId { get; set; }
+    public uint MyRoomId { get; set; }
     public int ChannelId { get; set; }
     public float X { get; set; }
     public float Y { get; set; }

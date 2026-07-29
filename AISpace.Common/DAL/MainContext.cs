@@ -1,5 +1,6 @@
 using AISpace.Common.Config;
 using AISpace.Common.DAL.Entities;
+using AISpace.Network;
 using AISpace.Network.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<RoboBattleAbility> RoboBattleAbilities { get; set; }
     public DbSet<RoboDistributedStatusPoint> RoboDistributedStatusPoints { get; set; }
     public DbSet<CharacterEventStatus> CharacterEventStatuses { get; set; }
+    public DbSet<Room> Rooms { get; set; }
     public DbSet<MyRoomFurniture> MyRoomFurniture { get; set; }
     public DbSet<Circle> Circles { get; internal set; }
     public DbSet<Map> Maps { get; set; }
@@ -67,18 +69,31 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.HasIndex(x => x.Name).IsUnique();
-            e.Property(x => x.MyRoomName).HasMaxLength(45).IsRequired().HasDefaultValue("My Room");
-            e.Property(x => x.MyRoomSecurity).HasDefaultValue(0u);
             e.Property(x => x.CharadollPersonality).HasConversion<byte>().HasDefaultValue(CharadollPersonality.None).HasSentinel(CharadollPersonality.None);
 
             e.HasOne(x => x.User).WithMany(u => u.Characters).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.CurrentRoom).WithMany().HasForeignKey(x => x.CurrentRoomId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<Room>(e =>
+        {
+            e.ToTable("Rooms");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(45).IsRequired().HasDefaultValue("My Room");
+            e.Property(x => x.Stage).HasConversion<byte>().HasDefaultValue(MyRoomStage.SixTatami);
+            e.Property(x => x.Security).HasDefaultValue(0u);
+            e.Property(x => x.IsDefault).HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.OwnerCharacter).WithMany(x => x.Rooms).HasForeignKey(x => x.OwnerCharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.OwnerCharacterId, x.IsDefault });
         });
 
         b.Entity<MyRoomFurniture>(e =>
         {
             e.ToTable("MyRoomFurniture");
-            e.HasKey(x => new { x.CharacterId, x.FurnitureId });
-            e.HasOne(x => x.Character).WithMany(x => x.MyRoomFurniture).HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasKey(x => new { x.RoomId, x.FurnitureId });
+            e.HasOne(x => x.Room).WithMany(x => x.Furniture).HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Furniture>().WithMany().HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Restrict);
         });
 

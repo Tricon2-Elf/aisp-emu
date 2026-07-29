@@ -25,18 +25,36 @@ public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository, IMyRo
 
         if (MyRoomInfo.IsMyRoomMap(session.MapId))
         {
-            var furniture = await myRoomRepository.GetFurnitureAsync(checked((int)session.CharacterId), ct);
+            if (session.MyRoomId == 0)
+            {
+                await session.SendAsync(ResponseType, new MyRoomGetFurnitureResponse(1).ToBytes(), ct);
+                return;
+            }
+
+            var room = await myRoomRepository.GetRoomAsync(checked((int)session.MyRoomId), ct);
+            if (room is null)
+            {
+                await session.SendAsync(ResponseType, new MyRoomGetFurnitureResponse(1).ToBytes(), ct);
+                return;
+            }
+
+            var furniture = await myRoomRepository.GetFurnitureAsync(room.Id, ct);
             foreach (var placement in furniture)
                 await session.SendAsync(PacketType.MyRoomNotifyFurniture, new MyRoomNotifyFurniture(MyRoomFurnitureMapper.ToPacket(placement)).ToBytes(), ct);
 
-            var availableFurniture = await myRoomRepository.GetAvailableFurnitureInventoryAsync(checked((int)session.CharacterId), ct);
-            foreach (var stack in availableFurniture.OrderBy(x => x.Key))
-                await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(session, stack.Key, stack.Value, ct);
+            if (room.OwnerCharacterId == checked((int)session.CharacterId))
+            {
+                var availableFurniture = await myRoomRepository.GetAvailableFurnitureInventoryAsync(room.OwnerCharacterId, ct);
+                foreach (var stack in availableFurniture.OrderBy(x => x.Key))
+                    await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(session, stack.Key, stack.Value, ct);
+            }
 
-            var robos = await roboRepository.GetAllAsync(checked((int)session.CharacterId), ct);
+            var robos = await roboRepository.GetAllAsync(room.OwnerCharacterId, ct);
             foreach (var robo in robos)
             {
-                session.AccompanyingRoboIds.Remove(robo.RoboId);
+                if (room.OwnerCharacterId == checked((int)session.CharacterId))
+                    session.AccompanyingRoboIds.Remove(robo.RoboId);
+
                 var map = new CharacterMapData
                 {
                     ChannelId = checked((uint)session.ChannelId),

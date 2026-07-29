@@ -87,6 +87,40 @@ public class SharedStateTests
         Assert.DoesNotContain(otherMapPeer.Sent, p => p.Type == PacketType.NotifyDisappearChara);
     }
 
+    [Fact]
+    public void GetAreaPeers_IsolatesDifferentRoomInstancesOnTheSameMapAndChannel()
+    {
+        var state = new SharedState();
+        var roomOneMember = new FakeSession(Guid.NewGuid())
+        {
+            CharacterId = 1,
+            MapId = MyRoomInfo.BaseMapId,
+            MyRoomId = 101,
+            ChannelId = 1,
+        };
+        var roomOneVisitor = new FakeSession(Guid.NewGuid())
+        {
+            CharacterId = 2,
+            MapId = MyRoomInfo.BaseMapId,
+            MyRoomId = 101,
+            ChannelId = 1,
+        };
+        var roomTwoMember = new FakeSession(Guid.NewGuid())
+        {
+            CharacterId = 3,
+            MapId = MyRoomInfo.BaseMapId,
+            MyRoomId = 202,
+            ChannelId = 1,
+        };
+
+        state.RegisterClient(ServerType.Area, roomOneMember);
+        state.RegisterClient(ServerType.Area, roomOneVisitor);
+        state.RegisterClient(ServerType.Area, roomTwoMember);
+
+        Assert.Equal([roomOneVisitor.ConnectionId], state.GetAreaPeers(roomOneMember).Select(session => session.ConnectionId));
+        Assert.Empty(state.GetAreaPeers(roomTwoMember));
+    }
+
     private sealed class FakeSession(Guid connectionId) : IPlayerSession
     {
         public Guid ConnectionId { get; } = connectionId;
@@ -95,7 +129,7 @@ public class SharedStateTests
         public Character? Character { get; set; }
         public User? User { get; set; }
         public uint MapId { get; set; }
-        public uint MyRoomOwnerId { get; set; }
+        public uint MyRoomId { get; set; }
         public uint? PendingMyRoomFurnitureItemId { get; set; }
         public int ChannelId { get; set; }
         public float X { get; set; }

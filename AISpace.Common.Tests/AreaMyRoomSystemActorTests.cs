@@ -97,6 +97,14 @@ public class AreaMyRoomSystemActorTests
                 Birthdate = DateTime.UnixEpoch,
                 CurrentMapId = MyRoomInfo.TwelveTatamiMapId,
             };
+            character.Rooms.Add(
+                new Room
+                {
+                    Name = "My Room",
+                    Stage = MyRoomStage.TwelveTatami,
+                    IsDefault = true,
+                }
+            );
             db.Users.Add(user);
             db.Characters.Add(character);
             await db.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -114,6 +122,7 @@ public class AreaMyRoomSystemActorTests
                 MapId = MyRoomInfo.TwelveTatamiMapId,
                 ChannelId = 1,
                 CharacterId = (uint)character.Id,
+                MyRoomId = checked((uint)character.Rooms.Single().Id),
                 User = user,
                 NeedsPostLoadSelfAvatarNotify = true,
             };
@@ -340,6 +349,7 @@ public class AreaMyRoomSystemActorTests
                 MapId = MyRoomInfo.TwelveTatamiMapId,
                 ChannelId = 3,
                 CharacterId = 42,
+                MyRoomId = 42,
                 X = 173f,
                 Y = 0f,
                 Z = -220f,
@@ -450,7 +460,7 @@ public class AreaMyRoomSystemActorTests
     {
         state ??= new SharedState();
         var serverScriptSession = new ServerScriptSession(new CharacterEventRepository(db), NullLogger<ServerScriptSession>.Instance);
-        var doorScript = new MyRoomDoorServerScript(new ClientScriptSegmentRunner(), serverScriptSession, CreateDirectMapLinkTransitionService(db, state), new CharacterEventRepository(db), NullLogger<MyRoomDoorServerScript>.Instance);
+        var doorScript = new MyRoomDoorServerScript(new ClientScriptSegmentRunner(), serverScriptSession, CreateDirectMapLinkTransitionService(db, state), new CharacterEventRepository(db), new MyRoomRepository(db), NullLogger<MyRoomDoorServerScript>.Instance);
         var wardrobeScript = new MyRoomWardrobeServerScript(serverScriptSession);
         return new ServerScriptDispatcher([doorScript, wardrobeScript], serverScriptSession, NullLogger<ServerScriptDispatcher>.Instance);
     }
@@ -459,6 +469,7 @@ public class AreaMyRoomSystemActorTests
         new(
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+            new MyRoomRepository(db),
             new MapLinkRepository(db),
             new ChannelRepository(db),
             Options.Create(
