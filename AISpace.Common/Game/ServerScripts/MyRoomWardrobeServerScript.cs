@@ -1,4 +1,5 @@
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Game.ServerScripts;

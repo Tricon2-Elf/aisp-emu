@@ -29,6 +29,10 @@ public class AreaMyRoomGetFurnitureHandler(IRoboRepository roboRepository, IMyRo
             foreach (var placement in furniture)
                 await session.SendAsync(PacketType.MyRoomNotifyFurniture, new MyRoomNotifyFurniture(MyRoomFurnitureMapper.ToPacket(placement)).ToBytes(), ct);
 
+            var availableFurniture = await myRoomRepository.GetAvailableFurnitureInventoryAsync(checked((int)session.CharacterId), ct);
+            foreach (var stack in availableFurniture.OrderBy(x => x.Key))
+                await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(session, stack.Key, stack.Value, ct);
+
             var robos = await roboRepository.GetAllAsync(checked((int)session.CharacterId), ct);
             foreach (var robo in robos)
             {

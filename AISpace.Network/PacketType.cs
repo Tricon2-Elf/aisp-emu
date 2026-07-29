@@ -1079,7 +1079,7 @@ public enum PacketType : ushort
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_hair_shop_item", ImplementationState.NotImplemented)]
     HairShopItemNotify = 0xA359,
 
-    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_delete", ImplementationState.NotImplemented)]
+    [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_delete", ImplementationState.Implemented)]
     ItemDeleteNotify = 0xF6B7,
 
     [PacketMetadata(PacketServerType.Area, PacketDirection.ServerToClient, "recv_item_equip_r", ImplementationState.NotImplemented)]

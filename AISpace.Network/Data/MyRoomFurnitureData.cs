@@ -1,4 +1,4 @@
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Data;
 
 /// <summary>
 /// The 34-byte Furniture structure consumed by recv_notify_myroom_furniture and

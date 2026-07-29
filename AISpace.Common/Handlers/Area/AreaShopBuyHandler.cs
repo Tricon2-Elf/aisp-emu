@@ -2,6 +2,7 @@ using AISpace.Common.DAL;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
+using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

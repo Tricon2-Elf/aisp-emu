@@ -1,4 +1,4 @@
-namespace AISpace.Network.Packets.Area;
+namespace AISpace.Network.Data;
 
 public enum ShopPriceType : byte
 {

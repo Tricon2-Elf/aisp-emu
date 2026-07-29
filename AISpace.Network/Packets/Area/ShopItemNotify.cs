@@ -1,11 +1,9 @@
-using AISpace.Network;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Area;
 
-public sealed class ShopItemNotify(IReadOnlyList<ShopItemNotify.ShopItem> items) : IOutgoingPacket
+public sealed class ShopItemNotify(IReadOnlyList<ShopItemEntry> items) : IOutgoingPacket
 {
-    public sealed record ShopItem(uint ItemId, ulong AiPrice, ulong NicoPrice);
-
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();

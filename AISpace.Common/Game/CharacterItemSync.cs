@@ -68,6 +68,24 @@ internal static class CharacterItemSync
         await SendPrimaryItemTableEntryAsync(session, itemId, quantity, ct);
     }
 
+    /// <summary>
+    /// Synchronizes the number of unplaced copies shown by the furniture UI.
+    /// The client requires recv_item_delete when the count reaches zero because
+    /// its 65531 event rebuilds the furniture slot list. A zero-valued
+    /// recv_item_update_list alone leaves a stale selectable slot behind.
+    /// </summary>
+    public static async Task SendFurnitureInventoryAvailabilityAsync(IPlayerSession session, int itemId, int quantity, CancellationToken ct)
+    {
+        var serialId = ResolveSerialId(itemId);
+        if (quantity <= 0)
+        {
+            await session.SendAsync(PacketType.ItemDeleteNotify, new ItemDeleteNotify(PrimaryItemTablePlace, serialId).ToBytes(), ct);
+            return;
+        }
+
+        await SendPrimaryItemTableEntryAsync(session, itemId, (ushort)Math.Min(quantity, ushort.MaxValue), ct);
+    }
+
     private static async Task SendInventoryCountAsync(IPlayerSession session, int itemId, int count, CancellationToken ct)
     {
         var clamped = count <= 0 ? (ushort)0 : (ushort)Math.Min(count, ushort.MaxValue);
@@ -107,15 +125,7 @@ internal static class CharacterItemSync
     private static async Task SendPrimaryItemTableEntryAsync(IPlayerSession session, int itemId, ushort quantity, CancellationToken ct)
     {
         var serialId = ResolveSerialId(itemId);
-        await session.SendAsync(
-            PacketType.ItemCreateNotify,
-            new ItemCreateNotify(PrimaryItemTablePlace, serialId, quantity, (uint)itemId).ToBytes(),
-            ct
-        );
-        await session.SendAsync(
-            PacketType.ItemUpdateListNotify,
-            new ItemUpdateListNotify(PrimaryItemTablePlace, serialId, quantity).ToBytes(),
-            ct
-        );
+        await session.SendAsync(PacketType.ItemCreateNotify, new ItemCreateNotify(PrimaryItemTablePlace, serialId, quantity, (uint)itemId).ToBytes(), ct);
+        await session.SendAsync(PacketType.ItemUpdateListNotify, new ItemUpdateListNotify(PrimaryItemTablePlace, serialId, quantity).ToBytes(), ct);
     }
 }

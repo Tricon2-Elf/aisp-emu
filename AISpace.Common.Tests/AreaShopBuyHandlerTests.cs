@@ -54,8 +54,8 @@ public class AreaShopBuyHandlerTests
 
             var payload = BuildShopBuyPayload(
                 [
-                    new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0),
-                    new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0),
+                    new ShopBuyRequestedItem(itemId, 0, 0, 0),
+                    new ShopBuyRequestedItem(itemId, 0, 0, 0),
                 ],
                 ShopPriceType.AiPoints
             );
@@ -119,7 +119,7 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0)], ShopPriceType.NicoPoints);
+            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(itemId, 0, 0, 0)], ShopPriceType.NicoPoints);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -177,7 +177,7 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0)], ShopPriceType.AiPoints);
+            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(itemId, 0, 0, 0)], ShopPriceType.AiPoints);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -234,7 +234,7 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(itemId, 0, 0, 0)], (ShopPriceType)99);
+            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(itemId, 0, 0, 0)], (ShopPriceType)99);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -290,7 +290,7 @@ public class AreaShopBuyHandlerTests
                 NullLogger<AreaShopBuyHandler>.Instance
             );
 
-            var payload = BuildShopBuyPayload([new ShopBuyRequest.RequestedItem(99999999, 0, 0, 0)], ShopPriceType.AiPoints);
+            var payload = BuildShopBuyPayload([new ShopBuyRequestedItem(99999999, 0, 0, 0)], ShopPriceType.AiPoints);
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
             var responsePacket = session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse);
@@ -311,7 +311,7 @@ public class AreaShopBuyHandlerTests
         }
     }
 
-    private static byte[] BuildShopBuyPayload(IReadOnlyList<ShopBuyRequest.RequestedItem> items, ShopPriceType priceType)
+    private static byte[] BuildShopBuyPayload(IReadOnlyList<ShopBuyRequestedItem> items, ShopPriceType priceType)
     {
         var writer = new PacketWriter();
         writer.Write((uint)items.Count);

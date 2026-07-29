@@ -1,3 +1,5 @@
+using AISpace.Network.Data;
+
 namespace AISpace.Network.Packets.Area;
 
 /// <summary>send_myroom_set_furniture (0xAEFB): room ID, inventory serial ID, position, and two direction bytes.</summary>
