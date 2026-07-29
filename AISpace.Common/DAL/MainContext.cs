@@ -8,36 +8,34 @@ namespace AISpace.Common.DAL;
 
 public class MainContext(DbContextOptions<MainContext> options) : DbContext(options)
 {
-    public DbSet<User> Users { get; set; }
-    public DbSet<UserSession> UserSessions { get; set; }
-    public DbSet<GameChannel> Channels { get; set; }
-
-    //public DbSet<ServerInformation> Servers { get; set; }
-    public DbSet<World> Worlds { get; set; }
+    public DbSet<User> Users => Set<User>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<GameChannel> Channels => Set<GameChannel>();
+    public DbSet<World> Worlds => Set<World>();
     public DbSet<Character> Characters => Set<Character>();
-
-    public DbSet<Item> Items { get; set; }
-    public DbSet<Furniture> Furniture { get; set; }
-    public DbSet<CharacterInventory> CharacterInventories { get; set; }
-    public DbSet<CharacterEquipment> CharacterEquipments { get; set; }
-    public DbSet<Robo> Robos { get; set; }
-    public DbSet<RoboTpsBattleData> RoboTpsBattleData { get; set; }
-    public DbSet<RoboEquipment> RoboEquipment { get; set; }
-    public DbSet<RoboItemUseEffect> RoboItemUseEffects { get; set; }
-    public DbSet<RoboBattleAbility> RoboBattleAbilities { get; set; }
-    public DbSet<RoboDistributedStatusPoint> RoboDistributedStatusPoints { get; set; }
-    public DbSet<CharacterEventStatus> CharacterEventStatuses { get; set; }
-    public DbSet<Room> Rooms { get; set; }
-    public DbSet<MyRoomFurniture> MyRoomFurniture { get; set; }
-    public DbSet<Circle> Circles { get; internal set; }
-    public DbSet<Map> Maps { get; set; }
-    public DbSet<MapLink> MapLinks { get; set; }
-    public DbSet<Npc> Npcs { get; set; }
-    public DbSet<NpcEquipment> NpcEquipments { get; set; }
-    public DbSet<Shop> Shops { get; set; }
-    public DbSet<ShopItem> ShopItems { get; set; }
-    public DbSet<SessionPresence> SessionPresences { get; set; }
-    public DbSet<PendingMapTransfer> PendingMapTransfers { get; set; }
+    public DbSet<Item> Items => Set<Item>();
+    public DbSet<Furniture> Furniture => Set<Furniture>();
+    public DbSet<CharacterInventory> CharacterInventories => Set<CharacterInventory>();
+    public DbSet<CharacterEquipment> CharacterEquipments => Set<CharacterEquipment>();
+    public DbSet<Robo> Robos => Set<Robo>();
+    public DbSet<RoboTpsBattleData> RoboTpsBattleData => Set<RoboTpsBattleData>();
+    public DbSet<RoboEquipment> RoboEquipment => Set<RoboEquipment>();
+    public DbSet<RoboItemUseEffect> RoboItemUseEffects => Set<RoboItemUseEffect>();
+    public DbSet<RoboBattleAbility> RoboBattleAbilities => Set<RoboBattleAbility>();
+    public DbSet<RoboDistributedStatusPoint> RoboDistributedStatusPoints =>
+        Set<RoboDistributedStatusPoint>();
+    public DbSet<CharacterEventStatus> CharacterEventStatuses => Set<CharacterEventStatus>();
+    public DbSet<Room> Rooms => Set<Room>();
+    public DbSet<MyRoomFurniture> MyRoomFurniture => Set<MyRoomFurniture>();
+    public DbSet<Circle> Circles => Set<Circle>();
+    public DbSet<Map> Maps => Set<Map>();
+    public DbSet<MapLink> MapLinks => Set<MapLink>();
+    public DbSet<Npc> Npcs => Set<Npc>();
+    public DbSet<NpcEquipment> NpcEquipments => Set<NpcEquipment>();
+    public DbSet<Shop> Shops => Set<Shop>();
+    public DbSet<ShopItem> ShopItems => Set<ShopItem>();
+    public DbSet<SessionPresence> SessionPresences => Set<SessionPresence>();
+    public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
