@@ -17,6 +17,7 @@ public class User
 
     public ICollection<Character> Characters { get; set; } = new List<Character>();
     public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
+    public ICollection<UserStorageItem> StorageItems { get; set; } = new List<UserStorageItem>();
 
     public void SetPassword(string password)
     {

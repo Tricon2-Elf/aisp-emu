@@ -8,6 +8,7 @@ namespace AISpace.Common.Handlers.Area;
 
 public class ItemGetListHandler(
     ICharacterRepository characterRepo,
+    IUserRepository userRepo,
     ILogger<ItemGetListHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -38,6 +39,14 @@ public class ItemGetListHandler(
         }
 
         session.Character = character;
-        await CharacterItemSync.SendInventoryBootstrapAsync(session, character, ct);
+
+        IEnumerable<(int ItemId, int Quantity)> storageItems = [];
+        if (session.User is not null)
+        {
+            var stored = await userRepo.GetStorageItemsAsync(session.User.Id, ct);
+            storageItems = stored.Select(x => (x.ItemId, x.Quantity));
+        }
+
+        await CharacterItemSync.SendInventoryBootstrapAsync(session, character, storageItems, ct);
     }
 }

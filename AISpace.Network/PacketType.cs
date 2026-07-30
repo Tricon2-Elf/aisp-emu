@@ -2887,9 +2887,17 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_item_move",
+        ImplementationState.Implemented
+    )]
+    ItemMoveRequest = 0x8C7C,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_item_move_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     ItemMoveResponse = 0x708B,
 

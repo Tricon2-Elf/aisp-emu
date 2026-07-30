@@ -34,6 +34,24 @@ public interface IUserRepository
         long depositDelta,
         CancellationToken ct = default
     );
+
+    Task<IReadOnlyList<UserStorageItem>> GetStorageItemsAsync(
+        int userId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// Move item stacks between character inventory (place 0) and account warehouse (place 1).
+    /// Returns null on failure; otherwise the new inventory and storage quantities for the item.
+    /// </summary>
+    Task<(int InventoryQuantity, int StorageQuantity)?> TransferStorageItemAsync(
+        int userId,
+        int characterId,
+        int itemId,
+        int quantity,
+        bool toStorage,
+        CancellationToken ct = default
+    );
 }
 
 public class UserRepository(MainContext db) : IUserRepository
@@ -197,5 +215,98 @@ public class UserRepository(MainContext db) : IUserRepository
         user.StorageDeposit = checked(user.StorageDeposit + depositDelta);
         await _db.SaveChangesAsync(ct);
         return user;
+    }
+
+    public async Task<IReadOnlyList<UserStorageItem>> GetStorageItemsAsync(
+        int userId,
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .UserStorageItems.AsNoTracking()
+            .Where(x => x.UserId == userId && x.Quantity > 0)
+            .OrderBy(x => x.ItemId)
+            .ToListAsync(ct);
+
+    public async Task<(int InventoryQuantity, int StorageQuantity)?> TransferStorageItemAsync(
+        int userId,
+        int characterId,
+        int itemId,
+        int quantity,
+        bool toStorage,
+        CancellationToken ct = default
+    )
+    {
+        if (quantity <= 0)
+            return null;
+
+        var inventory = await _db.CharacterInventories.SingleOrDefaultAsync(
+            x => x.CharacterId == characterId && x.ItemId == itemId,
+            ct
+        );
+        var storage = await _db.UserStorageItems.SingleOrDefaultAsync(
+            x => x.UserId == userId && x.ItemId == itemId,
+            ct
+        );
+
+        int inventoryQuantity;
+        int storageQuantity;
+
+        if (toStorage)
+        {
+            if (inventory is null || inventory.Quantity < quantity)
+                return null;
+
+            inventory.Quantity -= quantity;
+            inventoryQuantity = inventory.Quantity;
+            if (inventory.Quantity == 0)
+                _db.CharacterInventories.Remove(inventory);
+
+            if (storage is null)
+            {
+                storage = new UserStorageItem
+                {
+                    UserId = userId,
+                    ItemId = itemId,
+                    Quantity = quantity,
+                };
+                _db.UserStorageItems.Add(storage);
+            }
+            else
+            {
+                storage.Quantity += quantity;
+            }
+
+            storageQuantity = storage.Quantity;
+        }
+        else
+        {
+            if (storage is null || storage.Quantity < quantity)
+                return null;
+
+            storage.Quantity -= quantity;
+            storageQuantity = storage.Quantity;
+            if (storage.Quantity == 0)
+                _db.UserStorageItems.Remove(storage);
+
+            if (inventory is null)
+            {
+                inventory = new CharacterInventory
+                {
+                    CharacterId = characterId,
+                    ItemId = itemId,
+                    Quantity = quantity,
+                };
+                _db.CharacterInventories.Add(inventory);
+            }
+            else
+            {
+                inventory.Quantity += quantity;
+            }
+
+            inventoryQuantity = inventory.Quantity;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return (Math.Max(0, inventoryQuantity), Math.Max(0, storageQuantity));
     }
 }
