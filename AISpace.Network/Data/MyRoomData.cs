@@ -5,7 +5,7 @@ public class MyRoomData(
     uint ownerCharacterId,
     MyRoomStage roomStage,
     string roomName = "My Room",
-    uint security = 0
+    MyRoomSecurity security = MyRoomSecurity.Private
 )
 {
     public uint RoomId = roomId;
@@ -13,7 +13,7 @@ public class MyRoomData(
     public string RoomName = roomName;
     public MyRoomStage RoomStage = roomStage;
 
-    public uint Security = security;
+    public MyRoomSecurity Security = security;
 
     public byte[] ToBytes()
     {
@@ -25,7 +25,7 @@ public class MyRoomData(
         writer.Write((byte)RoomStage);
         writer.Write((uint)0);
         writer.Write((uint)0);
-        writer.Write(Security);
+        writer.Write((uint)Security);
         writer.Write((uint)0);
         return writer.ToBytes();
     }

@@ -72,7 +72,7 @@ public interface IMyRoomRepository
     Task<bool> UpdateSecurityAsync(
         int roomId,
         int ownerCharacterId,
-        uint security,
+        MyRoomSecurity security,
         CancellationToken ct = default
     );
 }
@@ -421,10 +421,13 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
     public async Task<bool> UpdateSecurityAsync(
         int roomId,
         int ownerCharacterId,
-        uint security,
+        MyRoomSecurity security,
         CancellationToken ct = default
     )
     {
+        if (!Enum.IsDefined(security))
+            return false;
+
         var room = await db.Rooms.SingleOrDefaultAsync(
             entry => entry.Id == roomId && entry.OwnerCharacterId == ownerCharacterId,
             ct

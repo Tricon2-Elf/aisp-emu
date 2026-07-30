@@ -1,13 +1,13 @@
 namespace AISpace.Network.Packets.Area;
 
 /// <summary>send_myroom_update_security (0xE54D): room ID and eMYROOM_SECURITY value.</summary>
-public sealed class MyRoomUpdateSecurityRequest(uint roomId, uint security)
+public sealed class MyRoomUpdateSecurityRequest(uint roomId, MyRoomSecurity security)
     : IIncomingPacket<MyRoomUpdateSecurityRequest>
 {
     public const int WireSize = 8;
 
     public uint RoomId { get; } = roomId;
-    public uint Security { get; } = security;
+    public MyRoomSecurity Security { get; } = security;
 
     public static MyRoomUpdateSecurityRequest FromBytes(ReadOnlySpan<byte> data)
     {
@@ -17,6 +17,9 @@ public sealed class MyRoomUpdateSecurityRequest(uint roomId, uint security)
             );
 
         var reader = new PacketReader(data);
-        return new MyRoomUpdateSecurityRequest(reader.ReadUInt(), reader.ReadUInt());
+        return new MyRoomUpdateSecurityRequest(
+            reader.ReadUInt(),
+            (MyRoomSecurity)reader.ReadUInt()
+        );
     }
 }

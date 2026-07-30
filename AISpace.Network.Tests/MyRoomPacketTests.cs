@@ -7,6 +7,17 @@ namespace AISpace.Network.Tests;
 
 public class MyRoomPacketTests
 {
+    [Theory]
+    [InlineData(MyRoomSecurity.Private, 0u)]
+    [InlineData(MyRoomSecurity.FriendsOnly, 1u)]
+    [InlineData(MyRoomSecurity.CircleMembersOnly, 2u)]
+    [InlineData(MyRoomSecurity.FriendsAndCircleMembers, 3u)]
+    [InlineData(MyRoomSecurity.Public, 4u)]
+    public void MyRoomSecurity_UsesClientValues(MyRoomSecurity security, uint wireValue)
+    {
+        Assert.Equal(wireValue, (uint)security);
+    }
+
     public static TheoryData<PacketType, ushort, string> CorrectedPacketTypes =>
         new()
         {
@@ -153,7 +164,7 @@ public class MyRoomPacketTests
         securityWriter.Write(2u);
         var securityRequest = MyRoomUpdateSecurityRequest.FromBytes(securityWriter.ToBytes());
         Assert.Equal(42u, securityRequest.RoomId);
-        Assert.Equal(2u, securityRequest.Security);
+        Assert.Equal(MyRoomSecurity.CircleMembersOnly, securityRequest.Security);
     }
 
     [Fact]
@@ -229,7 +240,13 @@ public class MyRoomPacketTests
     public void ExistingMyRoomTransferPackets_MatchClientWireSizes()
     {
         var server = new ServerInfo("127.0.0.1", 50054);
-        var room = new MyRoomData(42, 42, MyRoomStage.TwelveTatami, "テスト部屋", 2);
+        var room = new MyRoomData(
+            42,
+            42,
+            MyRoomStage.TwelveTatami,
+            "テスト部屋",
+            MyRoomSecurity.CircleMembersOnly
+        );
         var channelResponse = new ChannelSelectMyRoomResponse(
             0,
             server,
