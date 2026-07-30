@@ -241,6 +241,11 @@ internal class Program
                 Path.Combine(seedDir, "starterShop.json"),
                 app.Logger
             );
+            await ShopRepository.SeedShopsFromJsonAsync(
+                db,
+                Path.Combine(seedDir, "furnitureShop.json"),
+                app.Logger
+            );
             await NpcRepository.SeedFromJsonAsync(
                 db,
                 Path.Combine(seedDir, "npcs.json"),
