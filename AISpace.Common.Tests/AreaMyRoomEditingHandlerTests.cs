@@ -217,7 +217,22 @@ public class AreaMyRoomEditingHandlerTests
                 TestContext.Current.CancellationToken
             );
             Assert.Equal("テスト部屋", stored.Name);
-            Assert.Equal(2u, stored.Security);
+            Assert.Equal(MyRoomSecurity.CircleMembersOnly, stored.Security);
+
+            session.Sent.Clear();
+            await ((IPacketHandler)securityHandler).HandleAsync(
+                BuildPairPayload(42, 5),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal(1u, new PacketReader(Assert.Single(session.Sent).Payload).ReadUInt());
+
+            db.ChangeTracker.Clear();
+            stored = await db.Rooms.SingleAsync(
+                room => room.Id == 42,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal(MyRoomSecurity.CircleMembersOnly, stored.Security);
         }
         finally
         {

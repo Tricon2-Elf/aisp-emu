@@ -94,7 +94,9 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(45).IsRequired().HasDefaultValue("My Room");
             e.Property(x => x.Stage).HasConversion<byte>().HasDefaultValue(MyRoomStage.SixTatami);
-            e.Property(x => x.Security).HasDefaultValue(0u);
+            e.Property(x => x.Security)
+                .HasConversion<uint>()
+                .HasDefaultValue(MyRoomSecurity.Private);
             e.Property(x => x.IsDefault).HasDefaultValue(false);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");

@@ -9,7 +9,7 @@ public sealed class Room
     public Character OwnerCharacter { get; set; } = default!;
     public string Name { get; set; } = "My Room";
     public MyRoomStage Stage { get; set; } = MyRoomStage.SixTatami;
-    public uint Security { get; set; }
+    public MyRoomSecurity Security { get; set; } = MyRoomSecurity.Private;
     public bool IsDefault { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
