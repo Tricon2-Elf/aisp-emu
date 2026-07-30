@@ -7,6 +7,9 @@ public class User
     public string PasswordHash { get; private set; } = string.Empty;
     public long AiPoints { get; set; }
     public long NicoPoints { get; set; }
+
+    /// <summary>AI points held in the wardrobe 倉庫 (piggy bank), separate from purse <see cref="AiPoints"/>.</summary>
+    public long StorageDeposit { get; set; }
     public bool IsBanned { get; set; }
     public string? BanReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

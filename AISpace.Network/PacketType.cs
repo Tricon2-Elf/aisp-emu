@@ -4369,7 +4369,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_storage_deposit_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     StorageDepositResponse = 0x541C,
 
@@ -4385,7 +4385,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_storage_updated_deposit",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     StorageUpdatedDepositNotify = 0xC515,
 
@@ -4393,7 +4393,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_storage_withdraw_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     StorageWithdrawResponse = 0xE42A,
 
@@ -5177,7 +5177,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_storage_deposit",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     StorageDepositRequest = 0x51A4,
 
@@ -5185,7 +5185,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_storage_withdraw",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     StorageWithdrawRequest = 0x9C26,
 

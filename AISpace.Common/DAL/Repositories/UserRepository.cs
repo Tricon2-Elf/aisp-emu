@@ -24,6 +24,16 @@ public interface IUserRepository
         long nicoDelta,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Move AI points between purse and wardrobe deposit.
+    /// Positive <paramref name="depositDelta"/> deposits from purse; negative withdraws to purse.
+    /// </summary>
+    Task<User?> TransferStorageDepositAsync(
+        int userId,
+        long depositDelta,
+        CancellationToken ct = default
+    );
 }
 
 public class UserRepository(MainContext db) : IUserRepository
@@ -155,6 +165,36 @@ public class UserRepository(MainContext db) : IUserRepository
 
         user.AiPoints = Math.Clamp(user.AiPoints + aiDelta, 0, long.MaxValue);
         user.NicoPoints = Math.Clamp(user.NicoPoints + nicoDelta, 0, long.MaxValue);
+        await _db.SaveChangesAsync(ct);
+        return user;
+    }
+
+    public async Task<User?> TransferStorageDepositAsync(
+        int userId,
+        long depositDelta,
+        CancellationToken ct = default
+    )
+    {
+        if (depositDelta == 0)
+            return await GetById(userId);
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return null;
+
+        var purseDelta = checked(-depositDelta);
+        if (depositDelta > 0)
+        {
+            if (user.AiPoints < depositDelta)
+                return null;
+        }
+        else if (user.StorageDeposit < -depositDelta)
+        {
+            return null;
+        }
+
+        user.AiPoints = checked(user.AiPoints + purseDelta);
+        user.StorageDeposit = checked(user.StorageDeposit + depositDelta);
         await _db.SaveChangesAsync(ct);
         return user;
     }

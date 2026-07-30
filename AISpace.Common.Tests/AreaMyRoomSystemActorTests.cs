@@ -400,7 +400,7 @@ public class AreaMyRoomSystemActorTests
     }
 
     [Fact]
-    public async Task WardrobeSelection_OpensStorageWithCurrentAiPointBalance()
+    public async Task WardrobeSelection_OpensStorageWithDepositBalance()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -422,7 +422,7 @@ public class AreaMyRoomSystemActorTests
             {
                 MapId = MyRoomInfo.BaseMapId,
                 CharacterId = 42,
-                User = new User { AiPoints = 12_345 },
+                User = new User { AiPoints = 12_345, StorageDeposit = 777 },
             };
 
             await accessHandler.HandleAsync(
@@ -472,7 +472,7 @@ public class AreaMyRoomSystemActorTests
                 session.Sent,
                 packet => packet.Type == PacketType.StorageOpenedNotify
             );
-            Assert.Equal(12_345ul, new PacketReader(storage.Payload).ReadULong());
+            Assert.Equal(777ul, new PacketReader(storage.Payload).ReadULong());
         }
         finally
         {

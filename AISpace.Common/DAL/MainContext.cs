@@ -56,6 +56,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .IsRequired();
             e.Property(x => x.AiPoints).HasDefaultValue(0L);
             e.Property(x => x.NicoPoints).HasDefaultValue(0L);
+            e.Property(x => x.StorageDeposit).HasDefaultValue(0L);
             e.Property(x => x.IsBanned).HasDefaultValue(false);
             e.Property(x => x.BanReason).HasMaxLength(256);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
