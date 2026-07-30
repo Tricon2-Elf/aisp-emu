@@ -17,6 +17,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Furniture> Furniture => Set<Furniture>();
     public DbSet<CharacterInventory> CharacterInventories => Set<CharacterInventory>();
     public DbSet<CharacterEquipment> CharacterEquipments => Set<CharacterEquipment>();
+    public DbSet<UserStorageItem> UserStorageItems => Set<UserStorageItem>();
     public DbSet<Robo> Robos => Set<Robo>();
     public DbSet<RoboTpsBattleData> RoboTpsBattleData => Set<RoboTpsBattleData>();
     public DbSet<RoboEquipment> RoboEquipment => Set<RoboEquipment>();
@@ -164,6 +165,24 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .WithMany(c => c.Inventory)
                 .HasForeignKey(x => x.CharacterId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            e.Property(x => x.Quantity).HasDefaultValue(1);
+        });
+
+        b.Entity<UserStorageItem>(e =>
+        {
+            e.ToTable("UserStorageItems");
+            e.HasKey(x => new { x.UserId, x.ItemId });
+
+            e.HasOne(x => x.User)
+                .WithMany(u => u.StorageItems)
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(x => x.Item)
+                .WithMany()
+                .HasForeignKey(x => x.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             e.Property(x => x.Quantity).HasDefaultValue(1);
         });

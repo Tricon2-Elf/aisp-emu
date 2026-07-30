@@ -7,13 +7,12 @@ namespace AISpace.Common.Game;
 internal static class CharacterItemSync
 {
     public const uint PrimaryItemTablePlace = 0;
+    public const uint StorageItemTablePlace = 1;
 
     /// <summary>
     /// Client item tables are keyed by (place, serialId); serial must match ItemId.
     /// Decompiled send_item_move (sub_7969F0) routes place=0 to GlobalItemCount and
-    /// place=1 to ItemCount. For this client build, inventory/wardrobe behavior is
-    /// stable only when we keep item table updates on place=0 and drive worn state
-    /// via recv_item_equipped.
+    /// place=1 to ItemCount. Inventory lives on place=0; account 倉庫 warehouse on place=1.
     /// </summary>
     public static uint ResolveSerialId(int itemId) => (uint)itemId;
 
@@ -37,6 +36,71 @@ internal static class CharacterItemSync
             ct
         );
         await SendBootstrapAsync(session, character, ct);
+    }
+
+    public static async Task SendInventoryBootstrapAsync(
+        IPlayerSession session,
+        Character character,
+        IEnumerable<(int ItemId, int Quantity)> storageItems,
+        CancellationToken ct
+    )
+    {
+        await session.SendAsync(
+            PacketType.ItemGetListResponse,
+            new ItemGetListResponse(0).ToBytes(),
+            ct
+        );
+        await SendBootstrapAsync(session, character, ct);
+        await SendStorageBootstrapAsync(session, storageItems, ct);
+    }
+
+    public static async Task SendStorageBootstrapAsync(
+        IPlayerSession session,
+        IEnumerable<(int ItemId, int Quantity)> storageItems,
+        CancellationToken ct
+    )
+    {
+        foreach (var (itemId, quantity) in storageItems.OrderBy(x => x.ItemId))
+        {
+            if (quantity <= 0)
+                continue;
+
+            await SendItemTableEntryAsync(
+                session,
+                StorageItemTablePlace,
+                itemId,
+                (ushort)Math.Min(quantity, ushort.MaxValue),
+                ct
+            );
+        }
+    }
+
+    public static async Task SyncItemTableQuantityAsync(
+        IPlayerSession session,
+        uint place,
+        int itemId,
+        int quantity,
+        CancellationToken ct
+    )
+    {
+        var serialId = ResolveSerialId(itemId);
+        if (quantity <= 0)
+        {
+            await session.SendAsync(
+                PacketType.ItemDeleteNotify,
+                new ItemDeleteNotify(place, serialId).ToBytes(),
+                ct
+            );
+            return;
+        }
+
+        await SendItemTableEntryAsync(
+            session,
+            place,
+            itemId,
+            (ushort)Math.Min(quantity, ushort.MaxValue),
+            ct
+        );
     }
 
     public static async Task SendBootstrapAsync(
@@ -198,17 +262,25 @@ internal static class CharacterItemSync
         int itemId,
         ushort quantity,
         CancellationToken ct
+    ) => await SendItemTableEntryAsync(session, PrimaryItemTablePlace, itemId, quantity, ct);
+
+    private static async Task SendItemTableEntryAsync(
+        IPlayerSession session,
+        uint place,
+        int itemId,
+        ushort quantity,
+        CancellationToken ct
     )
     {
         var serialId = ResolveSerialId(itemId);
         await session.SendAsync(
             PacketType.ItemCreateNotify,
-            new ItemCreateNotify(PrimaryItemTablePlace, serialId, quantity, (uint)itemId).ToBytes(),
+            new ItemCreateNotify(place, serialId, quantity, (uint)itemId).ToBytes(),
             ct
         );
         await session.SendAsync(
             PacketType.ItemUpdateListNotify,
-            new ItemUpdateListNotify(PrimaryItemTablePlace, serialId, quantity).ToBytes(),
+            new ItemUpdateListNotify(place, serialId, quantity).ToBytes(),
             ct
         );
     }
