@@ -77,7 +77,19 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
             await db.SaveChangesAsync(ct);
 
             var expandedItems = new List<ShopItemSeedRow>(shopRow.Items);
-            if (shopRow.ItemIds.Count > 0)
+            var catalogItemIds = new List<int>(shopRow.ItemIds);
+            if (shopRow.IncludeAllFurniture)
+            {
+                catalogItemIds.AddRange(
+                    await db
+                        .Furniture.AsNoTracking()
+                        .OrderBy(x => x.ItemId)
+                        .Select(x => x.ItemId)
+                        .ToListAsync(ct)
+                );
+            }
+
+            if (catalogItemIds.Count > 0)
             {
                 if (
                     shopRow.DefaultAiPrice is null
@@ -90,9 +102,9 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                     );
 
                 var seenItemIds = expandedItems.Select(x => x.ItemId).ToHashSet();
-                for (var i = 0; i < shopRow.ItemIds.Count; i++)
+                for (var i = 0; i < catalogItemIds.Count; i++)
                 {
-                    var id = shopRow.ItemIds[i];
+                    var id = catalogItemIds[i];
                     if (!seenItemIds.Add(id))
                         continue;
 
@@ -275,6 +287,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
         public bool? IsEnabled { get; set; }
         public List<ShopItemSeedRow> Items { get; set; } = [];
         public List<int> ItemIds { get; set; } = [];
+        public bool IncludeAllFurniture { get; set; }
         public long? DefaultAiPrice { get; set; }
         public long? DefaultNicoPrice { get; set; }
         public bool? DefaultItemEnabled { get; set; }
