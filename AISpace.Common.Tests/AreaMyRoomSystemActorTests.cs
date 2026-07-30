@@ -468,6 +468,11 @@ public class AreaMyRoomSystemActorTests
 
             Assert.Null(session.ActiveEventKey);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
+            var purse = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.MoneyUpdatedAipoint
+            );
+            Assert.Equal(12_345ul, new PacketReader(purse.Payload).ReadULong());
             var storage = Assert.Single(
                 session.Sent,
                 packet => packet.Type == PacketType.StorageOpenedNotify

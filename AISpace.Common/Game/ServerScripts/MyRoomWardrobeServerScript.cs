@@ -76,7 +76,14 @@ public sealed class MyRoomWardrobeServerScript(ServerScriptSession serverScriptS
         }
 
         var deposit = (ulong)Math.Max(0, session.User?.StorageDeposit ?? 0);
+        var aiPoints = (ulong)Math.Max(0, session.User?.AiPoints ?? 0);
         await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
+        // Purse is separate from deposit; the wardrobe UI reads it from money_updated_aipoint.
+        await session.SendAsync(
+            PacketType.MoneyUpdatedAipoint,
+            new MoneyUpdatedAipointNotify(aiPoints).ToBytes(),
+            ct
+        );
         await session.SendAsync(
             PacketType.StorageOpenedNotify,
             new StorageOpenedNotify(deposit).ToBytes(),
