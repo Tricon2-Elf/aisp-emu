@@ -28,6 +28,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<CharacterEventStatus> CharacterEventStatuses => Set<CharacterEventStatus>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<MyRoomFurniture> MyRoomFurniture => Set<MyRoomFurniture>();
+    public DbSet<Nicotv> Nicotvs => Set<Nicotv>();
     public DbSet<Circle> Circles => Set<Circle>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
@@ -121,6 +122,25 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .WithMany()
                 .HasForeignKey(x => x.ItemId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<Nicotv>(e =>
+        {
+            e.ToTable("Nicotvs");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.MovieId).HasMaxLength(96).IsRequired().HasDefaultValue("");
+            e.Property(x => x.PlaybackState)
+                .HasConversion<uint>()
+                .HasDefaultValue(NicotvPlaybackState.Closed);
+            e.Property(x => x.CommentVisibility)
+                .HasConversion<uint>()
+                .HasDefaultValue(NicotvCommentVisibility.Visible);
+            e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasIndex(x => new { x.RoomId, x.FurnitureId }).IsUnique();
+            e.HasOne(x => x.Furniture)
+                .WithOne(x => x.Nicotv)
+                .HasForeignKey<Nicotv>(x => new { x.RoomId, x.FurnitureId })
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<CharacterEventStatus>(e =>
