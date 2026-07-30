@@ -11,4 +11,5 @@ public sealed class MyRoomFurniture
     public float PositionZ { get; set; }
     public byte DirectionX { get; set; }
     public byte DirectionY { get; set; }
+    public Nicotv? Nicotv { get; set; }
 }
