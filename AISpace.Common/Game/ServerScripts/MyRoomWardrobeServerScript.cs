@@ -75,11 +75,11 @@ public sealed class MyRoomWardrobeServerScript(ServerScriptSession serverScriptS
             return true;
         }
 
-        var aiPoints = (ulong)Math.Max(0, session.User?.AiPoints ?? 0);
+        var deposit = (ulong)Math.Max(0, session.User?.StorageDeposit ?? 0);
         await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
         await session.SendAsync(
             PacketType.StorageOpenedNotify,
-            new StorageOpenedNotify(aiPoints).ToBytes(),
+            new StorageOpenedNotify(deposit).ToBytes(),
             ct
         );
         return true;
