@@ -228,36 +228,36 @@
     "mapId": 20000000,
     "island": "",
     "name": "My Room (6 tatami mats)",
-    "spawnX": 0,
+    "spawnX": 77,
     "spawnY": 0.1,
-    "spawnZ": 0,
+    "spawnZ": -159,
     "spawnRotation": 0
   },
   {
     "mapId": 20000010,
     "island": "",
     "name": "My Room (8 tatami mats)",
-    "spawnX": 0,
+    "spawnX": 120,
     "spawnY": 0.1,
-    "spawnZ": 0,
+    "spawnZ": -189,
     "spawnRotation": 0
   },
   {
     "mapId": 20000020,
     "island": "",
     "name": "My Room (10 tatami mats)",
-    "spawnX": 0,
+    "spawnX": 132,
     "spawnY": 0.1,
-    "spawnZ": 0,
+    "spawnZ": -239,
     "spawnRotation": 0
   },
   {
     "mapId": 20000030,
     "island": "",
     "name": "My Room (12 tatami mats)",
-    "spawnX": 0,
+    "spawnX": 178,
     "spawnY": 0.1,
-    "spawnZ": 0,
+    "spawnZ": -225,
     "spawnRotation": 0
   },
   {
