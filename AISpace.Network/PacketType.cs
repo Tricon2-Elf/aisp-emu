@@ -4360,6 +4360,14 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_storage_close_r",
+        ImplementationState.Implemented
+    )]
+    StorageCloseResponse = 0x3D14,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_storage_deposit_r",
         ImplementationState.NotImplemented
     )]
@@ -5156,6 +5164,14 @@ public enum PacketType : ushort
         ImplementationState.NotImplemented
     )]
     ShotSkillCancellRequest = 0x5791,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_storage_close",
+        ImplementationState.Implemented
+    )]
+    StorageCloseRequest = 0xB71B,
 
     [PacketMetadata(
         PacketServerType.Area,
