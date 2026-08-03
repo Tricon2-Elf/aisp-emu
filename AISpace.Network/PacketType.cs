@@ -1537,7 +1537,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_myroom_throwout_others_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MyRoomThrowoutOthersResponse = 0xB05A,
 
@@ -3499,7 +3499,7 @@ public enum PacketType : ushort
         "recv_notify_mission_party_list_open_start",
         ImplementationState.NotImplemented
     )]
-    NotifyMissionPartyListOpenStart = 0x88C1,
+    NotifyMissionPartyListOpenStart = 0x878B,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -3593,7 +3593,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_myhouse_change_security",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyMyHouseChangeSecurity = 0x8F88,
 
@@ -3809,7 +3809,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_robo_furnact_end",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoboFurnactEnd = 0xB45C,
 
@@ -3817,7 +3817,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_robo_furnact_start",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoboFurnactStart = 0xB77E,
 
@@ -4396,6 +4396,22 @@ public enum PacketType : ushort
         ImplementationState.Implemented
     )]
     StorageDepositResponse = 0x541C,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_storage_furn_close_r",
+        ImplementationState.Implemented
+    )]
+    StorageFurnCloseResponse = 0x4E60,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_storage_furn_open_r",
+        ImplementationState.Implemented
+    )]
+    StorageFurnOpenResponse = 0x88C1,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -5168,8 +5184,16 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
+        "send_robo_furnact_start",
+        ImplementationState.Implemented
+    )]
+    RoboFurnactStartRequest = 0x08F2,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
         "send_robo_furnact_end",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     RoboFurnactEndRequest = 0xE7BC,
 

@@ -18,6 +18,7 @@ public interface IPlayerSession
     uint MapId { get; set; }
     uint MyRoomId { get; set; }
     uint? PendingMyRoomFurnitureItemId { get; set; }
+    StorageOpenContext StorageOpenContext { get; set; }
     int ChannelId { get; set; }
     float X { get; set; }
     float Y { get; set; }

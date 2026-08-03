@@ -181,6 +181,7 @@ public class AreasvEnterHandler(
         session.MapId = mapId;
         session.MyRoomId = room is null ? 0 : checked((uint)room.Id);
         session.PendingMyRoomFurnitureItemId = null;
+        session.StorageOpenContext = StorageOpenContext.None;
 
         state.RegisterClient(ServerType.Area, session);
 
