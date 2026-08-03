@@ -21,7 +21,7 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
         db.Items.AsNoTracking().SingleOrDefaultAsync(i => i.Id == id, ct);
 
     public async Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken ct = default) =>
-        await db.Items.AsNoTracking().ToListAsync(ct);
+        await db.Items.AsNoTracking().Include(i => i.Furniture).ToListAsync(ct);
 
     public static async Task SeedItemsIfEmptyAsync(
         MainContext db,

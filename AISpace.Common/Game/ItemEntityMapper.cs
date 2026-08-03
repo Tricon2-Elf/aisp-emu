@@ -35,6 +35,11 @@ internal enum WardrobeCategoryId : uint
     Bra = 9,
     LowerUnderwear = 10,
     Accessory = 11,
+
+    /// <summary>Client furniture tab group (sub_519E60 maps 12-14 → furniture).</summary>
+    FurnitureFloor = 12,
+    FurnitureWall = 13,
+    FurnitureCeiling = 14,
 }
 
 internal static class ItemEntityMapper
@@ -104,7 +109,7 @@ internal static class ItemEntityMapper
         var id = (uint)item.Id;
         var iconId = (uint)item.IconId;
         var (socket1, socket2) = GetCatalogSockets(item.Id, ResolveBodyspot(item));
-        var category = ResolveCatalogCategory(item.Id, item.Name);
+        var category = ResolveCatalogCategory(item);
         var limitMapKey = ResolveLimitMapKey(item.Id);
 
         return new ItemData
@@ -123,13 +128,30 @@ internal static class ItemEntityMapper
         };
     }
 
-    public static uint ResolveInventoryTabCategory(int itemId, string? name = null) =>
-        ResolveCatalogCategory(itemId, name);
+    public static uint ResolveInventoryTabCategory(Item item) => ResolveCatalogCategory(item);
 
-    private static uint ResolveCatalogCategory(int itemId, string? name)
+    public static uint ResolveInventoryTabCategory(int itemId, string? name = null) =>
+        ResolveCatalogCategory(itemId, name, placementFlags: null);
+
+    private static uint ResolveCatalogCategory(Item item) =>
+        ResolveCatalogCategory(item.Id, item.Name, item.Furniture?.PlacementFlags);
+
+    private static uint ResolveCatalogCategory(
+        int itemId,
+        string? name,
+        FurniturePlacementFlags? placementFlags
+    )
     {
+        if (placementFlags is { } flags && flags != 0)
+            return ResolveFurnitureCategory(flags);
+
         if (itemId is < 10_000_000 or >= 200_000_000)
             return (uint)WardrobeCategoryId.None;
+
+        // Furniture catalog IDs are 11xxxxxx; without a Furniture row they still must
+        // not fall into clothing category 0 (hat), or the wardrobe furniture tab stays empty.
+        if (itemId / 100_000 >= 110)
+            return (uint)WardrobeCategoryId.FurnitureFloor;
 
         if (
             !string.IsNullOrEmpty(name)
@@ -153,6 +175,18 @@ internal static class ItemEntityMapper
             108 => (uint)WardrobeCategoryId.Accessory,
             _ => (uint)WardrobeCategoryId.None,
         };
+    }
+
+    private static uint ResolveFurnitureCategory(FurniturePlacementFlags flags)
+    {
+        if ((flags & FurniturePlacementFlags.Floor) != 0)
+            return (uint)WardrobeCategoryId.FurnitureFloor;
+        if ((flags & FurniturePlacementFlags.Wall) != 0)
+            return (uint)WardrobeCategoryId.FurnitureWall;
+        if ((flags & FurniturePlacementFlags.Ceiling) != 0)
+            return (uint)WardrobeCategoryId.FurnitureCeiling;
+
+        return (uint)WardrobeCategoryId.FurnitureFloor;
     }
 
     private static uint ResolveUpperBodyCategory(string? name)

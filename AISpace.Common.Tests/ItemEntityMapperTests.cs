@@ -206,4 +206,44 @@ public class ItemEntityMapperTests
         Assert.True((underwearData.Flags & ItemFlags.PermitsUnderwearBottom) != 0);
         Assert.Equal(ItemFlags.None, hatData.Flags);
     }
+
+    [Theory]
+    [InlineData(FurniturePlacementFlags.Floor, 12u)]
+    [InlineData(FurniturePlacementFlags.Wall, 13u)]
+    [InlineData(FurniturePlacementFlags.Ceiling, 14u)]
+    public void ToItemBaseListData_maps_furniture_to_wardrobe_furniture_categories(
+        FurniturePlacementFlags flags,
+        uint expectedCategory
+    )
+    {
+        var item = new Item
+        {
+            Id = 11_000_000,
+            Socket = 0,
+            Name = "テスト家具",
+            Furniture = new Furniture
+            {
+                ItemId = 11_000_000,
+                PlacementFlags = flags,
+                Type = 0,
+            },
+        };
+
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(expectedCategory, data.Category);
+    }
+
+    [Fact]
+    public void ToItemBaseListData_furniture_without_row_defaults_to_floor_category()
+    {
+        var item = new Item
+        {
+            Id = 11_000_590,
+            Socket = 0,
+            Name = "テスト家具",
+        };
+
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(12u, data.Category);
+    }
 }
