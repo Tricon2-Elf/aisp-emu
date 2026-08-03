@@ -25,6 +25,7 @@ public class PlayerSession : IPlayerSession
     public uint MapId { get; set; }
     public uint MyRoomId { get; set; }
     public uint? PendingMyRoomFurnitureItemId { get; set; }
+    public StorageOpenContext StorageOpenContext { get; set; }
     public int ChannelId { get; set; }
     public float X { get; set; }
     public float Y { get; set; }

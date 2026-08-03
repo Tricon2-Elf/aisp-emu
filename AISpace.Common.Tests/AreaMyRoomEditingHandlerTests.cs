@@ -1,3 +1,4 @@
+using AISpace.Common.Config;
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
@@ -9,6 +10,7 @@ using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Tests;
 
@@ -194,7 +196,9 @@ public class AreaMyRoomEditingHandlerTests
             );
 
             var nameHandler = new AreaMyRoomUpdateNameHandler(repository);
-            var securityHandler = new AreaMyRoomUpdateSecurityHandler(repository);
+            var state = new SharedState();
+            state.RegisterClient(ServerType.Area, session);
+            var securityHandler = CreateSecurityHandler(options, repository, state);
             await ((IPacketHandler)nameHandler).HandleAsync(
                 BuildNamePayload(42, "テスト部屋"),
                 session,
@@ -206,9 +210,15 @@ public class AreaMyRoomEditingHandlerTests
                 TestContext.Current.CancellationToken
             );
 
-            Assert.All(
+            Assert.Contains(
                 session.Sent,
-                packet => Assert.Equal(0u, new PacketReader(packet.Payload).ReadUInt())
+                packet =>
+                    packet.Type == PacketType.MyRoomUpdateSecurityResponse
+                    && new PacketReader(packet.Payload).ReadUInt() == 0u
+            );
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyMyHouseChangeSecurity
             );
 
             db.ChangeTracker.Clear();
@@ -225,7 +235,17 @@ public class AreaMyRoomEditingHandlerTests
                 session,
                 TestContext.Current.CancellationToken
             );
-            Assert.Equal(1u, new PacketReader(Assert.Single(session.Sent).Payload).ReadUInt());
+            Assert.Equal(
+                1u,
+                new PacketReader(
+                    Assert
+                        .Single(
+                            session.Sent,
+                            packet => packet.Type == PacketType.MyRoomUpdateSecurityResponse
+                        )
+                        .Payload
+                ).ReadUInt()
+            );
 
             db.ChangeTracker.Clear();
             stored = await db.Rooms.SingleAsync(
@@ -704,6 +724,40 @@ public class AreaMyRoomEditingHandlerTests
         {
             await connection.DisposeAsync();
         }
+    }
+
+    private static AreaMyRoomUpdateSecurityHandler CreateSecurityHandler(
+        DbContextOptions<MainContext> options,
+        MyRoomRepository repository,
+        SharedState state
+    )
+    {
+        var transition = new DirectMapLinkTransitionService(
+            new MapRepository(new MainContext(options)),
+            new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            ),
+            new MyRoomRepository(new MainContext(options)),
+            new MapLinkRepository(new MainContext(options)),
+            new ChannelRepository(new MainContext(options)),
+            Options.Create(
+                new ServerOptions
+                {
+                    NetworkOptions = new NetworkOptions(),
+                    DbOptions = new DbOptions(),
+                    IPOverride = "localhost",
+                }
+            ),
+            state,
+            NullLogger<DirectMapLinkTransitionService>.Instance
+        );
+        return new AreaMyRoomUpdateSecurityHandler(
+            repository,
+            state,
+            transition,
+            NullLogger<AreaMyRoomUpdateSecurityHandler>.Instance
+        );
     }
 
     private static CapturingPlayerSession CreateSession() =>

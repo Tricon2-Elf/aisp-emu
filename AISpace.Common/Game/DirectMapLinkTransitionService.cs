@@ -607,6 +607,7 @@ public sealed class DirectMapLinkTransitionService(
         session.MapId = destinationMapId;
         session.MyRoomId = destinationRoom is null ? 0 : checked((uint)destinationRoom.Id);
         session.PendingMyRoomFurnitureItemId = null;
+        session.StorageOpenContext = StorageOpenContext.None;
         session.ChannelId = (int)destinationChannelId;
         session.X = spawnX;
         session.Y = spawnY;
