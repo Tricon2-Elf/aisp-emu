@@ -3697,9 +3697,9 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_nicolive_reload",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
-    NotifyNicoliveReload = 0xE4B2,
+    NotifyNicoliveReload = 0xE342,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -5036,6 +5036,14 @@ public enum PacketType : ushort
         ImplementationState.Implemented
     )]
     RoomListCloseRequest = 0x9A24,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_nicolive_reload",
+        ImplementationState.Implemented
+    )]
+    NicoliveReloadRequest = 0x5D63,
 
     [PacketMetadata(
         PacketServerType.Area,

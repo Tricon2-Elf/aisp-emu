@@ -6,6 +6,7 @@ public class ServerOptions
     public string? IPOverride { get; set; }
     public NetworkOptions NetworkOptions { get; set; } = new();
     public DbOptions DbOptions { get; set; } = new();
+    public NicoLiveOptions NicoLive { get; set; } = new();
 
     /// <summary>Bounded capacity for each game server's packet dispatch channel (Auth, Msg, Area). Producers wait when full.</summary>
     public int PacketChannelCapacity { get; set; } = 512;

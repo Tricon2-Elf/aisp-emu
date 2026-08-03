@@ -1,3 +1,4 @@
+using AISpace.Common.Config;
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Entities;
 using AISpace.Common.DAL.Repositories;
@@ -8,11 +9,36 @@ using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace AISpace.Common.Tests;
 
 public sealed class AreaNicotvHandlersTests
 {
+    [Fact]
+    public async Task NicoLiveReload_ReturnsConfiguredLiveId()
+    {
+        var options = Options.Create(
+            new ServerOptions { NicoLive = new NicoLiveOptions { LiveId = " lv123 " } }
+        );
+        var handler = new AreaNicoliveReloadHandler(
+            options,
+            NullLogger<AreaNicoliveReloadHandler>.Instance
+        );
+        var session = CreateVisitorSession();
+
+        await ((IPacketHandler)handler).HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        var response = Assert.Single(session.Sent);
+        Assert.Equal(PacketType.NotifyNicoliveReload, response.Type);
+        Assert.Equal("lv123\0"u8.ToArray(), response.Payload);
+    }
+
     [Fact]
     public async Task GetInfoAndOpen_PersistNicotvStateForPlacedFurniture()
     {
