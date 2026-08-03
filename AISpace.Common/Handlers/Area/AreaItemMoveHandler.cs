@@ -83,6 +83,14 @@ public sealed class AreaItemMoveHandler(
         );
         if (result is null)
         {
+            logger.LogWarning(
+                "ItemMove failed: item {ItemId} char {CharacterId} userId {UserId} qty {Qty} toStorage={ToStorage}",
+                itemId,
+                session.CharacterId,
+                session.User.Id,
+                request.Num,
+                toStorage
+            );
             await session.SendAsync(ResponseType, new ItemMoveResponse(1).ToBytes(), ct);
             return;
         }

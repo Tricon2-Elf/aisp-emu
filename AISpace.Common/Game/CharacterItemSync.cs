@@ -110,9 +110,6 @@ internal static class CharacterItemSync
     )
     {
         var objId = ResolveObjId(session);
-        var inventoryCounts = character
-            .Inventory.Where(i => i.Quantity > 0)
-            .ToDictionary(i => i.ItemId, i => i.Quantity);
 
         // Seed primary item-table entries first.
         foreach (var stack in character.Inventory.OrderBy(i => i.ItemId))
@@ -130,16 +127,6 @@ internal static class CharacterItemSync
 
             var serialId = ResolveSerialId(equip.ItemId);
             var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId, name: equip.Item?.Name);
-
-            // Avoid rewriting the same place/serial entry when inventory already created it.
-            // Re-sending create with num=1 here can desync local counts and block unequip.
-            if (
-                !inventoryCounts.TryGetValue(equip.ItemId, out var inventoryCount)
-                || inventoryCount <= 0
-            )
-            {
-                await SendPrimaryItemTableEntryAsync(session, equip.ItemId, 1, ct);
-            }
 
             await session.SendAsync(
                 PacketType.ItemEquippedNotify,
