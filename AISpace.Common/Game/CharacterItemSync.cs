@@ -240,7 +240,20 @@ internal static class CharacterItemSync
         foreach (var added in result.Added)
             await SendEquippedAsync(session, objId, added, ct);
 
-        foreach (var (itemId, count) in result.InventoryCountsByItemId)
+        await SendInventoryCountsAsync(session, result.InventoryCountsByItemId, ct);
+    }
+
+    /// <summary>
+    /// Syncs bag quantities only (no avatar equip/unequip notifies). Used when dressing
+    /// Charadolls / Robos so removed clothes return to the owner's inventory UI.
+    /// </summary>
+    public static async Task SendInventoryCountsAsync(
+        IPlayerSession session,
+        IReadOnlyDictionary<int, int> inventoryCountsByItemId,
+        CancellationToken ct
+    )
+    {
+        foreach (var (itemId, count) in inventoryCountsByItemId)
             await SendInventoryCountAsync(session, itemId, count, ct);
     }
 

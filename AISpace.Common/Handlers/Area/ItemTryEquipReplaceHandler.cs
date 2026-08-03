@@ -41,11 +41,11 @@ public class ItemTryEquipReplaceHandler(
 
         var characterId = checked((int)session.CharacterId);
         var character = await characterRepo.GetByIdAsync(characterId, ct);
-        var resolvedEquips = ResolveEquipsForPersistence(request.Equips, character);
-        var normalizedEquips = NormalizeEquips(resolvedEquips);
 
         if (request.ObjId == session.CharacterId)
         {
+            var resolvedEquips = ResolveEquipsForPersistence(request.Equips, character);
+            var normalizedEquips = NormalizeEquips(resolvedEquips);
             var replaceResult = await characterRepo.ReplaceEquipmentAsync(
                 characterId,
                 resolvedEquips,
@@ -72,24 +72,42 @@ public class ItemTryEquipReplaceHandler(
             return;
         }
 
-        var robo = await roboRepository.ReplaceEquipmentAsync(
-            characterId,
-            roboId,
-            resolvedEquips,
-            ct
-        );
-        if (robo is null)
+        var existingRobo = await roboRepository.GetAsync(characterId, roboId, ct);
+        if (existingRobo is null)
         {
             await session.SendAsync(ResponseType, new ItemTryEquipReplaceResponse(1).ToBytes(), ct);
             return;
         }
 
-        await SendReplaceSuccessAsync(session, request.ObjId, normalizedEquips, ct);
+        var resolvedRoboEquips = ResolveEquipsForPersistence(
+            request.Equips,
+            character,
+            existingRobo
+        );
+        var normalizedRoboEquips = NormalizeEquips(resolvedRoboEquips);
+        var roboReplace = await roboRepository.ReplaceEquipmentAsync(
+            characterId,
+            roboId,
+            resolvedRoboEquips,
+            ct
+        );
+        if (roboReplace is null)
+        {
+            await session.SendAsync(ResponseType, new ItemTryEquipReplaceResponse(1).ToBytes(), ct);
+            return;
+        }
+
+        await SendReplaceSuccessAsync(session, request.ObjId, normalizedRoboEquips, ct);
+        await CharacterItemSync.SendInventoryCountsAsync(
+            session,
+            roboReplace.InventoryChanges.InventoryCountsByItemId,
+            ct
+        );
 
         var update = new NotifyUpdateRoboEquip(
             roboId,
             request.ObjId,
-            TryEquipNotifyBuilder.FromRobo(robo)
+            TryEquipNotifyBuilder.FromRobo(roboReplace.Robo)
         ).ToBytes();
         foreach (var peer in state.GetAreaPeers(session, includeSelf: true))
             await peer.SendAsync(PacketType.NotifyUpdateRoboEquip, update, ct);
@@ -129,18 +147,28 @@ public class ItemTryEquipReplaceHandler(
 
     private static IReadOnlyList<ItemEquipEntry> ResolveEquipsForPersistence(
         IReadOnlyList<ItemEquipEntry> equips,
-        Character? character
+        Character? character,
+        RoboData? robo = null
     )
     {
-        if (character is null || equips.Count == 0)
+        if (equips.Count == 0)
             return equips;
 
-        var ownedItemIds = character
-            .Inventory.Select(x => x.ItemId)
-            .Concat(character.Equipment.Select(x => x.ItemId))
-            .Where(x => x > 0)
-            .Distinct()
-            .ToList();
+        var ownedItemIds = new List<int>();
+        if (character is not null)
+        {
+            ownedItemIds.AddRange(character.Inventory.Select(x => x.ItemId));
+            ownedItemIds.AddRange(character.Equipment.Select(x => x.ItemId));
+        }
+
+        if (robo is not null)
+        {
+            ownedItemIds.AddRange(
+                robo.Character.Equips.Select(x => (int)x.ItemId).Where(id => id > 0)
+            );
+        }
+
+        ownedItemIds = ownedItemIds.Where(x => x > 0).Distinct().ToList();
         if (ownedItemIds.Count == 0)
             return equips;
 

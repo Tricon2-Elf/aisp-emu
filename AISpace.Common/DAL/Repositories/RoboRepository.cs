@@ -10,7 +10,7 @@ public interface IRoboRepository
     Task<bool> ExistsAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<RoboData?> GetAsync(int characterId, uint roboId, CancellationToken ct = default);
     Task<IReadOnlyList<RoboData>> GetAllAsync(int characterId, CancellationToken ct = default);
-    Task<RoboData?> ReplaceEquipmentAsync(
+    Task<RoboEquipReplaceResult?> ReplaceEquipmentAsync(
         int characterId,
         uint roboId,
         IReadOnlyList<ItemEquipEntry> equips,
@@ -104,7 +104,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         return entities.Select(ToRoboData).ToList();
     }
 
-    public async Task<RoboData?> ReplaceEquipmentAsync(
+    public async Task<RoboEquipReplaceResult?> ReplaceEquipmentAsync(
         int characterId,
         uint roboId,
         IReadOnlyList<ItemEquipEntry> equips,
@@ -121,7 +121,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         if (entity is null)
             return null;
 
-        var equipmentBySlot = new Dictionary<byte, ItemEquipEntry>();
+        var newBySlot = new Dictionary<byte, ItemEquipEntry>();
         foreach (var equip in equips)
         {
             if (
@@ -135,13 +135,120 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
                 continue;
 
             var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId);
-            equipmentBySlot[slotIndex] =
-                socket == 0 ? equip : new ItemEquipEntry(equip.ItemId, socket);
+            newBySlot[slotIndex] = socket == 0 ? equip : new ItemEquipEntry(equip.ItemId, socket);
+        }
+
+        var removed = new List<EquippedItemChange>();
+        var pendingAdds = new List<(byte SlotIndex, ItemEquipEntry Equip)>();
+
+        foreach (var row in entity.Equipment)
+        {
+            if (row.ItemId == 0)
+                continue;
+
+            if (
+                newBySlot.TryGetValue(row.SlotIndex, out var replacement)
+                && replacement.ItemId == row.ItemId
+            )
+                continue;
+
+            removed.Add(
+                new EquippedItemChange(
+                    (int)row.ItemId,
+                    ItemName: null,
+                    ItemEntityMapper.ResolveBodyspot(row.ItemId)
+                )
+            );
+        }
+
+        foreach (var (slotIndex, equip) in newBySlot)
+        {
+            var old = entity.Equipment.FirstOrDefault(e => e.SlotIndex == slotIndex);
+            if (old is not null && old.ItemId == equip.ItemId)
+                continue;
+
+            pendingAdds.Add((slotIndex, equip));
+        }
+
+        var addedItemIds = pendingAdds.Select(x => (int)x.Equip.ItemId).Distinct().ToList();
+        var addedItemsById = await db
+            .Items.Where(i => addedItemIds.Contains(i.Id))
+            .ToDictionaryAsync(i => i.Id, ct);
+
+        var added = new List<EquippedItemChange>(pendingAdds.Count);
+        foreach (var (_, equip) in pendingAdds)
+        {
+            var equipItemId = (int)equip.ItemId;
+            addedItemsById.TryGetValue(equipItemId, out var item);
+            var socket = ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
+            if (socket == 0)
+                socket = equip.SocketBit;
+            added.Add(new EquippedItemChange(equipItemId, item?.Name, socket));
+        }
+
+        var changedItemIds = removed
+            .Select(x => x.ItemId)
+            .Concat(added.Select(x => x.ItemId))
+            .Distinct()
+            .ToList();
+        var inventoryByItemId = await db
+            .CharacterInventories.Where(i =>
+                i.CharacterId == characterId && changedItemIds.Contains(i.ItemId)
+            )
+            .ToDictionaryAsync(i => i.ItemId, ct);
+
+        // Newly equipped pieces must come from inventory (or from pieces removed from this
+        // Robo in the same replace). Unequipped pieces return to the owner's inventory.
+        var availableByItemId = inventoryByItemId.ToDictionary(x => x.Key, x => x.Value.Quantity);
+        foreach (var change in removed)
+            availableByItemId[change.ItemId] =
+                availableByItemId.GetValueOrDefault(change.ItemId) + 1;
+
+        var requiredByItemId = pendingAdds
+            .GroupBy(x => (int)x.Equip.ItemId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        foreach (var (itemId, required) in requiredByItemId)
+        {
+            if (availableByItemId.GetValueOrDefault(itemId) < required)
+                throw new InvalidOperationException(
+                    $"Character {characterId} does not own required quantity of item {itemId} for Robo {roboId}."
+                );
+        }
+
+        foreach (var change in removed)
+        {
+            if (inventoryByItemId.TryGetValue(change.ItemId, out var existingInventory))
+            {
+                existingInventory.Quantity += 1;
+            }
+            else
+            {
+                existingInventory = new CharacterInventory
+                {
+                    CharacterId = characterId,
+                    ItemId = change.ItemId,
+                    Quantity = 1,
+                };
+                db.CharacterInventories.Add(existingInventory);
+                inventoryByItemId[change.ItemId] = existingInventory;
+            }
+        }
+
+        foreach (var (itemId, required) in requiredByItemId)
+        {
+            var inventory = inventoryByItemId[itemId];
+            inventory.Quantity -= required;
+            if (inventory.Quantity <= 0)
+            {
+                db.CharacterInventories.Remove(inventory);
+                inventoryByItemId.Remove(itemId);
+            }
         }
 
         foreach (var row in entity.Equipment)
         {
-            if (equipmentBySlot.TryGetValue(row.SlotIndex, out var equip))
+            if (newBySlot.TryGetValue(row.SlotIndex, out var equip))
             {
                 row.ItemId = equip.ItemId;
                 row.Socket = equip.SocketBit;
@@ -155,7 +262,23 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
 
         entity.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return ToRoboData(entity);
+
+        var countsByItemId = await db
+            .CharacterInventories.Where(i =>
+                i.CharacterId == characterId && changedItemIds.Contains(i.ItemId)
+            )
+            .ToDictionaryAsync(i => i.ItemId, i => i.Quantity, ct);
+
+        foreach (var itemId in changedItemIds)
+        {
+            if (!countsByItemId.ContainsKey(itemId))
+                countsByItemId[itemId] = 0;
+        }
+
+        return new RoboEquipReplaceResult(
+            ToRoboData(entity),
+            new EquipReplaceResult(removed, added, countsByItemId)
+        );
     }
 
     public async Task<bool> ReplaceDistributedStatusPointsAsync(

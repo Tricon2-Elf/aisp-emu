@@ -1,3 +1,5 @@
+using AISpace.Network.Data;
+
 namespace AISpace.Common.Game;
 
 public sealed record EquippedItemChange(int ItemId, string? ItemName, uint SocketBit);
@@ -7,3 +9,5 @@ public sealed record EquipReplaceResult(
     IReadOnlyList<EquippedItemChange> Added,
     IReadOnlyDictionary<int, int> InventoryCountsByItemId
 );
+
+public sealed record RoboEquipReplaceResult(RoboData Robo, EquipReplaceResult InventoryChanges);
