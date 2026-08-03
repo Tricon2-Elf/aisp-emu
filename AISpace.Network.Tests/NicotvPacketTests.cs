@@ -1,3 +1,4 @@
+using System.Reflection;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 
@@ -5,6 +6,39 @@ namespace AISpace.Network.Tests;
 
 public sealed class NicotvPacketTests
 {
+    [Fact]
+    public void NicoLiveReloadPackets_UseDecompiledOpcodesAndLayouts()
+    {
+        Assert.Equal(0x5D63, (ushort)PacketType.NicoliveReloadRequest);
+        Assert.Equal(0xE342, (ushort)PacketType.NotifyNicoliveReload);
+
+        Assert.Equal(
+            "send_nicolive_reload",
+            GetMetadata(PacketType.NicoliveReloadRequest).DecompiledName
+        );
+        Assert.Equal(
+            "recv_notify_nicolive_reload",
+            GetMetadata(PacketType.NotifyNicoliveReload).DecompiledName
+        );
+
+        Assert.NotNull(NicoliveReloadRequest.FromBytes([]));
+        Assert.Throws<InvalidDataException>(() => NicoliveReloadRequest.FromBytes([0]));
+        Assert.Equal("lv123\0"u8.ToArray(), new NotifyNicoliveReload("lv123").ToBytes());
+    }
+
+    [Fact]
+    public void NicoLiveReloadNotification_RejectsValuesTheClientCannotDecode()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            new NotifyNicoliveReload("日本語").ToBytes()
+        );
+        Assert.Throws<InvalidOperationException>(() =>
+            new NotifyNicoliveReload(
+                new string('a', NotifyNicoliveReload.MaximumEncodedLiveIdBytes + 1)
+            ).ToBytes()
+        );
+    }
+
     [Fact]
     public void GetInfoByFurnitureRequest_ParsesFurnitureId()
     {
@@ -99,5 +133,11 @@ public sealed class NicotvPacketTests
         foreach (var value in values)
             writer.Write(value);
         return writer.ToBytes();
+    }
+
+    private static PacketMetadata GetMetadata(PacketType packetType)
+    {
+        var field = typeof(PacketType).GetField(packetType.ToString());
+        return Assert.IsType<PacketMetadata>(field?.GetCustomAttribute<PacketMetadata>());
     }
 }
