@@ -150,6 +150,7 @@ internal static class ItemEntityMapper
             105 => (uint)WardrobeCategoryId.Shoes,
             106 => (uint)WardrobeCategoryId.Bra,
             107 => (uint)WardrobeCategoryId.LowerUnderwear,
+            108 => (uint)WardrobeCategoryId.Accessory,
             _ => (uint)WardrobeCategoryId.None,
         };
     }
