@@ -6,14 +6,23 @@ namespace AISpace.Network.Data;
 /// </summary>
 public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 = 0)
 {
+    /// <summary>Client m_ControllerType bit for player avatars.</summary>
+    public const byte ControllerAvatar = 1;
+
+    /// <summary>Client m_ControllerType bit for Charadolls / Robos.</summary>
+    public const byte ControllerRobo = 2;
+
+    /// <summary>Allow wardrobe equip on both avatars and Charadolls.</summary>
+    public const byte ControllerAvatarOrRobo = ControllerAvatar | ControllerRobo;
+
     public uint Category { get; set; } = category;
     public byte LimitByte1 { get; set; } = limitByte1;
     public byte LimitByte2 { get; set; } = limitByte2;
 
     /// <summary>
-    /// Client offline defaults (sub_48FB30) mix male/female limit bytes per category, which blocks
-    /// wardrobe re-equip via sub_406E60 (LimitByte2 must match character gender; LimitByte1 must
-    /// overlap m_ControllerType for player avatars). Send gender-matched orders instead.
+    /// Client offline defaults (sub_48FB30) mix male/female and avatar/robo limit bytes per
+    /// category, which blocks wardrobe re-equip via sub_406E60. Send gender-matched orders with
+    /// LimitByte1 covering both avatar (1) and Robo/Charadoll (2) controller types.
     /// </summary>
     public static IReadOnlyList<CharaOrderData> ForGender(int gender)
     {
@@ -21,10 +30,10 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
         byte limitByte2 = (byte)(gender == 1 ? 1 : 2);
         return
         [
-            new(101, 1, limitByte2), // shirt
-            new(102, 1, limitByte2), // pants / skirt
-            new(103, 1, limitByte2), // gloves
-            new(104, 1, limitByte2), // socks
+            new(101, ControllerAvatarOrRobo, limitByte2), // shirt
+            new(102, ControllerAvatarOrRobo, limitByte2), // pants / skirt
+            new(103, ControllerAvatarOrRobo, limitByte2), // gloves
+            new(104, ControllerAvatarOrRobo, limitByte2), // socks
             new(105, 0, limitByte2), // shoes
             new(106, 0, limitByte2), // bra
             new(107, 0, limitByte2), // lower underwear

@@ -31,10 +31,14 @@ public class EquipOrderListResponseTests
     }
 
     [Fact]
-    public void ForGender_uses_matching_limit_byte_for_female()
+    public void ForGender_allows_avatar_and_robo_controller_types()
     {
         var pants = CharaOrderData.ForGender(2).First(o => o.Category == 102);
-        Assert.Equal(1, pants.LimitByte1);
+        Assert.Equal(CharaOrderData.ControllerAvatarOrRobo, pants.LimitByte1);
         Assert.Equal(2, pants.LimitByte2);
+
+        var shirt = CharaOrderData.ForGender(1).First(o => o.Category == 101);
+        Assert.Equal(CharaOrderData.ControllerAvatarOrRobo, shirt.LimitByte1);
+        Assert.Equal(1, shirt.LimitByte2);
     }
 }

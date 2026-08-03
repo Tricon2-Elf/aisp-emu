@@ -378,6 +378,23 @@ public class ItemTryEquipReplaceHandlerTests
                     storedRobo.Character.Equips.Skip(1),
                     equip => Assert.Equal(0u, equip.ItemId)
                 );
+
+                // Old Robo clothing returned to inventory; newly equipped piece consumed.
+                Assert.Equal(
+                    1,
+                    await verificationDb
+                        .CharacterInventories.Where(i =>
+                            i.CharacterId == characterId && i.ItemId == oldRoboTopId
+                        )
+                        .Select(i => i.Quantity)
+                        .SingleAsync(TestContext.Current.CancellationToken)
+                );
+                Assert.False(
+                    await verificationDb.CharacterInventories.AnyAsync(
+                        i => i.CharacterId == characterId && i.ItemId == newRoboTopId,
+                        TestContext.Current.CancellationToken
+                    )
+                );
             }
 
             Assert.DoesNotContain(
@@ -388,19 +405,113 @@ public class ItemTryEquipReplaceHandlerTests
                             or PacketType.ItemRemovedNotify
                             or PacketType.AvatarNotifyData
             );
-            Assert.Collection(
-                actor.Sent,
-                packet => Assert.Equal(PacketType.ItemTryEquipReplaceResponse, packet.Type),
-                packet =>
-                {
-                    Assert.Equal(PacketType.ItemTryEquipReplacedNotify, packet.Type);
-                    Assert.Equal(roboObjectId, new PacketReader(packet.Payload).ReadUInt());
-                },
-                packet => AssertRoboEquipmentUpdate(packet, roboObjectId, newRoboTopId)
-            );
+            Assert.Equal(PacketType.ItemTryEquipReplaceResponse, actor.Sent[0].Type);
+            Assert.Equal(PacketType.ItemTryEquipReplacedNotify, actor.Sent[1].Type);
+            Assert.Equal(roboObjectId, new PacketReader(actor.Sent[1].Payload).ReadUInt());
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemCreateNotify);
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemUpdateListNotify);
+            AssertRoboEquipmentUpdate(actor.Sent[^1], roboObjectId, newRoboTopId);
             Assert.Collection(
                 peer.Sent,
                 packet => AssertRoboEquipmentUpdate(packet, roboObjectId, newRoboTopId)
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task HandleAsync_RoboUnequipReturnsItemsToCharacterInventory()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            const int characterId = 12004;
+            const int roboTopId = 10100100;
+            var roboObjectId = RoboRepository.GetObjectId(characterId, 1);
+
+            await TestDb.SeedCharacterAsync(
+                options,
+                characterId,
+                TestContext.Current.CancellationToken
+            );
+            await using (var db = new MainContext(options))
+            {
+                db.Items.Add(
+                    new Item
+                    {
+                        Id = roboTopId,
+                        Name = "Robo Top",
+                        Socket = 8,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+                var roboCharacter = new CharaData(roboObjectId, 1002011, "Unequip Robo");
+                roboCharacter.AddEquip((uint)roboTopId, 8);
+                await new RoboRepository(db).UpsertAsync(
+                    characterId,
+                    new RoboData(1, roboCharacter) { OwnerAvatarId = characterId },
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            var state = new SharedState();
+            var actor = new CapturingPlayerSession
+            {
+                CharacterId = characterId,
+                MapId = 20000000,
+                MyRoomId = characterId,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, actor);
+
+            var handler = new ItemTryEquipReplaceHandler(
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new RoboRepository(new MainContext(options)),
+                state,
+                NullLogger<ItemTryEquipReplaceHandler>.Instance
+            );
+
+            // Empty equip list = strip all clothing from the Charadoll.
+            await handler.HandleAsync(
+                BuildReplaceRequestPayload(roboObjectId, []),
+                actor,
+                TestContext.Current.CancellationToken
+            );
+
+            await using (var verificationDb = new MainContext(options))
+            {
+                var storedRobo = await new RoboRepository(verificationDb).GetAsync(
+                    characterId,
+                    1,
+                    TestContext.Current.CancellationToken
+                );
+                Assert.NotNull(storedRobo);
+                Assert.All(storedRobo.Character.Equips, equip => Assert.Equal(0u, equip.ItemId));
+
+                Assert.Equal(
+                    1,
+                    await verificationDb
+                        .CharacterInventories.Where(i =>
+                            i.CharacterId == characterId && i.ItemId == roboTopId
+                        )
+                        .Select(i => i.Quantity)
+                        .SingleAsync(TestContext.Current.CancellationToken)
+                );
+            }
+
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemCreateNotify);
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemUpdateListNotify);
+            Assert.DoesNotContain(
+                actor.Sent,
+                packet =>
+                    packet.Type is PacketType.ItemEquippedNotify or PacketType.ItemRemovedNotify
             );
         }
         finally
