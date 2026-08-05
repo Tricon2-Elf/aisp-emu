@@ -204,78 +204,7 @@ public class AreasvEnterHandler(
         state.RegisterClient(ServerType.Area, session);
 
         await session.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
-
-        _ = Task.Run(
-            async () =>
-            {
-                if (!hasPendingTransition)
-                    await Task.Delay(1000, ct);
-
-                var cha = session.Character ?? session.User!.Characters.First();
-                var myPos = new MovementData(
-                    session.X,
-                    session.Y,
-                    session.Z,
-                    session.Rotation,
-                    MovementType.Stopped
-                );
-
-                await session.SendAsync(
-                    PacketType.AvatarNotifyData,
-                    CreateNotify(
-                        cha,
-                        charId,
-                        0,
-                        myPos,
-                        checked((uint)session.ChannelId),
-                        session.MapId
-                    ),
-                    ct
-                );
-                session.NeedsPostLoadSelfAvatarNotify = false;
-
-                foreach (var other in state.GetAreaPeers(session))
-                {
-                    await other.SendAsync(
-                        PacketType.AvatarNotifyData,
-                        CreateNotify(
-                            cha,
-                            charId,
-                            1,
-                            myPos,
-                            checked((uint)session.ChannelId),
-                            session.MapId
-                        ),
-                        ct
-                    );
-
-                    var oCha = other.Character ?? other.User?.Characters.FirstOrDefault();
-                    if (oCha != null)
-                    {
-                        var oPos = new MovementData(
-                            other.X,
-                            other.Y,
-                            other.Z,
-                            other.Rotation,
-                            MovementType.Stopped
-                        );
-                        await session.SendAsync(
-                            PacketType.AvatarNotifyData,
-                            CreateNotify(
-                                oCha,
-                                other.CharacterId,
-                                1,
-                                oPos,
-                                checked((uint)other.ChannelId),
-                                other.MapId
-                            ),
-                            ct
-                        );
-                    }
-                }
-            },
-            ct
-        );
+        // Self avatar: AvatarGetData / MapDataEnterEnd. Peers: MapEnter (post-load).
     }
 
     public static byte[] CreateNotify(
