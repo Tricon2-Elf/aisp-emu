@@ -347,6 +347,7 @@ public class CmdExecHandlerTests
                         OwnerCharacterId = 8102,
                         Name = "Owner's Twelve Tatami Room",
                         Stage = MyRoomStage.TwelveTatami,
+                        Security = MyRoomSecurity.Public,
                         IsDefault = true,
                     }
                 );
@@ -442,6 +443,108 @@ public class CmdExecHandlerTests
             Assert.Equal("Second Room", createdRoom.Name);
             Assert.Equal(MyRoomStage.EightTatami, createdRoom.Stage);
             Assert.Equal(checked((uint)createdRoom.Id), areaSession.MyRoomId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task RoomCommand_PrivateRoom_SendsSystemNoticeAndDoesNotTeleport()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var visitor = CreateUserWithCharacter(
+                1,
+                8201,
+                "private-visitor",
+                "Private Visitor",
+                10990100
+            );
+            visitor.Characters.First().HomeIslandId = 1;
+            var owner = CreateUserWithCharacter(
+                2,
+                8202,
+                "private-owner",
+                "Private Owner",
+                10990100
+            );
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(visitor, owner);
+                db.Rooms.Add(
+                    new Room
+                    {
+                        Id = 9101,
+                        OwnerCharacterId = 8202,
+                        Name = "Private Room",
+                        Stage = MyRoomStage.SixTatami,
+                        Security = MyRoomSecurity.Private,
+                        IsDefault = true,
+                    }
+                );
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                db.Maps.AddRange(
+                    new Map { MapId = 10990100, Name = "Akihabara" },
+                    new Map { MapId = MyRoomInfo.BaseMapId, Name = "My Room (6 tatami mats)" }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = visitor,
+                UserId = visitor.Id,
+                Character = visitor.Characters.First(),
+                CharacterId = 8201,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = visitor, UserId = visitor.Id };
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "9101"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.Equal(10990100u, areaSession.MapId);
+            Assert.Equal(0u, areaSession.MyRoomId);
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(unchecked((uint)-5), reader.ReadUInt());
+            Assert.Contains("Private", reader.ReadString("utf-8"), StringComparison.Ordinal);
         }
         finally
         {
