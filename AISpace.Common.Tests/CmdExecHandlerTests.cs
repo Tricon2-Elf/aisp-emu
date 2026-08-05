@@ -347,6 +347,7 @@ public class CmdExecHandlerTests
                         OwnerCharacterId = 8102,
                         Name = "Owner's Twelve Tatami Room",
                         Stage = MyRoomStage.TwelveTatami,
+                        Security = MyRoomSecurity.Public,
                         IsDefault = true,
                     }
                 );

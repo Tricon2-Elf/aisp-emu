@@ -89,6 +89,24 @@ public class AreasvEnterHandler(
             else if (chara.CurrentRoomId is > 0)
                 room = await myRoomRepository.GetRoomAsync(chara.CurrentRoomId.Value, ct);
 
+            if (room is not null)
+            {
+                var owner =
+                    room.OwnerCharacterId == chara.Id
+                        ? chara
+                        : await characterRepo.GetByIdAsync(room.OwnerCharacterId, ct);
+                if (!MyRoomAccess.CanEnter(room, chara.Id, chara.CircleId, owner?.CircleId))
+                {
+                    logger.LogWarning(
+                        "AreasvEnter denied My Room {RoomId} for character {CharacterId} (security {Security}); falling back to owner room",
+                        room.Id,
+                        chara.Id,
+                        room.Security
+                    );
+                    room = null;
+                }
+            }
+
             room ??= await myRoomRepository.GetOrCreateDefaultRoomAsync(chara.Id, ct);
             if (room is not null)
                 mapId = MyRoomInfo.GetMapId(room.Stage);

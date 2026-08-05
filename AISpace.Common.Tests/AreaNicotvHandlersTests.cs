@@ -72,7 +72,10 @@ public sealed class AreaNicotvHandlersTests
                 Assert.Equal(NicotvPlaybackState.Closed, initial.PlaybackState);
 
                 session.Sent.Clear();
-                var openHandler = new AreaNicotvOpenByFurnitureHandler(repository);
+                var openHandler = new AreaNicotvOpenByFurnitureHandler(
+                    repository,
+                    new SharedState()
+                );
                 await ((IPacketHandler)openHandler).HandleAsync(
                     BuildOpenPayload(
                         2,
@@ -280,9 +283,77 @@ public sealed class AreaNicotvHandlersTests
             Assert.Same(requester, state.GetAreaSessionByUserId(2, peer.MapId, peer.ChannelId));
             await answerHandler.HandleAsync(BuildUIntPayload(nicotvId, 2, 37), peer, ct);
 
-            var response = Assert.Single(requester.Sent);
-            Assert.Equal(PacketType.NicotvGetPlayheadTimeResponse, response.Type);
+            var response = Assert.Single(
+                requester.Sent,
+                packet => packet.Type == PacketType.NicotvGetPlayheadTimeResponse
+            );
             Assert.Equal(BuildUIntPayload(nicotvId, 37), response.Payload);
+            Assert.Contains(
+                requester.Sent,
+                packet => packet.Type == PacketType.NotifyNicotvSetPlayheadTime
+            );
+            Assert.Contains(
+                peer.Sent,
+                packet =>
+                    packet.Type == PacketType.NotifyNicotvSetPlayheadTime
+                    && packet.Payload.SequenceEqual(BuildUIntPayload(nicotvId, 37))
+            );
+            Assert.Contains(
+                peer.Sent,
+                packet => packet.Type == PacketType.NicotvSetPlayheadTimeResponse
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task PlayAndSetMovie_PersistAndNotifyOtherRoomOccupants()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            await SeedNicotvFurnitureAsync(options, ct);
+
+            await using var db = new MainContext(options);
+            var repository = new NicotvRepository(db);
+            var nicotv = Assert.IsType<Nicotv>(
+                await repository.GetOrCreateForFurnitureAsync(42, 2, ct)
+            );
+            var nicotvId = checked((uint)nicotv.Id);
+
+            var state = new SharedState();
+            var actor = CreateVisitorSession(2);
+            var peer = CreateVisitorSession(3);
+            state.RegisterClient(ServerType.Area, actor);
+            state.RegisterClient(ServerType.Area, peer);
+
+            var playHandler = new AreaNicotvPlayHandler(repository, state);
+            await ((IPacketHandler)playHandler).HandleAsync(
+                BuildUIntPayload(nicotvId, (uint)NicotvPlaybackState.Paused),
+                actor,
+                ct
+            );
+
+            Assert.Equal(PacketType.NicotvPlayResponse, Assert.Single(actor.Sent).Type);
+            Assert.Equal(PacketType.NotifyNicotvPlay, Assert.Single(peer.Sent).Type);
+            Assert.Equal(NicotvPlaybackState.Paused, nicotv.PlaybackState);
+
+            actor.Sent.Clear();
+            peer.Sent.Clear();
+            var movieHandler = new AreaNicotvSetMovieHandler(repository, state);
+            await ((IPacketHandler)movieHandler).HandleAsync(
+                BuildSetMoviePayload(nicotvId, "sm9"),
+                actor,
+                ct
+            );
+
+            Assert.Equal(PacketType.NicotvSetMovieResponse, Assert.Single(actor.Sent).Type);
+            Assert.Equal(PacketType.NotifyNicotvSetMovie, Assert.Single(peer.Sent).Type);
+            Assert.Equal("sm9", nicotv.MovieId);
         }
         finally
         {
@@ -353,6 +424,15 @@ public sealed class AreaNicotvHandlersTests
         var writer = new PacketWriter();
         foreach (var value in values)
             writer.Write(value);
+        return writer.ToBytes();
+    }
+
+    private static byte[] BuildSetMoviePayload(uint nicotvId, string movieId)
+    {
+        var writer = new PacketWriter();
+        writer.Write(nicotvId);
+        writer.Write(System.Text.Encoding.ASCII.GetBytes(movieId));
+        writer.Write((byte)0);
         return writer.ToBytes();
     }
 

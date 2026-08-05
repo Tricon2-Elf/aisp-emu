@@ -51,5 +51,22 @@ public sealed class AreaNicotvGetPlayheadTimeRequestRHandler(
             new NicotvGetPlayheadTimeResponse(request.NicotvId, request.Seconds).ToBytes(),
             ct
         );
+
+        // No client send_nicotv_set_playhead_time exists; peer-reported seek times are
+        // broadcast so other occupants stay aligned with the active viewer.
+        await MyRoomFurnitureNotification.BroadcastToRoomAsync(
+            state,
+            session,
+            session.MyRoomId,
+            PacketType.NotifyNicotvSetPlayheadTime,
+            new NotifyNicotvSetPlayheadTime(request.NicotvId, request.Seconds).ToBytes(),
+            includeSource: true,
+            ct
+        );
+        await session.SendAsync(
+            PacketType.NicotvSetPlayheadTimeResponse,
+            new NicotvSetPlayheadTimeResponse(0, request.NicotvId).ToBytes(),
+            ct
+        );
     }
 }

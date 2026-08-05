@@ -3153,7 +3153,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_nicotv_play_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NicotvPlayResponse = 0x00E1,
 
@@ -3201,7 +3201,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_nicotv_set_movie_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NicotvSetMovieResponse = 0x31B0,
 
@@ -3209,9 +3209,17 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_nicotv_set_playhead_time_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NicotvSetPlayheadTimeResponse = 0x3C45,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_nicotv_set_comment_visible_r",
+        ImplementationState.Implemented
+    )]
+    NicotvSetCommentVisibleResponse = 0x1619,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -3713,7 +3721,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_nicotv_play",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyNicotvPlay = 0x8A86,
 
@@ -3729,7 +3737,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_nicotv_set_movie",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyNicotvSetMovie = 0x8E2A,
 
@@ -3737,9 +3745,17 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_nicotv_set_playhead_time",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyNicotvSetPlayheadTime = 0xAAAE,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_nicotv_set_comment_visible",
+        ImplementationState.Implemented
+    )]
+    NotifyNicotvSetCommentVisible = 0xE192,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -5084,6 +5100,22 @@ public enum PacketType : ushort
         ImplementationState.Implemented
     )]
     NicotvOpenByFurnitureRequest = 0x13CD,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_nicotv_play",
+        ImplementationState.Implemented
+    )]
+    NicotvPlayRequest = 0x90B9,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_nicotv_set_movie",
+        ImplementationState.Implemented
+    )]
+    NicotvSetMovieRequest = 0xDDCA,
 
     [PacketMetadata(
         PacketServerType.Area,
