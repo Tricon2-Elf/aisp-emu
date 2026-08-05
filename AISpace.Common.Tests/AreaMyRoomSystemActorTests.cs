@@ -161,11 +161,11 @@ public class AreaMyRoomSystemActorTests
             var mapEnterHandler = new AreaMapEnterHandler(
                 new MapRepository(db),
                 CreateDirectMapLinkTransitionService(db, state),
+                state,
                 NullLogger<AreaMapEnterHandler>.Instance,
                 dispatcher
             );
             var mapDataEnterEndHandler = new AreaMapDataEnterEndHandler(
-                state,
                 NullLogger<AreaMapDataEnterEndHandler>.Instance,
                 dispatcher
             );

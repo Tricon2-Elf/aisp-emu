@@ -10,8 +10,10 @@ namespace AISpace.Common.Handlers.Area;
 public class AreaMapEnterHandler(
     IMapRepository mapRepository,
     DirectMapLinkTransitionService directMapLinkTransitionService,
+    SharedState state,
     ILogger<AreaMapEnterHandler> logger,
-    ServerScriptDispatcher? serverScriptDispatcher = null
+    ServerScriptDispatcher? serverScriptDispatcher = null,
+    IRoboRepository? roboRepository = null
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapEnterRequest;
@@ -55,6 +57,13 @@ public class AreaMapEnterHandler(
                 request.ChannelId
             );
             await session.SendAsync(ResponseType, new AreaMapEnterResponse(0).ToBytes(), ct);
+            await AreaAvatarPresenceSync.SynchronizePeersAsync(
+                state,
+                session,
+                logger,
+                roboRepository,
+                ct
+            );
             await TryNotifyServerScriptsAsync(payload, session, ct);
             return;
         }
@@ -81,6 +90,13 @@ public class AreaMapEnterHandler(
                     session.User?.Id ?? session.UserId
                 );
                 await session.SendAsync(ResponseType, new AreaMapEnterResponse(0).ToBytes(), ct);
+                await AreaAvatarPresenceSync.SynchronizePeersAsync(
+                    state,
+                    session,
+                    logger,
+                    roboRepository,
+                    ct
+                );
                 await TryNotifyServerScriptsAsync(payload, session, ct);
                 return;
             }

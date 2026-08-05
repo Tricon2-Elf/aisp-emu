@@ -375,6 +375,7 @@ public class AreaMapHandlersTests
             var handler = new AreaMapEnterHandler(
                 new MapRepository(runDb),
                 CreateDirectMapLinkTransitionService(runDb, state),
+                state,
                 NullLogger<AreaMapEnterHandler>.Instance
             );
 
@@ -493,6 +494,7 @@ public class AreaMapHandlersTests
             var handler = new AreaMapEnterHandler(
                 new MapRepository(runDb),
                 CreateDirectMapLinkTransitionService(runDb, state),
+                state,
                 NullLogger<AreaMapEnterHandler>.Instance
             );
 
@@ -933,6 +935,7 @@ public class AreaMapHandlersTests
             var handler = new AreaMapEnterHandler(
                 new MapRepository(runDb),
                 CreateDirectMapLinkTransitionService(runDb, state),
+                state,
                 NullLogger<AreaMapEnterHandler>.Instance
             );
 
@@ -1202,6 +1205,7 @@ public class AreaMapHandlersTests
             var handler = new AreaMapEnterHandler(
                 new MapRepository(runDb),
                 CreateDirectMapLinkTransitionService(runDb, state),
+                state,
                 NullLogger<AreaMapEnterHandler>.Instance
             );
 
@@ -1746,7 +1750,7 @@ public class AreaMapHandlersTests
     }
 
     [Fact]
-    public async Task MapDataEnterEndHandler_SpawnsOnlyPeersInDestinationArea()
+    public async Task MapEnterHandler_SpawnsOnlyPeersInDestinationArea_OnPostLoadAck()
     {
         var state = new SharedState();
         var session = CreateSession(
@@ -1757,7 +1761,7 @@ public class AreaMapHandlersTests
             y: 2f,
             z: 3f
         );
-        session.NeedsPostLoadSelfAvatarNotify = false;
+        session.HasMovedSinceMapLoad = false;
         var destinationPeer = CreateSession(
             CreateUserWithCharacter(2, 3002, "spawn-peer", "Spawn Peer", 10990110),
             10990110,
@@ -1782,38 +1786,48 @@ public class AreaMapHandlersTests
         state.RegisterClient(ServerType.Area, oldPeer);
         state.RegisterClient(ServerType.Area, differentChannelPeer);
 
-        var handler = new AreaMapDataEnterEndHandler(
-            state,
-            NullLogger<AreaMapDataEnterEndHandler>.Instance
-        );
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var runDb = new MainContext(options);
+            var handler = new AreaMapEnterHandler(
+                new MapRepository(runDb),
+                CreateDirectMapLinkTransitionService(runDb, state),
+                state,
+                NullLogger<AreaMapEnterHandler>.Instance
+            );
 
-        await handler.HandleAsync(
-            ReadOnlyMemory<byte>.Empty,
-            session,
-            TestContext.Current.CancellationToken
-        );
+            await handler.HandleAsync(
+                BuildUIntPairPayload(10990110, 1),
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-        Assert.Collection(
-            session.Sent,
-            packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type),
-            packet =>
-            {
-                Assert.Equal(PacketType.AvatarNotifyData, packet.Type);
-                Assert.Equal(1u, new PacketReader(packet.Payload).ReadUInt());
-            }
-        );
-        Assert.Collection(
-            destinationPeer.Sent,
-            packet => Assert.Equal(PacketType.AvatarNotifyData, packet.Type)
-        );
-        Assert.Empty(oldPeer.Sent);
-        Assert.Empty(differentChannelPeer.Sent);
+            Assert.Collection(
+                session.Sent,
+                packet => Assert.Equal(PacketType.MapEnterResponse, packet.Type),
+                packet =>
+                {
+                    Assert.Equal(PacketType.AvatarNotifyData, packet.Type);
+                    Assert.Equal(1u, new PacketReader(packet.Payload).ReadUInt());
+                }
+            );
+            Assert.Collection(
+                destinationPeer.Sent,
+                packet => Assert.Equal(PacketType.AvatarNotifyData, packet.Type)
+            );
+            Assert.Empty(oldPeer.Sent);
+            Assert.Empty(differentChannelPeer.Sent);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     [Fact]
     public async Task MapDataEnterEndHandler_SendsSelfAvatarNotify_EvenWithoutVisiblePeers()
     {
-        var state = new SharedState();
         var session = CreateSession(
             CreateUserWithCharacter(1, 3051, "solo-user", "Solo User", 10990110),
             10990110,
@@ -1824,10 +1838,7 @@ public class AreaMapHandlersTests
         );
         session.NeedsPostLoadSelfAvatarNotify = true;
 
-        state.RegisterClient(ServerType.Area, session);
-
         var handler = new AreaMapDataEnterEndHandler(
-            state,
             NullLogger<AreaMapDataEnterEndHandler>.Instance
         );
 
@@ -1854,6 +1865,41 @@ public class AreaMapHandlersTests
                 Assert.Equal(13f, avatar.Character.Map.Movement.Z);
             }
         );
+    }
+
+    [Fact]
+    public async Task MapDataEnterEndHandler_DoesNotSpawnPeers()
+    {
+        var state = new SharedState();
+        var session = CreateSession(
+            CreateUserWithCharacter(1, 3061, "enter-end-user", "Enter End User", 10990110),
+            10990110,
+            1
+        );
+        session.NeedsPostLoadSelfAvatarNotify = false;
+        var peer = CreateSession(
+            CreateUserWithCharacter(2, 3062, "enter-end-peer", "Enter End Peer", 10990110),
+            10990110,
+            1
+        );
+        state.RegisterClient(ServerType.Area, session);
+        state.RegisterClient(ServerType.Area, peer);
+
+        var handler = new AreaMapDataEnterEndHandler(
+            NullLogger<AreaMapDataEnterEndHandler>.Instance
+        );
+
+        await handler.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Collection(
+            session.Sent,
+            packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type)
+        );
+        Assert.Empty(peer.Sent);
     }
 
     [Fact]

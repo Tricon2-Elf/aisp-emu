@@ -1,7 +1,6 @@
 using AISpace.Common.DAL;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
-using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
 using AISpace.Network.Data;
@@ -13,7 +12,7 @@ namespace AISpace.Common.Tests;
 public class AreaRoboPresenceTests
 {
     [Fact]
-    public async Task MapDataEnterEnd_SynchronizesAccompanyingRobosInBothDirections()
+    public async Task SynchronizePeers_SynchronizesAccompanyingRobosInBothDirections()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -91,15 +90,11 @@ public class AreaRoboPresenceTests
             peer.AccompanyingRoboIds.Add(1);
 
             await using var handlerDb = new MainContext(options);
-            var handler = new AreaMapDataEnterEndHandler(
+            await AreaAvatarPresenceSync.SynchronizePeersAsync(
                 state,
-                NullLogger<AreaMapDataEnterEndHandler>.Instance,
-                null,
-                new RoboRepository(handlerDb)
-            );
-            await handler.HandleAsync(
-                ReadOnlyMemory<byte>.Empty,
                 owner,
+                NullLogger.Instance,
+                new RoboRepository(handlerDb),
                 TestContext.Current.CancellationToken
             );
 
@@ -121,7 +116,6 @@ public class AreaRoboPresenceTests
 
             Assert.Collection(
                 owner.Sent,
-                sent => Assert.Equal(PacketType.MapDataEnterEndResponse, sent.Type),
                 sent => Assert.Equal(PacketType.AvatarNotifyData, sent.Type),
                 sent =>
                 {
