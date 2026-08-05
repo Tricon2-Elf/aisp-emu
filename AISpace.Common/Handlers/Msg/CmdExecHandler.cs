@@ -189,18 +189,30 @@ public class CmdExecHandler(
             }
             else if (cmd == "room" && request.Arguments.Count > 0)
             {
-                if (!int.TryParse(request.Arguments[0], out var roomId) || roomId <= 0)
+                if (
+                    !long.TryParse(request.Arguments[0], out var parsedRoomId)
+                    || parsedRoomId <= 0
+                    || parsedRoomId > int.MaxValue
+                )
                 {
+                    await SendSystemNoticeAsync(
+                        session,
+                        $"Invalid room ID. Use a number from 1 to {int.MaxValue}.",
+                        ct
+                    );
                     logger.LogWarning(
-                        "CmdExecHandler: room requires a positive room ID for character {CharacterId}",
-                        areaClient.CharacterId
+                        "CmdExecHandler: room requires a positive room ID for character {CharacterId} (got '{Argument}')",
+                        areaClient.CharacterId,
+                        request.Arguments[0]
                     );
                     return;
                 }
 
+                var roomId = checked((int)parsedRoomId);
                 room = await myRoomRepository.GetRoomAsync(roomId, ct);
                 if (room is null)
                 {
+                    await SendSystemNoticeAsync(session, $"Room {roomId} does not exist.", ct);
                     logger.LogWarning(
                         "CmdExecHandler: room {RoomId} does not exist for character {CharacterId}",
                         roomId,
