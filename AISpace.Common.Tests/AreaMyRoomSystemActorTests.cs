@@ -499,7 +499,8 @@ public class AreaMyRoomSystemActorTests
             await using var db = new MainContext(options);
             var handler = new AreaMyRoomGetFurnitureHandler(
                 new RoboRepository(db),
-                new MyRoomRepository(db)
+                new MyRoomRepository(db),
+                new SharedState()
             );
             var session = new CapturingPlayerSession
             {
@@ -557,7 +558,8 @@ public class AreaMyRoomSystemActorTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreaMyRoomGetFurnitureHandler(
                 new RoboRepository(handlerDb),
-                new MyRoomRepository(handlerDb)
+                new MyRoomRepository(handlerDb),
+                new SharedState()
             );
             var session = new CapturingPlayerSession
             {
@@ -640,7 +642,8 @@ public class AreaMyRoomSystemActorTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreaMyRoomGetFurnitureHandler(
                 new RoboRepository(handlerDb),
-                new MyRoomRepository(handlerDb)
+                new MyRoomRepository(handlerDb),
+                new SharedState()
             );
             var visitor = new CapturingPlayerSession
             {

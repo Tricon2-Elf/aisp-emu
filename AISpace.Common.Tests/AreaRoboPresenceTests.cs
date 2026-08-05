@@ -179,9 +179,16 @@ public class AreaRoboPresenceTests
                 Z = -20,
             };
 
+            var state = new SharedState();
+            state.RememberRoboMovement(
+                42,
+                1,
+                new MovementData(173f, 0f, -220f, 180, MovementType.Stopped)
+            );
+
             await using var handlerDb = new MainContext(options);
             await AreaAvatarPresenceSync.SynchronizePeersAsync(
-                new SharedState(),
+                state,
                 visitor,
                 NullLogger.Instance,
                 new RoboRepository(handlerDb),
@@ -200,6 +207,9 @@ public class AreaRoboPresenceTests
             Assert.Equal(42u, remote.OwnerAvatarId);
             Assert.Equal((uint)RoboState.Accompanying, remote.State);
             Assert.Equal(objectId, remote.Character.SlotId);
+            Assert.Equal(173f, remote.Character.Map.Movement.X);
+            Assert.Equal(-220f, remote.Character.Map.Movement.Z);
+            Assert.Equal(180, remote.Character.Map.Movement.Rotation);
             Assert.Contains(objectId, visitor.VisibleRemoteRoboObjectIds);
         }
         finally

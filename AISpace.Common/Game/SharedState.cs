@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 using AISpace.Common.DAL.Repositories;
 using AISpace.Network;
@@ -14,6 +15,10 @@ public class SharedState
     private readonly IPendingTransitionStore _pendingTransitionStore;
     private readonly ISessionPresenceRepository? _sessionPresenceRepository;
     private readonly IPendingMapTransferRepository? _pendingMapTransferRepository;
+    private readonly ConcurrentDictionary<
+        (uint OwnerCharacterId, uint RoboId),
+        MovementData
+    > _roboLastMovement = new();
 
     private readonly Channel<(string Id, string Message)> _messages = Channel.CreateUnbounded<(
         string Id,
@@ -163,6 +168,20 @@ public class SharedState
         ApplyRoboMap(robo, owner);
         return robo;
     }
+
+    public void RememberRoboMovement(uint ownerCharacterId, uint roboId, MovementData movement)
+    {
+        _roboLastMovement[(ownerCharacterId, roboId)] = new MovementData(
+            movement.X,
+            movement.Y,
+            movement.Z,
+            movement.Rotation,
+            MovementType.Stopped
+        );
+    }
+
+    public bool TryGetRoboMovement(uint ownerCharacterId, uint roboId, out MovementData movement) =>
+        _roboLastMovement.TryGetValue((ownerCharacterId, roboId), out movement!);
 
     public async Task BroadcastAreaDisappearAsync(
         IPlayerSession session,

@@ -8,7 +8,8 @@ namespace AISpace.Common.Handlers.Area;
 
 public class AreaMyRoomGetFurnitureHandler(
     IRoboRepository roboRepository,
-    IMyRoomRepository myRoomRepository
+    IMyRoomRepository myRoomRepository,
+    SharedState state
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyRoomGetFurnitureRequest;
@@ -101,6 +102,7 @@ public class AreaMyRoomGetFurnitureHandler(
                         (uint)RoboState.InMyRoom,
                         map
                     );
+                    state.RememberRoboMovement(session.CharacterId, robo.RoboId, map.Movement);
                     await session.SendAsync(PacketType.NotifyUpdateRoboState, notify.ToBytes(), ct);
                 }
             }

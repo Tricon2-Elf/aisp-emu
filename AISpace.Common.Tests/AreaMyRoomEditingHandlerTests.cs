@@ -465,7 +465,8 @@ public class AreaMyRoomEditingHandlerTests
             var session = CreateSession();
             var handler = new AreaMyRoomGetFurnitureHandler(
                 new RoboRepository(db),
-                new MyRoomRepository(db)
+                new MyRoomRepository(db),
+                new SharedState()
             );
             var writer = new PacketWriter();
             writer.Write(session.MapId);

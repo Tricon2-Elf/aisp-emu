@@ -37,6 +37,9 @@ public class AreaMoveRoboHandler(IRoboRepository roboRepository, SharedState sta
         )
             return;
 
+        if (request.Moves.Length > 0)
+            state.RememberRoboMovement(session.CharacterId, request.RoboId, request.Moves[^1]);
+
         var notify = new AvatarNotifyMove(robo.Character.SlotId, request.Moves).ToBytes();
         foreach (var peer in state.GetAreaPeers(session))
             await peer.SendAsync(PacketType.AvatarNotifyMove, notify, ct);
