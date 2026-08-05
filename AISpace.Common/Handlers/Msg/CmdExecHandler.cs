@@ -227,7 +227,14 @@ public class CmdExecHandler(
                 }
             }
 
-            if (!await directMapLinkTransitionService.TryTeleportToRoomAsync(areaClient, room, ct))
+            if (
+                !await directMapLinkTransitionService.TryTeleportToRoomAsync(
+                    areaClient,
+                    room,
+                    ct,
+                    enforceAccess: false
+                )
+            )
                 logger.LogWarning(
                     "CmdExecHandler: room teleport failed for user {UserId} (character {CharacterId}, room {RoomId})",
                     session.User?.Id ?? session.UserId,
