@@ -159,6 +159,22 @@ public static class AreaAvatarPresenceSync
         {
             var remoteRobo = SharedState.PrepareRemoteRobo(robo, mapSource);
             remoteRobo.OwnerAvatarId = checked((uint)room.OwnerCharacterId);
+            if (
+                state.TryGetRoboMovement(
+                    checked((uint)room.OwnerCharacterId),
+                    robo.RoboId,
+                    out var lastMovement
+                )
+            )
+            {
+                remoteRobo.Character.Map = new CharacterMapData
+                {
+                    ChannelId = checked((uint)session.ChannelId),
+                    MapId = session.MapId,
+                    Movement = lastMovement,
+                };
+            }
+
             if (!session.VisibleRemoteRoboObjectIds.Add(remoteRobo.Character.SlotId))
                 continue;
 
