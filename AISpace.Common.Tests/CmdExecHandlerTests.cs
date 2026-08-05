@@ -553,6 +553,152 @@ public class CmdExecHandlerTests
     }
 
     [Fact]
+    public async Task RoomCommand_MissingRoom_SendsSystemNotice()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var visitor = CreateUserWithCharacter(
+                1,
+                8301,
+                "missing-room-visitor",
+                "Missing Room Visitor",
+                10990100
+            );
+            visitor.Characters.First().HomeIslandId = 1;
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(visitor);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = visitor,
+                UserId = visitor.Id,
+                Character = visitor.Characters.First(),
+                CharacterId = 8301,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = visitor, UserId = visitor.Id };
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "999999"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(unchecked((uint)-5), reader.ReadUInt());
+            Assert.Contains("does not exist", reader.ReadString("utf-8"), StringComparison.Ordinal);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("2147483648")]
+    [InlineData("abc")]
+    public async Task RoomCommand_InvalidRoomId_SendsSystemNotice(string roomIdArgument)
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var visitor = CreateUserWithCharacter(
+                1,
+                8401,
+                "invalid-room-visitor",
+                "Invalid Room Visitor",
+                10990100
+            );
+            visitor.Characters.First().HomeIslandId = 1;
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(visitor);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = visitor,
+                UserId = visitor.Id,
+                Character = visitor.Characters.First(),
+                CharacterId = 8401,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = visitor, UserId = visitor.Id };
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", roomIdArgument),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(unchecked((uint)-5), reader.ReadUInt());
+            Assert.Contains(
+                "Invalid room ID",
+                reader.ReadString("utf-8"),
+                StringComparison.Ordinal
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task JumpCommand_MovesAreaSessionForwardAlongRotation()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
