@@ -53,14 +53,9 @@ public class CmdExecHandler(
             if (areaClient != null)
             {
                 // DistID -5 is the client "System" / Notice chat filter (see sub_428B10 / sub_428BB0).
-                const uint systemDistId = unchecked((uint)-5);
                 var text =
                     $"Char: {areaClient.CharacterId} | Map: {areaClient.MapId} | Ch: {areaClient.ChannelId} | X: {areaClient.X}f | Y: {areaClient.Y}f | Z: {areaClient.Z}f | Rot: {areaClient.Rotation}";
-                await session.SendAsync(
-                    PacketType.TalkForwardNotify,
-                    new TalkForwardNotify(0, systemDistId, text, 0).ToBytes(),
-                    ct
-                );
+                await SendSystemNoticeAsync(session, text, ct);
             }
             else
             {
@@ -213,6 +208,33 @@ public class CmdExecHandler(
                     );
                     return;
                 }
+
+                if (room.OwnerCharacterId != character.Id)
+                {
+                    var owner = await characterRepo.GetByIdAsync(room.OwnerCharacterId, ct);
+                    if (
+                        !MyRoomAccess.CanEnter(
+                            room,
+                            character.Id,
+                            character.CircleId,
+                            owner?.CircleId
+                        )
+                    )
+                    {
+                        var message =
+                            room.Security == MyRoomSecurity.Private
+                                ? "You can't join that room because it is Private."
+                                : "You can't join that room.";
+                        await SendSystemNoticeAsync(session, message, ct);
+                        logger.LogWarning(
+                            "CmdExecHandler: denied room {RoomId} for character {CharacterId} (security {Security})",
+                            room.Id,
+                            character.Id,
+                            room.Security
+                        );
+                        return;
+                    }
+                }
             }
             else
             {
@@ -227,14 +249,7 @@ public class CmdExecHandler(
                 }
             }
 
-            if (
-                !await directMapLinkTransitionService.TryTeleportToRoomAsync(
-                    areaClient,
-                    room,
-                    ct,
-                    enforceAccess: false
-                )
-            )
+            if (!await directMapLinkTransitionService.TryTeleportToRoomAsync(areaClient, room, ct))
                 logger.LogWarning(
                     "CmdExecHandler: room teleport failed for user {UserId} (character {CharacterId}, room {RoomId})",
                     session.User?.Id ?? session.UserId,
@@ -600,6 +615,21 @@ public class CmdExecHandler(
             return state.GetAreaSessionByCharacterId(msgSession.CharacterId);
 
         return null;
+    }
+
+    private static Task SendSystemNoticeAsync(
+        IPlayerSession session,
+        string text,
+        CancellationToken ct
+    )
+    {
+        // DistID -5 is the client "System" / Notice chat filter (see sub_428B10 / sub_428BB0).
+        const uint systemDistId = unchecked((uint)-5);
+        return session.SendAsync(
+            PacketType.TalkForwardNotify,
+            new TalkForwardNotify(0, systemDistId, text, 0).ToBytes(),
+            ct
+        );
     }
 
     private static byte[] CreateTeleportNotify(Character cha, uint objId, MovementData pos)
