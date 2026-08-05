@@ -26,7 +26,15 @@ public class AreaMoveRoboHandler(IRoboRepository roboRepository, SharedState sta
             request.RoboId,
             ct
         );
-        if (robo is null || !session.AccompanyingRoboIds.Contains(request.RoboId))
+        if (robo is null)
+            return;
+
+        // Accompanying dolls move on any map; My Room dolls are not in AccompanyingRoboIds
+        // (furniture load parks them) but still send MoveRobo while walking the room.
+        if (
+            !session.AccompanyingRoboIds.Contains(request.RoboId)
+            && !MyRoomInfo.IsMyRoomMap(session.MapId)
+        )
             return;
 
         var notify = new AvatarNotifyMove(robo.Character.SlotId, request.Moves).ToBytes();

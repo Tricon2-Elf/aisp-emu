@@ -13,7 +13,8 @@ public class AreaMapEnterHandler(
     SharedState state,
     ILogger<AreaMapEnterHandler> logger,
     ServerScriptDispatcher? serverScriptDispatcher = null,
-    IRoboRepository? roboRepository = null
+    IRoboRepository? roboRepository = null,
+    IMyRoomRepository? myRoomRepository = null
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapEnterRequest;
@@ -62,6 +63,7 @@ public class AreaMapEnterHandler(
                 session,
                 logger,
                 roboRepository,
+                myRoomRepository,
                 ct
             );
             await TryNotifyServerScriptsAsync(payload, session, ct);
@@ -95,6 +97,7 @@ public class AreaMapEnterHandler(
                     session,
                     logger,
                     roboRepository,
+                    myRoomRepository,
                     ct
                 );
                 await TryNotifyServerScriptsAsync(payload, session, ct);

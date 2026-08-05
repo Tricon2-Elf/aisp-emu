@@ -70,6 +70,20 @@ public class AreaRoboCallHandler(
             map
         );
         await session.SendAsync(PacketType.NotifyUpdateRoboState, stateUpdate.ToBytes(), ct);
+
+        // Re-show parked doll to room peers with the same remote spawn used on other maps.
+        if (state is not null && MyRoomInfo.IsMyRoomMap(session.MapId))
+        {
+            var remoteRobo = SharedState.PrepareRemoteRobo(robo, session);
+            remoteRobo.OwnerAvatarId = session.CharacterId;
+            var spawn = new NotifyRoboData(0, remoteRobo).ToBytes();
+            foreach (var peer in state.GetAreaPeers(session))
+            {
+                peer.VisibleRemoteRoboObjectIds.Add(remoteRobo.Character.SlotId);
+                await peer.SendAsync(PacketType.NotifyRoboData, spawn, ct);
+            }
+        }
+
         await session.SendAsync(
             ResponseType,
             new RoboCallResponse(request.RoboId, 0).ToBytes(),

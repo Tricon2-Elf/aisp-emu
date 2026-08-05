@@ -18,6 +18,7 @@ public static class AreaAvatarPresenceSync
         IPlayerSession session,
         ILogger logger,
         IRoboRepository? roboRepository = null,
+        IMyRoomRepository? myRoomRepository = null,
         CancellationToken ct = default
     )
     {
@@ -109,6 +110,63 @@ public static class AreaAvatarPresenceSync
                         );
                 }
             }
+        }
+
+        await SynchronizeMyRoomOwnerRobosAsync(
+            state,
+            session,
+            roboRepository,
+            myRoomRepository,
+            ct
+        );
+    }
+
+    /// <summary>
+    /// Visitors never receive the room owner's RoboGetList. Spawn that Charadoll at MapEnter
+    /// with the same NotifyRoboData path used for accompanying Robos on every other map.
+    /// </summary>
+    private static async Task SynchronizeMyRoomOwnerRobosAsync(
+        SharedState state,
+        IPlayerSession session,
+        IRoboRepository? roboRepository,
+        IMyRoomRepository? myRoomRepository,
+        CancellationToken ct
+    )
+    {
+        if (
+            roboRepository is null
+            || myRoomRepository is null
+            || !MyRoomInfo.IsMyRoomMap(session.MapId)
+            || session.MyRoomId == 0
+            || session.MyRoomId > int.MaxValue
+        )
+            return;
+
+        var room = await myRoomRepository.GetRoomAsync(checked((int)session.MyRoomId), ct);
+        if (room is null || room.OwnerCharacterId == checked((int)session.CharacterId))
+            return;
+
+        var ownerSession = state.GetAreaSessionByCharacterId(
+            checked((uint)room.OwnerCharacterId),
+            session.MapId,
+            session.ChannelId
+        );
+        if (ownerSession is not null && ownerSession.MyRoomId != session.MyRoomId)
+            ownerSession = null;
+        var mapSource = ownerSession ?? session;
+        var ownerRobos = await roboRepository.GetAllAsync(room.OwnerCharacterId, ct);
+        foreach (var robo in ownerRobos)
+        {
+            var remoteRobo = SharedState.PrepareRemoteRobo(robo, mapSource);
+            remoteRobo.OwnerAvatarId = checked((uint)room.OwnerCharacterId);
+            if (!session.VisibleRemoteRoboObjectIds.Add(remoteRobo.Character.SlotId))
+                continue;
+
+            await session.SendAsync(
+                PacketType.NotifyRoboData,
+                new NotifyRoboData(0, remoteRobo).ToBytes(),
+                ct
+            );
         }
     }
 }

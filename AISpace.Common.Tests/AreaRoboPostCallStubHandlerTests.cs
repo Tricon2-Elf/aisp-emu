@@ -121,6 +121,69 @@ public class AreaRoboPostCallStubHandlerTests
     }
 
     [Fact]
+    public async Task MoveRobo_InMyRoom_BroadcastsWithoutAccompanyingFlag()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+            await using (var seedDb = new MainContext(options))
+            {
+                var objectId = RoboRepository.GetObjectId(1, 1);
+                await new RoboRepository(seedDb).UpsertAsync(
+                    1,
+                    new RoboData(1, new CharaData(objectId, 1_002_011, "Room Robo"))
+                    {
+                        OwnerAvatarId = 1,
+                    },
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            var state = new SharedState();
+            var owner = new CapturingPlayerSession
+            {
+                CharacterId = 1,
+                MapId = MyRoomInfo.TwelveTatamiMapId,
+                MyRoomId = 1,
+                ChannelId = 1,
+            };
+            var visitor = new CapturingPlayerSession
+            {
+                CharacterId = 2,
+                MapId = MyRoomInfo.TwelveTatamiMapId,
+                MyRoomId = 1,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, owner);
+            state.RegisterClient(ServerType.Area, visitor);
+
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreaMoveRoboHandler(new RoboRepository(handlerDb), state);
+            var payloadWriter = new PacketWriter();
+            payloadWriter.Write(1u);
+            payloadWriter.Write(new MovementData(10, 0, -20, 90, MovementType.Walking).ToBytes());
+            payloadWriter.Write(new MovementData(11, 0, -21, 90, MovementType.Walking).ToBytes());
+
+            await handler.HandleAsync(
+                payloadWriter.ToBytes(),
+                owner,
+                TestContext.Current.CancellationToken
+            );
+
+            var sent = Assert.Single(visitor.Sent);
+            Assert.Equal(PacketType.AvatarNotifyMove, sent.Type);
+            var reader = new PacketReader(sent.Payload);
+            Assert.Equal(2u, reader.ReadUInt());
+            Assert.Equal(RoboRepository.GetObjectId(1, 1), reader.ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task RoboAiscriptEnd_ParsesWithoutResponse()
     {
         var handler = new AreaRoboAiscriptEndHandler();

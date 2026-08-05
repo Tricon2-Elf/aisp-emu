@@ -76,31 +76,33 @@ public class AreaMyRoomGetFurnitureHandler(
                     );
             }
 
-            var robos = await roboRepository.GetAllAsync(room.OwnerCharacterId, ct);
-            foreach (var robo in robos)
+            if (room.OwnerCharacterId == checked((int)session.CharacterId))
             {
-                if (room.OwnerCharacterId == checked((int)session.CharacterId))
+                var robos = await roboRepository.GetAllAsync(room.OwnerCharacterId, ct);
+                foreach (var robo in robos)
+                {
                     session.AccompanyingRoboIds.Remove(robo.RoboId);
 
-                var map = new CharacterMapData
-                {
-                    ChannelId = checked((uint)session.ChannelId),
-                    MapId = session.MapId,
-                    Movement = new MovementData(
-                        session.X,
-                        session.Y,
-                        session.Z - 50f,
-                        session.Rotation,
-                        MovementType.Stopped
-                    ),
-                };
-                var notify = new NotifyUpdateRoboState(
-                    robo.RoboId,
-                    robo.Character.SlotId,
-                    (uint)RoboState.InMyRoom,
-                    map
-                );
-                await session.SendAsync(PacketType.NotifyUpdateRoboState, notify.ToBytes(), ct);
+                    var map = new CharacterMapData
+                    {
+                        ChannelId = checked((uint)session.ChannelId),
+                        MapId = session.MapId,
+                        Movement = new MovementData(
+                            session.X,
+                            session.Y,
+                            session.Z - 50f,
+                            session.Rotation,
+                            MovementType.Stopped
+                        ),
+                    };
+                    var notify = new NotifyUpdateRoboState(
+                        robo.RoboId,
+                        robo.Character.SlotId,
+                        (uint)RoboState.InMyRoom,
+                        map
+                    );
+                    await session.SendAsync(PacketType.NotifyUpdateRoboState, notify.ToBytes(), ct);
+                }
             }
         }
 

@@ -95,6 +95,7 @@ public class AreaRoboPresenceTests
                 owner,
                 NullLogger.Instance,
                 new RoboRepository(handlerDb),
+                myRoomRepository: null,
                 TestContext.Current.CancellationToken
             );
 
@@ -129,6 +130,77 @@ public class AreaRoboPresenceTests
             );
             Assert.Contains(RoboRepository.GetObjectId(1, 1), peer.VisibleRemoteRoboObjectIds);
             Assert.Contains(RoboRepository.GetObjectId(2, 1), owner.VisibleRemoteRoboObjectIds);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SynchronizePeers_SpawnsMyRoomOwnerRoboForVisitorAtMapEnter()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            await TestDb.SeedCharacterAsync(options, 99, TestContext.Current.CancellationToken);
+
+            var objectId = RoboRepository.GetObjectId(42, 1);
+            await using (var seedDb = new MainContext(options))
+            {
+                await new RoboRepository(seedDb).UpsertAsync(
+                    42,
+                    new RoboData(1, new CharaData(objectId, 1_002_011, "Room Robo"))
+                    {
+                        OwnerAvatarId = 42,
+                    },
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            AISpace.Common.DAL.Entities.Character visitorCharacter;
+            await using (var characterDb = new MainContext(options))
+            {
+                visitorCharacter = await characterDb
+                    .Characters.AsNoTracking()
+                    .SingleAsync(x => x.Id == 99, TestContext.Current.CancellationToken);
+            }
+
+            var visitor = new CapturingPlayerSession
+            {
+                CharacterId = 99,
+                Character = visitorCharacter,
+                MapId = MyRoomInfo.TwelveTatamiMapId,
+                MyRoomId = 42,
+                ChannelId = 1,
+                X = 10,
+                Y = 0,
+                Z = -20,
+            };
+
+            await using var handlerDb = new MainContext(options);
+            await AreaAvatarPresenceSync.SynchronizePeersAsync(
+                new SharedState(),
+                visitor,
+                NullLogger.Instance,
+                new RoboRepository(handlerDb),
+                new MyRoomRepository(handlerDb),
+                TestContext.Current.CancellationToken
+            );
+
+            var spawn = Assert.Single(
+                visitor.Sent,
+                packet => packet.Type == PacketType.NotifyRoboData
+            );
+            var reader = new PacketReader(spawn.Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            var remote = RoboData.FromBytes(reader.ReadBytes(RoboData.WireSize));
+            Assert.Equal(1u, remote.RoboId);
+            Assert.Equal(42u, remote.OwnerAvatarId);
+            Assert.Equal((uint)RoboState.Accompanying, remote.State);
+            Assert.Equal(objectId, remote.Character.SlotId);
+            Assert.Contains(objectId, visitor.VisibleRemoteRoboObjectIds);
         }
         finally
         {
