@@ -6,7 +6,10 @@ using AISpace.Network.Packets.Area;
 
 namespace AISpace.Common.Handlers.Area;
 
-public sealed class AreaNicotvOpenByFurnitureHandler(INicotvRepository nicotvRepository)
+public sealed class AreaNicotvOpenByFurnitureHandler(
+    INicotvRepository nicotvRepository,
+    SharedState state
+)
     : PacketHandlerBase<NicotvOpenByFurnitureRequest, NicotvOpenResponse>,
         IRequiresAuthenticatedSession
 {
@@ -27,16 +30,82 @@ public sealed class AreaNicotvOpenByFurnitureHandler(INicotvRepository nicotvRep
         )
             return new NicotvOpenResponse(request.FurnitureId, 0, new NicotvData());
 
+        var roomId = checked((int)session.MyRoomId);
+        var existing = await nicotvRepository.GetOrCreateForFurnitureAsync(
+            roomId,
+            request.FurnitureId,
+            ct
+        );
+        var previousPlayback = existing?.PlaybackState;
+        var previousMovieId = existing?.MovieId;
+        var previousCommentVisibility = existing?.CommentVisibility;
+
         var nicotv = await nicotvRepository.UpdateForFurnitureAsync(
-            checked((int)session.MyRoomId),
+            roomId,
             request.FurnitureId,
             request.Nicotv,
             ct
         );
-        return new NicotvOpenResponse(
-            request.FurnitureId,
-            nicotv is null ? 0u : checked((uint)nicotv.Id),
-            nicotv is null ? new NicotvData() : NicotvMapper.ToPacket(nicotv)
-        );
+        if (nicotv is null)
+            return new NicotvOpenResponse(request.FurnitureId, 0, new NicotvData());
+
+        var nicotvId = checked((uint)nicotv.Id);
+
+        // Client has no dedicated send for comment-visible; open carries the full NicotvData
+        // snapshot, so broadcast peer notifies for fields that changed.
+        if (previousPlayback is null || previousPlayback != nicotv.PlaybackState)
+        {
+            await MyRoomFurnitureNotification.BroadcastToRoomAsync(
+                state,
+                session,
+                session.MyRoomId,
+                PacketType.NotifyNicotvPlay,
+                new NotifyNicotvPlay(nicotvId, (uint)nicotv.PlaybackState).ToBytes(),
+                includeSource: false,
+                ct
+            );
+        }
+
+        if (
+            previousMovieId is null
+            || !string.Equals(previousMovieId, nicotv.MovieId, StringComparison.Ordinal)
+        )
+        {
+            await MyRoomFurnitureNotification.BroadcastToRoomAsync(
+                state,
+                session,
+                session.MyRoomId,
+                PacketType.NotifyNicotvSetMovie,
+                new NotifyNicotvSetMovie(nicotvId, nicotv.MovieId).ToBytes(),
+                includeSource: false,
+                ct
+            );
+        }
+
+        if (
+            previousCommentVisibility is null
+            || previousCommentVisibility != nicotv.CommentVisibility
+        )
+        {
+            await session.SendAsync(
+                PacketType.NicotvSetCommentVisibleResponse,
+                new NicotvSetCommentVisibleResponse(0, nicotvId).ToBytes(),
+                ct
+            );
+            await MyRoomFurnitureNotification.BroadcastToRoomAsync(
+                state,
+                session,
+                session.MyRoomId,
+                PacketType.NotifyNicotvSetCommentVisible,
+                new NotifyNicotvSetCommentVisible(
+                    nicotvId,
+                    (uint)nicotv.CommentVisibility
+                ).ToBytes(),
+                includeSource: false,
+                ct
+            );
+        }
+
+        return new NicotvOpenResponse(request.FurnitureId, nicotvId, NicotvMapper.ToPacket(nicotv));
     }
 }

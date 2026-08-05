@@ -1,4 +1,5 @@
-﻿using AISpace.Common.DAL.Entities;
+﻿using System.Data;
+using AISpace.Common.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.DAL.Repositories;
@@ -239,6 +240,11 @@ public class UserRepository(MainContext db) : IUserRepository
         if (quantity <= 0)
             return null;
 
+        await using var transaction = await _db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+
         var inventory = await _db.CharacterInventories.SingleOrDefaultAsync(
             x => x.CharacterId == characterId && x.ItemId == itemId,
             ct
@@ -307,6 +313,7 @@ public class UserRepository(MainContext db) : IUserRepository
         }
 
         await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return (Math.Max(0, inventoryQuantity), Math.Max(0, storageQuantity));
     }
 }

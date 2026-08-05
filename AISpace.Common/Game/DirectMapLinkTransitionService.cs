@@ -429,6 +429,22 @@ public sealed class DirectMapLinkTransitionService(
         if (character == null)
             return false;
 
+        var owner =
+            room.OwnerCharacterId == character.Id
+                ? character
+                : await characterRepository.GetByIdAsync(room.OwnerCharacterId, ct);
+        if (!MyRoomAccess.CanEnter(room, character.Id, character.CircleId, owner?.CircleId))
+        {
+            logger.LogWarning(
+                "Denied My Room entry for character {CharacterId} into room {RoomId} (security {Security}, owner {OwnerCharacterId})",
+                character.Id,
+                room.Id,
+                room.Security,
+                room.OwnerCharacterId
+            );
+            return false;
+        }
+
         var destinationMapId = MyRoomInfo.GetMapId(room.Stage);
         var destinationMap = await mapRepository.GetByMapIdAsync(destinationMapId, ct);
         if (destinationMap == null)

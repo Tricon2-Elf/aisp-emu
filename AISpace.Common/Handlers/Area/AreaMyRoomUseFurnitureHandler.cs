@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Area;
@@ -5,9 +6,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Area;
 
-public class AreaMyRoomUseFurnitureHandler(ILogger<AreaMyRoomUseFurnitureHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class AreaMyRoomUseFurnitureHandler(
+    IMyRoomRepository myRoomRepository,
+    SharedState state,
+    ILogger<AreaMyRoomUseFurnitureHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MyRoomUseFurnitureRequest;
 
@@ -40,10 +43,31 @@ public class AreaMyRoomUseFurnitureHandler(ILogger<AreaMyRoomUseFurnitureHandler
             return;
         }
 
+        var furniture = await myRoomRepository.GetFurnitureAsync(
+            checked((int)request.RoomId),
+            request.FurnId,
+            ct
+        );
+        if (furniture is null)
+        {
+            logger.LogWarning(
+                "Rejected MyRoomUseFurniture for character {CharacterId}: furniture {FurnId} missing in room {RoomId}",
+                session.CharacterId,
+                request.FurnId,
+                request.RoomId
+            );
+            await session.SendAsync(ResponseType, new MyRoomUseFurnitureResponse(1).ToBytes(), ct);
+            return;
+        }
+
         await session.SendAsync(ResponseType, new MyRoomUseFurnitureResponse(0).ToBytes(), ct);
-        await session.SendAsync(
+        await MyRoomFurnitureNotification.BroadcastToRoomAsync(
+            state,
+            session,
+            request.RoomId,
             PacketType.NotifyMyRoomUseFurniture,
             new NotifyMyRoomUseFurniture(request.RoomId, request.FurnId).ToBytes(),
+            includeSource: true,
             ct
         );
 

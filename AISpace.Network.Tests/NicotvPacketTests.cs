@@ -110,6 +110,28 @@ public sealed class NicotvPacketTests
         Assert.Equal(UIntPayload(1, 1), new NicotvSetChannelResponse(1, 1).ToBytes());
         Assert.Equal(UIntPayload(1, 1), new NotifyNicotvSetChannel(1, 1).ToBytes());
 
+        var play = NicotvPlayRequest.FromBytes(UIntPayload(1, (uint)NicotvPlaybackState.Playing));
+        Assert.Equal(1u, play.NicotvId);
+        Assert.Equal((uint)NicotvPlaybackState.Playing, play.Status);
+        Assert.Equal(UIntPayload(0, 1), new NicotvPlayResponse(0, 1).ToBytes());
+        Assert.Equal(
+            UIntPayload(1, (uint)NicotvPlaybackState.Playing),
+            new NotifyNicotvPlay(1, (uint)NicotvPlaybackState.Playing).ToBytes()
+        );
+
+        var movieWriter = new PacketWriter();
+        movieWriter.Write(1u);
+        movieWriter.Write("sm9"u8);
+        movieWriter.Write((byte)0);
+        var setMovie = NicotvSetMovieRequest.FromBytes(movieWriter.ToBytes());
+        Assert.Equal(1u, setMovie.NicotvId);
+        Assert.Equal("sm9", setMovie.MovieId);
+        Assert.Equal(UIntPayload(0, 1), new NicotvSetMovieResponse(0, 1).ToBytes());
+        Assert.Equal(movieWriter.ToBytes(), new NotifyNicotvSetMovie(1, "sm9").ToBytes());
+
+        Assert.Equal(0x0001, (ushort)PacketType.NicotvCloseResponse);
+        Assert.Equal(0x90B9, (ushort)PacketType.NicotvPlayRequest);
+        Assert.Equal(0xDDCA, (ushort)PacketType.NicotvSetMovieRequest);
         var close = NicotvCloseRequest.FromBytes(UIntPayload(1));
         Assert.Equal(1u, close.NicotvId);
         Assert.Equal(UIntPayload(0, 1), new NicotvCloseResponse(0, 1).ToBytes());

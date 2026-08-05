@@ -364,6 +364,11 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
         CancellationToken ct = default
     )
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+
         var furniture = await db.MyRoomFurniture.SingleOrDefaultAsync(
             entry => entry.RoomId == roomId && entry.FurnitureId == furnitureId,
             ct
@@ -377,6 +382,7 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
         furniture.DirectionX = directionX;
         furniture.DirectionY = directionY;
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return true;
     }
 
@@ -386,6 +392,11 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
         CancellationToken ct = default
     )
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+
         var furniture = await db.MyRoomFurniture.SingleOrDefaultAsync(
             entry => entry.RoomId == roomId && entry.FurnitureId == furnitureId,
             ct
@@ -395,6 +406,7 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
 
         db.MyRoomFurniture.Remove(furniture);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return furniture;
     }
 

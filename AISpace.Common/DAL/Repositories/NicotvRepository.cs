@@ -24,6 +24,18 @@ public interface INicotvRepository
         uint channelId,
         CancellationToken ct = default
     );
+    Task<Nicotv?> SetPlaybackStateAsync(
+        int roomId,
+        uint nicotvId,
+        NicotvPlaybackState playbackState,
+        CancellationToken ct = default
+    );
+    Task<Nicotv?> SetMovieAsync(
+        int roomId,
+        uint nicotvId,
+        string movieId,
+        CancellationToken ct = default
+    );
     Task<Nicotv?> CloseAsync(int roomId, uint nicotvId, CancellationToken ct = default);
 }
 
@@ -110,6 +122,46 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
             return null;
 
         nicotv.ChannelId = channelId;
+        nicotv.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return nicotv;
+    }
+
+    public async Task<Nicotv?> SetPlaybackStateAsync(
+        int roomId,
+        uint nicotvId,
+        NicotvPlaybackState playbackState,
+        CancellationToken ct = default
+    )
+    {
+        if (!Enum.IsDefined(playbackState))
+            return null;
+
+        var nicotv = await GetByIdInRoomAsync(roomId, nicotvId, ct);
+        if (nicotv is null)
+            return null;
+
+        nicotv.PlaybackState = playbackState;
+        nicotv.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return nicotv;
+    }
+
+    public async Task<Nicotv?> SetMovieAsync(
+        int roomId,
+        uint nicotvId,
+        string movieId,
+        CancellationToken ct = default
+    )
+    {
+        if (movieId.Length > NicotvData.MovieIdLength - 1)
+            return null;
+
+        var nicotv = await GetByIdInRoomAsync(roomId, nicotvId, ct);
+        if (nicotv is null)
+            return null;
+
+        nicotv.MovieId = movieId;
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;
