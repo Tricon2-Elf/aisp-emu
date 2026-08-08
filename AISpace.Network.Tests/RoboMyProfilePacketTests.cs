@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Area;
 
@@ -78,6 +79,35 @@ public sealed class RoboMyProfilePacketTests
     }
 
     [Fact]
+    public void AvatarProfile_UsesUtf8ForNonAsciiText()
+    {
+        var profile = new ProfileData("猫", "茶", "地図", "理由", "説明", "文字", "ロボットです");
+        var writer = new PacketWriter();
+        AvatarProfile.Write(writer, profile);
+        var bytes = writer.ToBytes();
+
+        var expectedLike1 = Encoding.UTF8.GetBytes(profile.Like1);
+        Assert.Equal(
+            expectedLike1,
+            bytes.AsSpan(AvatarProfile.MetadataBytes, expectedLike1.Length)
+        );
+        Assert.Equal(0, bytes[AvatarProfile.MetadataBytes + expectedLike1.Length]);
+
+        var reader = new PacketReader(bytes);
+        Assert.Equal(profile, AvatarProfile.Read(ref reader));
+    }
+
+    [Fact]
+    public void AvatarProfileGetDataResponse_UsesUtf8ForNonAsciiText()
+    {
+        var profile = new ProfileData("猫", "", "", "", "", "", "");
+        var bytes = new AvatarProfileGetDataResponse(0, 1, profile).ToBytes();
+
+        Assert.Equal(Encoding.UTF8.GetBytes(profile.Like1), bytes.AsSpan(8, 3));
+        Assert.Equal(0, bytes[11]);
+    }
+
+    [Fact]
     public void AvatarMyProfilePackets_PreserveMetadata()
     {
         var metadata = new AvatarProfileMetadata(321, 0x12345678, 0x90ABCDEF);
@@ -113,13 +143,13 @@ public sealed class RoboMyProfilePacketTests
         Assert.Equal(123u, reader.ReadUInt());
         Assert.Equal(0x11223344u, reader.ReadUInt());
         Assert.Equal(0x55667788u, reader.ReadUInt());
-        Assert.Equal("L1", reader.ReadFixedString(31, "Shift_JIS"));
-        Assert.Equal("L2", reader.ReadFixedString(31, "Shift_JIS"));
-        Assert.Equal("L3", reader.ReadFixedString(31, "Shift_JIS"));
-        Assert.Equal("D1", reader.ReadFixedString(91, "Shift_JIS"));
-        Assert.Equal("D2", reader.ReadFixedString(91, "Shift_JIS"));
-        Assert.Equal("D3", reader.ReadFixedString(91, "Shift_JIS"));
-        Assert.Equal("Desc", reader.ReadFixedString(901, "Shift_JIS"));
+        Assert.Equal("L1", reader.ReadFixedString(31));
+        Assert.Equal("L2", reader.ReadFixedString(31));
+        Assert.Equal("L3", reader.ReadFixedString(31));
+        Assert.Equal("D1", reader.ReadFixedString(91));
+        Assert.Equal("D2", reader.ReadFixedString(91));
+        Assert.Equal("D3", reader.ReadFixedString(91));
+        Assert.Equal("Desc", reader.ReadFixedString(901));
     }
 
     private static PacketMetadata GetMetadata(PacketType packetType)

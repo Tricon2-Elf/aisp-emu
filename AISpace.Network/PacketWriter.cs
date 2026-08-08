@@ -61,7 +61,7 @@ public class PacketWriter : IPacketWriter
         _stream.Write(buffer);
     }
 
-    public void WriteFixedString(string value, int length, string encoderName = "Shift_JIS")
+    public void WriteFixedString(string value, int length, string encoderName = "utf-8")
     {
         var encoder = PacketEncoding.GetEncoding(encoderName);
         var size = encoder.GetByteCount(value);

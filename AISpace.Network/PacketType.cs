@@ -2369,7 +2369,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_edit_robo_myprofile_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     EditRoboMyProfileResponse = 0x2180,
 
@@ -2769,7 +2769,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_get_my_robo_myprofile_data_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     GetMyRoboMyProfileDataResponse = 0xFEAE,
 
@@ -4769,7 +4769,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_edit_robo_myprofile",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     EditRoboMyProfileRequest = 0x99B4,
 
@@ -4913,7 +4913,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_get_my_robo_myprofile_data",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     GetMyRoboMyProfileDataRequest = 0x5AA9,
 

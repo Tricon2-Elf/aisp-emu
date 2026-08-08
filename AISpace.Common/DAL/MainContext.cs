@@ -227,6 +227,15 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.UserStatusText)
                 .HasMaxLength(UserStatusData.StatusTextLength)
                 .IsRequired();
+            e.Property(x => x.Like1).HasDefaultValue(string.Empty).IsRequired();
+            e.Property(x => x.Like2).HasDefaultValue(string.Empty).IsRequired();
+            e.Property(x => x.Like3).HasDefaultValue(string.Empty).IsRequired();
+            e.Property(x => x.LikeDesc1).HasDefaultValue(string.Empty).IsRequired();
+            e.Property(x => x.LikeDesc2).HasDefaultValue(string.Empty).IsRequired();
+            e.Property(x => x.LikeDesc3).HasDefaultValue(string.Empty).IsRequired();
+            e.Property(x => x.ProfileDescription).HasDefaultValue(string.Empty).IsRequired();
+            e.Property(x => x.ProfileUnknownDword04).HasDefaultValue(0u);
+            e.Property(x => x.ProfileUnknownDword08).HasDefaultValue(0u);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasOne(x => x.Character)
