@@ -40,8 +40,15 @@ public class LoginHandlerTests
             .ReturnsAsync(us);
 
         var state = new SharedState();
+        var circles = new Mock<AISpace.Common.DAL.Repositories.ICircleRepository>();
+        circles
+            .Setup(r =>
+                r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Array.Empty<(AISpace.Common.DAL.Entities.Circle, uint)>());
         var handler = new LoginHandler(
             sessionRepo.Object,
+            circles.Object,
             state,
             NullLogger<LoginHandler>.Instance
         );
@@ -74,8 +81,15 @@ public class LoginHandlerTests
             .Setup(r => r.GetValidSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserSession?)null);
 
+        var circles = new Mock<AISpace.Common.DAL.Repositories.ICircleRepository>();
+        circles
+            .Setup(r =>
+                r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Array.Empty<(AISpace.Common.DAL.Entities.Circle, uint)>());
         var handler = new LoginHandler(
             sessionRepo.Object,
+            circles.Object,
             new SharedState(),
             NullLogger<LoginHandler>.Instance
         );
@@ -112,8 +126,15 @@ public class LoginHandlerTests
             .Setup(r => r.GetValidSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(us);
 
+        var circles = new Mock<AISpace.Common.DAL.Repositories.ICircleRepository>();
+        circles
+            .Setup(r =>
+                r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Array.Empty<(AISpace.Common.DAL.Entities.Circle, uint)>());
         var handler = new LoginHandler(
             sessionRepo.Object,
+            circles.Object,
             new SharedState(),
             NullLogger<LoginHandler>.Instance
         );

@@ -86,6 +86,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -188,6 +189,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -281,6 +283,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -399,6 +402,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 roomRepository,
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -524,6 +528,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -595,6 +600,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -668,6 +674,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -733,6 +740,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -816,6 +824,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -902,6 +911,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache([itemId]),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -984,6 +994,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -1050,6 +1061,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -1172,6 +1184,7 @@ public class CmdExecHandlerTests
                     NullLogger<CharacterRepository>.Instance
                 ),
                 new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 NullLogger<CmdExecHandler>.Instance
@@ -1258,6 +1271,7 @@ public class CmdExecHandlerTests
                 NullLogger<CharacterRepository>.Instance
             ),
             new MyRoomRepository(new MainContext(options)),
+            new CircleRepository(new MainContext(options)),
             new MapLinkRepository(new MainContext(options)),
             new ChannelRepository(new MainContext(options)),
             Options.Create(

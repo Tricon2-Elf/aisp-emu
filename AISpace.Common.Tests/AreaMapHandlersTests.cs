@@ -1956,6 +1956,7 @@ public class AreaMapHandlersTests
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
                 new MyRoomRepository(handlerDb),
+                new CircleRepository(handlerDb),
                 new SharedState(),
                 NullLogger<AreasvEnterHandler>.Instance
             );
@@ -2039,6 +2040,7 @@ public class AreaMapHandlersTests
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
                 new MyRoomRepository(handlerDb),
+                new CircleRepository(handlerDb),
                 state,
                 NullLogger<AreasvEnterHandler>.Instance
             );
@@ -3025,6 +3027,7 @@ public class AreaMapHandlersTests
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
             new MyRoomRepository(db),
+            new CircleRepository(db),
             new MapLinkRepository(db),
             new ChannelRepository(db),
             Options.Create(

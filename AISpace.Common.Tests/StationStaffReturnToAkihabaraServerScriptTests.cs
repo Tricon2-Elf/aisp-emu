@@ -171,6 +171,7 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
             new MapRepository(db),
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
             new MyRoomRepository(db),
+            new CircleRepository(db),
             new MapLinkRepository(db),
             new ChannelRepository(db),
             Options.Create(
