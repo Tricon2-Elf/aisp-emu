@@ -15,6 +15,7 @@ public class AreasvEnterHandler(
     IChannelRepository channelRepo,
     ICharacterRepository characterRepo,
     IMyRoomRepository myRoomRepository,
+    ICircleRepository circleRepository,
     SharedState state,
     ILogger<AreasvEnterHandler> logger
 ) : IPacketHandler
@@ -95,7 +96,10 @@ public class AreasvEnterHandler(
                     room.OwnerCharacterId == chara.Id
                         ? chara
                         : await characterRepo.GetByIdAsync(room.OwnerCharacterId, ct);
-                if (!MyRoomAccess.CanEnter(room, chara.Id, chara.CircleId, owner?.CircleId))
+                var sharesCircle =
+                    owner is not null
+                    && await circleRepository.SharesAnyCircleAsync(chara.Id, owner.Id, ct);
+                if (!MyRoomAccess.CanEnter(room, chara.Id, sharesCircle))
                 {
                     logger.LogWarning(
                         "AreasvEnter denied My Room {RoomId} for character {CharacterId} (security {Security}); falling back to owner room",

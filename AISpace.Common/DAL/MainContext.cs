@@ -30,6 +30,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<MyRoomFurniture> MyRoomFurniture => Set<MyRoomFurniture>();
     public DbSet<Nicotv> Nicotvs => Set<Nicotv>();
     public DbSet<Circle> Circles => Set<Circle>();
+    public DbSet<CircleMember> CircleMembers => Set<CircleMember>();
+    public DbSet<CircleJoinRequest> CircleJoinRequests => Set<CircleJoinRequest>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
     public DbSet<Npc> Npcs => Set<Npc>();
@@ -332,6 +334,60 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Circles");
             e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(46).IsRequired();
+            e.Property(x => x.Mark).HasMaxLength(37).HasDefaultValue(string.Empty);
+            e.Property(x => x.Message).HasMaxLength(751).HasDefaultValue(string.Empty);
+            e.Property(x => x.MessageDate).HasMaxLength(20).HasDefaultValue(string.Empty);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.LeaderCharacter)
+                .WithMany()
+                .HasForeignKey(x => x.LeaderCharacterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.Name);
+        });
+
+        b.Entity<CircleMember>(e =>
+        {
+            e.ToTable("CircleMembers");
+            e.HasKey(x => new { x.CircleId, x.CharacterId });
+            e.Property(x => x.JoinedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.Circle)
+                .WithMany(x => x.Members)
+                .HasForeignKey(x => x.CircleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Character)
+                .WithMany(x => x.CircleMemberships)
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.CharacterId);
+        });
+
+        b.Entity<CircleJoinRequest>(e =>
+        {
+            e.ToTable("CircleJoinRequests");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.Circle)
+                .WithMany(x => x.JoinRequests)
+                .HasForeignKey(x => x.CircleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.RequesterCharacter)
+                .WithMany()
+                .HasForeignKey(x => x.RequesterCharacterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.TargetCharacter)
+                .WithMany()
+                .HasForeignKey(x => x.TargetCharacterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.TargetCharacterId, x.Status });
+            e.HasIndex(x => new { x.RequesterCharacterId, x.Status });
+            e.HasIndex(x => new
+            {
+                x.CircleId,
+                x.TargetCharacterId,
+                x.Status,
+            });
         });
 
         b.Entity<Map>(e =>

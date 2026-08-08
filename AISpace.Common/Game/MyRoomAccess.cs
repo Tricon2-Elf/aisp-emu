@@ -15,7 +15,14 @@ public static class MyRoomAccess
         int visitorCharacterId,
         int? visitorCircleId,
         int? ownerCircleId
-    )
+    ) =>
+        CanEnter(
+            room,
+            visitorCharacterId,
+            sharesCircle: visitorCircleId is > 0 && visitorCircleId == ownerCircleId
+        );
+
+    public static bool CanEnter(Room room, int visitorCharacterId, bool sharesCircle)
     {
         if (room.OwnerCharacterId == visitorCharacterId)
             return true;
@@ -24,13 +31,10 @@ public static class MyRoomAccess
         {
             MyRoomSecurity.Public => true,
             MyRoomSecurity.Private => false,
-            MyRoomSecurity.CircleMembersOnly => SharesCircle(visitorCircleId, ownerCircleId),
+            MyRoomSecurity.CircleMembersOnly => sharesCircle,
             MyRoomSecurity.FriendsOnly => false,
-            MyRoomSecurity.FriendsAndCircleMembers => SharesCircle(visitorCircleId, ownerCircleId),
+            MyRoomSecurity.FriendsAndCircleMembers => sharesCircle,
             _ => false,
         };
     }
-
-    private static bool SharesCircle(int? visitorCircleId, int? ownerCircleId) =>
-        visitorCircleId is > 0 && visitorCircleId == ownerCircleId;
 }

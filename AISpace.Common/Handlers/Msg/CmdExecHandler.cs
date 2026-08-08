@@ -18,6 +18,7 @@ public class CmdExecHandler(
     IUserRepository userRepo,
     ICharacterRepository characterRepo,
     IMyRoomRepository myRoomRepository,
+    ICircleRepository circleRepository,
     IItemBaseListCache itemBaseListCache,
     DirectMapLinkTransitionService directMapLinkTransitionService,
     ILogger<CmdExecHandler> logger
@@ -224,14 +225,10 @@ public class CmdExecHandler(
                 if (room.OwnerCharacterId != character.Id)
                 {
                     var owner = await characterRepo.GetByIdAsync(room.OwnerCharacterId, ct);
-                    if (
-                        !MyRoomAccess.CanEnter(
-                            room,
-                            character.Id,
-                            character.CircleId,
-                            owner?.CircleId
-                        )
-                    )
+                    var sharesCircle =
+                        owner is not null
+                        && await circleRepository.SharesAnyCircleAsync(character.Id, owner.Id, ct);
+                    if (!MyRoomAccess.CanEnter(room, character.Id, sharesCircle))
                     {
                         var message =
                             room.Security == MyRoomSecurity.Private

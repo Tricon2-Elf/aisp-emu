@@ -9,6 +9,7 @@ namespace AISpace.Common.Handlers.Msg;
 
 public class LoginHandler(
     IUserSessionRepository sessionRepo,
+    ICircleRepository circles,
     SharedState state,
     ILogger<LoginHandler> logger
 ) : PacketHandlerBase<LoginRequest, LoginResponse>
@@ -64,6 +65,27 @@ public class LoginHandler(
             session.CharacterId = (uint)character.Id;
 
         state.RegisterClient(ServerType.Msg, session);
+        if (session.CharacterId != 0)
+        {
+            try
+            {
+                await CircleNotifyHelper.NotifyMemberLoginAsync(
+                    circles,
+                    state,
+                    (int)session.CharacterId,
+                    ct
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed broadcasting circle login for character {CharacterId}",
+                    session.CharacterId
+                );
+            }
+        }
+
         _logger.LogInformation(
             "Client: {ClientId} LoginRequest UserID: {UserID}, OTP: {OTP}, Name: {name}",
             session.ConnectionId,

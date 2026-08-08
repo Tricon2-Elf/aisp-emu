@@ -28,6 +28,7 @@ public class Character
 
     public int? CircleId { get; set; }
     public Circle? Circle { get; set; }
+    public ICollection<CircleMember> CircleMemberships { get; set; } = new List<CircleMember>();
     public uint CurrentMapId { get; set; }
     public int? CurrentRoomId { get; set; }
     public Room? CurrentRoom { get; set; }
