@@ -134,6 +134,7 @@ public interface ICircleRepository
 public sealed class CircleRepository(MainContext db) : ICircleRepository
 {
     public const int MaxMembershipsPerCharacter = CircleData.MaxCirclesPerCharacter;
+    public const int MaxMembersPerCircle = CircleMemberData.MaxMembers;
 
     public Task<Circle?> GetByIdAsync(int circleId, CancellationToken ct = default) =>
         db.Circles.AsNoTracking().FirstOrDefaultAsync(x => x.Id == circleId, ct);
@@ -282,6 +283,10 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
         )
             return CircleOperationResult.Fail(CircleResult.AlreadyInCircle);
 
+        var memberCount = await db.CircleMembers.CountAsync(x => x.CircleId == circleId, ct);
+        if (memberCount >= MaxMembersPerCircle)
+            return CircleOperationResult.Fail(CircleResult.LimitReached);
+
         var targetCount = await db.CircleMembers.CountAsync(
             x => x.CharacterId == targetCharacterId,
             ct
@@ -367,6 +372,10 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
             await tx.CommitAsync(ct);
             return CircleOperationResult.Fail(CircleResult.AlreadyInCircle);
         }
+
+        var memberCount = await db.CircleMembers.CountAsync(x => x.CircleId == pending.CircleId, ct);
+        if (memberCount >= MaxMembersPerCircle)
+            return CircleOperationResult.Fail(CircleResult.LimitReached);
 
         var now = DateTime.UtcNow;
         var member = new CircleMember
