@@ -289,7 +289,11 @@ public sealed class CircleHandlerTests
         await using var _ = connection;
         await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
         for (var i = 0; i < 15; i++)
-            await TestDb.SeedCharacterAsync(options, 100 + i, TestContext.Current.CancellationToken);
+            await TestDb.SeedCharacterAsync(
+                options,
+                100 + i,
+                TestContext.Current.CancellationToken
+            );
 
         await using var db = new MainContext(options);
         var circles = new CircleRepository(db);
@@ -404,11 +408,7 @@ public sealed class CircleHandlerTests
 
         var handler = new CircleMemberKickHandler(circles, state);
         var response = await handler.HandleAsync(
-            new CircleMemberKickRequest
-            {
-                CircleId = (ulong)created.Circle.Id,
-                AvatarId = 2,
-            },
+            new CircleMemberKickRequest { CircleId = (ulong)created.Circle.Id, AvatarId = 2 },
             leader,
             TestContext.Current.CancellationToken
         );

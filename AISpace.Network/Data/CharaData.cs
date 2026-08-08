@@ -81,11 +81,7 @@ public class CharaData(uint slotId, uint modelId, string name)
             );
 
         var reader = new PacketReader(data);
-        var result = new CharaData(
-            reader.ReadUInt(),
-            reader.ReadUInt(),
-            reader.ReadFixedString(37)
-        )
+        var result = new CharaData(reader.ReadUInt(), reader.ReadUInt(), reader.ReadFixedString(37))
         {
             Visual = CharaVisual.FromBytes(reader.ReadBytes(19)),
             CharacterParameterId = reader.ReadUInt(),

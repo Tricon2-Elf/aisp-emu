@@ -16,7 +16,7 @@ namespace AISpace.Common.DAL.Migrations
                 {
                     UserId = table.Column<int>(type: "INTEGER", nullable: false),
                     ItemId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Quantity = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 1)
+                    Quantity = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 1),
                 },
                 constraints: table =>
                 {
@@ -26,26 +26,29 @@ namespace AISpace.Common.DAL.Migrations
                         column: x => x.ItemId,
                         principalTable: "Items",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Restrict
+                    );
                     table.ForeignKey(
                         name: "FK_UserStorageItems_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserStorageItems_ItemId",
                 table: "UserStorageItems",
-                column: "ItemId");
+                column: "ItemId"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "UserStorageItems");
+            migrationBuilder.DropTable(name: "UserStorageItems");
         }
     }
 }

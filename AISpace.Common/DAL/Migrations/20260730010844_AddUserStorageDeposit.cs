@@ -15,15 +15,14 @@ namespace AISpace.Common.DAL.Migrations
                 table: "Users",
                 type: "INTEGER",
                 nullable: false,
-                defaultValue: 0L);
+                defaultValue: 0L
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "StorageDeposit",
-                table: "Users");
+            migrationBuilder.DropColumn(name: "StorageDeposit", table: "Users");
         }
     }
 }

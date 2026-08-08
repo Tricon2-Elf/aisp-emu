@@ -53,9 +53,10 @@ public sealed class AreaGetRoboCreateInfoHandler(MainContext db)
     )
     {
         if (personality == CharadollPersonality.None)
-            personality = Random.Shared.Next(2) == 0
-                ? CharadollPersonality.Quiet
-                : CharadollPersonality.Active;
+            personality =
+                Random.Shared.Next(2) == 0
+                    ? CharadollPersonality.Quiet
+                    : CharadollPersonality.Active;
 
         return (homeIslandId, personality) switch
         {

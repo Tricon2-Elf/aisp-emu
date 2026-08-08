@@ -65,7 +65,11 @@ public sealed class AreaStorageWithdrawHandler(
         session.User.StorageDeposit = user.StorageDeposit;
 
         var deposit = (ulong)Math.Max(0, user.StorageDeposit);
-        await session.SendAsync(ResponseType, new StorageWithdrawResponse(0, deposit).ToBytes(), ct);
+        await session.SendAsync(
+            ResponseType,
+            new StorageWithdrawResponse(0, deposit).ToBytes(),
+            ct
+        );
         await session.SendAsync(
             PacketType.MoneyUpdatedAipoint,
             new MoneyUpdatedAipointNotify((ulong)Math.Max(0, user.AiPoints)).ToBytes(),
@@ -81,6 +85,10 @@ public sealed class AreaStorageWithdrawHandler(
     private async Task FailAsync(IPlayerSession session, CancellationToken ct)
     {
         var deposit = (ulong)Math.Max(0, session.User?.StorageDeposit ?? 0);
-        await session.SendAsync(ResponseType, new StorageWithdrawResponse(1, deposit).ToBytes(), ct);
+        await session.SendAsync(
+            ResponseType,
+            new StorageWithdrawResponse(1, deposit).ToBytes(),
+            ct
+        );
     }
 }

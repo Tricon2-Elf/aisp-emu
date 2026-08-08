@@ -373,7 +373,10 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
             return CircleOperationResult.Fail(CircleResult.AlreadyInCircle);
         }
 
-        var memberCount = await db.CircleMembers.CountAsync(x => x.CircleId == pending.CircleId, ct);
+        var memberCount = await db.CircleMembers.CountAsync(
+            x => x.CircleId == pending.CircleId,
+            ct
+        );
         if (memberCount >= MaxMembersPerCircle)
             return CircleOperationResult.Fail(CircleResult.LimitReached);
 
