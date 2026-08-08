@@ -34,7 +34,11 @@ public class CircleMemberKickHandler(ICircleRepository circles, SharedState stat
         foreach (
             var client in state.GetOnlineMsgClientsByCharacterIds(new[] { (int)request.AvatarId })
         )
+        {
             await client.SendAsync(PacketType.CircleNotifyKick, kickPayload, ct);
+            if (state.TryGetCircleChat(client.ConnectionId, out var chatId) && chatId == circleId)
+                state.LeaveCircleChat(client.ConnectionId);
+        }
 
         await CircleNotifyHelper.NotifyMembersAsync(
             circles,
