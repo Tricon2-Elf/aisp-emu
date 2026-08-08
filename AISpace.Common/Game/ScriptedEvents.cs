@@ -13,7 +13,6 @@ public static class ScriptedEvents
         public const string IntroductionMyRoomShuffle = "introdution_myroom_sh";
         public const string SysEvent002 = "sys_event_002";
         public const string TpsEventBat0101011 = "tps_event_bat_01_01_01_1";
-        public const string Bat0101012 = "bat_01_01_01_2";
         public const string Bat0101021 = "bat_01_01_02_1";
     }
 
@@ -30,7 +29,6 @@ public static class ScriptedEvents
         [Keys.IntroductionMyRoomShuffle] = "./script/event/introdution_myroom_sh.csv",
         [Keys.SysEvent002] = "./script/sys_event/002.csv",
         [Keys.TpsEventBat0101011] = "./script/tps_event/bat_01_01_01_1.csv",
-        [Keys.Bat0101012] = "./script/tps_event/bat_01_01_01_2.csv",
         [Keys.Bat0101021] = "./script/tps_event/bat_01_01_02_1.csv",
     };
 

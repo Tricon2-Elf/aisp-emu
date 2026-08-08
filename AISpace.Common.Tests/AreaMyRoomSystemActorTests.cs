@@ -206,16 +206,12 @@ public class AreaMyRoomSystemActorTests
             Assert.Equal("./script/tps_event/bat_01_01_01_1.csv", ReadLastScriptLabel(session));
 
             await CompleteClientScriptSegmentAsync(scriptPlayHandler, fadeInHandler, session);
-            Assert.Equal("./script/tps_event/bat_01_01_01_2.csv", ReadLastScriptLabel(session));
-
-            await CompleteClientScriptSegmentAsync(scriptPlayHandler, fadeInHandler, session);
-
             Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
             Assert.Equal(MyRoomDoorServerScript.AkihabaraUdxMapId, session.MapId);
             Assert.True(session.IsMapTransitionPending);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
             Assert.Equal(
-                3,
+                2,
                 session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify)
             );
 
@@ -228,7 +224,7 @@ public class AreaMyRoomSystemActorTests
             );
             Assert.False(session.IsMapTransitionPending);
             Assert.Equal(
-                3,
+                2,
                 session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify)
             );
 
@@ -244,7 +240,7 @@ public class AreaMyRoomSystemActorTests
             Assert.Equal(ServerEvents.Keys.MyRoomDoor, session.ActiveEventKey);
             Assert.Equal("./script/tps_event/bat_01_01_02_1.csv", ReadLastScriptLabel(session));
             Assert.Equal(
-                4,
+                3,
                 session.Sent.Count(packet => packet.Type == PacketType.EventScriptPlayNotify)
             );
             Assert.Equal(
