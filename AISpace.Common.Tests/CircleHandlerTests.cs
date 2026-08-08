@@ -202,6 +202,87 @@ public sealed class CircleHandlerTests
     }
 
     [Fact]
+    public async Task AnswerInvite_RejectsWhenCircleIsFull()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+        await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "Full",
+            0,
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(CircleResult.Ok, created.Result);
+
+        var now = DateTime.UtcNow;
+        for (var i = 0; i < CircleRepository.MaxMembersPerCircle - 1; i++)
+        {
+            var characterId = 1000 + i;
+            await TestDb.SeedCharacterAsync(
+                options,
+                characterId,
+                TestContext.Current.CancellationToken
+            );
+            db.CircleMembers.Add(
+                new CircleMember
+                {
+                    CircleId = created.Circle!.Id,
+                    CharacterId = characterId,
+                    AuthLevel = CircleMemberData.RoleMember,
+                    JoinedAt = now,
+                }
+            );
+        }
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(
+            CircleRepository.MaxMembersPerCircle,
+            await db.CircleMembers.CountAsync(
+                x => x.CircleId == created.Circle!.Id,
+                TestContext.Current.CancellationToken
+            )
+        );
+
+        // Pending invite created while full must still fail at accept time.
+        db.CircleJoinRequests.Add(
+            new CircleJoinRequest
+            {
+                CircleId = created.Circle!.Id,
+                RequesterCharacterId = 1,
+                TargetCharacterId = 2,
+                Status = CircleJoinRequestStatus.Pending,
+                CreatedAt = now,
+            }
+        );
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var answer = await circles.AnswerInviteAsync(
+            2,
+            true,
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(CircleResult.LimitReached, answer.Result);
+        Assert.Equal(
+            CircleRepository.MaxMembersPerCircle,
+            await db.CircleMembers.CountAsync(
+                x => x.CircleId == created.Circle!.Id,
+                TestContext.Current.CancellationToken
+            )
+        );
+        Assert.False(
+            await db.CircleMembers.AnyAsync(
+                x => x.CircleId == created.Circle.Id && x.CharacterId == 2,
+                TestContext.Current.CancellationToken
+            )
+        );
+    }
+
+    [Fact]
     public async Task MembershipLimit_IsFifteen()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
