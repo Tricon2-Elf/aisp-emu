@@ -26,16 +26,14 @@ public class AdditionalPacketParserTests
     }
 
     [Theory]
-    [InlineData(0x11111111u, 0x22222222u)]
-    [InlineData(0u, 0u)]
-    public void CircleChatInRequest_FromBytes(uint circleId, uint unk)
+    [InlineData(0x2222222211111111UL)]
+    [InlineData(0UL)]
+    public void CircleChatInRequest_FromBytes(ulong circleId)
     {
         var w = new PacketWriter();
         w.Write(circleId);
-        w.Write(unk);
         var p = CircleChatInRequest.FromBytes(w.ToBytes());
         Assert.Equal(circleId, p.CircleId);
-        Assert.Equal(unk, p.Unk);
     }
 
     [Theory]

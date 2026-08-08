@@ -740,6 +740,7 @@ public class AreaMyRoomEditingHandlerTests
                 NullLogger<CharacterRepository>.Instance
             ),
             new MyRoomRepository(new MainContext(options)),
+            new CircleRepository(new MainContext(options)),
             new MapLinkRepository(new MainContext(options)),
             new ChannelRepository(new MainContext(options)),
             Options.Create(

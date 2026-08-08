@@ -11,6 +11,7 @@ public sealed class MyRoomAccessTests
     {
         var room = new Room { OwnerCharacterId = 10, Security = MyRoomSecurity.Private };
 
+        Assert.True(MyRoomAccess.CanEnter(room, 10, sharesCircle: false));
         Assert.True(MyRoomAccess.CanEnter(room, 10, visitorCircleId: 1, ownerCircleId: 2));
     }
 
@@ -22,7 +23,7 @@ public sealed class MyRoomAccessTests
     {
         var room = new Room { OwnerCharacterId = 10, Security = security };
 
-        Assert.Equal(expected, MyRoomAccess.CanEnter(room, 20, null, null));
+        Assert.Equal(expected, MyRoomAccess.CanEnter(room, 20, sharesCircle: false));
     }
 
     [Fact]
@@ -30,7 +31,22 @@ public sealed class MyRoomAccessTests
     {
         var room = new Room { OwnerCharacterId = 10, Security = MyRoomSecurity.CircleMembersOnly };
 
+        Assert.False(MyRoomAccess.CanEnter(room, 20, sharesCircle: false));
+        Assert.True(MyRoomAccess.CanEnter(room, 20, sharesCircle: true));
         Assert.False(MyRoomAccess.CanEnter(room, 20, visitorCircleId: 1, ownerCircleId: 2));
         Assert.True(MyRoomAccess.CanEnter(room, 20, visitorCircleId: 7, ownerCircleId: 7));
+    }
+
+    [Fact]
+    public void FriendsAndCircleMembers_AllowsSharedCircle()
+    {
+        var room = new Room
+        {
+            OwnerCharacterId = 10,
+            Security = MyRoomSecurity.FriendsAndCircleMembers,
+        };
+
+        Assert.False(MyRoomAccess.CanEnter(room, 20, sharesCircle: false));
+        Assert.True(MyRoomAccess.CanEnter(room, 20, sharesCircle: true));
     }
 }

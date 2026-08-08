@@ -239,11 +239,7 @@ public class AreaItemMoveHandlerTests
 
             var item = new Item { Id = 10_504_107, Name = "Test Bottom" };
             db.Items.Add(item);
-            var character = new Character
-            {
-                UserId = user.Id,
-                Name = "Mover2",
-            };
+            var character = new Character { UserId = user.Id, Name = "Mover2" };
             db.Characters.Add(character);
             db.UserStorageItems.Add(
                 new UserStorageItem
