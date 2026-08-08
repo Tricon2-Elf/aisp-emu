@@ -1,3 +1,4 @@
+using AISpace.Common.DAL;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
@@ -10,31 +11,40 @@ public class AreaGetRoboCreateInfoHandlerTests
     [Fact]
     public async Task HandleAsync_ReturnsDefaultModelHairstyleAndEquips()
     {
-        var handler = new AreaGetRoboCreateInfoHandler();
-        var session = new CapturingPlayerSession { CharacterId = 1 };
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            var handler = new AreaGetRoboCreateInfoHandler(db);
+            var session = new CapturingPlayerSession { CharacterId = 1 };
 
-        await handler.HandleAsync(
-            ReadOnlyMemory<byte>.Empty,
-            session,
-            TestContext.Current.CancellationToken
-        );
+            await handler.HandleAsync(
+                ReadOnlyMemory<byte>.Empty,
+                session,
+                TestContext.Current.CancellationToken
+            );
 
-        var sent = Assert.Single(session.Sent);
-        Assert.Equal(PacketType.GetRoboCreateInfoResponse, sent.Type);
+            var sent = Assert.Single(session.Sent);
+            Assert.Equal(PacketType.GetRoboCreateInfoResponse, sent.Type);
 
-        var reader = new PacketReader(sent.Payload);
-        Assert.Equal(1002011u, reader.ReadUInt());
-        Assert.Equal(10930010u, reader.ReadUInt());
-        Assert.Equal(4u, reader.ReadUInt());
-        Assert.Equal(10100060u, reader.ReadUInt());
-        Assert.Equal(0u, reader.ReadUInt());
-        Assert.Equal(10200090u, reader.ReadUInt());
-        Assert.Equal(0u, reader.ReadUInt());
-        Assert.Equal(10400000u, reader.ReadUInt());
-        Assert.Equal(0u, reader.ReadUInt());
-        Assert.Equal(10500010u, reader.ReadUInt());
-        Assert.Equal(0u, reader.ReadUInt());
-        Assert.Equal(44, sent.Payload.Length);
+            var reader = new PacketReader(sent.Payload);
+            Assert.Equal(1002011u, reader.ReadUInt());
+            Assert.Equal(10930010u, reader.ReadUInt());
+            Assert.Equal(4u, reader.ReadUInt());
+            Assert.Equal(10100060u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(10200090u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(10400000u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(10500010u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(44, sent.Payload.Length);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 
     [Fact]
