@@ -23,6 +23,16 @@ public sealed class Robo
 
     public uint JobId { get; set; }
 
+    public string Like1 { get; set; } = string.Empty;
+    public string Like2 { get; set; } = string.Empty;
+    public string Like3 { get; set; } = string.Empty;
+    public string LikeDesc1 { get; set; } = string.Empty;
+    public string LikeDesc2 { get; set; } = string.Empty;
+    public string LikeDesc3 { get; set; } = string.Empty;
+    public string ProfileDescription { get; set; } = string.Empty;
+    public uint ProfileUnknownDword04 { get; set; }
+    public uint ProfileUnknownDword08 { get; set; }
+
     public byte Level { get; set; }
     public ulong StatusPoints { get; set; }
     public ulong Experience { get; set; }

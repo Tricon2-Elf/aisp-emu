@@ -15,13 +15,13 @@ public class Character
     public uint FaceType { get; set; }
     public uint Hairstyle { get; set; }
 
-    public string Like1 { get; set; } = "Nothing";
-    public string Like2 { get; set; } = "Nothing";
-    public string Like3 { get; set; } = "Nothing";
+    public string Like1 { get; set; } = string.Empty;
+    public string Like2 { get; set; } = string.Empty;
+    public string Like3 { get; set; } = string.Empty;
     public string LikeDesc1 { get; set; } = string.Empty;
     public string LikeDesc2 { get; set; } = string.Empty;
     public string LikeDesc3 { get; set; } = string.Empty;
-    public string AvatarDesc { get; set; } = "Welcome to AI-Space!";
+    public string AvatarDesc { get; set; } = string.Empty;
 
     public int UserId { get; set; }
     public User User { get; set; } = default!;
