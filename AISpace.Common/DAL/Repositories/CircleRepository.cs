@@ -214,7 +214,7 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
             Name = Truncate(name, 46),
             Status = 1,
             MarkId = markId,
-            Mark = markId.ToString(),
+            Mark = string.Empty, // last message author name (not the icon)
             Message = string.Empty,
             MessageDate = string.Empty,
             LeaderCharacterId = leaderCharacterId,
@@ -591,7 +591,6 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
             return CircleOperationResult.Fail(CircleResult.NotFound);
 
         circle.MarkId = markId;
-        circle.Mark = markId.ToString();
         circle.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -622,7 +621,17 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
         if (circle is null)
             return CircleOperationResult.Fail(CircleResult.NotFound);
 
+        var author =
+            (
+                await db
+                    .Characters.AsNoTracking()
+                    .Where(x => x.Id == actorCharacterId)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync(ct)
+            ) ?? string.Empty;
+
         circle.Message = Truncate(message, 751);
+        circle.Mark = Truncate(author, 37);
         circle.MessageDate = DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss");
         if (circle.MessageDate.Length > 20)
             circle.MessageDate = circle.MessageDate[..20];
@@ -632,14 +641,20 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
         return CircleOperationResult.Success(circle);
     }
 
-    public CircleData ToCircleData(Circle circle) =>
-        new(checked((uint)circle.Id), circle.Name, checked((uint)circle.LeaderCharacterId))
+    public CircleData ToCircleData(Circle circle)
+    {
+        // Older rows stored MarkId.ToString() in Mark; treat that as empty author.
+        var author = circle.Mark;
+        if (author == circle.MarkId.ToString())
+            author = string.Empty;
+
+        return new(checked((ulong)circle.Id), circle.Name, circle.MarkId)
         {
-            Status = circle.Status,
-            Mark = string.IsNullOrEmpty(circle.Mark) ? circle.MarkId.ToString() : circle.Mark,
+            AuthorName = author,
             Date = circle.MessageDate,
             Message = circle.Message,
         };
+    }
 
     private async Task ClearLegacyCircleIdIfNeededAsync(
         int characterId,

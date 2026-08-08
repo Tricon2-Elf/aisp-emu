@@ -29,10 +29,10 @@ public class CircleMessageChangeHandler(ICircleRepository circles, SharedState s
         if (result.Result != CircleResult.Ok || result.Circle is null)
             return new CircleMessageChangeResponse((uint)result.Result);
 
-        var name = session.Character?.Name ?? string.Empty;
+        // Notify: author name + date + message (mark icon is a separate markId dword / notify).
         var notify = new CircleNotifyMessageChange(
             request.CircleId,
-            name,
+            result.Circle.Mark,
             result.Circle.MessageDate,
             result.Circle.Message
         ).ToBytes();

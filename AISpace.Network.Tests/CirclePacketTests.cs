@@ -10,8 +10,7 @@ public class CirclePacketTests
     {
         var data = new CircleData(7, "TestCircle", 42)
         {
-            Status = 1,
-            Mark = "1",
+            AuthorName = "Bob",
             Date = "2026-08-08",
             Message = "hello",
         };
@@ -23,8 +22,7 @@ public class CirclePacketTests
     {
         var original = new CircleData(12, "アルファ", 99)
         {
-            Status = 1,
-            Mark = "mark",
+            AuthorName = "編集者",
             Date = "08/08",
             Message = "掲示板メッセージ",
         };
@@ -32,12 +30,31 @@ public class CirclePacketTests
         var reader = new PacketReader(bytes);
         var parsed = CircleData.Read(ref reader);
         Assert.Equal(original.Id, parsed.Id);
-        Assert.Equal(original.Status, parsed.Status);
         Assert.Equal(original.Name, parsed.Name);
-        Assert.Equal(original.LeaderId, parsed.LeaderId);
-        Assert.Equal(original.Mark, parsed.Mark);
+        Assert.Equal(original.MarkId, parsed.MarkId);
+        Assert.Equal(original.AuthorName, parsed.AuthorName);
         Assert.Equal(original.Date, parsed.Date);
         Assert.Equal(original.Message, parsed.Message);
+    }
+
+    [Fact]
+    public void CircleData_IdIsUInt64OnWire()
+    {
+        var bytes = new CircleData(1, "A", 2).ToBytes();
+        var reader = new PacketReader(bytes);
+        Assert.Equal(1UL, reader.ReadULong());
+        // High dword must be 0 — writing a fake "status" of 1 made the client key 0x1_00000001.
+        Assert.Equal(0u, BitConverter.ToUInt32(bytes, 4));
+    }
+
+    [Fact]
+    public void CircleData_MarkIdFollowsNameOnWire()
+    {
+        var bytes = new CircleData(5, "Circle", 4).ToBytes();
+        var reader = new PacketReader(bytes);
+        Assert.Equal(5UL, reader.ReadULong());
+        Assert.Equal("Circle", reader.ReadFixedString(CircleData.NameLength, "utf-8"));
+        Assert.Equal(4u, reader.ReadUInt());
     }
 
     [Fact]
@@ -56,7 +73,7 @@ public class CirclePacketTests
     }
 
     [Fact]
-    public void CircleMemberData_WireSize_Is48()
+    public void CircleMemberData_WireSize_Is45()
     {
         var member = new CircleMemberData
         {
@@ -64,6 +81,7 @@ public class CirclePacketTests
             Name = "Bob",
             Role = CircleMemberData.RoleLeader,
         };
+        Assert.Equal(45, member.ToBytes().Length);
         Assert.Equal(CircleMemberData.WireSize, member.ToBytes().Length);
     }
 
@@ -140,11 +158,13 @@ public class CirclePacketTests
             },
         ];
         var bytes = new CircleNotifyMember(7UL, members, [true]).ToBytes();
+        Assert.Equal(8 + 4 + CircleMemberData.WireSize + 4 + 1, bytes.Length);
         var reader = new PacketReader(bytes);
         Assert.Equal(7UL, reader.ReadULong());
         Assert.Equal(1u, reader.ReadUInt());
         var member = CircleMemberData.Read(ref reader);
         Assert.Equal(1u, member.AvatarId);
+        Assert.Equal(CircleMemberData.RoleLeader, member.Role);
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(1, reader.ReadByte());
     }
@@ -195,5 +215,21 @@ public class CirclePacketTests
         var req = CircleMessageChangeRequest.FromBytes(writer.ToBytes());
         Assert.Equal(3UL, req.CircleId);
         Assert.Equal("board", req.Message);
+    }
+
+    [Fact]
+    public void CircleNotifyMessageChange_UsesNullTerminatedFields()
+    {
+        const string mark = "4";
+        const string date = "2026/08/09 10:19:24";
+        const string message = "hello";
+        var bytes = new CircleNotifyMessageChange(2UL, mark, date, message).ToBytes();
+        var reader = new PacketReader(bytes);
+        Assert.Equal(2UL, reader.ReadULong());
+        Assert.Equal(mark, reader.ReadString("utf-8"));
+        Assert.Equal(date, reader.ReadString("utf-8"));
+        Assert.Equal(message, reader.ReadString("utf-8"));
+        Assert.Equal(8 + mark.Length + 1 + date.Length + 1 + message.Length + 1, bytes.Length);
+        Assert.NotEqual(817, bytes.Length);
     }
 }

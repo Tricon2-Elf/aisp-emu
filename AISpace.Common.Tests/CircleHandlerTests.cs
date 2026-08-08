@@ -90,7 +90,7 @@ public sealed class CircleHandlerTests
         Assert.Equal(0u, reader.ReadUInt());
         Assert.Equal(1u, reader.ReadUInt());
         var circle = CircleData.Read(ref reader);
-        Assert.Equal((uint)created.Circle.Id, circle.Id);
+        Assert.Equal((ulong)created.Circle.Id, circle.Id);
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(CircleMemberData.RoleMember, reader.ReadUInt());
     }
