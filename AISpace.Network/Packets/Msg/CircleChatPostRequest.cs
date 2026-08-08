@@ -4,18 +4,16 @@ namespace AISpace.Network.Packets.Msg;
 
 public class CircleChatPostRequest : IIncomingPacket<CircleChatPostRequest>
 {
-    public uint CircleId;
+    public uint MessageId;
     public string Message = string.Empty;
-    public uint BalloonId;
 
     public static CircleChatPostRequest FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
         return new CircleChatPostRequest
         {
-            CircleId = reader.ReadUInt(),
-            Message = reader.ReadString("Shift_JIS"),
-            BalloonId = reader.ReadUInt(),
+            MessageId = reader.ReadUInt(),
+            Message = reader.ReadString("utf-8"),
         };
     }
 }

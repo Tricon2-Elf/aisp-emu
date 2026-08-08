@@ -4,12 +4,11 @@ namespace AISpace.Network.Packets.Msg;
 
 public class CircleChatInRequest : IIncomingPacket<CircleChatInRequest>
 {
-    public uint CircleId;
-    public uint Unk;
+    public ulong CircleId;
 
     public static CircleChatInRequest FromBytes(ReadOnlySpan<byte> data)
     {
         var reader = new PacketReader(data);
-        return new CircleChatInRequest { CircleId = reader.ReadUInt(), Unk = reader.ReadUInt() };
+        return new CircleChatInRequest { CircleId = reader.ReadULong() };
     }
 }
