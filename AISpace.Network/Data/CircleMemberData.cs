@@ -4,9 +4,9 @@ namespace AISpace.Network.Data;
 
 public sealed class CircleMemberData
 {
-    public const int WireSize = 48;
+    // Wire: avatarId(4) + name[37] + role(4). Client in-memory stride is 48 with pad after name; that pad is not on the wire.
+    public const int WireSize = 45;
     public const int NameLength = 37;
-    public const int NamePadding = 3;
     public const int MaxMembers = 100;
 
     public const uint RoleMember = 0;
@@ -17,23 +17,18 @@ public sealed class CircleMemberData
     public string Name { get; set; } = string.Empty;
     public uint Role { get; set; }
 
-    public static CircleMemberData Read(ref PacketReader reader)
-    {
-        var member = new CircleMemberData
+    public static CircleMemberData Read(ref PacketReader reader) =>
+        new()
         {
             AvatarId = reader.ReadUInt(),
-            Name = reader.ReadFixedString(NameLength),
+            Name = reader.ReadFixedString(NameLength, "utf-8"),
+            Role = reader.ReadUInt(),
         };
-        reader.ReadBytes(NamePadding);
-        member.Role = reader.ReadUInt();
-        return member;
-    }
 
     public void Write(PacketWriter writer)
     {
         writer.Write(AvatarId);
-        writer.WriteFixedString(Name, NameLength);
-        writer.Write(new byte[NamePadding]);
+        writer.WriteFixedString(Name, NameLength, "utf-8");
         writer.Write(Role);
     }
 
