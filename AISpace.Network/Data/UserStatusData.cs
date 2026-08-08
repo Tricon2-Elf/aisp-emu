@@ -15,7 +15,7 @@ public sealed class UserStatusData
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.WriteFixedString(StatusText, StatusTextLength, "utf-8");
+        writer.WriteFixedString(StatusText, StatusTextLength);
         writer.Write(StatusIconId);
         return writer.ToBytes();
     }
@@ -31,7 +31,7 @@ public sealed class UserStatusData
         var reader = new PacketReader(data);
         return new UserStatusData
         {
-            StatusText = reader.ReadFixedString(StatusTextLength, "utf-8"),
+            StatusText = reader.ReadFixedString(StatusTextLength),
             StatusIconId = reader.ReadUInt(),
         };
     }

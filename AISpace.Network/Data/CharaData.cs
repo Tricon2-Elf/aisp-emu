@@ -54,7 +54,7 @@ public class CharaData(uint slotId, uint modelId, string name)
         var writer = new PacketWriter();
         writer.Write(SlotId);
         writer.Write(ModelId);
-        writer.WriteFixedString(Name, 37, "utf-8");
+        writer.WriteFixedString(Name, 37);
         writer.Write(Visual.ToBytes());
         writer.Write(CharacterParameterId);
         writer.Write(Map.ToBytes());
@@ -84,7 +84,7 @@ public class CharaData(uint slotId, uint modelId, string name)
         var result = new CharaData(
             reader.ReadUInt(),
             reader.ReadUInt(),
-            reader.ReadFixedString(37, "utf-8")
+            reader.ReadFixedString(37)
         )
         {
             Visual = CharaVisual.FromBytes(reader.ReadBytes(19)),

@@ -88,12 +88,12 @@ public class ItemData
         writer.Write(SortedListPriority);
         writer.Write(ItemId);
         writer.Write(IconId);
-        writer.WriteFixedString(Name, 97, "utf-8");
+        writer.WriteFixedString(Name, 97);
         writer.Write(Category);
         writer.Write(Socket1);
         writer.Write(Socket2);
-        writer.WriteFixedString(Description, 769, "utf-8");
-        writer.WriteFixedString(LimitDesc, 193, "utf-8");
+        writer.WriteFixedString(Description, 769);
+        writer.WriteFixedString(LimitDesc, 193);
         writer.Write((uint)Flags);
         writer.Write(MaxPossessionCount);
         writer.Write(PlacementTypeId);
