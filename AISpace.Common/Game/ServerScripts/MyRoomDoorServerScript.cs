@@ -36,7 +36,6 @@ public sealed class MyRoomDoorServerScript(
     private const string CompletedDoorSelectionStep = "completedDoorSelection";
     private const string PhaseCharadoll = "charadoll";
     private const string PhaseTpsBat0101011 = "tpsBat0101011";
-    private const string PhaseTpsBat0101012 = "tpsBat0101012";
     private const string PhaseAwaitingUdxMapReady = "awaitingUdxMapReady";
     private const string PhaseTpsBat0101021 = "tpsBat0101021";
 
@@ -182,19 +181,6 @@ public sealed class MyRoomDoorServerScript(
         }
 
         if (string.Equals(phase, PhaseTpsBat0101011, StringComparison.Ordinal))
-        {
-            state.Data[SegmentPhaseDataKey] = PhaseTpsBat0101012;
-            logger.LogInformation(
-                "Starting client script segment {ClientScriptKey} for character {CharacterId} after {PreviousKey}",
-                ScriptedEvents.Keys.Bat0101012,
-                session.CharacterId,
-                ScriptedEvents.Keys.TpsEventBat0101011
-            );
-            await clientScriptSegmentRunner.BeginAsync(session, ScriptedEvents.Keys.Bat0101012, ct);
-            return true;
-        }
-
-        if (string.Equals(phase, PhaseTpsBat0101012, StringComparison.Ordinal))
         {
             state.Data[SegmentPhaseDataKey] = PhaseAwaitingUdxMapReady;
             state.Data.Remove(UdxMapDataReadyDataKey);
