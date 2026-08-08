@@ -4771,7 +4771,7 @@ public enum PacketType : ushort
         "send_edit_robo_myprofile",
         ImplementationState.NotImplemented
     )]
-    EditRoboMyProfileRequest = 0x5AA9,
+    EditRoboMyProfileRequest = 0x99B4,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4908,6 +4908,14 @@ public enum PacketType : ushort
         ImplementationState.Implemented
     )]
     GetCosplayListRequest = 0x14D0,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_get_my_robo_myprofile_data",
+        ImplementationState.NotImplemented
+    )]
+    GetMyRoboMyProfileDataRequest = 0x5AA9,
 
     [PacketMetadata(
         PacketServerType.Area,
