@@ -285,4 +285,61 @@ public sealed class CircleHandlerTests
             )
         );
     }
+
+    [Fact]
+    public async Task Kick_RemovesKickedClientFromCircleChatSessions()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+        await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "KickChat",
+            0,
+            TestContext.Current.CancellationToken
+        );
+        await circles.InviteAsync(1, 2, created.Circle!.Id, TestContext.Current.CancellationToken);
+        await circles.AnswerInviteAsync(2, true, TestContext.Current.CancellationToken);
+
+        var state = new SharedState();
+        var leader = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            User = db.Users.First(u => u.Id == 1),
+        };
+        var member = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            User = db.Users.First(u => u.Id == 2),
+        };
+        state.RegisterClient(ServerType.Msg, leader);
+        state.RegisterClient(ServerType.Msg, member);
+        state.EnterCircleChat(leader.ConnectionId, created.Circle.Id);
+        state.EnterCircleChat(member.ConnectionId, created.Circle.Id);
+
+        var handler = new CircleMemberKickHandler(circles, state);
+        var response = await handler.HandleAsync(
+            new CircleMemberKickRequest
+            {
+                CircleId = (ulong)created.Circle.Id,
+                AvatarId = 2,
+            },
+            leader,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.NotNull(response);
+        Assert.Equal(0u, new PacketReader(response!.ToBytes()).ReadUInt());
+        Assert.False(state.TryGetCircleChat(member.ConnectionId, out var memberChat));
+        Assert.True(state.TryGetCircleChat(leader.ConnectionId, out var leaderChat));
+        Assert.Equal(created.Circle.Id, leaderChat);
+        Assert.DoesNotContain(
+            state.GetCircleChatClients(created.Circle.Id),
+            c => c.ConnectionId == member.ConnectionId
+        );
+    }
 }
