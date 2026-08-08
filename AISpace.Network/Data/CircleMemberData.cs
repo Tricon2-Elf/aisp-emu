@@ -12,7 +12,7 @@ public class CircleMemberData
 
         writer.Write(AvatarId);
 
-        writer.WriteFixedString(Name, 37, "utf-8");
+        writer.WriteFixedString(Name, 37);
         writer.Write(Role);
 
         return writer.ToBytes();

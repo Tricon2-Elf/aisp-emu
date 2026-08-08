@@ -13,7 +13,7 @@ public class CircleData(uint id, string name, uint leaderId)
         writer.Write(Id);
         writer.Write((uint)1); // Status
 
-        writer.WriteFixedString(Name, 46, "utf-8");
+        writer.WriteFixedString(Name, 46);
 
         writer.Write(LeaderId);
 
