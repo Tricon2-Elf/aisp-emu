@@ -43,6 +43,7 @@ public interface IUserRepository
 
     /// <summary>
     /// Move item stacks between character inventory (place 0) and account warehouse (place 1).
+    /// Inventory→storage refuses quantities that would leave fewer owned copies than MyRoom placements.
     /// Returns null on failure; otherwise the new inventory and storage quantities for the item.
     /// </summary>
     Task<(int InventoryQuantity, int StorageQuantity)?> TransferStorageItemAsync(
@@ -262,7 +263,19 @@ public class UserRepository(MainContext db) : IUserRepository
             if (inventory is null || inventory.Quantity < quantity)
                 return null;
 
-            inventory.Quantity -= quantity;
+            // Placed MyRoom furniture stays owned via inventory; do not warehouse those copies.
+            var remainingQuantity = inventory.Quantity - quantity;
+            var placedQuantity =
+                itemId < 0
+                    ? 0
+                    : await _db.MyRoomFurniture.CountAsync(
+                        x => x.Room.OwnerCharacterId == characterId && x.ItemId == itemId,
+                        ct
+                    );
+            if (remainingQuantity < placedQuantity)
+                return null;
+
+            inventory.Quantity = remainingQuantity;
             inventoryQuantity = inventory.Quantity;
             if (inventory.Quantity == 0)
                 _db.CharacterInventories.Remove(inventory);

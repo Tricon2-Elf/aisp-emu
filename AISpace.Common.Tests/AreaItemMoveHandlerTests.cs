@@ -4,6 +4,7 @@ using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Tests.Support;
 using AISpace.Network;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AISpace.Common.Tests;
@@ -77,6 +78,146 @@ public class AreaItemMoveHandlerTests
                 session.Sent,
                 p => p.Type == PacketType.ItemCreateNotify && p.Payload[0] == 1
             );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task HandleAsync_InventoryToStorage_RejectsMovingPlacedFurnitureCopies()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            await using var db = new MainContext(options);
+            db.Items.Add(new Item { Id = 7001, Name = "Placed Chair" });
+            db.Furniture.Add(new Furniture { ItemId = 7001 });
+            db.CharacterInventories.Add(
+                new CharacterInventory
+                {
+                    CharacterId = 42,
+                    ItemId = 7001,
+                    Quantity = 2,
+                }
+            );
+            db.MyRoomFurniture.Add(
+                new MyRoomFurniture
+                {
+                    RoomId = 42,
+                    FurnitureId = 1,
+                    ItemId = 7001,
+                }
+            );
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = 42,
+                User = new User { Id = 42 },
+            };
+            var handler = new AreaItemMoveHandler(
+                new UserRepository(db),
+                NullLogger<AreaItemMoveHandler>.Instance
+            );
+
+            // Attempt to warehouse the entire stack (including the placed copy).
+            var payload = new byte[18];
+            BitConverter.TryWriteBytes(payload.AsSpan(0), 0u);
+            BitConverter.TryWriteBytes(payload.AsSpan(4), 7001u);
+            BitConverter.TryWriteBytes(payload.AsSpan(8), (ushort)2);
+            BitConverter.TryWriteBytes(payload.AsSpan(10), 1u);
+            BitConverter.TryWriteBytes(payload.AsSpan(14), 0u);
+
+            await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
+
+            Assert.Contains(
+                session.Sent,
+                p =>
+                    p.Type == PacketType.ItemMoveResponse
+                    && new PacketReader(p.Payload).ReadUInt() == 1
+            );
+            Assert.Equal(
+                2,
+                await db
+                    .CharacterInventories.Where(x => x.CharacterId == 42 && x.ItemId == 7001)
+                    .Select(x => x.Quantity)
+                    .SingleAsync(TestContext.Current.CancellationToken)
+            );
+            Assert.Empty(db.UserStorageItems);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task HandleAsync_InventoryToStorage_AllowsMovingUnplacedFurnitureCopies()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            await using var db = new MainContext(options);
+            db.Items.Add(new Item { Id = 7001, Name = "Placed Chair" });
+            db.Furniture.Add(new Furniture { ItemId = 7001 });
+            db.CharacterInventories.Add(
+                new CharacterInventory
+                {
+                    CharacterId = 42,
+                    ItemId = 7001,
+                    Quantity = 2,
+                }
+            );
+            db.MyRoomFurniture.Add(
+                new MyRoomFurniture
+                {
+                    RoomId = 42,
+                    FurnitureId = 1,
+                    ItemId = 7001,
+                }
+            );
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = 42,
+                User = new User { Id = 42 },
+            };
+            var handler = new AreaItemMoveHandler(
+                new UserRepository(db),
+                NullLogger<AreaItemMoveHandler>.Instance
+            );
+
+            // Warehouse only the spare (unplaced) copy.
+            var payload = new byte[18];
+            BitConverter.TryWriteBytes(payload.AsSpan(0), 0u);
+            BitConverter.TryWriteBytes(payload.AsSpan(4), 7001u);
+            BitConverter.TryWriteBytes(payload.AsSpan(8), (ushort)1);
+            BitConverter.TryWriteBytes(payload.AsSpan(10), 1u);
+            BitConverter.TryWriteBytes(payload.AsSpan(14), 0u);
+
+            await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
+
+            Assert.Contains(
+                session.Sent,
+                p =>
+                    p.Type == PacketType.ItemMoveResponse
+                    && new PacketReader(p.Payload).ReadUInt() == 0
+            );
+            Assert.Equal(
+                1,
+                await db
+                    .CharacterInventories.Where(x => x.CharacterId == 42 && x.ItemId == 7001)
+                    .Select(x => x.Quantity)
+                    .SingleAsync(TestContext.Current.CancellationToken)
+            );
+            var storage = Assert.Single(db.UserStorageItems);
+            Assert.Equal(7001, storage.ItemId);
+            Assert.Equal(1, storage.Quantity);
         }
         finally
         {
