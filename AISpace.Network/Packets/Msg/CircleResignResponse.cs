@@ -2,13 +2,12 @@ using AISpace.Network;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleChatForwardNotify(uint fromAvatarId, string message) : IOutgoingPacket
+public class CircleResignResponse(uint result) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write(fromAvatarId);
-        writer.Write(message, "utf-8");
+        writer.Write(result);
         return writer.ToBytes();
     }
 }

@@ -1,14 +1,15 @@
 using AISpace.Network;
+using AISpace.Network.Data;
 
 namespace AISpace.Network.Packets.Msg;
 
-public class CircleChatForwardNotify(uint fromAvatarId, string message) : IOutgoingPacket
+public class CircleNotifyJoinRequest(uint fromAvatarId, CircleData circle) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
         writer.Write(fromAvatarId);
-        writer.Write(message, "utf-8");
+        circle.Write(writer);
         return writer.ToBytes();
     }
 }

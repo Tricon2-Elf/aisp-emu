@@ -425,7 +425,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_change_core_authority",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleChangeCoreAuthorityRequest = 0x05ED,
 
@@ -433,7 +433,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_change_core_authority_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleChangeCoreAuthorityResponse = 0xC097,
 
@@ -505,7 +505,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_leader_change_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleLeaderChangeResponse = 0xBB59,
 
@@ -513,7 +513,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_leader_change",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyLeaderChange = 0x239B,
 
@@ -521,7 +521,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_mark_change",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMarkChangeRequest = 0xD895,
 
@@ -529,7 +529,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_mark_change_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMarkChangeResponse = 0xD0EF,
 
@@ -537,7 +537,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_mark_change",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyMarkChange = 0x6719,
 
@@ -545,7 +545,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_request_join_answer",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMemberJoinAnswerRequest = 0x1B70,
 
@@ -553,7 +553,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_request_join_member_cancel",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMemberJoinMemberCancelRequest = 0x83C1,
 
@@ -561,7 +561,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_request_join_member_cancel_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMemberJoinMemberCancelResponse = 0x2BF6,
 
@@ -569,7 +569,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_request_join_member",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMemberJoinMemberRequest = 0xAB2D,
 
@@ -577,7 +577,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_request_join_member_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMemberJoinMemberResponse = 0xDC3A,
 
@@ -585,7 +585,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_member_kick",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMemberKickRequest = 0xBF32,
 
@@ -593,7 +593,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_member_kick_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMemberKickResponse = 0x5559,
 
@@ -601,7 +601,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_message_change",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMessageChangeRequest = 0x2D2B,
 
@@ -609,7 +609,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_message_change_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleMessageChangeResponse = 0x59EB,
 
@@ -617,15 +617,15 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_chat_out",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
-    CircleNotiftyChatOut = 0xBBC4,
+    CircleNotifyChatOut = 0xBBC4,
 
     [PacketMetadata(
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_chat_in",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyChatIn = 0xCBFA,
 
@@ -633,7 +633,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_request_join",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyJoinRequest = 0x9888,
 
@@ -641,7 +641,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_request_join_result",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyJoinRequestResult = 0x8FED,
 
@@ -649,7 +649,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_add_member",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyAddMember = 0x0E08,
 
@@ -657,7 +657,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_kick",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyKick = 0x27DF,
 
@@ -665,7 +665,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_member_login",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyMemberLogin = 0x3946,
 
@@ -673,7 +673,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_member_logout",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyMemberLogout = 0x1391,
 
@@ -689,7 +689,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_message_change",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyMessageChange = 0x215B,
 
@@ -697,7 +697,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_change_core_authority",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyChangeCoreAuthority = 0x7E50,
 
@@ -705,7 +705,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_circle_resign_member",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleNotifyResignMember = 0x77F1,
 
@@ -713,7 +713,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_resign_circle",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleResignRequest = 0x7382,
 
@@ -721,7 +721,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_resign_circle_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleResignResponse = 0x16AF,
 
@@ -1793,8 +1793,9 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_circle_talk",
-        ImplementationState.Implemented
+        ImplementationState.NotImplemented
     )]
+    // Not present in the shipping client binary; retained for enum stability only.
     CircleTalkRequest = 0xD65C,
 
     [PacketMetadata(
@@ -1811,7 +1812,7 @@ public enum PacketType : ushort
         "recv_circle_chat_forward",
         ImplementationState.Implemented
     )]
-    CircleChatForwardNotify = 0x2035,
+    CircleChatForwardNotify = 0x57FE,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -1859,7 +1860,7 @@ public enum PacketType : ushort
         "recv_create_new_circle_r",
         ImplementationState.Implemented
     )]
-    CircleCreateResponse = 0xFFEB,
+    CircleCreateResponse = 0x447D,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2305,7 +2306,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_circle_chat_out_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     CircleChatOutResponse = 0x42C4,
 
