@@ -78,25 +78,57 @@ public abstract class GameServerBase<T> : BackgroundService
                 id =>
                 {
                     if (
-                        ActiveServerType == ServerType.Area
-                        && State.TryGetSession(id, out var disconnectedSession)
+                        State.TryGetSession(id, out var disconnectedSession)
                         && disconnectedSession is not null
                     )
                     {
-                        try
+                        if (ActiveServerType == ServerType.Area)
                         {
-                            State
-                                .BroadcastAreaDisappearAsync(disconnectedSession)
-                                .GetAwaiter()
-                                .GetResult();
+                            try
+                            {
+                                State
+                                    .BroadcastAreaDisappearAsync(disconnectedSession)
+                                    .GetAwaiter()
+                                    .GetResult();
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogWarning(
+                                    ex,
+                                    "Failed broadcasting area disconnect disappear for client {ClientId}",
+                                    id
+                                );
+                            }
                         }
-                        catch (Exception ex)
+
+                        if (
+                            ActiveServerType == ServerType.Msg
+                            && disconnectedSession.CharacterId != 0
+                        )
                         {
-                            Logger.LogWarning(
-                                ex,
-                                "Failed broadcasting area disconnect disappear for client {ClientId}",
-                                id
-                            );
+                            try
+                            {
+                                using var scope = ScopeFactory.CreateScope();
+                                var circles =
+                                    scope.ServiceProvider.GetRequiredService<AISpace.Common.DAL.Repositories.ICircleRepository>();
+                                AISpace
+                                    .Common.Handlers.Msg.CircleNotifyHelper.NotifyMemberLogoutAsync(
+                                        circles,
+                                        State,
+                                        (int)disconnectedSession.CharacterId,
+                                        CancellationToken.None
+                                    )
+                                    .GetAwaiter()
+                                    .GetResult();
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogWarning(
+                                    ex,
+                                    "Failed broadcasting circle logout for client {ClientId}",
+                                    id
+                                );
+                            }
                         }
                     }
 

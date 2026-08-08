@@ -20,6 +20,8 @@ public class SharedState
         MovementData
     > _roboLastMovement = new();
 
+    private readonly ConcurrentDictionary<Guid, int> _circleChatSessions = new();
+
     private readonly Channel<(string Id, string Message)> _messages = Channel.CreateUnbounded<(
         string Id,
         string Message
@@ -81,12 +83,45 @@ public class SharedState
 
     public void UnregisterClient(ServerType serverType, Guid clientId)
     {
+        _circleChatSessions.TryRemove(clientId, out _);
+
         if (_sessionPresenceRepository == null)
             _sessionClientRegistry.Unregister(clientId);
         else
             _sessionPresenceRepository.Remove(serverType, clientId);
 
         _sessionStore.RemoveSession(clientId);
+    }
+
+    public void EnterCircleChat(Guid connectionId, int circleId) =>
+        _circleChatSessions[connectionId] = circleId;
+
+    public bool TryGetCircleChat(Guid connectionId, out int circleId) =>
+        _circleChatSessions.TryGetValue(connectionId, out circleId);
+
+    public bool LeaveCircleChat(Guid connectionId) =>
+        _circleChatSessions.TryRemove(connectionId, out _);
+
+    public IReadOnlyList<IPlayerSession> GetCircleChatClients(int circleId) =>
+        [
+            .. GetServerClients(ServerType.Msg)
+                .Where(session =>
+                    session.IsAuthenticated
+                    && TryGetCircleChat(session.ConnectionId, out var active)
+                    && active == circleId
+                ),
+        ];
+
+    public IReadOnlyList<IPlayerSession> GetOnlineMsgClientsByCharacterIds(
+        IEnumerable<int> characterIds
+    )
+    {
+        var set = characterIds.Select(id => (uint)id).ToHashSet();
+        return
+        [
+            .. GetServerClients(ServerType.Msg)
+                .Where(session => session.IsAuthenticated && set.Contains(session.CharacterId)),
+        ];
     }
 
     public void SetPendingAreaTransition(PendingMapTransfer transition)
@@ -113,7 +148,7 @@ public class SharedState
     public IReadOnlyList<IPlayerSession> GetServerClients(ServerType serverType)
     {
         if (_sessionPresenceRepository == null)
-            return _sessionClientRegistry.GetClients(serverType).ToList();
+            return [.. _sessionClientRegistry.GetClients(serverType)];
 
         var presences = _sessionPresenceRepository.GetByServerType(serverType);
         return ResolveConnectedSessions(presences.Select(presence => presence.ConnectionId));
@@ -140,9 +175,14 @@ public class SharedState
                     ? []
                     : peers.Where(other => other.MyRoomId == session.MyRoomId);
 
-        return (
-            includeSelf ? peers : peers.Where(other => other.ConnectionId != session.ConnectionId)
-        ).ToList();
+        return
+        [
+            .. (
+                includeSelf
+                    ? peers
+                    : peers.Where(other => other.ConnectionId != session.ConnectionId)
+            ),
+        ];
     }
 
     public static RoboData PrepareOwnedRobo(RoboData robo, IPlayerSession owner)

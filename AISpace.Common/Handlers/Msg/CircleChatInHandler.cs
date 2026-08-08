@@ -1,11 +1,11 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleChatInHandler(ILogger<CircleChatInHandler> logger)
+public class CircleChatInHandler(ICircleRepository circles, SharedState state)
     : PacketHandlerBase<CircleChatInRequest, CircleChatInResponse>,
         IRequiresAuthenticatedSession
 {
@@ -13,22 +13,31 @@ public class CircleChatInHandler(ILogger<CircleChatInHandler> logger)
     public override PacketType ResponseType => PacketType.CircleChatInResponse;
     public override ServerType ServerType => ServerType.Msg;
 
-    public override Task<CircleChatInResponse?> HandleAsync(
+    public override async Task<CircleChatInResponse?> HandleAsync(
         CircleChatInRequest request,
         IPlayerSession session,
         CancellationToken ct = default
     )
     {
-        // Логика:
-        // 1. Check if the player is in the specified circle (request.CircleId).
-        // 2. If yes, mark the connection as "in circle chat" (e.g. session.ActiveCircleId = request.CircleId).
-        // 3. Return success.
+        var circleId = checked((int)request.CircleId);
+        var membership = await circles.GetMembershipAsync(circleId, (int)session.CharacterId, ct);
+        if (membership is null)
+            return new CircleChatInResponse((uint)CircleResult.NotMember);
 
-        // If there is no full support for circles in memory, simply return success.
-        logger.LogInformation(
-            "Player {CharacterId} entering circle chat {CircleId}", session.CharacterId, request.CircleId
-        );
+        state.EnterCircleChat(session.ConnectionId, circleId);
+        var members = await circles.GetMembersAsync(circleId, ct);
+        uint[] onlineInChat =
+        [
+            .. state.GetCircleChatClients(circleId).Select(s => s.CharacterId).Distinct(),
+        ];
 
-        return Task.FromResult<CircleChatInResponse?>(new CircleChatInResponse(0)); // 0 = success
+        var notify = new CircleNotifyChatIn(request.CircleId, session.CharacterId).ToBytes();
+        foreach (var client in state.GetCircleChatClients(circleId))
+        {
+            if (client.ConnectionId != session.ConnectionId)
+                await client.SendAsync(PacketType.CircleNotifyChatIn, notify, ct);
+        }
+
+        return new CircleChatInResponse(0, 1, onlineInChat);
     }
 }

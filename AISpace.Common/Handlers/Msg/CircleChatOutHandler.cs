@@ -1,26 +1,31 @@
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleChatOutHandler(ILogger<CircleChatOutHandler> logger)
-    : PacketHandlerBase<CircleChatOutRequest, CircleChatInResponse>,
+public class CircleChatOutHandler(SharedState state)
+    : PacketHandlerBase<CircleChatOutRequest, CircleChatOutResponse>,
         IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.CircleChatOutRequest;
-    public override PacketType ResponseType => PacketType.CircleChatInResponse; // Often the same response (just Result)
+    public override PacketType ResponseType => PacketType.CircleChatOutResponse;
     public override ServerType ServerType => ServerType.Msg;
 
-    public override Task<CircleChatInResponse?> HandleAsync(
+    public override async Task<CircleChatOutResponse?> HandleAsync(
         CircleChatOutRequest request,
         IPlayerSession session,
         CancellationToken ct = default
     )
     {
-        logger.LogInformation($"Player {session.CharacterId} leaving circle chat");
-        // Exit logic
-        return Task.FromResult<CircleChatInResponse?>(new CircleChatInResponse(0));
+        if (state.TryGetCircleChat(session.ConnectionId, out var circleId))
+        {
+            state.LeaveCircleChat(session.ConnectionId);
+            var notify = new CircleNotifyChatOut((ulong)circleId, session.CharacterId).ToBytes();
+            foreach (var client in state.GetCircleChatClients(circleId))
+                await client.SendAsync(PacketType.CircleNotifyChatOut, notify, ct);
+        }
+
+        return new CircleChatOutResponse(0);
     }
 }

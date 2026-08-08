@@ -1,13 +1,14 @@
-using AISpace.Common.DAL;
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Msg;
-using Microsoft.EntityFrameworkCore;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleGetDataHandler(MainContext db) : IPacketHandler, IRequiresAuthenticatedSession
+public class CircleGetDataHandler(ICircleRepository circles, SharedState state)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.CircleGetDataRequest;
     public PacketType ResponseType => PacketType.CircleGetDataResponse;
@@ -19,39 +20,19 @@ public class CircleGetDataHandler(MainContext db) : IPacketHandler, IRequiresAut
         CancellationToken ct = default
     )
     {
-        var list = new List<CircleData>();
+        _ = CircleGetDataRequest.FromBytes(payload.Span);
+        var memberships = await circles.GetMembershipsForCharacterAsync(
+            (int)session.CharacterId,
+            ct
+        );
+        (CircleData, uint)[] list =
+        [
+            .. memberships.Select(m => (circles.ToCircleData(m.Circle), m.AuthLevel)),
+        ];
 
-        // Reload the character
-        var cha = await db
-            .Characters.Include(c => c.Circle)
-            .FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
+        foreach (var (circle, _) in memberships)
+            await CircleNotifyHelper.SendRosterAsync(circles, state, circle.Id, ct);
 
-        if (cha != null && cha.Circle != null)
-        {
-            // Use the current character ID as the main identifier
-            uint myId = (uint)cha.Id;
-            uint myCircleId = (uint)cha.Circle.Id;
-
-            // 1. Add the circle to the list
-            list.Add(new CircleData(myCircleId, cha.Circle.Name, myId));
-
-            // 2. Send the composition (yourself as the leader)
-            var membersList = new List<CircleMemberData>
-            {
-                new CircleMemberData
-                {
-                    AvatarId = myId,
-                    Name = cha.Name,
-                    Role = 2u, // Leader
-                },
-            };
-
-            var notify = new CircleNotifyMember(myCircleId, membersList);
-            await session.SendAsync(PacketType.CircleNotifyMember, notify.ToBytes(), ct);
-        }
-
-        // 3. Send the final response
-        var response = new CircleGetDataResponse(0, list);
-        await session.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, new CircleGetDataResponse(0, list).ToBytes(), ct);
     }
 }

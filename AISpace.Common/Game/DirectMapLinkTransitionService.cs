@@ -12,6 +12,7 @@ public sealed class DirectMapLinkTransitionService(
     IMapRepository mapRepository,
     ICharacterRepository characterRepository,
     IMyRoomRepository myRoomRepository,
+    ICircleRepository circleRepository,
     IMapLinkRepository mapLinkRepository,
     IChannelRepository channelRepository,
     IOptions<ServerOptions> serverOptions,
@@ -436,7 +437,10 @@ public sealed class DirectMapLinkTransitionService(
                 room.OwnerCharacterId == character.Id
                     ? character
                     : await characterRepository.GetByIdAsync(room.OwnerCharacterId, ct);
-            if (!MyRoomAccess.CanEnter(room, character.Id, character.CircleId, owner?.CircleId))
+            var sharesCircle =
+                owner is not null
+                && await circleRepository.SharesAnyCircleAsync(character.Id, owner.Id, ct);
+            if (!MyRoomAccess.CanEnter(room, character.Id, sharesCircle))
             {
                 logger.LogWarning(
                     "Denied My Room entry for character {CharacterId} into room {RoomId} (security {Security}, owner {OwnerCharacterId})",

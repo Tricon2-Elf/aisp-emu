@@ -1,15 +1,12 @@
-using AISpace.Common.DAL;
-using AISpace.Common.DAL.Entities;
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Data;
 using AISpace.Network.Packets.Msg;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleCreateHandler(MainContext db)
+public class CircleCreateHandler(ICircleRepository circles, SharedState state)
     : PacketHandlerBase<CircleCreateRequest, CircleCreateResponse>,
         IRequiresAuthenticatedSession
 {
@@ -23,35 +20,19 @@ public class CircleCreateHandler(MainContext db)
         CancellationToken ct = default
     )
     {
-        if (session.User == null)
-            return new CircleCreateResponse(1, null);
-        var character = await db.Characters.FirstOrDefaultAsync(
-            c => c.Id == session.CharacterId,
+        if (session.CharacterId == 0)
+            return new CircleCreateResponse((uint)CircleResult.Failed, null);
+
+        var result = await circles.CreateAsync(
+            (int)session.CharacterId,
+            request.Name,
+            request.MarkId,
             ct
         );
-        if (character == null)
-            return new CircleCreateResponse(1, null);
-        if (character.CircleId != null)
-            return new CircleCreateResponse(2, null);
+        if (result.Result != CircleResult.Ok || result.Circle is null)
+            return new CircleCreateResponse((uint)result.Result, null);
 
-        var circle = new Circle
-        {
-            Name = request.Name,
-            LeaderCharacterId = character.Id,
-            CreatedAt = DateTime.UtcNow,
-        };
-
-        //db.Circles.Add(circle);
-        //await db.SaveChangesAsync(ct);
-
-        //character.CircleId = circle.Id;
-        //await db.SaveChangesAsync(ct);
-
-        var membersList = new List<CircleMemberData>();
-        var notifyPacket = new CircleNotifyMember((uint)circle.Id, membersList);
-        await session.SendAsync(PacketType.CircleNotifyMember, notifyPacket.ToBytes(), ct);
-
-        var cData = new CircleData((uint)circle.Id, circle.Name, (uint)character.Id);
-        return new CircleCreateResponse(0, cData);
+        await CircleNotifyHelper.SendRosterAsync(circles, state, result.Circle.Id, ct);
+        return new CircleCreateResponse(0, circles.ToCircleData(result.Circle));
     }
 }

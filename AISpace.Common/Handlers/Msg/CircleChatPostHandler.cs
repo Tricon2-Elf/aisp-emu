@@ -1,3 +1,4 @@
+using AISpace.Common.DAL.Repositories;
 using AISpace.Common.Game;
 using AISpace.Network;
 using AISpace.Network.Packets.Msg;
@@ -5,9 +6,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AISpace.Common.Handlers.Msg;
 
-public class CircleChatPostHandler(ILogger<CircleChatPostHandler> logger, SharedState state)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class CircleChatPostHandler(
+    ILogger<CircleChatPostHandler> logger,
+    ICircleRepository circles,
+    SharedState state
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.CircleChatPostRequest;
     public PacketType ResponseType => PacketType.CircleChatPostResponse;
@@ -20,27 +23,45 @@ public class CircleChatPostHandler(ILogger<CircleChatPostHandler> logger, Shared
     )
     {
         var req = CircleChatPostRequest.FromBytes(payload.Span);
+        if (!state.TryGetCircleChat(session.ConnectionId, out var circleId))
+        {
+            await session.SendAsync(
+                ResponseType,
+                new CircleChatPostResponse(req.MessageId, (uint)CircleResult.Failed).ToBytes(),
+                ct
+            );
+            return;
+        }
+
+        var membership = await circles.GetMembershipAsync(circleId, (int)session.CharacterId, ct);
+        if (membership is null)
+        {
+            await session.SendAsync(
+                ResponseType,
+                new CircleChatPostResponse(req.MessageId, (uint)CircleResult.NotMember).ToBytes(),
+                ct
+            );
+            return;
+        }
 
         logger.LogInformation(
-            $"[CIRCLE CHAT] From:{session.CharacterId} Circle:{req.CircleId}: {req.Message}"
+            "[CIRCLE CHAT] From:{CharacterId} Circle:{CircleId}: {Message}",
+            session.CharacterId,
+            circleId,
+            req.Message
         );
 
-        var response = new CmdExecResponse(0, 0);
-        await session.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(
+            ResponseType,
+            new CircleChatPostResponse(req.MessageId, 0).ToBytes(),
+            ct
+        );
 
-        var forwardData = new CircleChatForwardNotify(
-            req.CircleId,
-            session.CharacterId,
-            req.Message,
-            req.BalloonId
-        ).ToBytes();
-
-        foreach (var client in state.GetServerClients(ServerType.Msg))
+        var forward = new CircleChatForwardNotify(session.CharacterId, req.Message).ToBytes();
+        foreach (var client in state.GetCircleChatClients(circleId))
         {
-            if (client.IsAuthenticated && client.ConnectionId != session.ConnectionId)
-            {
-                await client.SendAsync(PacketType.CircleChatForwardNotify, forwardData, ct);
-            }
+            if (client.ConnectionId != session.ConnectionId)
+                await client.SendAsync(PacketType.CircleChatForwardNotify, forward, ct);
         }
     }
 }
