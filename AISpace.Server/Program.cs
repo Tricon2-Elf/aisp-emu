@@ -12,7 +12,11 @@ using AISpace.Common.Game;
 using AISpace.Common.Game.ServerScripts;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Services;
+using AISpace.Portal.Shared;
 using AISpace.Server.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -133,8 +137,62 @@ internal class Program
             .Bind(builder.Configuration.GetSection("ApiSettings"));
         builder.Services.AddSingleton<BroadcastService>();
         builder.Services.AddScoped<UserAdminService>();
+        builder.Services.AddSingleton<ServerTypeSessionService>();
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
+        var userPortalEnabled = builder.Configuration.GetValue("UserPortal:Enabled", false);
+        var adminPortalEnabled = builder.Configuration.GetValue("AdminPortal:Enabled", false);
+        if (userPortalEnabled || adminPortalEnabled)
+        {
+            builder.Services.AddValidation();
+            builder.Services.AddOpenApi();
+            builder.Services.AddPortalBackendClients(builder.Configuration);
+            builder.Services.AddOptions<UserPortalOptions>().Bind(builder.Configuration.GetSection(UserPortalOptions.SectionName));
+            builder.Services.AddOptions<AdminPortalOptions>().Bind(builder.Configuration.GetSection(AdminPortalOptions.SectionName));
+            builder.Services.AddSingleton<PortalApiEndpointFilter>();
+            builder.Services
+                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/login";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Events.OnValidatePrincipal = async context =>
+                {
+                    var userIdText = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (!int.TryParse(userIdText, out var userId))
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        return;
+                    }
+
+                    try
+                    {
+                        var authApi = context.HttpContext.RequestServices.GetRequiredService<AuthPortalApiClient>();
+                        if ((await authApi.GetUserAsync(userId, context.HttpContext.RequestAborted)).IsBanned)
+                        {
+                            context.RejectPrincipal();
+                            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        }
+                    }
+                    catch (PortalApiException)
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    }
+                };
+            });
+            builder.Services.AddAuthorizationBuilder().AddPolicy(
+                "PortalAdmin",
+                policy => policy.RequireClaim("portal_admin", "true")
+            );
+            builder.Services.AddRazorPages()
+                .AddApplicationPart(typeof(PortalBackendOptions).Assembly)
+                .AddApplicationPart(typeof(AISpace.UserPortal.Pages.AccountModel).Assembly)
+                .AddApplicationPart(typeof(AISpace.AdminPortal.Pages.Admin.UsersModel).Assembly);
+        }
 
         // Read per-server config from the Server section
         var authEnabled = builder.Configuration.GetValue("Server:AuthServer:Enabled", true);
@@ -187,7 +245,6 @@ internal class Program
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
 
         var app = builder.Build();
-
         var configuredApiKey = app
             .Services.GetRequiredService<IOptions<ApiSettings>>()
             .Value.ApiKey;
@@ -198,6 +255,16 @@ internal class Program
 
         app.UseApiKeyAuthForApiRoutes();
         app.MapAispaceHttpEndpoints();
+        if (userPortalEnabled || adminPortalEnabled)
+        {
+            app.UseStaticFiles();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.MapRazorPages();
+            app.MapPortalBackendApiEndpoints();
+        }
+        if (app.Environment.IsDevelopment() && (userPortalEnabled || adminPortalEnabled))
+            app.MapOpenApi("/openapi/portal/{documentName}.json");
 
         // Ensure database and Maps table exist, then seed maps if empty
         using (var scope = app.Services.CreateScope())

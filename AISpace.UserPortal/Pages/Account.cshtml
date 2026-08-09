@@ -1,0 +1,109 @@
+@page "/account"
+@model AISpace.UserPortal.Pages.AccountModel
+@{
+    ViewData["Title"] = "My account"; Layout = "/Pages/Shared/_Layout.cshtml";
+}
+<header class="account-hero mb-4">
+    <div><span class="eyebrow">AISpace account</span>
+        <h1 class="portal-title">@Model.Account.Username</h1>
+        <p class="portal-subtitle mb-0">Your characters, wardrobe, and stored items.</p>
+    </div>
+</header>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="metric"><span class="metric-label">AI Points: </span><span
+                class="metric-value">@Model.Account.AiPoints</span></div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric"><span class="metric-label">Nico Points: </span><span
+                class="metric-value">@Model.Account.NicoPoints</span></div>
+    </div>
+</div>
+<section class="character-card storage-card">
+    <div class="section-heading">
+        <div><span class="eyebrow">Shared</span>
+            <h2>Account storage</h2>
+        </div><span class="section-count">@Model.Account.StorageItems.Count item@(Model.Account.StorageItems.Count == 1
+            ? "" : "s")</span>
+    </div>
+    @if (Model.Account.StorageItems.Count == 0)
+    {
+        <p>No items in storage</p>
+    }
+    else
+    {
+        <div class="inventory-list">@foreach (var item in Model.Account.StorageItems)
+            {
+                <div class="inventory-row"><span
+                        class="inventory-name">@item.Name</span><span class="inventory-quantity"> x @item.Quantity</span></div>
+            }
+        </div>
+    }
+</section>
+@foreach (var character in Model.Account.Characters)
+{
+    <section class="character-card">
+    <header class="character-header">
+        <div><span class="eyebrow">Character</span>
+            <h2>@character.Name</h2>
+        </div>
+        <dl class="character-location">
+            <div>
+                <dt>Home island</dt>
+                <dd>@character.HomeIslandName</dd>
+            </div>
+        </dl>
+    </header>
+    <div class="row g-4">
+        <section class="col-lg-5">
+            <div class="collection-panel">
+                <div class="section-heading">
+                    <h3>Equipped</h3><span class="section-count">@character.Equipment.Count</span>
+                </div>
+                @if (character.Equipment.Count == 0)
+                    {
+                        <p class="empty-state">Nothing is equipped.</p>
+                    }
+                    else
+                    {
+                        <div class="inventory-list">@foreach (var item in character.Equipment)
+                            {
+                                <div
+                                    class="inventory-row"><span class="equipment-slot">@item.SlotName</span><span
+                                        class="inventory-name">@item.Name</span></div>
+                            }</div>
+                    }
+                </div>
+            </section>
+            <section class="col-lg-7">
+                <div class="collection-panel">
+                    <div class="section-heading">
+                        <h3>Inventory</h3><span class="section-count">@character.Inventory.Count
+                            item@(character.Inventory.Count == 1 ? "" : "s")</span>
+                    </div>
+                    @if (character.Inventory.Count == 0)
+                    {
+                        <p class="empty-state">No items in this inventory.</p>
+                    }
+                    else
+                    {
+                        <div class="inventory-list">@foreach (var item in character.Inventory)
+                            {
+                                <div
+                                    class="inventory-row"><span class="inventory-name">@item.Name</span><span
+                                        class="inventory-quantity"> x @item.Quantity</span></div>
+                            }</div>
+                    }
+                </div>
+            </section>
+        </div>
+        @foreach (var robo in character.Robos)
+        {
+            <section class="robo-panel"><span class="eyebrow">Robo</span>
+                <h3>@robo.Name</h3>
+                <p class="mb-0">Level @robo.Level <span class="text-secondary px-1">·</span> @robo.Experience /
+                    @robo.ExperienceToNextLevel XP</p>
+            </section>
+        }
+    </section>
+}

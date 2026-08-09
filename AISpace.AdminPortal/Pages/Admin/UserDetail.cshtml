@@ -1,0 +1,23 @@
+@page "/admin/users/{userId:int}"
+@model AISpace.AdminPortal.Pages.Admin.UserDetailModel
+@{ ViewData["Title"] = Model.TargetUser.Username; Layout = "/Pages/Shared/_Layout.cshtml"; }
+<header class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4"><div><h1 class="portal-title mb-1">@Model.TargetUser.Username</h1><p class="portal-subtitle mb-0">@(Model.TargetUser.IsBanned ? $"Banned: {Model.TargetUser.BanReason}" : "Active account")</p></div><div class="d-flex gap-2"><form method="post" asp-page-handler="Kick"><button class="btn btn-outline-warning" type="submit" onclick="return confirm('Kick this user from all servers?')">Kick</button></form>
+@if (Model.TargetUser.IsBanned)
+{
+    <form method="post" asp-page-handler="Unban"><button class="btn btn-outline-success" type="submit">Unban</button></form>
+}
+else
+{
+    <form method="post" asp-page-handler="Ban" class="d-flex gap-2"><input class="form-control" name="reason" maxlength="256" placeholder="Reason (optional)" /><button class="btn btn-danger" type="submit" onclick="return confirm('Ban this user and disconnect them?')">Ban</button></form>
+}
+</div></header>
+<div class="row g-3 mb-4"><div class="col-md-4"><div class="metric"><span class="metric-label">AI Points</span><span class="metric-value">@Model.Account.AiPoints</span></div></div><div class="col-md-4"><div class="metric"><span class="metric-label">Nico Points</span><span class="metric-value">@Model.Account.NicoPoints</span></div></div><div class="col-md-4"><div class="metric"><span class="metric-label">Storage</span><span class="metric-value">@Model.Account.StorageDeposit</span></div></div></div>
+<section class="character-card"><h2 class="h4">Storage</h2><ul class="mb-0">@foreach (var item in Model.Account.StorageItems) { <li>@item.Name × @item.Quantity</li> }</ul></section>
+@foreach (var character in Model.Account.Characters)
+{
+    <section class="character-card"><h2 class="h3">@character.Name</h2><p class="portal-subtitle">Map @character.CurrentMapId</p>
+    <h3>Inventory</h3><ul>@foreach (var item in character.Inventory) { <li>@item.Name × @item.Quantity</li> }</ul>
+    <h3>Equipment</h3><ul>@foreach (var item in character.Equipment) { <li>@item.SlotName: @item.Name</li> }</ul>
+    @foreach (var robo in character.Robos) { <h3>Robo: @robo.Name</h3><p>Level @robo.Level, XP @robo.Experience/@robo.ExperienceToNextLevel</p> }
+    </section>
+}
