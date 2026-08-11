@@ -672,6 +672,24 @@ body:has(.moderation-modal[open]) {
     box-shadow: 0 0 0 0.22rem rgba(108, 92, 231, 0.13);
 }
 
+.form-control.input-validation-error {
+    border-color: var(--portal-danger);
+}
+
+.form-control.input-validation-error:focus {
+    border-color: var(--portal-danger);
+    box-shadow: 0 0 0 0.22rem rgba(199, 59, 82, 0.14);
+}
+
+.validation-summary-valid {
+    display: none;
+}
+
+.field-validation-error {
+    display: block;
+    margin-top: 0.35rem;
+}
+
 .btn {
     border-radius: 0.65rem;
     font-weight: 650;
