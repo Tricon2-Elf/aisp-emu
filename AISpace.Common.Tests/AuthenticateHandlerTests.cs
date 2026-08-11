@@ -15,40 +15,28 @@ namespace AISpace.Common.Tests;
 public class AuthenticateHandlerTests
 {
     [Fact]
-    public async Task NewUser_CreatesAccount_AndReturnsSuccess()
+    public async Task UnknownUser_SendsFailure_DoesNotCreateAccount()
     {
-        var created = new User { Id = 7, Username = "newbie" };
-        created.SetPassword("pw");
-
         var userRepo = new Mock<AISpace.Common.DAL.Repositories.IUserRepository>();
-        userRepo
-            .SetupSequence(r => r.GetByUsernameAsync("newbie"))
-            .ReturnsAsync((User?)null)
-            .ReturnsAsync(created);
-        userRepo.Setup(r => r.AddAsync("newbie", "pw")).Returns(Task.CompletedTask);
+        userRepo.Setup(r => r.GetByUsernameAsync("newbie")).ReturnsAsync((User?)null);
 
-        var state = new SharedState();
         var handler = new AuthenticateHandler(
             userRepo.Object,
-            state,
+            new SharedState(),
             NullLogger<AuthenticateHandler>.Instance
         );
-        IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
-        var w = new PacketWriter();
-        w.Write("newbie");
-        w.Write("pw");
+        var req = new AuthenticateRequest("newbie", "pw");
 
-        await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
+        var resp = await handler.HandleAsync(req, session, TestContext.Current.CancellationToken);
 
-        Assert.Equal(7, session.UserId);
-        Assert.NotNull(session.User);
-        Assert.Equal("newbie", session.User!.Username);
-        Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
+        Assert.Null(resp);
+        Assert.Null(session.User);
+        userRepo.Verify(r => r.AddAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         Assert.Single(session.Sent);
-        Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);
+        Assert.Equal(PacketType.AuthenticateFailureResponse, session.Sent[0].Type);
         Assert.Equal(
-            7u,
+            (uint)AuthResponseResult.InvalidCredentials,
             BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
         );
     }

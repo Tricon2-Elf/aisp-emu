@@ -11,6 +11,8 @@ public class Character
     public BloodType BloodType { get; set; }
 
     public DateTime Birthdate { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoggedInAt { get; set; }
     public int Gender { get; set; }
     public uint FaceType { get; set; }
     public uint Hairstyle { get; set; }

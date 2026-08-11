@@ -13,7 +13,10 @@ internal static class ApiKeyAuthExtensions
         app.Use(
             async (context, next) =>
             {
-                if (context.Request.Path.StartsWithSegments("/api"))
+                if (
+                    context.Request.Path.StartsWithSegments("/api")
+                    && !IsPortalApiRequest(context.Request.Path)
+                )
                 {
                     var apiSettings = context
                         .RequestServices.GetRequiredService<IOptions<ApiSettings>>()
@@ -41,4 +44,9 @@ internal static class ApiKeyAuthExtensions
 
         return app;
     }
+
+    private static bool IsPortalApiRequest(PathString path) =>
+        path.StartsWithSegments("/api/auth/portal")
+        || path.StartsWithSegments("/api/msg/portal")
+        || path.StartsWithSegments("/api/area/portal");
 }

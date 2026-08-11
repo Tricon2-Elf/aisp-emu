@@ -11,6 +11,7 @@ public interface IUserRepository
     Task<User?> GetByUsernameAsync(string username);
     Task<User?> GetById(int userId);
     Task SetBannedAsync(int userId, bool isBanned, string? reason = null);
+    Task TouchLastLoggedInAsync(int userId, CancellationToken ct = default);
     Task UpdatePasswordAsync(int userId, string newPassword);
     Task DeleteAsync(int userId);
     Task<IReadOnlyList<User>> GetAllAsync(
@@ -119,6 +120,16 @@ public class UserRepository(MainContext db) : IUserRepository
         user.BanReason = isBanned ? reason : null;
         user.BannedAt = isBanned ? DateTime.UtcNow : null;
         await _db.SaveChangesAsync();
+    }
+
+    public async Task TouchLastLoggedInAsync(int userId, CancellationToken ct = default)
+    {
+        var user = await _db.Users.FindAsync([userId], ct);
+        if (user is null)
+            return;
+
+        user.LastLoggedInAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
     }
 
     public async Task UpdatePasswordAsync(int userId, string newPassword)

@@ -3,6 +3,7 @@ using System;
 using AISpace.Common.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AISpace.Common.DAL.Migrations
 {
     [DbContext(typeof(MainContext))]
-    partial class MainContextModelSnapshot : ModelSnapshot
+    [Migration("20260809020620_AddCharacterCreatedAt")]
+    partial class AddCharacterCreatedAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -63,9 +66,6 @@ namespace AISpace.Common.DAL.Migrations
 
                     b.Property<uint>("HomeIslandId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("LastLoggedInAt")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("Like1")
                         .IsRequired()
@@ -1232,9 +1232,6 @@ namespace AISpace.Common.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("LastLoggedInAt")
-                        .HasColumnType("TEXT");
 
                     b.Property<long>("NicoPoints")
                         .ValueGeneratedOnAdd()

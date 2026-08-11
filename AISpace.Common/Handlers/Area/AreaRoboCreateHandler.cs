@@ -41,11 +41,12 @@ public class AreaRoboCreateHandler(
         );
 
         // Never reuse CharacterId as m_SlotId — after call, client LookupChara(slotId) and may destroy it when state=0.
-        var blood = (uint)request.Visual.BloodType <= 3 ? request.Visual.BloodType : BloodType.A;
+        var blood =
+            (uint)request.Visual.BloodType is >= 1 and <= 4
+                ? request.Visual.BloodType
+                : BloodType.A;
         var month = request.Visual.Month is >= 1 and <= 12 ? request.Visual.Month : (byte)1;
         var day = request.Visual.Day is >= 1 and <= 28 ? request.Visual.Day : (byte)1;
-        var hairstyle =
-            request.Visual.Hairstyle != 0 ? request.Visual.Hairstyle : DefaultHairItemId;
         var visual = new CharaVisual(
             blood,
             month,
@@ -53,7 +54,7 @@ public class AreaRoboCreateHandler(
             request.Visual.Gender,
             objectId,
             request.Visual.Face,
-            hairstyle
+            0
         );
 
         var chara = new CharaData(objectId, request.ModelId, request.Name) { Visual = visual };
@@ -74,4 +75,6 @@ public class AreaRoboCreateHandler(
         var response = new RoboCreateResponse(0, robo);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
+
+    private static bool IsCharadollPresetModel(uint modelId) => modelId is >= 2_000_000 and < 5_000_000;
 }

@@ -206,6 +206,8 @@ public class AreasvEnterHandler(
         session.StorageOpenContext = StorageOpenContext.None;
 
         state.RegisterClient(ServerType.Area, session);
+        await characterRepo.TouchLastLoggedInAsync(chara.Id, ct);
+        chara.LastLoggedInAt = DateTime.UtcNow;
 
         await session.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
         // Self avatar: AvatarGetData / MapDataEnterEnd. Peers: MapEnter (post-load).

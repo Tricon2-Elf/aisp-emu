@@ -24,36 +24,31 @@ public class AuthenticateHandler(
         CancellationToken ct = default
     )
     {
-        _logger.LogInformation($"Auth request: {request.Username}");
+        _logger.LogInformation("Auth request: {Username}", request.Username);
 
         var user = await userRepo.GetByUsernameAsync(request.Username);
 
-        if (user == null)
+        if (user == null || !user.VerifyPassword(request.Password))
         {
-            _logger.LogInformation($"User '{request.Username}' not found. Creating new account...");
-            await userRepo.AddAsync(request.Username, request.Password);
-
-            user = await userRepo.GetByUsernameAsync(request.Username);
-        }
-        else
-        {
-            if (!user.VerifyPassword(request.Password))
+            if (user == null)
             {
-                _logger.LogWarning($"Auth failed: Wrong password for user '{request.Username}'");
-                var failResp = new AuthenticateFailureResponse(
-                    AuthResponseResult.InvalidCredentials
+                _logger.LogWarning(
+                    "Auth failed: Unknown user '{Username}' (accounts must be created via the web portal)",
+                    request.Username
                 );
-                await session.SendAsync(
-                    PacketType.AuthenticateFailureResponse,
-                    failResp.ToBytes(),
-                    ct
-                );
-                return null;
             }
-        }
+            else
+            {
+                _logger.LogWarning(
+                    "Auth failed: Wrong password for user '{Username}'",
+                    request.Username
+                );
+            }
 
-        if (user == null)
+            var failResp = new AuthenticateFailureResponse(AuthResponseResult.InvalidCredentials);
+            await session.SendAsync(PacketType.AuthenticateFailureResponse, failResp.ToBytes(), ct);
             return null;
+        }
 
         if (user.IsBanned)
         {
@@ -65,6 +60,8 @@ public class AuthenticateHandler(
             return null;
         }
 
+        await userRepo.TouchLastLoggedInAsync(user.Id, ct);
+        user.LastLoggedInAt = DateTime.UtcNow;
         _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
         session.User = user;
         session.UserId = user.Id;
