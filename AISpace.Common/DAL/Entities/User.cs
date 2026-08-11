@@ -13,6 +13,7 @@ public class User
     public bool IsBanned { get; set; }
     public string? BanReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastLoggedInAt { get; set; }
     public DateTime? BannedAt { get; set; }
 
     public ICollection<Character> Characters { get; set; } = new List<Character>();

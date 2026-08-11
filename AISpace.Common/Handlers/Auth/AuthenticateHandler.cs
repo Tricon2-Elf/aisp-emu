@@ -65,6 +65,8 @@ public class AuthenticateHandler(
             return null;
         }
 
+        await userRepo.TouchLastLoggedInAsync(user.Id, ct);
+        user.LastLoggedInAt = DateTime.UtcNow;
         _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
         session.User = user;
         session.UserId = user.Id;
