@@ -77,6 +77,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("Characters");
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.Name).IsUnique();
             e.Property(x => x.CharadollPersonality)
                 .HasConversion<byte>()

@@ -43,6 +43,7 @@ public interface ICharacterRepository
         CharadollPersonality personality,
         CancellationToken ct = default
     );
+    Task TouchLastLoggedInAsync(int characterId, CancellationToken ct = default);
     Task AddInventoryAsync(
         int characterId,
         int itemId,
@@ -190,6 +191,16 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         character.CharadollPersonality = personality;
         await db.SaveChangesAsync(ct);
         return character;
+    }
+
+    public async Task TouchLastLoggedInAsync(int characterId, CancellationToken ct = default)
+    {
+        var character = await db.Characters.SingleOrDefaultAsync(c => c.Id == characterId, ct);
+        if (character is null)
+            return;
+
+        character.LastLoggedInAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task AddInventoryAsync(
