@@ -158,8 +158,11 @@ internal class Program
                 options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
                 options.Events.OnValidatePrincipal = async context =>
                 {
-                    var userIdText = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                    if (!int.TryParse(userIdText, out var userId))
+                    var principal = context.Principal;
+                    var identity = principal?.Identity as System.Security.Claims.ClaimsIdentity;
+                    var userIdText = principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    var username = principal?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                    if (identity is null || !int.TryParse(userIdText, out var userId) || string.IsNullOrEmpty(username))
                     {
                         context.RejectPrincipal();
                         await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -173,13 +176,37 @@ internal class Program
                         {
                             context.RejectPrincipal();
                             await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                            return;
                         }
                     }
                     catch (PortalApiException)
                     {
                         context.RejectPrincipal();
                         await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        return;
                     }
+
+                    // Recompute admin membership from live config so removed AdminUsernames lose access.
+                    var portalOptions = context
+                        .HttpContext.RequestServices.GetRequiredService<IOptionsMonitor<PortalOptions>>();
+                    var shouldBeAdmin = portalOptions.CurrentValue.IsAdmin(username);
+                    var hasAdminClaim = identity.HasClaim("portal_admin", "true");
+                    if (hasAdminClaim == shouldBeAdmin)
+                        return;
+
+                    var claims = identity.Claims.Where(claim => claim.Type != "portal_admin").ToList();
+                    if (shouldBeAdmin)
+                        claims.Add(new System.Security.Claims.Claim("portal_admin", "true"));
+
+                    context.ReplacePrincipal(
+                        new System.Security.Claims.ClaimsPrincipal(
+                            new System.Security.Claims.ClaimsIdentity(
+                                claims,
+                                identity.AuthenticationType
+                            )
+                        )
+                    );
+                    context.ShouldRenew = true;
                 };
             });
             builder.Services.AddAuthorizationBuilder().AddPolicy(
