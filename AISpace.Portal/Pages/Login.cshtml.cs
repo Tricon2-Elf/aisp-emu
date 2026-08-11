@@ -9,11 +9,8 @@ using AISpace.Portal;
 
 namespace AISpace.Portal.Pages;
 
-public sealed class LoginModel(
-    AuthPortalApiClient authApi,
-    IOptions<AdminPortalOptions> adminOptions,
-    IOptions<UserPortalOptions> userPortalOptions
-) : PageModel
+public sealed class LoginModel(AuthPortalApiClient authApi, IOptions<PortalOptions> portalOptions)
+    : PageModel
 {
     [BindProperty]
     public LoginInput Input { get; set; } = new();
@@ -21,7 +18,7 @@ public sealed class LoginModel(
     [BindProperty(SupportsGet = true)]
     public string? ReturnUrl { get; set; }
 
-    public bool UserPortalEnabled => userPortalOptions.Value.Enabled;
+    public bool AllowRegistration => portalOptions.Value.AllowRegistration;
 
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
@@ -32,11 +29,9 @@ public sealed class LoginModel(
         {
             var identity = await authApi.LoginAsync(new(Input.Username, Input.Password), ct);
             await SignInAsync(identity.UserId, identity.Username);
-            var fallbackUrl = UserPortalEnabled
-                ? "/account"
-                : adminOptions.Value.IsAdmin(identity.Username)
-                    ? "/admin/users"
-                    : "/login";
+            var fallbackUrl = portalOptions.Value.IsAdmin(identity.Username)
+                ? "/admin/users"
+                : "/account";
             return LocalRedirect(IsLocalReturnUrl(ReturnUrl) ? ReturnUrl! : fallbackUrl);
         }
         catch (PortalApiException)
@@ -53,14 +48,17 @@ public sealed class LoginModel(
             new(ClaimTypes.NameIdentifier, userId.ToString()),
             new(ClaimTypes.Name, username),
         };
-        if (adminOptions.Value.Enabled && adminOptions.Value.IsAdmin(username))
+        if (portalOptions.Value.IsAdmin(username))
             claims.Add(new("portal_admin", "true"));
 
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+        var principal = new ClaimsPrincipal(
+            new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)
+        );
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
     }
 
-    private bool IsLocalReturnUrl(string? returnUrl) => !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl);
+    private bool IsLocalReturnUrl(string? returnUrl) =>
+        !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl);
 
     public sealed class LoginInput
     {

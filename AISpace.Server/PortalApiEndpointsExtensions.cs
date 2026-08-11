@@ -56,9 +56,13 @@ internal static class PortalApiEndpointsExtensions
     private static async Task<IResult> RegisterAsync(
         RegisterPortalAccountRequest request,
         IUserRepository users,
+        IOptions<PortalOptions> portalOptions,
         CancellationToken ct
     )
     {
+        if (!portalOptions.Value.AllowRegistration)
+            return TypedResults.NotFound();
+
         var username = request.Username.Trim();
         if (
             !IsValidUsername(username)

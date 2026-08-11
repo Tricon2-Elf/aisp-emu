@@ -22,7 +22,7 @@
         <input type="hidden" asp-for="ReturnUrl" />
         <button type="submit" class="btn btn-primary py-2">Sign in</button>
     </form>
-    @if (Model.UserPortalEnabled)
+    @if (Model.AllowRegistration)
     {
         <p class="auth-link mt-4 mb-0">New here? <a href="/register">Create an account</a></p>
     }

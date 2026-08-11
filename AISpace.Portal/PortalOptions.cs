@@ -8,18 +8,12 @@ public sealed class PortalBackendOptions
     public string ServiceToken { get; set; } = string.Empty;
 }
 
-public sealed class UserPortalOptions
+public sealed class PortalOptions
 {
-    public const string SectionName = "UserPortal";
+    public const string SectionName = "Portal";
 
     public bool Enabled { get; set; }
-}
-
-public sealed class AdminPortalOptions
-{
-    public const string SectionName = "AdminPortal";
-
-    public bool Enabled { get; set; }
+    public bool AllowRegistration { get; set; } = true;
     public string[] AdminUsernames { get; set; } = [];
 
     public bool IsAdmin(string username) =>

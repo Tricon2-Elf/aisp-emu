@@ -140,15 +140,13 @@ internal class Program
         builder.Services.AddSingleton<ServerTypeSessionService>();
         builder.Services.AddSingleton<GameServerHealthRegistry>();
         builder.Services.AddHealthChecks();
-        var userPortalEnabled = builder.Configuration.GetValue("UserPortal:Enabled", false);
-        var adminPortalEnabled = builder.Configuration.GetValue("AdminPortal:Enabled", false);
-        if (userPortalEnabled || adminPortalEnabled)
+        var portalEnabled = builder.Configuration.GetValue("Portal:Enabled", false);
+        if (portalEnabled)
         {
             builder.Services.AddValidation();
             builder.Services.AddOpenApi();
             builder.Services.AddPortalBackendClients(builder.Configuration);
-            builder.Services.AddOptions<UserPortalOptions>().Bind(builder.Configuration.GetSection(UserPortalOptions.SectionName));
-            builder.Services.AddOptions<AdminPortalOptions>().Bind(builder.Configuration.GetSection(AdminPortalOptions.SectionName));
+            builder.Services.AddOptions<PortalOptions>().Bind(builder.Configuration.GetSection(PortalOptions.SectionName));
             builder.Services.AddSingleton<PortalApiEndpointFilter>();
             builder.Services
                 .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -253,7 +251,7 @@ internal class Program
 
         app.UseApiKeyAuthForApiRoutes();
         app.MapAispaceHttpEndpoints();
-        if (userPortalEnabled || adminPortalEnabled)
+        if (portalEnabled)
         {
             app.UseStaticFiles();
             app.UseAuthentication();
@@ -261,7 +259,7 @@ internal class Program
             app.MapRazorPages();
             app.MapPortalBackendApiEndpoints();
         }
-        if (app.Environment.IsDevelopment() && (userPortalEnabled || adminPortalEnabled))
+        if (app.Environment.IsDevelopment() && portalEnabled)
             app.MapOpenApi("/openapi/portal/{documentName}.json");
 
         // Ensure database and Maps table exist, then seed maps if empty

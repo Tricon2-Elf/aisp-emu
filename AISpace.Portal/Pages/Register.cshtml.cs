@@ -9,16 +9,20 @@ using AISpace.Portal;
 
 namespace AISpace.Portal.Pages;
 
-public sealed class RegisterModel(
-    AuthPortalApiClient authApi,
-    IOptions<AdminPortalOptions> adminOptions
-) : PageModel
+public sealed class RegisterModel(AuthPortalApiClient authApi, IOptions<PortalOptions> portalOptions)
+    : PageModel
 {
     [BindProperty]
     public RegisterInput Input { get; set; } = new();
 
+    public IActionResult OnGet() =>
+        portalOptions.Value.AllowRegistration ? Page() : RedirectToPage("/Login");
+
     public async Task<IActionResult> OnPostAsync(CancellationToken ct)
     {
+        if (!portalOptions.Value.AllowRegistration)
+            return RedirectToPage("/Login");
+
         if (!ModelState.IsValid)
             return Page();
 
@@ -33,7 +37,7 @@ public sealed class RegisterModel(
                 new(ClaimTypes.NameIdentifier, identity.UserId.ToString()),
                 new(ClaimTypes.Name, identity.Username),
             };
-            if (adminOptions.Value.Enabled && adminOptions.Value.IsAdmin(identity.Username))
+            if (portalOptions.Value.IsAdmin(identity.Username))
                 claims.Add(new("portal_admin", "true"));
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
