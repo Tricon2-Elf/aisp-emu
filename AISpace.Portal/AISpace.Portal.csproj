@@ -7,6 +7,5 @@
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <ProjectReference Include="..\AISpace.BackendApi.Contracts\AISpace.BackendApi.Contracts.csproj" />
   </ItemGroup>
 </Project>

@@ -2,10 +2,10 @@
 
 public enum BloodType : uint
 {
-    A = 0,
-    B = 1,
-    AB = 2,
-    O = 3,
+    A = 1,
+    B = 2,
+    AB = 3,
+    O = 4,
 }
 
 public class CharaVisual(

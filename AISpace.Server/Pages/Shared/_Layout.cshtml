@@ -1,43 +1,50 @@
 @{
     var title = ViewData["Title"] as string ?? "AISpace Portal";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isAdmin = User.HasClaim("portal_admin", "true");
+    var homeUrl = isAuthenticated ? (isAdmin ? "/admin/users" : "/account") : "/login";
 }
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11182b" />
     <title>@title · AISpace</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="/css/portal.css?v=20260809" rel="stylesheet" />
+    <link href="/css/portal.css?v=20260811-3" rel="stylesheet" />
 </head>
-
 <body>
-    <nav class="navbar navbar-expand-lg portal-nav">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/account">AISpace <span>Portal</span></a>
-            <div class="d-flex align-items-center gap-2">
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <span class="small text-secondary d-none d-sm-inline">@User.Identity.Name</span>
-                    @if (User.HasClaim("portal_admin", "true"))
+    <div class="portal-shell">
+        <nav class="portal-nav" aria-label="Primary navigation">
+            <div class="container portal-nav-inner">
+                <a class="portal-brand" href="@homeUrl" aria-label="AISpace portal home">
+                    <span>AISpace</span>
+                    @if (isAdmin)
                     {
-                        <a class="btn btn-sm btn-outline-info" href="/admin/users">Administration</a>
+                        <span class="portal-context">Admin</span>
                     }
-                    <form method="post" action="/logout" class="d-inline">@Html.AntiForgeryToken()<button
-                            class="btn btn-sm btn-outline-secondary" type="submit">Sign out</button></form>
-                }
-                else
-                {
-                    <a class="btn btn-sm btn-outline-secondary" href="/login">Sign in</a>
-                }
+                </a>
+                <div class="portal-nav-actions">
+                    @if (isAuthenticated)
+                    {
+                        <span class="portal-user d-none d-sm-inline">@User.Identity?.Name</span>
+                        <form method="post" action="/logout">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-ghost" type="submit">Sign out</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a class="btn btn-sm btn-ghost" href="/login">Sign in</a>
+                    }
+                </div>
             </div>
-        </div>
-    </nav>
-    <main class="container py-4 py-lg-5">
-        @RenderBody()
-    </main>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+        </nav>
+        <main class="container portal-main">
+            @RenderBody()
+        </main>
+    </div>
+    <script src="/portal.js?v=20260810-1" defer></script>
 </body>
-
 </html>

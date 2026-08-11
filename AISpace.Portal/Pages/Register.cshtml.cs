@@ -1,14 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using AISpace.BackendApi.Contracts;
-using AISpace.Portal.Shared;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
+using AISpace.Portal;
 
-namespace AISpace.UserPortal.Pages;
+namespace AISpace.Portal.Pages;
 
 public sealed class RegisterModel(
     AuthPortalApiClient authApi,
@@ -25,7 +24,10 @@ public sealed class RegisterModel(
 
         try
         {
-            var identity = await authApi.RegisterAsync(new(Input.Username, Input.Password, Input.ConfirmPassword), ct);
+            var identity = await authApi.RegisterAsync(
+                new(Input.Username, Input.Password, Input.ConfirmPassword),
+                ct
+            );
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, identity.UserId.ToString()),
@@ -35,7 +37,9 @@ public sealed class RegisterModel(
                 claims.Add(new("portal_admin", "true"));
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme))
+                new ClaimsPrincipal(
+                    new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)
+                )
             );
             return Redirect("/account");
         }

@@ -1,0 +1,29 @@
+@page "/register"
+@model AISpace.Portal.Pages.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = "/Pages/Shared/_Layout.cshtml";
+}
+<section class="portal-card p-4 p-lg-5">
+    <div class="portal-card-icon" aria-hidden="true">+</div>
+    <span class="eyebrow">Join AISpace</span>
+    <h1 class="portal-title h2">Create account</h1>
+    <p class="portal-subtitle mb-4">Use these credentials to sign in to AISpace and this portal.</p>
+    <form method="post" class="vstack gap-3">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div>
+            <label asp-for="Input.Username" class="form-label"></label>
+            <input asp-for="Input.Username" class="form-control" autocomplete="username" autofocus />
+        </div>
+        <div>
+            <label asp-for="Input.Password" class="form-label"></label>
+            <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+        </div>
+        <div>
+            <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+            <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+        </div>
+        <button type="submit" class="btn btn-primary py-2">Create account</button>
+    </form>
+    <p class="auth-link mt-4 mb-0">Already have an account? <a href="/login">Sign in</a></p>
+</section>

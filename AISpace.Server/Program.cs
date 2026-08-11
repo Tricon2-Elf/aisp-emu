@@ -12,7 +12,7 @@ using AISpace.Common.Game;
 using AISpace.Common.Game.ServerScripts;
 using AISpace.Common.Handlers.Area;
 using AISpace.Common.Services;
-using AISpace.Portal.Shared;
+using AISpace.Portal;
 using AISpace.Server.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -189,9 +189,7 @@ internal class Program
                 policy => policy.RequireClaim("portal_admin", "true")
             );
             builder.Services.AddRazorPages()
-                .AddApplicationPart(typeof(PortalBackendOptions).Assembly)
-                .AddApplicationPart(typeof(AISpace.UserPortal.Pages.AccountModel).Assembly)
-                .AddApplicationPart(typeof(AISpace.AdminPortal.Pages.Admin.UsersModel).Assembly);
+                .AddApplicationPart(typeof(AISpace.Portal.Pages.AccountModel).Assembly);
         }
 
         // Read per-server config from the Server section

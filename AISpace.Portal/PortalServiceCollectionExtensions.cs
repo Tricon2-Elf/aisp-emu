@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace AISpace.Portal.Shared;
+namespace AISpace.Portal;
 
 public static class PortalServiceCollectionExtensions
 {

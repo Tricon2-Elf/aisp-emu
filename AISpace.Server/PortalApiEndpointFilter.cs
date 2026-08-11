@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
-using AISpace.Portal.Shared;
+using AISpace.Portal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 

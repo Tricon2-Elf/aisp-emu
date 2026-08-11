@@ -16,19 +16,16 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageReference Include="NLog" Version="6.1.3" />
     <PackageReference Include="NLog.Extensions.Logging" Version="6.1.3" />
     <PackageReference Include="Scrutor" Version="7.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Validation" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AISpace.Common\AISpace.Common.csproj" />
-    <ProjectReference Include="..\AISpace.BackendApi.Contracts\AISpace.BackendApi.Contracts.csproj" />
-    <ProjectReference Include="..\AISpace.Portal.Shared\AISpace.Portal.Shared.csproj" />
-    <ProjectReference Include="..\AISpace.UserPortal\AISpace.UserPortal.csproj" />
-    <ProjectReference Include="..\AISpace.AdminPortal\AISpace.AdminPortal.csproj" />
+    <ProjectReference Include="..\AISpace.Portal\AISpace.Portal.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,5 +35,8 @@
     <None Update="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Update="wwwroot\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

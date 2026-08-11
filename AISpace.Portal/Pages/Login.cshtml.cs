@@ -5,8 +5,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
+using AISpace.Portal;
 
-namespace AISpace.Portal.Shared.Pages;
+namespace AISpace.Portal.Pages;
 
 public sealed class LoginModel(
     AuthPortalApiClient authApi,

@@ -1,4 +1,4 @@
-namespace AISpace.Portal.Shared;
+namespace AISpace.Portal;
 
 public sealed class PortalBackendOptions
 {
