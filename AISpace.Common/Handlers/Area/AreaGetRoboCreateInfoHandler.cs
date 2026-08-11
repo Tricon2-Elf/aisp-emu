@@ -60,15 +60,15 @@ public sealed class AreaGetRoboCreateInfoHandler(MainContext db)
 
         return (homeIslandId, personality) switch
         {
-            // Da Capo
-            (1, CharadollPersonality.Quiet) => new RoboCreateAppearance(2012020, 10900040),
-            (1, CharadollPersonality.Active) => new RoboCreateAppearance(2012030, 10900030),
-            // Clannad
-            (2, CharadollPersonality.Quiet) => new RoboCreateAppearance(2022030, 10900061),
-            (2, CharadollPersonality.Active) => new RoboCreateAppearance(2022020, 10900050),
-            // Shuffle!
-            (3, CharadollPersonality.Quiet) => new RoboCreateAppearance(2032020, 10900071),
-            (3, CharadollPersonality.Active) => new RoboCreateAppearance(2032030, 10900080),
+            // Da Capo — 朝倉由夢 / 白河ななか (hair is baked into the model)
+            (1, CharadollPersonality.Quiet) => new RoboCreateAppearance(2012020, 0),
+            (1, CharadollPersonality.Active) => new RoboCreateAppearance(2012030, 0),
+            // Clannad — 坂上智代 / 藤林杏
+            (2, CharadollPersonality.Quiet) => new RoboCreateAppearance(2022030, 0),
+            (2, CharadollPersonality.Active) => new RoboCreateAppearance(2022020, 0),
+            // Shuffle! — ネリネ / 芙蓉楓
+            (3, CharadollPersonality.Quiet) => new RoboCreateAppearance(2032020, 0),
+            (3, CharadollPersonality.Active) => new RoboCreateAppearance(2032030, 0),
             _ => DefaultAppearance,
         };
     }
