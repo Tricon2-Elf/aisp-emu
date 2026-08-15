@@ -35,18 +35,6 @@
     "zh-Hans": "服务器即将因定期维护而关闭。",
     "zh-Hant": "伺服器即將因定期維護而關閉。"
   },
-  "profile.default_like": {
-    "ja": "なし",
-    "en": "None",
-    "zh-Hans": "无",
-    "zh-Hant": "無"
-  },
-  "profile.default_avatar_description": {
-    "ja": "こんにちは！",
-    "en": "Hello!",
-    "zh-Hans": "你好！",
-    "zh-Hant": "你好！"
-  },
   "enquete.music.question": {
     "ja": "人生の音楽とは何ですか？",
     "en": "What is the music of life?",
