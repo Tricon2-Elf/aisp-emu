@@ -64,8 +64,8 @@
     UInt {WorldCount}
     foreach world:
         UInt {WorldId}
-        FixedString(97, ASCII) {Name}
-        FixedString(766, ASCII) {Description}
+        FixedString(97) {Name}
+        FixedString(766) {Description}
     UInt {Padding}  // 0
 ```
 
@@ -115,8 +115,8 @@
 **Layout:**
 
 ```text
-    CString(ASCII) {Username}
-    CString(ASCII) {Password}
+    CString {Username}
+    CString {Password}
 ```
 
 ## send_check_version (VersionCheckRequest)

@@ -49,7 +49,7 @@ public ref struct PacketReader(ReadOnlySpan<byte> buffer)
         return encoder.GetString(span);
     }
 
-    public string ReadString(string encoderName = "ASCII")
+    public string ReadString(string encoderName = "utf-8")
     {
         var encoder = PacketEncoding.GetEncoding(encoderName);
         var remaining = _buffer[_offset..];

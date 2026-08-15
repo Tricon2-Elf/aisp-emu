@@ -1,6 +1,6 @@
 namespace aisp.Network.Packets.Area;
 
-/// <summary>send_myroom_update_name (0xB154): room ID followed by a null-terminated Shift-JIS name of at most 46 bytes.</summary>
+/// <summary>send_myroom_update_name (0xB154): room ID followed by a null-terminated UTF-8 name of at most 46 bytes.</summary>
 public sealed class MyRoomUpdateNameRequest(uint roomId, string name)
     : IIncomingPacket<MyRoomUpdateNameRequest>
 {
@@ -22,6 +22,6 @@ public sealed class MyRoomUpdateNameRequest(uint roomId, string name)
             );
 
         var reader = new PacketReader(data);
-        return new MyRoomUpdateNameRequest(reader.ReadUInt(), reader.ReadString("Shift_JIS"));
+        return new MyRoomUpdateNameRequest(reader.ReadUInt(), reader.ReadString());
     }
 }

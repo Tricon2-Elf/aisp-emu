@@ -2,7 +2,7 @@ namespace aisp.Network.Data;
 
 /// <summary>
 /// One room entry consumed by <c>sub_798920</c>. The client stores each entry in a
-/// 92-byte structure with fixed Shift-JIS room and owner names.
+/// 92-byte structure with fixed UTF-8 room and owner names.
 /// </summary>
 public sealed record RoomListEntry(
     uint RoomId,
@@ -19,8 +19,8 @@ public sealed record RoomListEntry(
     public void WriteTo(PacketWriter writer)
     {
         writer.Write(RoomId);
-        writer.WriteFixedJisString(RoomName, RoomNameLength);
-        writer.WriteFixedJisString(OwnerName, OwnerNameLength);
+        writer.WriteFixedString(RoomName, RoomNameLength);
+        writer.WriteFixedString(OwnerName, OwnerNameLength);
         writer.Write(Status);
         writer.Write(RoomNumber);
     }

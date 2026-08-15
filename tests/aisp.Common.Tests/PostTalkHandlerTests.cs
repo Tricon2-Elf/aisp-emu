@@ -103,7 +103,7 @@ public class PostTalkHandlerTests
         var writer = new PacketWriter();
         writer.Write(messageId);
         writer.Write((uint)distId);
-        writer.Write(message, "Shift_JIS");
+        writer.Write(message);
         writer.Write(balloonId);
         return writer.ToBytes();
     }

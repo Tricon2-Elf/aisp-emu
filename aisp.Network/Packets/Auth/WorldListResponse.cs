@@ -15,8 +15,8 @@ public class WorldListResponse(uint Result, List<WorldData> Worlds) : IOutgoingP
         foreach (var world in Worlds)
         {
             writer.Write((uint)world.Id);
-            writer.WriteFixedAsciiString(world.Name, MaxNameLen);
-            writer.WriteFixedAsciiString(world.Description, MaxDescLen);
+            writer.WriteFixedString(world.Name, MaxNameLen);
+            writer.WriteFixedString(world.Description, MaxDescLen);
             writer.Write((uint)0); // WorldInfo.dword_364
         }
         return writer.ToBytes();

@@ -26,9 +26,9 @@ public interface IPacketWriter
 
     void Write(ReadOnlySpan<byte> source);
 
-    void Write(string value, string encoderName = "ASCII");
+    void Write(string value, string encoderName = "utf-8");
 
-    void WriteFixedString(string value, int length, string encoderName = "Shift_JIS");
+    void WriteFixedString(string value, int length, string encoderName = "utf-8");
 
     void WriteFixedJisString(string value, int length);
 

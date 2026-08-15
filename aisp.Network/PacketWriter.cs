@@ -51,7 +51,7 @@ public class PacketWriter : IPacketWriter
 
     public void Write(ReadOnlySpan<byte> source) => _stream.Write(source);
 
-    public void Write(string value, string encoderName = "ASCII")
+    public void Write(string value, string encoderName = "utf-8")
     {
         var encoder = PacketEncoding.GetEncoding(encoderName);
         var size = encoder.GetByteCount(value);

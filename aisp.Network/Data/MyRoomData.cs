@@ -21,7 +21,7 @@ public class MyRoomData(
         writer.Write(RoomId);
         writer.Write(OwnerCharacterId);
         writer.Write((uint)0);
-        writer.WriteFixedJisString(RoomName, 46);
+        writer.WriteFixedString(RoomName, 46);
         writer.Write((byte)RoomStage);
         writer.Write((uint)0);
         writer.Write((uint)0);
