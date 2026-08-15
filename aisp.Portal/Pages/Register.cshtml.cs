@@ -1,16 +1,18 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using aisp.Portal;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
-using aisp.Portal;
 
 namespace aisp.Portal.Pages;
 
-public sealed class RegisterModel(AuthPortalApiClient authApi, IOptions<PortalOptions> portalOptions)
-    : PageModel
+public sealed class RegisterModel(
+    AuthPortalApiClient authApi,
+    IOptions<PortalOptions> portalOptions
+) : PageModel
 {
     [BindProperty]
     public RegisterInput Input { get; set; } = new();
@@ -56,11 +58,24 @@ public sealed class RegisterModel(AuthPortalApiClient authApi, IOptions<PortalOp
 
     public sealed class RegisterInput
     {
-        [Required, RegularExpression("^[A-Za-z0-9_.-]{3,64}$", ErrorMessage = "Username must be 3–64 characters and use only letters, numbers, underscores, dots, or hyphens.")]
+        [
+            Required,
+            RegularExpression(
+                "^[A-Za-z0-9_.-]{3,64}$",
+                ErrorMessage = "Username must be 3–64 characters and use only letters, numbers, underscores, dots, or hyphens."
+            )
+        ]
         [Display(Name = "Username")]
         public string Username { get; set; } = string.Empty;
 
-        [Required, StringLength(128, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters.")]
+        [
+            Required,
+            StringLength(
+                128,
+                MinimumLength = 8,
+                ErrorMessage = "Password must be at least 8 characters."
+            )
+        ]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string Password { get; set; } = string.Empty;

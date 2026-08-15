@@ -6,7 +6,5 @@ namespace aisp.Portal.Pages;
 public sealed class IndexModel : PageModel
 {
     public IActionResult OnGet() =>
-        User.Identity?.IsAuthenticated == true
-            ? Redirect("/account")
-            : Redirect("/login");
+        User.Identity?.IsAuthenticated == true ? Redirect("/account") : Redirect("/login");
 }

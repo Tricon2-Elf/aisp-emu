@@ -280,11 +280,7 @@ internal static class PortalApiEndpointsExtensions
         var roboItems = await db
             .Items.AsNoTracking()
             .Where(item => roboItemIds.Contains(item.Id))
-            .ToDictionaryAsync(
-                item => item.Id,
-                item => (item.Name, item.Socket, item.IconId),
-                ct
-            );
+            .ToDictionaryAsync(item => item.Id, item => (item.Name, item.Socket, item.IconId), ct);
         return TypedResults.Ok(MapAccount(user, mapNames, roboItems));
     }
 

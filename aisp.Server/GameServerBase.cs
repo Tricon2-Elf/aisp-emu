@@ -111,8 +111,7 @@ public abstract class GameServerBase<T> : BackgroundService
                                 using var scope = ScopeFactory.CreateScope();
                                 var circles =
                                     scope.ServiceProvider.GetRequiredService<aisp.Common.DAL.Repositories.ICircleRepository>();
-                                aisp
-                                    .Common.Handlers.Msg.CircleNotifyHelper.NotifyMemberLogoutAsync(
+                                aisp.Common.Handlers.Msg.CircleNotifyHelper.NotifyMemberLogoutAsync(
                                         circles,
                                         State,
                                         (int)disconnectedSession.CharacterId,

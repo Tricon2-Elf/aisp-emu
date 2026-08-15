@@ -7,11 +7,21 @@ using Microsoft.Extensions.Logging;
 namespace aisp.Server.Services;
 
 /// <summary>Disconnects sessions owned by one game-server type. Used only by protected portal APIs.</summary>
-public sealed class ServerTypeSessionService(SharedState state, ILogger<ServerTypeSessionService> logger)
+public sealed class ServerTypeSessionService(
+    SharedState state,
+    ILogger<ServerTypeSessionService> logger
+)
 {
-    public async Task<int> DisconnectUserAsync(int userId, ServerType serverType, CancellationToken ct)
+    public async Task<int> DisconnectUserAsync(
+        int userId,
+        ServerType serverType,
+        CancellationToken ct
+    )
     {
-        var sessions = state.GetServerClients(serverType).Where(session => session.UserId == userId).ToArray();
+        var sessions = state
+            .GetServerClients(serverType)
+            .Where(session => session.UserId == userId)
+            .ToArray();
         var logoutData = new LogoutResponse().ToBytes();
 
         foreach (var session in sessions)
@@ -24,7 +34,12 @@ public sealed class ServerTypeSessionService(SharedState state, ILogger<ServerTy
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to disconnect user {UserId} from {ServerType}", userId, serverType);
+                logger.LogWarning(
+                    ex,
+                    "Failed to disconnect user {UserId} from {ServerType}",
+                    userId,
+                    serverType
+                );
             }
         }
 

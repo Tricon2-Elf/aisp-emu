@@ -7,7 +7,10 @@ namespace aisp.Portal;
 
 public static class PortalServiceCollectionExtensions
 {
-    public static IServiceCollection AddPortalBackendClients(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddPortalBackendClients(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services
             .AddOptions<PortalBackendOptions>()
@@ -19,14 +22,27 @@ public static class PortalServiceCollectionExtensions
             .ValidateOnStart();
         services.AddTransient<PortalServiceTokenHandler>();
 
-        foreach (var name in new[] { PortalHttpClientNames.Auth, PortalHttpClientNames.Msg, PortalHttpClientNames.Area })
+        foreach (
+            var name in new[]
+            {
+                PortalHttpClientNames.Auth,
+                PortalHttpClientNames.Msg,
+                PortalHttpClientNames.Area,
+            }
+        )
         {
-            services.AddHttpClient(name, (sp, client) =>
-                {
-                    var options = sp.GetRequiredService<IOptions<PortalBackendOptions>>().Value;
-                    client.BaseAddress = new Uri(options.ApiBaseUrl.TrimEnd('/') + "/");
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                })
+            services
+                .AddHttpClient(
+                    name,
+                    (sp, client) =>
+                    {
+                        var options = sp.GetRequiredService<IOptions<PortalBackendOptions>>().Value;
+                        client.BaseAddress = new Uri(options.ApiBaseUrl.TrimEnd('/') + "/");
+                        client.DefaultRequestHeaders.Accept.Add(
+                            new MediaTypeWithQualityHeaderValue("application/json")
+                        );
+                    }
+                )
                 .AddHttpMessageHandler<PortalServiceTokenHandler>()
                 .AddAsKeyed();
         }
@@ -38,9 +54,13 @@ public static class PortalServiceCollectionExtensions
     }
 }
 
-public sealed class PortalServiceTokenHandler(IOptions<PortalBackendOptions> options) : DelegatingHandler
+public sealed class PortalServiceTokenHandler(IOptions<PortalBackendOptions> options)
+    : DelegatingHandler
 {
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken ct
+    )
     {
         request.Headers.Add("X-Portal-Service-Token", options.Value.ServiceToken);
         return base.SendAsync(request, ct);

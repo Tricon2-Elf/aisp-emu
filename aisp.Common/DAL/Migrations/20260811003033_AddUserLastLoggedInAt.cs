@@ -15,15 +15,14 @@ namespace aisp.Common.DAL.Migrations
                 name: "LastLoggedInAt",
                 table: "Users",
                 type: "TEXT",
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "LastLoggedInAt",
-                table: "Users");
+            migrationBuilder.DropColumn(name: "LastLoggedInAt", table: "Users");
         }
     }
 }
