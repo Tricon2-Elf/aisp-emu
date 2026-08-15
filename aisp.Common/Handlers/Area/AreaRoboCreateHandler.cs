@@ -41,10 +41,9 @@ public class AreaRoboCreateHandler(
         );
 
         // Never reuse CharacterId as m_SlotId — after call, client LookupChara(slotId) and may destroy it when state=0.
-        var blood =
-            (uint)request.Visual.BloodType is >= 1 and <= 4
-                ? request.Visual.BloodType
-                : BloodType.A;
+        var blood = (uint)request.Visual.BloodType is >= 1 and <= 4
+            ? request.Visual.BloodType
+            : BloodType.A;
         var month = request.Visual.Month is >= 1 and <= 12 ? request.Visual.Month : (byte)1;
         var day = request.Visual.Day is >= 1 and <= 28 ? request.Visual.Day : (byte)1;
         var visual = new CharaVisual(
@@ -76,5 +75,6 @@ public class AreaRoboCreateHandler(
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 
-    private static bool IsCharadollPresetModel(uint modelId) => modelId is >= 2_000_000 and < 5_000_000;
+    private static bool IsCharadollPresetModel(uint modelId) =>
+        modelId is >= 2_000_000 and < 5_000_000;
 }

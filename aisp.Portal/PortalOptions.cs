@@ -17,5 +17,7 @@ public sealed class PortalOptions
     public string[] AdminUsernames { get; set; } = [];
 
     public bool IsAdmin(string username) =>
-        AdminUsernames.Any(candidate => string.Equals(candidate, username, StringComparison.Ordinal));
+        AdminUsernames.Any(candidate =>
+            string.Equals(candidate, username, StringComparison.Ordinal)
+        );
 }

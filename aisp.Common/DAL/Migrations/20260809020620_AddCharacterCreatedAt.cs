@@ -19,7 +19,8 @@ namespace aisp.Common.DAL.Migrations
                 table: "Characters",
                 type: "TEXT",
                 nullable: false,
-                defaultValue: epoch);
+                defaultValue: epoch
+            );
 
             migrationBuilder.Sql("UPDATE \"Characters\" SET \"CreatedAt\" = CURRENT_TIMESTAMP;");
 
@@ -32,15 +33,14 @@ namespace aisp.Common.DAL.Migrations
                 oldClrType: typeof(DateTime),
                 oldType: "TEXT",
                 oldNullable: false,
-                oldDefaultValue: epoch);
+                oldDefaultValue: epoch
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "CreatedAt",
-                table: "Characters");
+            migrationBuilder.DropColumn(name: "CreatedAt", table: "Characters");
         }
     }
 }

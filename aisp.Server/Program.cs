@@ -146,74 +146,101 @@ internal class Program
             builder.Services.AddValidation();
             builder.Services.AddOpenApi();
             builder.Services.AddPortalBackendClients(builder.Configuration);
-            builder.Services.AddOptions<PortalOptions>().Bind(builder.Configuration.GetSection(PortalOptions.SectionName));
+            builder
+                .Services.AddOptions<PortalOptions>()
+                .Bind(builder.Configuration.GetSection(PortalOptions.SectionName));
             builder.Services.AddSingleton<PortalApiEndpointFilter>();
-            builder.Services
-                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            builder
+                .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options =>
                 {
                     options.LoginPath = "/login";
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                options.Events.OnValidatePrincipal = async context =>
-                {
-                    var principal = context.Principal;
-                    var identity = principal?.Identity as System.Security.Claims.ClaimsIdentity;
-                    var userIdText = principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                    var username = principal?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-                    if (identity is null || !int.TryParse(userIdText, out var userId) || string.IsNullOrEmpty(username))
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                    options.Events.OnValidatePrincipal = async context =>
                     {
-                        context.RejectPrincipal();
-                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                        return;
-                    }
-
-                    try
-                    {
-                        var authApi = context.HttpContext.RequestServices.GetRequiredService<AuthPortalApiClient>();
-                        if ((await authApi.GetUserAsync(userId, context.HttpContext.RequestAborted)).IsBanned)
+                        var principal = context.Principal;
+                        var identity = principal?.Identity as System.Security.Claims.ClaimsIdentity;
+                        var userIdText = principal
+                            ?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+                            ?.Value;
+                        var username = principal
+                            ?.FindFirst(System.Security.Claims.ClaimTypes.Name)
+                            ?.Value;
+                        if (
+                            identity is null
+                            || !int.TryParse(userIdText, out var userId)
+                            || string.IsNullOrEmpty(username)
+                        )
                         {
                             context.RejectPrincipal();
-                            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                            await context.HttpContext.SignOutAsync(
+                                CookieAuthenticationDefaults.AuthenticationScheme
+                            );
                             return;
                         }
-                    }
-                    catch (PortalApiException)
-                    {
-                        context.RejectPrincipal();
-                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                        return;
-                    }
 
-                    // Recompute admin membership from live config so removed AdminUsernames lose access.
-                    var portalOptions = context
-                        .HttpContext.RequestServices.GetRequiredService<IOptionsMonitor<PortalOptions>>();
-                    var shouldBeAdmin = portalOptions.CurrentValue.IsAdmin(username);
-                    var hasAdminClaim = identity.HasClaim("portal_admin", "true");
-                    if (hasAdminClaim == shouldBeAdmin)
-                        return;
-
-                    var claims = identity.Claims.Where(claim => claim.Type != "portal_admin").ToList();
-                    if (shouldBeAdmin)
-                        claims.Add(new System.Security.Claims.Claim("portal_admin", "true"));
-
-                    context.ReplacePrincipal(
-                        new System.Security.Claims.ClaimsPrincipal(
-                            new System.Security.Claims.ClaimsIdentity(
-                                claims,
-                                identity.AuthenticationType
+                        try
+                        {
+                            var authApi =
+                                context.HttpContext.RequestServices.GetRequiredService<AuthPortalApiClient>();
+                            if (
+                                (
+                                    await authApi.GetUserAsync(
+                                        userId,
+                                        context.HttpContext.RequestAborted
+                                    )
+                                ).IsBanned
                             )
-                        )
-                    );
-                    context.ShouldRenew = true;
-                };
-            });
-            builder.Services.AddAuthorizationBuilder().AddPolicy(
-                "PortalAdmin",
-                policy => policy.RequireClaim("portal_admin", "true")
-            );
-            builder.Services.AddRazorPages()
+                            {
+                                context.RejectPrincipal();
+                                await context.HttpContext.SignOutAsync(
+                                    CookieAuthenticationDefaults.AuthenticationScheme
+                                );
+                                return;
+                            }
+                        }
+                        catch (PortalApiException)
+                        {
+                            context.RejectPrincipal();
+                            await context.HttpContext.SignOutAsync(
+                                CookieAuthenticationDefaults.AuthenticationScheme
+                            );
+                            return;
+                        }
+
+                        // Recompute admin membership from live config so removed AdminUsernames lose access.
+                        var portalOptions = context.HttpContext.RequestServices.GetRequiredService<
+                            IOptionsMonitor<PortalOptions>
+                        >();
+                        var shouldBeAdmin = portalOptions.CurrentValue.IsAdmin(username);
+                        var hasAdminClaim = identity.HasClaim("portal_admin", "true");
+                        if (hasAdminClaim == shouldBeAdmin)
+                            return;
+
+                        var claims = identity
+                            .Claims.Where(claim => claim.Type != "portal_admin")
+                            .ToList();
+                        if (shouldBeAdmin)
+                            claims.Add(new System.Security.Claims.Claim("portal_admin", "true"));
+
+                        context.ReplacePrincipal(
+                            new System.Security.Claims.ClaimsPrincipal(
+                                new System.Security.Claims.ClaimsIdentity(
+                                    claims,
+                                    identity.AuthenticationType
+                                )
+                            )
+                        );
+                        context.ShouldRenew = true;
+                    };
+                });
+            builder
+                .Services.AddAuthorizationBuilder()
+                .AddPolicy("PortalAdmin", policy => policy.RequireClaim("portal_admin", "true"));
+            builder
+                .Services.AddRazorPages()
                 .AddApplicationPart(typeof(aisp.Portal.Pages.AccountModel).Assembly);
         }
 
