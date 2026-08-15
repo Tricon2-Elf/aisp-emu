@@ -31,27 +31,37 @@ internal sealed class TestTextLocaliser : ITextLocaliser
         return new TestTextLocaliser(values);
     }
 
-    public string Get(GameLanguage language, LocKey key, params object[] args) =>
-        Format(Resolve(language, key), language, args);
+    public string Get(GameLanguage language, LocKey key, params object[] args)
+    {
+        TryGet(language, key, out var value);
+        return Format(value, language, args);
+    }
 
     public string Get(IPlayerSession session, LocKey key, params object[] args) =>
         Get(session.Language, key, args);
 
-    public Task ReloadAsync(CancellationToken ct = default) => Task.CompletedTask;
-
-    public IReadOnlyList<string> ReportMissing(GameLanguage language) => [];
-
-    private string Resolve(GameLanguage language, LocKey key)
+    public bool TryGet(GameLanguage language, LocKey key, out string value)
     {
         if (_values.TryGetValue((key.Value, language), out var requested))
-            return requested;
+        {
+            value = requested;
+            return true;
+        }
         if (
             language != GameLanguage.Japanese
             && _values.TryGetValue((key.Value, GameLanguage.Japanese), out var japanese)
         )
-            return japanese;
-        return key.Value;
+        {
+            value = japanese;
+            return true;
+        }
+        value = key.Value;
+        return false;
     }
+
+    public Task ReloadAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+    public IReadOnlyList<string> ReportMissing(GameLanguage language) => [];
 
     private static string Format(string value, GameLanguage language, object[] args)
     {

@@ -16,7 +16,7 @@ public sealed class TextLocaliser(IServiceScopeFactory scopeFactory, ILogger<Tex
 
     public string Get(GameLanguage language, LocKey key, params object[] args)
     {
-        var value = Resolve(language, key);
+        TryGet(language, key, out var value);
         if (args.Length == 0)
             return value;
 
@@ -35,6 +35,27 @@ public sealed class TextLocaliser(IServiceScopeFactory scopeFactory, ILogger<Tex
         }
     }
 
+    public bool TryGet(GameLanguage language, LocKey key, out string value)
+    {
+        if (_values.TryGetValue((key.Value, language), out var requested))
+        {
+            value = requested;
+            return true;
+        }
+
+        if (
+            language != GameLanguage.Japanese
+            && _values.TryGetValue((key.Value, GameLanguage.Japanese), out var japanese)
+        )
+        {
+            value = japanese;
+            return true;
+        }
+
+        value = key.Value;
+        return false;
+    }
+
     public async Task ReloadAsync(CancellationToken ct = default)
     {
         using var scope = scopeFactory.CreateScope();
@@ -47,20 +68,5 @@ public sealed class TextLocaliser(IServiceScopeFactory scopeFactory, ILogger<Tex
         }
 
         _values = values;
-    }
-
-    private string Resolve(GameLanguage language, LocKey key)
-    {
-        if (_values.TryGetValue((key.Value, language), out var requested))
-            return requested;
-
-        if (
-            language != GameLanguage.Japanese
-            && _values.TryGetValue((key.Value, GameLanguage.Japanese), out var japanese)
-        )
-        {
-            return japanese;
-        }
-        return key.Value;
     }
 }

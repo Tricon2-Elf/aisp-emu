@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
@@ -120,6 +121,22 @@ public sealed class LocalisationTests
                 "demo.missing",
                 localiser.Get(GameLanguage.Japanese, new LocKey("demo.missing"))
             );
+            Assert.True(
+                localiser.TryGet(GameLanguage.English, new LocKey("demo.both"), out var both)
+            );
+            Assert.Equal("English", both);
+            Assert.True(
+                localiser.TryGet(
+                    GameLanguage.English,
+                    new LocKey("demo.only_ja"),
+                    out var japaneseFallback
+                )
+            );
+            Assert.Equal("日本語のみ", japaneseFallback);
+            Assert.False(
+                localiser.TryGet(GameLanguage.Japanese, new LocKey("demo.missing"), out var missing)
+            );
+            Assert.Equal("demo.missing", missing);
         }
         finally
         {
@@ -307,6 +324,100 @@ public sealed class LocalisationTests
             await connection.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task ItemBaseListCache_FallsBackToNoDescriptionWhenPerItemKeysAreMissing()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                db.Items.AddRange(
+                    new Item
+                    {
+                        Id = 2012010,
+                        Name = "テスト",
+                        CatalogCategory = 3,
+                    },
+                    new Item
+                    {
+                        Id = 10100220,
+                        Name = "シャツ",
+                        CatalogCategory = 3,
+                    }
+                );
+                db.LocalisedTexts.AddRange(
+                    new LocalisedText
+                    {
+                        Key = L.Item.Name(2012010).Value,
+                        Language = GameLanguage.English,
+                        Value = "Test Item",
+                    },
+                    new LocalisedText
+                    {
+                        Key = L.Item.Name(10100220).Value,
+                        Language = GameLanguage.English,
+                        Value = "Shirt",
+                    },
+                    new LocalisedText
+                    {
+                        Key = L.Item.Description(10100220).Value,
+                        Language = GameLanguage.English,
+                        Value = "A cotton shirt.",
+                    },
+                    new LocalisedText
+                    {
+                        Key = L.Item.LimitDescription(10100220).Value,
+                        Language = GameLanguage.English,
+                        Value = "Town only",
+                    },
+                    new LocalisedText
+                    {
+                        Key = L.Item.NoDescription.Value,
+                        Language = GameLanguage.English,
+                        Value = "No item description",
+                    },
+                    new LocalisedText
+                    {
+                        Key = L.Item.NoLimitDescription.Value,
+                        Language = GameLanguage.English,
+                        Value = "No limit",
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var localiser = CreateLocaliser(options);
+            await localiser.ReloadAsync(TestContext.Current.CancellationToken);
+
+            var services = new ServiceCollection();
+            services.AddSingleton(options);
+            services.AddScoped(_ => new MainContext(options));
+            services.AddScoped<IItemRepository, ItemRepository>();
+            services.AddSingleton<ITextLocaliser>(localiser);
+            await using var provider = services.BuildServiceProvider();
+            var itemCache = new ItemBaseListCache(
+                provider.GetRequiredService<IServiceScopeFactory>()
+            );
+            await itemCache.WarmAsync(TestContext.Current.CancellationToken);
+
+            var english = itemCache.GetResponsePayload(GameLanguage.English);
+            Assert.False(PayloadContains(english, L.Item.Description(2012010).Value));
+            Assert.False(PayloadContains(english, L.Item.LimitDescription(2012010).Value));
+            Assert.True(PayloadContains(english, "No item description"));
+            Assert.True(PayloadContains(english, "No limit"));
+            Assert.True(PayloadContains(english, "A cotton shirt."));
+            Assert.True(PayloadContains(english, "Town only"));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    private static bool PayloadContains(ReadOnlyMemory<byte> payload, string text) =>
+        payload.Span.IndexOf(Encoding.UTF8.GetBytes(text)) >= 0;
 
     private static TextLocaliser CreateLocaliser(DbContextOptions<MainContext> options)
     {

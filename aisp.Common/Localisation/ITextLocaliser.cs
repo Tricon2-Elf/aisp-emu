@@ -8,5 +8,7 @@ public interface ITextLocaliser
 
     string Get(IPlayerSession session, LocKey key, params object[] args);
 
+    bool TryGet(GameLanguage language, LocKey key, out string value);
+
     Task ReloadAsync(CancellationToken ct = default);
 }
