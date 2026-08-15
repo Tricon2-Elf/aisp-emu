@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\aisp.Common\aisp.Common.csproj" />
+    <ProjectReference Include="..\..\aisp.Common\aisp.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -22,8 +22,10 @@ aisp-emu/
 ├── aisp.Server/                      # Entry point (executable)
 ├── aisp.Common/                      # Server logic & game domain code
 ├── aisp.Network/                     # Wire protocol & transport
-├── aisp.Common.Tests/                # Tests for Common
-└── aisp.Network.Tests/              # Tests for Network
+└── tests/                            # xUnit test projects
+    ├── aisp.Common.Tests/
+    ├── aisp.Network.Tests/
+    └── aisp.Server.Tests/
 ```
 
 ## Project breakdown
@@ -82,10 +84,11 @@ Wire-format definitions with zero dependency on game logic.
 | `Packets/Area/` | 79 packet types |
 | `Packets/Common/` | 7 packet types |
 
-### `aisp.Common.Tests/` & `aisp.Network.Tests/`
+### `tests/` — Test projects
 
-- **Common.Tests** (15 files): handler tests (login, authenticate, ping, world, msg, area map), packet dispatcher, password hasher, repository integration, shared state, migrations, map link geometry
-- **Network.Tests** (7 files): packet read/write roundtrips, crypto, world list response, parser tests
+- **aisp.Common.Tests**: handler tests (login, authenticate, ping, world, msg, area map), packet dispatcher, password hasher, repository integration, shared state, migrations, map link geometry
+- **aisp.Network.Tests**: packet read/write roundtrips, crypto, world list response, parser tests
+- **aisp.Server.Tests**: host/API and health registry tests
 
 ## How the runtime works
 
