@@ -41,8 +41,20 @@ public sealed class ItemBaseListCache(IServiceScopeFactory scopeFactory) : IItem
             var items = rows.Select(row =>
                 {
                     var name = localiser.Get(language, L.Item.Name(row.Id));
-                    var description = localiser.Get(language, L.Item.Description(row.Id));
-                    var limitDescription = localiser.Get(language, L.Item.LimitDescription(row.Id));
+                    var description = localiser.TryGet(
+                        language,
+                        L.Item.Description(row.Id),
+                        out var desc
+                    )
+                        ? desc
+                        : localiser.Get(language, L.Item.NoDescription);
+                    var limitDescription = localiser.TryGet(
+                        language,
+                        L.Item.LimitDescription(row.Id),
+                        out var limitDesc
+                    )
+                        ? limitDesc
+                        : localiser.Get(language, L.Item.NoLimitDescription);
                     return ItemEntityMapper.ToItemBaseListData(
                         row,
                         name,

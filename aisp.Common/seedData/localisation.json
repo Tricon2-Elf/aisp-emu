@@ -126,13 +126,22 @@
     "zh-Hant": "島嶼 {0}"
   },
   "island.1.name": {
-    "ja": "Da Capo"
+    "ja": "Da Capo",
+    "en": "Da Capo",
+    "zh-Hans": "Da Capo",
+    "zh-Hant": "Da Capo"
   },
   "island.2.name": {
-    "ja": "CLANNAD"
+    "ja": "CLANNAD",
+    "en": "CLANNAD",
+    "zh-Hans": "CLANNAD",
+    "zh-Hant": "CLANNAD"
   },
   "island.3.name": {
-    "ja": "SHUFFLE!"
+    "ja": "SHUFFLE!",
+    "en": "SHUFFLE!",
+    "zh-Hans": "SHUFFLE!",
+    "zh-Hant": "SHUFFLE!"
   },
   "equipment.slot.0": { "ja": "トップス", "en": "Top", "zh-Hans": "上衣", "zh-Hant": "上衣" },
   "equipment.slot.1": { "ja": "ボトムス", "en": "Bottom", "zh-Hans": "下装", "zh-Hant": "下裝" },
