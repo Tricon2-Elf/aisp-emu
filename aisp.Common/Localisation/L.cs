@@ -73,14 +73,6 @@ public static class L
         public static readonly LocKey Shutdown = new("maintenance.shutdown");
     }
 
-    public static class Profile
-    {
-        public static readonly LocKey DefaultLike = new("profile.default_like");
-        public static readonly LocKey DefaultAvatarDescription = new(
-            "profile.default_avatar_description"
-        );
-    }
-
     public static class Enquete
     {
         public static readonly LocKey MusicQuestion = new("enquete.music.question");
