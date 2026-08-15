@@ -104,12 +104,21 @@ internal static class ItemEntityMapper
             : (uint)WardrobeSocketBit.LowerBodyLayer1;
     }
 
-    public static ItemData ToItemBaseListData(Item item)
+    public static ItemData ToItemBaseListData(
+        Item item,
+        string? localisedName = null,
+        string? localisedDescription = null,
+        string? localisedLimitDescription = null
+    )
     {
+        const string itemDataDefaultDescription = "N/A";
+        const string itemDataDefaultLimitDescription = "N/A";
         var id = (uint)item.Id;
         var iconId = (uint)item.IconId;
         var (socket1, socket2) = GetCatalogSockets(item.Id, ResolveBodyspot(item));
-        var category = ResolveCatalogCategory(item);
+        var category = item.CatalogCategory is int persisted
+            ? (uint)persisted
+            : ResolveCatalogCategory(item);
         var limitMapKey = ResolveLimitMapKey(item.Id);
 
         return new ItemData
@@ -118,7 +127,9 @@ internal static class ItemEntityMapper
             SortedListPriority = id,
             ItemId = id,
             IconId = iconId,
-            Name = item.Name,
+            Name = localisedName ?? item.Name,
+            Description = localisedDescription ?? itemDataDefaultDescription,
+            LimitDesc = localisedLimitDescription ?? itemDataDefaultLimitDescription,
             Socket1 = socket1,
             Socket2 = socket2,
             Category = category,
@@ -132,6 +143,12 @@ internal static class ItemEntityMapper
 
     public static uint ResolveInventoryTabCategory(int itemId, string? name = null) =>
         ResolveCatalogCategory(itemId, name, placementFlags: null);
+
+    internal static uint ResolvePersistedCatalogCategory(
+        int itemId,
+        string? canonicalName,
+        FurniturePlacementFlags? placementFlags
+    ) => ResolveCatalogCategory(itemId, canonicalName, placementFlags);
 
     private static uint ResolveCatalogCategory(Item item) =>
         ResolveCatalogCategory(item.Id, item.Name, item.Furniture?.PlacementFlags);

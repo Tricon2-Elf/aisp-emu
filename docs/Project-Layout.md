@@ -154,6 +154,7 @@ Client TCP socket
 - **Container**: Multi-stage Alpine Dockerfile + auto-heal sidecar in compose
 - **Formatting**: CSharpier via pre-commit hook and CI
 - **DB strategy**: `Database.MigrateAsync()` at startup, with repo-level seed helpers
+- **Localisation**: per-user `PreferredLanguage` (Portal) copied onto `IPlayerSession.Language` at login; see [Localisation.md](Localisation.md)
 
 ## Boundaries to preserve
 

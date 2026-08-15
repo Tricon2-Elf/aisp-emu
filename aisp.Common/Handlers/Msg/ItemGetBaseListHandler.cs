@@ -1,4 +1,3 @@
-using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Services;
 using aisp.Network;
@@ -18,9 +17,14 @@ public class ItemGetBaseListHandler(IItemBaseListCache cache) : IPacketHandler
         CancellationToken ct = default
     )
     {
-        if (cache.ResponsePayload.IsEmpty)
+        var response = cache.GetResponsePayload(session.Language);
+        if (response.IsEmpty)
             await cache.WarmAsync(ct);
 
-        await session.SendAsync(ResponseType, cache.ResponsePayload.ToArray(), ct);
+        await session.SendAsync(
+            ResponseType,
+            cache.GetResponsePayload(session.Language).ToArray(),
+            ct
+        );
     }
 }

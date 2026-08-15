@@ -408,6 +408,7 @@ public class MsgHandlersTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
     }

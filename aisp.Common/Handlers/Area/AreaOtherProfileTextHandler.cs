@@ -1,4 +1,5 @@
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
@@ -27,18 +28,15 @@ public class AreaOtherProfileTextHandler(SharedState state)
         );
         var cha = target?.Character ?? target?.User?.Characters.FirstOrDefault();
 
-        var profile =
-            cha != null
-                ? new ProfileData(
-                    cha.Like1 ?? "None",
-                    cha.Like2 ?? "None",
-                    cha.Like3 ?? "None",
-                    cha.LikeDesc1 ?? "",
-                    cha.LikeDesc2 ?? "",
-                    cha.LikeDesc3 ?? "",
-                    cha.AvatarDesc ?? "Hello!"
-                )
-                : new ProfileData("", "", "", "", "", "", "");
+        var profile = new ProfileData(
+            cha?.Like1 ?? "",
+            cha?.Like2 ?? "",
+            cha?.Like3 ?? "",
+            cha?.LikeDesc1 ?? "",
+            cha?.LikeDesc2 ?? "",
+            cha?.LikeDesc3 ?? "",
+            cha?.AvatarDesc ?? ""
+        );
 
         var response = new GetMyAvatarMyprofileDataResponse(profile);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);

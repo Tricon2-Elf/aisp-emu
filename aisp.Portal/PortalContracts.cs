@@ -120,8 +120,11 @@ public sealed record PortalAccountDataDto(
     long NicoPoints,
     long StorageDeposit,
     IReadOnlyList<PortalItemDto> StorageItems,
-    IReadOnlyList<PortalCharacterDto> Characters
+    IReadOnlyList<PortalCharacterDto> Characters,
+    string PreferredLanguage
 );
+
+public sealed record PortalChangeLanguageRequest([property: Required] string PreferredLanguage);
 
 public sealed record PortalCharacterRoboSummaryDto(
     int UserId,

@@ -1334,8 +1334,14 @@ public class AreaMapHandlersTests
                 island =>
                 {
                     Assert.Equal(1u, island.IslandId);
-                    Assert.Equal("Destination One Island 1", island.Title);
-                    Assert.Equal("Destination One\nDestination Two", island.Description);
+                    Assert.Equal(
+                        "Akihabara Station Front Street Event Area Island 1",
+                        island.Title
+                    );
+                    Assert.Equal(
+                        "Akihabara Station Front Street Event Area\nAkihabara UDX",
+                        island.Description
+                    );
                 }
             );
 
@@ -2409,8 +2415,14 @@ public class AreaMapHandlersTests
                 island =>
                 {
                     Assert.Equal(1u, island.IslandId);
-                    Assert.Equal("Destination One Island 1", island.Title);
-                    Assert.Equal("Destination One\nDestination Two", island.Description);
+                    Assert.Equal(
+                        "Akihabara Station Front Street Event Area Island 1",
+                        island.Title
+                    );
+                    Assert.Equal(
+                        "Akihabara Station Front Street Event Area\nAkihabara UDX",
+                        island.Description
+                    );
                 }
             );
 
@@ -3009,6 +3021,7 @@ public class AreaMapHandlersTests
             eventRepository,
             mapRepository,
             serverScriptSession,
+            TestTextLocaliser.English,
             NullLogger<ShinjuRegistrationServerScript>.Instance
         );
         return new ServerScriptDispatcher(
@@ -3039,6 +3052,7 @@ public class AreaMapHandlersTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
     }

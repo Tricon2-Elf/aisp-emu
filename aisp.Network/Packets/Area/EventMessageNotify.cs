@@ -17,8 +17,8 @@ public class EventMessageNotify : IOutgoingPacket
     {
         var writer = new PacketWriter();
         writer.Write(ObjId);
-        writer.Write(Name, "utf-8");
-        writer.Write(Text, "utf-8");
+        writer.Write(Name, 37);
+        writer.Write(Text);
         return writer.ToBytes();
     }
 }

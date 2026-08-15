@@ -14,12 +14,9 @@ public class CircleNotifyMessageChange(
         var writer = new PacketWriter();
         writer.Write(circleId);
         // Client reads null-terminated author/date/message (max 37 / 21 / 751 including NUL).
-        writer.Write(Truncate(authorName, 36), "utf-8");
-        writer.Write(Truncate(date, 20), "utf-8");
-        writer.Write(Truncate(message, 750), "utf-8");
+        writer.Write(authorName, 36);
+        writer.Write(date, 20);
+        writer.Write(message, 750);
         return writer.ToBytes();
     }
-
-    private static string Truncate(string value, int maxChars) =>
-        value.Length <= maxChars ? value : value[..maxChars];
 }

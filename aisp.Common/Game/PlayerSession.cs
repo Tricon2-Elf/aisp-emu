@@ -1,5 +1,6 @@
 using aisp.Common.DAL.Entities;
 using aisp.Common.Game.ServerScripts;
+using aisp.Common.Localisation;
 using aisp.Network;
 
 namespace aisp.Common.Game;
@@ -22,6 +23,7 @@ public class PlayerSession : IPlayerSession
     public uint CharacterId { get; set; }
     public Character? Character { get; set; }
     public User? User { get; set; }
+    public GameLanguage Language { get; set; }
     public uint MapId { get; set; }
     public uint MyRoomId { get; set; }
     public uint? PendingMyRoomFurnitureItemId { get; set; }

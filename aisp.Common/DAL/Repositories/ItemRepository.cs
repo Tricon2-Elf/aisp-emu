@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Game;
+using aisp.Common.Localisation;
 using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.DAL.Repositories;
@@ -12,10 +14,7 @@ public interface IItemRepository
 
 public sealed class ItemRepository(MainContext db) : IItemRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly JsonSerializerOptions JsonOptions = SeedJson.Options;
 
     public Task<Item?> GetByIdAsync(int id, CancellationToken ct = default) =>
         db.Items.AsNoTracking().SingleOrDefaultAsync(i => i.Id == id, ct);
@@ -44,13 +43,20 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
         var items = new List<Item>(rows.Count);
         foreach (var row in rows.DistinctBy(r => r.Id))
         {
+            var canonicalName = row.Name.Canonical;
             items.Add(
                 new Item
                 {
                     Id = row.Id,
-                    Name = row.Name,
+                    Name = canonicalName,
                     Socket = row.Socket,
                     IconId = row.IconId ?? 1,
+                    CatalogCategory = (int)
+                        ItemEntityMapper.ResolvePersistedCatalogCategory(
+                            row.Id,
+                            canonicalName,
+                            null
+                        ),
                 }
             );
         }
@@ -80,22 +86,45 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
         var json = await File.ReadAllTextAsync(jsonPath, ct);
         var rows = JsonSerializer.Deserialize<List<ItemSeedRow>>(json, JsonOptions) ?? [];
 
-        var existingIds = (await db.Items.Select(item => item.Id).ToListAsync(ct)).ToHashSet();
-        var missing = rows.DistinctBy(r => r.Id)
+        var existingItems = await db.Items.ToListAsync(ct);
+        var existingIds = existingItems.Select(item => item.Id).ToHashSet();
+        var distinctRows = rows.DistinctBy(r => r.Id).ToList();
+        var missing = distinctRows
             .Where(row => !existingIds.Contains(row.Id))
-            .Select(row => new Item
+            .Select(row =>
             {
-                Id = row.Id,
-                Name = row.Name,
-                Socket = row.Socket,
-                IconId = row.IconId ?? 1,
+                var canonicalName = row.Name.Canonical;
+                return new Item
+                {
+                    Id = row.Id,
+                    Name = canonicalName,
+                    Socket = row.Socket,
+                    IconId = row.IconId ?? 1,
+                    CatalogCategory = (int)
+                        ItemEntityMapper.ResolvePersistedCatalogCategory(
+                            row.Id,
+                            canonicalName,
+                            null
+                        ),
+                };
             })
             .ToList();
 
-        if (missing.Count == 0)
+        if (missing.Count > 0)
+            db.Items.AddRange(missing);
+
+        var rowsById = distinctRows.ToDictionary(row => row.Id);
+        foreach (var item in existingItems)
+        {
+            if (item.CatalogCategory is not null || !rowsById.TryGetValue(item.Id, out var row))
+                continue;
+            item.CatalogCategory = (int)
+                ItemEntityMapper.ResolvePersistedCatalogCategory(item.Id, row.Name.Canonical, null);
+        }
+
+        if (missing.Count == 0 && !db.ChangeTracker.HasChanges())
             return;
 
-        db.Items.AddRange(missing);
         await db.SaveChangesAsync(ct);
     }
 
@@ -103,7 +132,7 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
     {
         public int Id { get; set; }
         public int Socket { get; set; }
-        public string Name { get; set; } = "";
+        public LocalisedString Name { get; set; } = new();
         public int? IconId { get; set; }
     }
 }

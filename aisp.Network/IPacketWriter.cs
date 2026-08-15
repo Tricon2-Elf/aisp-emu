@@ -28,6 +28,8 @@ public interface IPacketWriter
 
     void Write(string value, string encoderName = "utf-8");
 
+    void Write(string value, int maxBytes, string encoderName = "utf-8");
+
     void WriteFixedString(string value, int length, string encoderName = "utf-8");
 
     void WriteFixedJisString(string value, int length);

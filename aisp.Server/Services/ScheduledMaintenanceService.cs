@@ -1,6 +1,7 @@
 using aisp.Common;
 using aisp.Common.Config;
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,7 @@ namespace aisp.Server;
 
 public class ScheduledMaintenanceService(
     SharedState state,
+    ITextLocaliser localiser,
     IOptions<MaintenanceOptions> options,
     IHostApplicationLifetime lifetime,
     ILogger<ScheduledMaintenanceService> logger
@@ -92,34 +94,36 @@ public class ScheduledMaintenanceService(
 
     private void BroadcastWarning(int minutesRemaining)
     {
-        var message =
-            minutesRemaining == 1
-                ? "Server maintenance in 1 minute. You will be disconnected."
-                : string.Format(_options.Message, minutesRemaining);
-
         logger.LogInformation(
             "Broadcasting maintenance warning: {Minutes} min remaining",
             minutesRemaining
         );
-        SendToAllAreaClients(message);
+        SendLocalisedToAllAreaClients(language =>
+            minutesRemaining == 1
+                ? localiser.Get(language, L.Maintenance.WarningOneMinute)
+                : localiser.Get(language, L.Maintenance.Warning, minutesRemaining)
+        );
     }
 
     private void BroadcastShutdown()
     {
-        const string message = "The server is shutting down for scheduled maintenance.";
         logger.LogInformation("Broadcasting shutdown notice");
-        SendToAllAreaClients(message);
+        SendLocalisedToAllAreaClients(language => localiser.Get(language, L.Maintenance.Shutdown));
     }
 
-    private void SendToAllAreaClients(string message)
+    private void SendLocalisedToAllAreaClients(Func<GameLanguage, string> messageFactory)
     {
-        var notify = new EventMessageNotify(0, "System", message);
-        var data = notify.ToBytes();
-
         foreach (var client in state.GetServerClients(ServerType.Area))
         {
-            if (client.IsAuthenticated)
-                _ = client.SendAsync(PacketType.EventMessageNotify, data);
+            if (!client.IsAuthenticated)
+                continue;
+            var language = client.Language;
+            var notify = new EventMessageNotify(
+                0,
+                localiser.Get(language, L.System.Name),
+                messageFactory(language)
+            );
+            _ = client.SendAsync(PacketType.EventMessageNotify, notify.ToBytes());
         }
     }
 }

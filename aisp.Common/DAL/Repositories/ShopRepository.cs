@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Localisation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -14,10 +15,7 @@ public interface IShopRepository
 
 public sealed class ShopRepository(MainContext db) : IShopRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly JsonSerializerOptions JsonOptions = SeedJson.Options;
 
     public async Task<IReadOnlyList<ShopItem>> GetEnabledItemsAsync(
         int shopId,
@@ -60,7 +58,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
         {
             if (string.IsNullOrWhiteSpace(shopRow.Code))
                 throw new InvalidDataException("Shop code is required.");
-            if (string.IsNullOrWhiteSpace(shopRow.DisplayName))
+            if (shopRow.DisplayName.IsEmpty)
                 throw new InvalidDataException($"Shop {shopRow.Code} displayName is required.");
 
             var shop = await db.Shops.SingleOrDefaultAsync(x => x.Code == shopRow.Code, ct);
@@ -70,7 +68,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                 db.Shops.Add(shop);
             }
 
-            shop.DisplayName = shopRow.DisplayName;
+            shop.DisplayName = shopRow.DisplayName.Canonical;
             shop.BannerVisualId = shopRow.BannerVisualId;
             shop.IsEnabled = shopRow.IsEnabled ?? true;
 
@@ -167,7 +165,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                     throw new InvalidDataException(
                         $"NPC {npcRow.NpcObjectId} dayPhase must be -1 or 0..4."
                     );
-                if (string.IsNullOrWhiteSpace(npcRow.Name))
+                if (npcRow.Name.IsEmpty)
                     throw new InvalidDataException($"NPC {npcRow.NpcObjectId} name is required.");
 
                 var dateStartUtc = ParseUtc(
@@ -196,7 +194,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                 npc.DateStartUtc = dateStartUtc;
                 npc.DateEndUtc = dateEndUtc;
                 npc.ModelId = npcRow.ModelId;
-                npc.Name = npcRow.Name;
+                npc.Name = npcRow.Name.Canonical;
                 npc.X = npcRow.X;
                 npc.Y = npcRow.Y;
                 npc.Z = npcRow.Z;
@@ -282,7 +280,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
     private sealed class ShopSeedRow
     {
         public string Code { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
+        public LocalisedString DisplayName { get; set; } = new();
         public long BannerVisualId { get; set; }
         public bool? IsEnabled { get; set; }
         public List<ShopItemSeedRow> Items { get; set; } = [];
@@ -312,7 +310,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
         public string? DateEndUtc { get; set; }
         public long NpcObjectId { get; set; }
         public long ModelId { get; set; }
-        public string Name { get; set; } = string.Empty;
+        public LocalisedString Name { get; set; } = new();
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }

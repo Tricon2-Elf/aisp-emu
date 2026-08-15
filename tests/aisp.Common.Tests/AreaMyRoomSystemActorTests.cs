@@ -71,7 +71,10 @@ public class AreaMyRoomSystemActorTests
         {
             await using var db = new MainContext(options);
             await SeedMyRoomActorsAsync(db);
-            var handler = new AreaNpcGetDataHandler(new NpcRepository(db));
+            var handler = new AreaNpcGetDataHandler(
+                new NpcRepository(db),
+                TestTextLocaliser.English
+            );
             var session = new CapturingPlayerSession { MapId = mapId };
 
             await handler.HandleAsync(
@@ -147,6 +150,7 @@ public class AreaMyRoomSystemActorTests
                 new NpcRepository(db),
                 new ShopRepository(db),
                 dispatcher,
+                TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
             var scriptPlayHandler = new AreaEventScriptPlayHandler(
@@ -316,6 +320,7 @@ public class AreaMyRoomSystemActorTests
                 new NpcRepository(db),
                 new ShopRepository(db),
                 dispatcher,
+                TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
             var selectHandler = new AreaEventSelectExecRHandler(
@@ -408,6 +413,7 @@ public class AreaMyRoomSystemActorTests
                 new NpcRepository(db),
                 new ShopRepository(db),
                 dispatcher,
+                TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
             var selectHandler = new AreaEventSelectExecRHandler(
@@ -448,11 +454,11 @@ public class AreaMyRoomSystemActorTests
                 .ToArray();
             Assert.Equal(2, optionsPackets.Length);
             Assert.Equal(
-                "倉庫を利用する",
+                "Use storage",
                 new PacketReader(optionsPackets[0].Payload).ReadString("utf-8")
             );
             Assert.Equal(
-                "使用しない",
+                "Don't use",
                 new PacketReader(optionsPackets[1].Payload).ReadString("utf-8")
             );
 
@@ -776,9 +782,13 @@ public class AreaMyRoomSystemActorTests
             CreateDirectMapLinkTransitionService(db, state),
             new CharacterEventRepository(db),
             new MyRoomRepository(db),
+            TestTextLocaliser.English,
             NullLogger<MyRoomDoorServerScript>.Instance
         );
-        var wardrobeScript = new MyRoomWardrobeServerScript(serverScriptSession);
+        var wardrobeScript = new MyRoomWardrobeServerScript(
+            serverScriptSession,
+            TestTextLocaliser.English
+        );
         return new ServerScriptDispatcher(
             [doorScript, wardrobeScript],
             serverScriptSession,
@@ -806,6 +816,7 @@ public class AreaMyRoomSystemActorTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
 

@@ -1,4 +1,5 @@
 using aisp.Common.DAL.Entities;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,7 @@ namespace aisp.Common.Game.ServerScripts;
 public sealed class StationStaffReturnToAkihabaraServerScript(
     ServerScriptSession serverScriptSession,
     DirectMapLinkTransitionService directMapLinkTransitionService,
+    ITextLocaliser localiser,
     ILogger<StationStaffReturnToAkihabaraServerScript> logger
 ) : IServerScript
 {
@@ -30,8 +32,8 @@ public sealed class StationStaffReturnToAkihabaraServerScript(
             PacketType.EventMessageNotify,
             new EventMessageNotify(
                 npcObjectId,
-                context.Npc.Name,
-                "I'll take you to Akihabara"
+                localiser.Get(session, L.Npc.Name(context.Npc.NpcObjectId)),
+                localiser.Get(session, L.Script.StationStaff.ReturnToAkihabara)
             ).ToBytes(),
             ct
         );

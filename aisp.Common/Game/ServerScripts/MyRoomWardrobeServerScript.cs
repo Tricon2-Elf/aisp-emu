@@ -1,11 +1,14 @@
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
 
 namespace aisp.Common.Game.ServerScripts;
 
-public sealed class MyRoomWardrobeServerScript(ServerScriptSession serverScriptSession)
-    : IServerScript
+public sealed class MyRoomWardrobeServerScript(
+    ServerScriptSession serverScriptSession,
+    ITextLocaliser localiser
+) : IServerScript
 {
     private const string AwaitingSelectionStep = "AwaitingSelection";
 
@@ -26,17 +29,26 @@ public sealed class MyRoomWardrobeServerScript(ServerScriptSession serverScriptS
         );
         await session.SendAsync(
             PacketType.EventSelectPushNotify,
-            new EventSelectPushNotify { SelectName = "倉庫を利用する" }.ToBytes(),
+            new EventSelectPushNotify
+            {
+                SelectName = localiser.Get(session, L.Script.MyRoom.WardrobeUse),
+            }.ToBytes(),
             ct
         );
         await session.SendAsync(
             PacketType.EventSelectPushNotify,
-            new EventSelectPushNotify { SelectName = "使用しない" }.ToBytes(),
+            new EventSelectPushNotify
+            {
+                SelectName = localiser.Get(session, L.Script.MyRoom.WardrobeSkip),
+            }.ToBytes(),
             ct
         );
         await session.SendAsync(
             PacketType.EventSelectExecNotify,
-            new EventSelectExecNotify { Text = "倉庫を利用しますか？" }.ToBytes(),
+            new EventSelectExecNotify
+            {
+                Text = localiser.Get(session, L.Script.MyRoom.WardrobePrompt),
+            }.ToBytes(),
             ct
         );
     }

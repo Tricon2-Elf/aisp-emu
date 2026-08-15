@@ -1,4 +1,5 @@
 using aisp.Common.DAL.Repositories;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
@@ -12,6 +13,7 @@ public sealed class MyRoomDoorServerScript(
     DirectMapLinkTransitionService directMapLinkTransitionService,
     ICharacterEventRepository characterEventRepository,
     IMyRoomRepository myRoomRepository,
+    ITextLocaliser localiser,
     ILogger<MyRoomDoorServerScript> logger
 ) : IServerScript
 {
@@ -70,17 +72,26 @@ public sealed class MyRoomDoorServerScript(
             );
             await session.SendAsync(
                 PacketType.EventSelectPushNotify,
-                new EventSelectPushNotify { SelectName = "Return to Shopping Area" }.ToBytes(),
+                new EventSelectPushNotify
+                {
+                    SelectName = localiser.Get(session, L.Script.MyRoom.DoorReturnShopping),
+                }.ToBytes(),
                 ct
             );
             await session.SendAsync(
                 PacketType.EventSelectPushNotify,
-                new EventSelectPushNotify { SelectName = "Close" }.ToBytes(),
+                new EventSelectPushNotify
+                {
+                    SelectName = localiser.Get(session, L.Script.MyRoom.DoorClose),
+                }.ToBytes(),
                 ct
             );
             await session.SendAsync(
                 PacketType.EventSelectExecNotify,
-                new EventSelectExecNotify { Text = "Leave MyRoom?" }.ToBytes(),
+                new EventSelectExecNotify
+                {
+                    Text = localiser.Get(session, L.Script.MyRoom.DoorLeavePrompt),
+                }.ToBytes(),
                 ct
             );
             return;

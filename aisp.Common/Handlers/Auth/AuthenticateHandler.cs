@@ -65,6 +65,7 @@ public class AuthenticateHandler(
         _logger.LogInformation($"User '{user.Username}' (ID: {user.Id}) logged in successfully.");
         session.User = user;
         session.UserId = user.Id;
+        session.Language = user.Language;
         state.RegisterClient(ServerType.Auth, session);
         return new AuthenticateResponse((uint)user.Id);
     }

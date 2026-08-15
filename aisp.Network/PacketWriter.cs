@@ -51,23 +51,18 @@ public class PacketWriter : IPacketWriter
 
     public void Write(ReadOnlySpan<byte> source) => _stream.Write(source);
 
-    public void Write(string value, string encoderName = "utf-8")
-    {
-        var encoder = PacketEncoding.GetEncoding(encoderName);
-        var size = encoder.GetByteCount(value);
-        Span<byte> buffer = stackalloc byte[size + 1];
-        encoder.GetBytes(value, buffer);
-        buffer[size] = 0x00;
-        _stream.Write(buffer);
-    }
+    public void Write(string value, string encoderName = "utf-8") =>
+        WriteNullTerminated(value, encoderName, maxBytes: int.MaxValue);
+
+    public void Write(string value, int maxBytes, string encoderName = "utf-8") =>
+        WriteNullTerminated(value, encoderName, maxBytes);
 
     public void WriteFixedString(string value, int length, string encoderName = "utf-8")
     {
         var encoder = PacketEncoding.GetEncoding(encoderName);
-        var size = encoder.GetByteCount(value);
         Span<byte> buffer = stackalloc byte[length];
         buffer.Clear();
-        encoder.GetBytes(value, buffer);
+        encoder.GetBytes(TruncateToBytes(value, length, encoder), buffer);
         _stream.Write(buffer);
     }
 
@@ -76,4 +71,28 @@ public class PacketWriter : IPacketWriter
 
     public void WriteFixedAsciiString(string value, int length) =>
         WriteFixedString(value, length, "ASCII");
+
+    private void WriteNullTerminated(string value, string encoderName, int maxBytes)
+    {
+        var encoder = PacketEncoding.GetEncoding(encoderName);
+        value = TruncateToBytes(value, maxBytes, encoder);
+        var size = encoder.GetByteCount(value);
+        Span<byte> buffer = stackalloc byte[size + 1];
+        encoder.GetBytes(value, buffer);
+        buffer[size] = 0x00;
+        _stream.Write(buffer);
+    }
+
+    private static string TruncateToBytes(string value, int maxBytes, Encoding encoding)
+    {
+        if (maxBytes <= 0)
+            return string.Empty;
+        if (encoding.GetByteCount(value) <= maxBytes)
+            return value;
+
+        var length = value.Length;
+        while (length > 0 && encoding.GetByteCount(value.AsSpan(0, length)) > maxBytes)
+            length--;
+        return value[..length];
+    }
 }

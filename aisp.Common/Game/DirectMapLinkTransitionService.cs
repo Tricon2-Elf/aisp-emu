@@ -1,5 +1,6 @@
 using aisp.Common.Config;
 using aisp.Common.DAL.Repositories;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
@@ -17,6 +18,7 @@ public sealed class DirectMapLinkTransitionService(
     IChannelRepository channelRepository,
     IOptions<ServerOptions> serverOptions,
     SharedState state,
+    ITextLocaliser localiser,
     ILogger<DirectMapLinkTransitionService> logger
 )
 {
@@ -992,7 +994,7 @@ public sealed class DirectMapLinkTransitionService(
 
         await session.SendAsync(
             PacketType.SelectInitIslandStart,
-            (await CreateSelectInitIslandStartAsync(selection, ct)).ToBytes(),
+            (await CreateSelectInitIslandStartAsync(session, selection, ct)).ToBytes(),
             ct
         );
         await session.SendAsync(
@@ -1043,6 +1045,7 @@ public sealed class DirectMapLinkTransitionService(
     }
 
     private async Task<SelectInitIslandStartNotify> CreateSelectInitIslandStartAsync(
+        IPlayerSession session,
         PendingAreaMapSelection selection,
         CancellationToken ct
     )
@@ -1072,9 +1075,9 @@ public sealed class DirectMapLinkTransitionService(
                     destinationMaps.Add(destinationMap);
             }
 
-            var title = ResolveIslandTitle(islandId, destinationMaps);
+            var title = ResolveIslandTitle(session, islandId, destinationMaps);
             var descriptionLines = destinationMaps
-                .Select(destinationMap => destinationMap.Name)
+                .Select(destinationMap => localiser.Get(session, L.Map.Name(destinationMap.MapId)))
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct()
                 .ToList();
@@ -1260,25 +1263,32 @@ public sealed class DirectMapLinkTransitionService(
         return derivedIsland is >= 1 and <= 3 ? derivedIsland : fallbackIslandId;
     }
 
-    private static string ResolveIslandTitle(
+    private string ResolveIslandTitle(
+        IPlayerSession session,
         uint islandId,
         IReadOnlyList<DAL.Entities.Map> destinationMaps
     )
     {
-        var baseName = destinationMaps
-            .Select(destinationMap => destinationMap.Name)
-            .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
-
-        if (!string.IsNullOrWhiteSpace(baseName))
+        var firstMap = destinationMaps.FirstOrDefault(destinationMap =>
+            !string.IsNullOrWhiteSpace(destinationMap.Name)
+        );
+        if (firstMap is not null)
         {
+            var localisedName = localiser.Get(
+                session,
+                string.IsNullOrWhiteSpace(firstMap.Island)
+                    ? L.Map.Name(firstMap.MapId)
+                    : L.Map.Island(firstMap.MapId)
+            );
+            var baseName = localisedName;
             var lastSpace = baseName.LastIndexOf(' ');
             if (lastSpace > 0 && int.TryParse(baseName[(lastSpace + 1)..], out _))
                 baseName = baseName[..lastSpace];
 
-            return $"{baseName} Island {islandId}";
+            return localiser.Get(session, L.Map.IslandTitleFormat, baseName, islandId);
         }
 
-        return $"Island {islandId}";
+        return localiser.Get(session, L.Island.Name(islandId));
     }
 
     /// <summary>

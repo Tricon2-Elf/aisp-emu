@@ -40,7 +40,10 @@ public class AreaShopNpcHandlersTests
             }
 
             await using var runDb = new MainContext(options);
-            var handler = new AreaNpcGetDataHandler(new NpcRepository(runDb));
+            var handler = new AreaNpcGetDataHandler(
+                new NpcRepository(runDb),
+                TestTextLocaliser.English
+            );
             var session = new CapturingPlayerSession { MapId = StarterMapId };
 
             await handler.HandleAsync(
@@ -99,7 +102,7 @@ public class AreaShopNpcHandlersTests
             );
             var startedReader = new PacketReader(shopStarted.Payload);
             Assert.Equal(StarterNpcObjectId, startedReader.ReadUInt());
-            Assert.Equal("Starter Shop", startedReader.ReadString("ASCII"));
+            Assert.Equal("Starter Shop", startedReader.ReadString());
             Assert.Equal(bannerVisualId, startedReader.ReadUInt());
             Assert.Equal(0u, startedReader.ReadUInt());
 
@@ -361,7 +364,10 @@ public class AreaShopNpcHandlersTests
             }
 
             await using var runDb = new MainContext(options);
-            var npcHandler = new AreaNpcGetDataHandler(new NpcRepository(runDb));
+            var npcHandler = new AreaNpcGetDataHandler(
+                new NpcRepository(runDb),
+                TestTextLocaliser.English
+            );
             var accessHandler = CreateEventAccessNpcHandler(runDb);
 
             var offChannelSession = new CapturingPlayerSession
@@ -883,6 +889,7 @@ public class AreaShopNpcHandlersTests
                 new NpcRepository(runDb),
                 new ShopRepository(runDb),
                 dispatcher,
+                TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
             var syncHandler = new AreaEventSyncRHandler(
@@ -942,6 +949,7 @@ public class AreaShopNpcHandlersTests
             new NpcRepository(db),
             new ShopRepository(db),
             CreateServerScriptDispatcher(db),
+            TestTextLocaliser.English,
             NullLogger<AreaEventAccessNpcHandler>.Instance
         );
 
@@ -962,6 +970,7 @@ public class AreaShopNpcHandlersTests
             eventRepository,
             mapRepository,
             serverScriptSession,
+            TestTextLocaliser.English,
             NullLogger<ShinjuRegistrationServerScript>.Instance
         );
         return new ServerScriptDispatcher(
@@ -991,6 +1000,7 @@ public class AreaShopNpcHandlersTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
 

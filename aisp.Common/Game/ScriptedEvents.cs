@@ -1,5 +1,9 @@
 namespace aisp.Common.Game;
 
+/// <summary>
+/// Maps server event keys to client CSV script paths sent via <c>EventScriptPlayNotify</c>.
+/// CSV line content is a client-assets Localisation stream; this server only sends the path label.
+/// </summary>
 public static class ScriptedEvents
 {
     public static class Keys

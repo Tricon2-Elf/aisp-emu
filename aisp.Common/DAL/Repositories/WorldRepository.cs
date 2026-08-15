@@ -1,5 +1,6 @@
 using System.Text.Json;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Localisation;
 using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.DAL.Repositories;
@@ -15,10 +16,7 @@ public interface IWorldRepository
 
 public class WorldRepository(MainContext db) : IWorldRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly JsonSerializerOptions JsonOptions = SeedJson.Options;
 
     private readonly MainContext _db = db;
 
@@ -80,8 +78,8 @@ public class WorldRepository(MainContext db) : IWorldRepository
             db.Worlds.Add(
                 new World
                 {
-                    Name = row.Name,
-                    Description = row.Description,
+                    Name = row.Name.Canonical,
+                    Description = row.Description.Canonical,
                     Address = address,
                     Port = msgPort,
                 }
@@ -93,7 +91,7 @@ public class WorldRepository(MainContext db) : IWorldRepository
 
     private sealed class WorldSeedRow
     {
-        public string Name { get; set; } = "";
-        public string Description { get; set; } = "";
+        public LocalisedString Name { get; set; } = new();
+        public LocalisedString Description { get; set; } = new();
     }
 }

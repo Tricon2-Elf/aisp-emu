@@ -1,10 +1,12 @@
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Area;
 
 namespace aisp.Common.Game.ServerScripts;
 
 public sealed class IntroductionChineseCosplayerServerScript(
-    ServerScriptSession serverScriptSession
+    ServerScriptSession serverScriptSession,
+    ITextLocaliser localiser
 ) : IServerScript
 {
     private const string AwaitingDialogueSyncStep = "AwaitingDialogueSync";
@@ -22,7 +24,11 @@ public sealed class IntroductionChineseCosplayerServerScript(
         var npcObjectId = checked((uint)context.Npc.NpcObjectId);
         await session.SendAsync(
             PacketType.EventMessageNotify,
-            new EventMessageNotify(npcObjectId, context.Npc.Name, "Hello").ToBytes(),
+            new EventMessageNotify(
+                npcObjectId,
+                localiser.Get(session, L.Npc.Name(context.Npc.NpcObjectId)),
+                localiser.Get(session, L.Script.Introduction.ChineseCosplayerHello)
+            ).ToBytes(),
             ct
         );
         await session.SendAsync(

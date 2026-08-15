@@ -59,6 +59,10 @@
             <strong>@(Model.Account.LastLoggedInAt?.ToString("MMMM d, yyyy") ?? "Never")</strong>
         </div>
         <div>
+            <span class="profile-label">Display language</span>
+            <strong>@Model.LanguageLabel</strong>
+        </div>
+        <div>
             <span class="profile-label">AI Points</span>
             <strong>@Model.Account.AiPoints.ToString("N0")</strong>
         </div>
@@ -77,6 +81,26 @@
         </div>
         <span class="section-count">@Model.Account.StorageItems.Count item@(Model.Account.StorageItems.Count == 1 ? "" : "s")</span>
     </div>
+    <form method="post" asp-page-handler="ChangeLanguage" class="mb-4">
+        <label class="form-label" for="preferred-language">Game display language</label>
+        <div class="d-flex gap-2 flex-wrap">
+            <select id="preferred-language" class="form-select" name="preferredLanguage" style="max-width: 16rem;">
+                @foreach (var option in Model.LanguageOptions)
+                {
+                    if (option.Value == Model.Account.PreferredLanguage)
+                    {
+                        <option value="@option.Value" selected>@option.Label</option>
+                    }
+                    else
+                    {
+                        <option value="@option.Value">@option.Label</option>
+                    }
+                }
+            </select>
+            <button class="btn btn-primary" type="submit">Save language</button>
+        </div>
+        <p class="portal-subtitle mt-2 mb-0">This language is used for NPC names, item names, and other server text in the game client. Changes apply after you fully disconnect and log in again.</p>
+    </form>
     @if (Model.Account.StorageItems.Count == 0)
     {
         <p class="empty-state">No items are currently stored here.</p>

@@ -154,6 +154,7 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
         var script = new StationStaffReturnToAkihabaraServerScript(
             serverScriptSession,
             CreateDirectMapLinkTransitionService(db, state),
+            TestTextLocaliser.English,
             NullLogger<StationStaffReturnToAkihabaraServerScript>.Instance
         );
         return new ServerScriptDispatcher(
@@ -183,6 +184,7 @@ public sealed class StationStaffReturnToAkihabaraServerScriptTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
 

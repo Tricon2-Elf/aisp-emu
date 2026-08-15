@@ -59,6 +59,7 @@ public class LoginHandler(
 
         session.User = userSession.User;
         session.UserId = userSession.User.Id;
+        session.Language = userSession.User.Language;
 
         var character = userSession.User.Characters.FirstOrDefault();
         if (character != null)
