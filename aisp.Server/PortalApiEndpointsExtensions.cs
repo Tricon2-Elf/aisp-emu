@@ -2,6 +2,7 @@ using aisp.Common;
 using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
+using aisp.Common.Localisation;
 using aisp.Portal;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Builder;
@@ -44,6 +45,7 @@ internal static class PortalApiEndpointsExtensions
                 DisconnectAsync(userId, ServerType.Msg, sessions, ct)
         );
         area.MapGet("/users/{userId:int}/account", GetAccountAsync);
+        area.MapPost("/users/{userId:int}/language", SetPreferredLanguageAsync);
         area.MapPost("/users/summaries", GetSummariesAsync);
         area.MapPost(
             "/users/{userId:int}/disconnect",
@@ -241,6 +243,7 @@ internal static class PortalApiEndpointsExtensions
     private static async Task<IResult> GetAccountAsync(
         int userId,
         MainContext db,
+        ITextLocaliser localiser,
         CancellationToken ct
     )
     {
@@ -261,15 +264,6 @@ internal static class PortalApiEndpointsExtensions
         if (user is null)
             return TypedResults.NotFound(new PortalErrorDto("User not found."));
 
-        var mapIds = user
-            .Characters.Select(character => (long)character.CurrentMapId)
-            .Where(mapId => mapId != 0)
-            .Distinct()
-            .ToArray();
-        var mapNames = await db
-            .Maps.AsNoTracking()
-            .Where(map => mapIds.Contains(map.MapId))
-            .ToDictionaryAsync(map => map.MapId, map => map.Name, ct);
         var roboItemIds = user
             .Characters.SelectMany(character => character.Robos)
             .SelectMany(robo => robo.Equipment)
@@ -281,7 +275,25 @@ internal static class PortalApiEndpointsExtensions
             .Items.AsNoTracking()
             .Where(item => roboItemIds.Contains(item.Id))
             .ToDictionaryAsync(item => item.Id, item => (item.Name, item.Socket, item.IconId), ct);
-        return TypedResults.Ok(MapAccount(user, mapNames, roboItems));
+        return TypedResults.Ok(MapAccount(user, roboItems, localiser));
+    }
+
+    private static async Task<IResult> SetPreferredLanguageAsync(
+        int userId,
+        PortalChangeLanguageRequest request,
+        IUserRepository users,
+        CancellationToken ct
+    )
+    {
+        if (!GameLanguages.TryParse(request.PreferredLanguage, out var language))
+            return TypedResults.BadRequest(new PortalErrorDto("Unsupported language."));
+
+        var user = await users.GetById(userId);
+        if (user is null)
+            return TypedResults.NotFound(new PortalErrorDto("User not found."));
+
+        await users.SetLanguageAsync(userId, language, ct);
+        return TypedResults.Ok(new PortalChangeLanguageRequest(language.ToTag()));
     }
 
     private static async Task<IResult> GetSummariesAsync(
@@ -337,10 +349,12 @@ internal static class PortalApiEndpointsExtensions
 
     private static PortalAccountDataDto MapAccount(
         User user,
-        IReadOnlyDictionary<long, string> mapNames,
-        IReadOnlyDictionary<int, (string Name, int Socket, int IconId)> roboItems
-    ) =>
-        new(
+        IReadOnlyDictionary<int, (string Name, int Socket, int IconId)> roboItems,
+        ITextLocaliser localiser
+    )
+    {
+        var language = user.Language;
+        return new(
             user.Id,
             user.Username,
             user.CreatedAt,
@@ -351,7 +365,7 @@ internal static class PortalApiEndpointsExtensions
             user.StorageItems.OrderBy(item => item.ItemId)
                 .Select(item => new PortalItemDto(
                     item.ItemId,
-                    item.Item.Name,
+                    localiser.Get(language, L.Item.Name(item.ItemId)),
                     item.Item.Socket,
                     item.Item.IconId,
                     item.Quantity
@@ -374,19 +388,16 @@ internal static class PortalApiEndpointsExtensions
                     character.Like3,
                     character.LikeDesc3,
                     character.CurrentMapId,
-                    mapNames.GetValueOrDefault(
-                        (long)character.CurrentMapId,
-                        character.CurrentMapId == 0
-                            ? "No current map"
-                            : $"Map {character.CurrentMapId}"
-                    ),
+                    character.CurrentMapId == 0
+                        ? localiser.Get(language, L.Map.NoCurrentMap)
+                        : localiser.Get(language, L.Map.Name(character.CurrentMapId)),
                     character.HomeIslandId,
-                    ResolveHomeIslandName(character.HomeIslandId),
+                    ResolveHomeIslandName(character.HomeIslandId, language, localiser),
                     character
                         .Inventory.OrderBy(item => item.ItemId)
                         .Select(item => new PortalItemDto(
                             item.ItemId,
-                            item.Item.Name,
+                            localiser.Get(language, L.Item.Name(item.ItemId)),
                             item.Item.Socket,
                             item.Item.IconId,
                             item.Quantity
@@ -396,9 +407,9 @@ internal static class PortalApiEndpointsExtensions
                         .Equipment.OrderBy(item => item.SlotIndex)
                         .Select(item => new PortalCharacterEquipmentDto(
                             item.SlotIndex,
-                            ResolveEquipmentSlotName(item.SlotIndex),
+                            ResolveEquipmentSlotName(item.SlotIndex, language, localiser),
                             item.ItemId,
-                            item.Item.Name,
+                            localiser.Get(language, L.Item.Name(item.ItemId)),
                             item.Item.Socket,
                             item.Item.IconId
                         ))
@@ -409,7 +420,11 @@ internal static class PortalApiEndpointsExtensions
                             robo.RoboId,
                             robo.Name,
                             robo.ModelId,
-                            ResolvePersonalityName(character.CharadollPersonality),
+                            ResolvePersonalityName(
+                                character.CharadollPersonality,
+                                language,
+                                localiser
+                            ),
                             robo.Level,
                             robo.Experience,
                             robo.ExperienceToNextLevel,
@@ -421,13 +436,22 @@ internal static class PortalApiEndpointsExtensions
                                 {
                                     var itemId = (int)item.ItemId;
                                     var catalog = roboItems.GetValueOrDefault(itemId);
+                                    var catalogName = string.IsNullOrWhiteSpace(catalog.Name)
+                                        ? localiser.Get(
+                                            language,
+                                            L.Equipment.UnknownItemFormat,
+                                            itemId
+                                        )
+                                        : localiser.Get(language, L.Item.Name(itemId));
                                     return new PortalRoboEquipmentDto(
                                         item.SlotIndex,
-                                        ResolveEquipmentSlotName(item.SlotIndex),
+                                        ResolveEquipmentSlotName(
+                                            item.SlotIndex,
+                                            language,
+                                            localiser
+                                        ),
                                         itemId,
-                                        string.IsNullOrWhiteSpace(catalog.Name)
-                                            ? $"Item {itemId}"
-                                            : catalog.Name,
+                                        catalogName,
                                         catalog.Socket != 0 ? catalog.Socket : (int)item.Socket,
                                         catalog.IconId != 0 ? catalog.IconId : itemId
                                     );
@@ -436,43 +460,41 @@ internal static class PortalApiEndpointsExtensions
                         ))
                         .ToArray()
                 ))
-                .ToArray()
+                .ToArray(),
+            language.ToTag()
         );
+    }
 
-    private static string ResolveHomeIslandName(uint homeIslandId) =>
-        homeIslandId switch
-        {
-            0 => "Not selected",
-            1 => "Da Capo",
-            2 => "Clannad",
-            3 => "Shuffle",
-            _ => $"Island {homeIslandId}",
-        };
+    private static string ResolveHomeIslandName(
+        uint homeIslandId,
+        GameLanguage language,
+        ITextLocaliser localiser
+    ) =>
+        homeIslandId == 0
+            ? localiser.Get(language, L.Island.NotSelected)
+            : localiser.Get(language, L.Island.Name(homeIslandId));
 
-    private static string ResolvePersonalityName(CharadollPersonality personality) =>
+    private static string ResolvePersonalityName(
+        CharadollPersonality personality,
+        GameLanguage language,
+        ITextLocaliser localiser
+    ) =>
         personality switch
         {
-            CharadollPersonality.Active => "Active",
-            CharadollPersonality.Quiet => "Quiet",
-            CharadollPersonality.None => "No preference",
+            CharadollPersonality.Active => localiser.Get(language, L.Charadoll.PersonalityActive),
+            CharadollPersonality.Quiet => localiser.Get(language, L.Charadoll.PersonalityQuiet),
+            CharadollPersonality.None => localiser.Get(language, L.Charadoll.PersonalityNone),
             _ => personality.ToString(),
         };
 
-    private static string ResolveEquipmentSlotName(byte slotIndex) =>
-        slotIndex switch
-        {
-            0 => "Top",
-            1 => "Bottom",
-            2 => "Socks",
-            3 => "Shoes",
-            4 => "Underwear",
-            5 => "Bra",
-            6 => "Hat",
-            7 => "Gloves",
-            8 => "Coat",
-            9 => "Jacket",
-            _ => "Accessory",
-        };
+    private static string ResolveEquipmentSlotName(
+        byte slotIndex,
+        GameLanguage language,
+        ITextLocaliser localiser
+    ) =>
+        slotIndex <= 9
+            ? localiser.Get(language, L.Equipment.Slot(slotIndex))
+            : localiser.Get(language, L.Equipment.Accessory);
 
     private static bool IsValidUsername(string username) =>
         username.Length is >= 3 and <= 64

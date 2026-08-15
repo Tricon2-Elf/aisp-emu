@@ -57,6 +57,7 @@ public class AreasvEnterHandler(
         }
 
         session.User = userSession.User;
+        session.Language = userSession.User.Language;
         var chara = await characterRepo.GetByIdAsync(session.User.Characters.First().Id, ct);
 
         if (chara is null)

@@ -1,6 +1,7 @@
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
@@ -13,15 +14,16 @@ public sealed class ShinjuRegistrationServerScript(
     ICharacterEventRepository characterEventRepository,
     IMapRepository mapRepository,
     ServerScriptSession serverScriptSession,
+    ITextLocaliser localiser,
     ILogger<ShinjuRegistrationServerScript> logger
 ) : IServerScript
 {
     private static readonly uint[] FranchiseHubMapIds = [10010100, 10020100, 10030100];
-    private static readonly (CharadollPersonality Personality, string Label)[] CharadollOptions =
+    private static readonly (CharadollPersonality Personality, LocKey Label)[] CharadollOptions =
     [
-        (CharadollPersonality.Active, "活発そうなタイプ (Active/Energetic)"),
-        (CharadollPersonality.Quiet, "おとなし目なタイプ (Quiet/Reserved)"),
-        (CharadollPersonality.None, "特に好みはない (No preference)"),
+        (CharadollPersonality.Active, L.Script.Shinju.CharadollActive),
+        (CharadollPersonality.Quiet, L.Script.Shinju.CharadollQuiet),
+        (CharadollPersonality.None, L.Script.Shinju.CharadollNone),
     ];
 
     private const uint SelectorFailure = 1;
@@ -59,8 +61,8 @@ public sealed class ShinjuRegistrationServerScript(
             await SendDialogueAsync(
                 session,
                 checked((uint)context.Npc.NpcObjectId),
-                context.Npc.Name,
-                "Can I help you?",
+                NpcName(session, context.Npc),
+                localiser.Get(session, L.Script.Shinju.Help),
                 ct
             );
             await session.SendAsync(
@@ -128,12 +130,12 @@ public sealed class ShinjuRegistrationServerScript(
         await SendDialogueAsync(
             session,
             npcObjectId,
-            npc.Name,
-            "Welcome to aisp-emu! I'm Shinju. Which island would you like to make your home?",
+            NpcName(session, npc),
+            localiser.Get(session, L.Script.Shinju.Welcome),
             ct
         );
 
-        var islands = await BuildSelectInitIslandEntriesAsync(ct);
+        var islands = await BuildSelectInitIslandEntriesAsync(session, ct);
         if (islands.Count == 0)
         {
             logger.LogWarning(
@@ -168,8 +170,8 @@ public sealed class ShinjuRegistrationServerScript(
         await SendDialogueAsync(
             session,
             npcObjectId,
-            npc.Name,
-            "どのキャラドールがお好みですか？",
+            NpcName(session, npc),
+            localiser.Get(session, L.Script.Shinju.CharadollQuestion),
             ct
         );
         await session.SendAsync(
@@ -180,12 +182,15 @@ public sealed class ShinjuRegistrationServerScript(
         foreach (var (_, label) in CharadollOptions)
             await session.SendAsync(
                 PacketType.EventSelectPushNotify,
-                new EventSelectPushNotify { SelectName = label }.ToBytes(),
+                new EventSelectPushNotify { SelectName = localiser.Get(session, label) }.ToBytes(),
                 ct
             );
         await session.SendAsync(
             PacketType.EventSelectExecNotify,
-            new EventSelectExecNotify { Text = "キャラドールのタイプを選んでください。" }.ToBytes(),
+            new EventSelectExecNotify
+            {
+                Text = localiser.Get(session, L.Script.Shinju.CharadollPrompt),
+            }.ToBytes(),
             ct
         );
     }
@@ -328,7 +333,11 @@ public sealed class ShinjuRegistrationServerScript(
             ct
         );
 
+    private string NpcName(IPlayerSession session, Npc npc) =>
+        localiser.Get(session, L.Npc.Name(npc.NpcObjectId));
+
     private async Task<IReadOnlyList<SelectInitIslandEntry>> BuildSelectInitIslandEntriesAsync(
+        IPlayerSession session,
         CancellationToken ct
     )
     {
@@ -340,18 +349,18 @@ public sealed class ShinjuRegistrationServerScript(
             if (hubMap is null)
                 continue;
 
-            var islandName = string.IsNullOrWhiteSpace(hubMap.Island) ? hubMap.Name : hubMap.Island;
+            var islandName = localiser.Get(session, L.Map.Island(hubMap.MapId));
             var relatedMaps = string.IsNullOrWhiteSpace(hubMap.Island)
                 ? [hubMap]
                 : await mapRepository.GetMapsByIslandAsync(hubMap.Island, ct);
 
             var descriptionLines = relatedMaps
-                .Select(map => map.Name)
+                .Select(map => localiser.Get(session, L.Map.Name(map.MapId)))
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct()
                 .ToList();
             if (descriptionLines.Count == 0)
-                descriptionLines.Add(hubMap.Name);
+                descriptionLines.Add(localiser.Get(session, L.Map.Name(hubMap.MapId)));
 
             islands.Add(
                 new SelectInitIslandEntry

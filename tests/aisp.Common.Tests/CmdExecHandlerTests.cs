@@ -5,6 +5,7 @@ using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
 using aisp.Common.Handlers.Msg;
+using aisp.Common.Localisation;
 using aisp.Common.Services;
 using aisp.Common.Tests.Support;
 using aisp.Network;
@@ -89,6 +90,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -192,6 +194,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -286,6 +289,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -405,6 +409,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -531,6 +536,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -603,6 +609,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -677,6 +684,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -743,6 +751,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -827,6 +836,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -914,6 +924,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache([itemId]),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -997,6 +1008,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1064,6 +1076,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1187,6 +1200,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                TestTextLocaliser.English,
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1224,9 +1238,9 @@ public class CmdExecHandlerTests
     {
         var writer = new PacketWriter();
         writer.Write(1u);
-        writer.WriteFixedString(command, 96, "ASCII");
+        writer.WriteFixedString(command, 96);
         for (var i = 0; i < 10; i++)
-            writer.WriteFixedString(i < args.Length ? args[i] : string.Empty, 384, "ASCII");
+            writer.WriteFixedString(i < args.Length ? args[i] : string.Empty, 384);
         writer.Write((uint)args.Length);
         return writer.ToBytes();
     }
@@ -1283,6 +1297,7 @@ public class CmdExecHandlerTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
     }
@@ -1292,7 +1307,8 @@ public class CmdExecHandlerTests
     {
         private readonly HashSet<int> _itemIds = itemIds?.ToHashSet() ?? [];
 
-        public ReadOnlyMemory<byte> ResponsePayload => ReadOnlyMemory<byte>.Empty;
+        public ReadOnlyMemory<byte> GetResponsePayload(GameLanguage language) =>
+            ReadOnlyMemory<byte>.Empty;
 
         public Task WarmAsync(CancellationToken ct = default) => Task.CompletedTask;
 

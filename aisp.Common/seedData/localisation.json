@@ -1,0 +1,315 @@
+{
+  "item.no_description": {
+    "ja": "N/A",
+    "en": "N/A",
+    "zh-Hans": "N/A",
+    "zh-Hant": "N/A"
+  },
+  "item.no_limit_description": {
+    "ja": "N/A",
+    "en": "N/A",
+    "zh-Hans": "N/A",
+    "zh-Hant": "N/A"
+  },
+  "system.name": {
+    "ja": "システム",
+    "en": "System",
+    "zh-Hans": "系统",
+    "zh-Hant": "系統"
+  },
+  "maintenance.warning": {
+    "ja": "サーバーメンテナンスまであと{0}分です。切断されます。",
+    "en": "Server maintenance in {0} minute(s). You will be disconnected.",
+    "zh-Hans": "服务器将在 {0} 分钟后维护。你将被断开连接。",
+    "zh-Hant": "伺服器將在 {0} 分鐘後維護。你將被中斷連線。"
+  },
+  "maintenance.warning_one_minute": {
+    "ja": "サーバーメンテナンスまであと1分です。切断されます。",
+    "en": "Server maintenance in 1 minute. You will be disconnected.",
+    "zh-Hans": "服务器将在 1 分钟后维护。你将被断开连接。",
+    "zh-Hant": "伺服器將在 1 分鐘後維護。你將被中斷連線。"
+  },
+  "maintenance.shutdown": {
+    "ja": "定期メンテナンスのためサーバーを停止します。",
+    "en": "The server is shutting down for scheduled maintenance.",
+    "zh-Hans": "服务器即将因定期维护而关闭。",
+    "zh-Hant": "伺服器即將因定期維護而關閉。"
+  },
+  "profile.default_like": {
+    "ja": "なし",
+    "en": "None",
+    "zh-Hans": "无",
+    "zh-Hant": "無"
+  },
+  "profile.default_avatar_description": {
+    "ja": "こんにちは！",
+    "en": "Hello!",
+    "zh-Hans": "你好！",
+    "zh-Hant": "你好！"
+  },
+  "enquete.music.question": {
+    "ja": "人生の音楽とは何ですか？",
+    "en": "What is the music of life?",
+    "zh-Hans": "生命的音乐是什么？",
+    "zh-Hant": "生命的音樂是什麼？"
+  },
+  "enquete.music.answer.0": {
+    "ja": "ええと…リュート？いや、ドラム！",
+    "en": "Um... the lute? No, drums!",
+    "zh-Hans": "呃……鲁特琴？不，是鼓！",
+    "zh-Hant": "呃……魯特琴？不，是鼓！"
+  },
+  "enquete.music.answer.1": {
+    "ja": "叫び？",
+    "en": "Screaming?",
+    "zh-Hans": "尖叫？",
+    "zh-Hant": "尖叫？"
+  },
+  "enquete.music.answer.2": {
+    "ja": "沈黙だ、兄弟よ",
+    "en": "Silence, my brother",
+    "zh-Hans": "沉默，我的兄弟",
+    "zh-Hant": "沉默，我的兄弟"
+  },
+  "enquete.music.answer.3": {
+    "ja": "聖歌隊みたいな感じ。詠唱付き",
+    "en": "Some kind of choir. With chanting",
+    "zh-Hans": "某种唱诗班。还带着咏唱",
+    "zh-Hant": "某種唱詩班。還帶著詠唱"
+  },
+  "cmd.room.invalid_id": {
+    "ja": "無効な部屋IDです。1から{0}までの数字を指定してください。",
+    "en": "Invalid room ID. Use a number from 1 to {0}.",
+    "zh-Hans": "无效的房间 ID。请使用 1 到 {0} 之间的数字。",
+    "zh-Hant": "無效的房間 ID。請使用 1 到 {0} 之間的數字。"
+  },
+  "cmd.room.not_found": {
+    "ja": "部屋 {0} は存在しません。",
+    "en": "Room {0} does not exist.",
+    "zh-Hans": "房间 {0} 不存在。",
+    "zh-Hant": "房間 {0} 不存在。"
+  },
+  "cmd.room.private": {
+    "ja": "その部屋はプライベートのため入れません。",
+    "en": "You can't join that room because it is Private.",
+    "zh-Hans": "该房间为私密房间，无法加入。",
+    "zh-Hant": "該房間為私密房間，無法加入。"
+  },
+  "cmd.room.denied": {
+    "ja": "その部屋には入れません。",
+    "en": "You can't join that room.",
+    "zh-Hans": "无法加入该房间。",
+    "zh-Hant": "無法加入該房間。"
+  },
+  "map.island_title_format": {
+    "ja": "{0}島 {1}",
+    "en": "{0} Island {1}",
+    "zh-Hans": "{0}岛 {1}",
+    "zh-Hant": "{0}島 {1}"
+  },
+  "map.island_fallback_format": {
+    "ja": "島 {0}",
+    "en": "Island {0}",
+    "zh-Hans": "岛屿 {0}",
+    "zh-Hant": "島嶼 {0}"
+  },
+  "map.no_current_map": {
+    "ja": "現在のマップなし",
+    "en": "No current map",
+    "zh-Hans": "当前没有地图",
+    "zh-Hant": "目前沒有地圖"
+  },
+  "map.unknown_format": {
+    "ja": "マップ {0}",
+    "en": "Map {0}",
+    "zh-Hans": "地图 {0}",
+    "zh-Hant": "地圖 {0}"
+  },
+  "island.not_selected": {
+    "ja": "未選択",
+    "en": "Not selected",
+    "zh-Hans": "未选择",
+    "zh-Hant": "未選擇"
+  },
+  "island.unknown_format": {
+    "ja": "島 {0}",
+    "en": "Island {0}",
+    "zh-Hans": "岛屿 {0}",
+    "zh-Hant": "島嶼 {0}"
+  },
+  "island.1.name": {
+    "ja": "Da Capo"
+  },
+  "island.2.name": {
+    "ja": "CLANNAD"
+  },
+  "island.3.name": {
+    "ja": "SHUFFLE!"
+  },
+  "equipment.slot.0": { "ja": "トップス", "en": "Top", "zh-Hans": "上衣", "zh-Hant": "上衣" },
+  "equipment.slot.1": { "ja": "ボトムス", "en": "Bottom", "zh-Hans": "下装", "zh-Hant": "下裝" },
+  "equipment.slot.2": { "ja": "靴下", "en": "Socks", "zh-Hans": "袜子", "zh-Hant": "襪子" },
+  "equipment.slot.3": { "ja": "靴", "en": "Shoes", "zh-Hans": "鞋子", "zh-Hant": "鞋子" },
+  "equipment.slot.4": { "ja": "下着", "en": "Underwear", "zh-Hans": "内衣", "zh-Hant": "內衣" },
+  "equipment.slot.5": { "ja": "ブラ", "en": "Bra", "zh-Hans": "胸罩", "zh-Hant": "胸罩" },
+  "equipment.slot.6": { "ja": "帽子", "en": "Hat", "zh-Hans": "帽子", "zh-Hant": "帽子" },
+  "equipment.slot.7": { "ja": "手袋", "en": "Gloves", "zh-Hans": "手套", "zh-Hant": "手套" },
+  "equipment.slot.8": { "ja": "コート", "en": "Coat", "zh-Hans": "外套", "zh-Hant": "外套" },
+  "equipment.slot.9": { "ja": "ジャケット", "en": "Jacket", "zh-Hans": "夹克", "zh-Hant": "夾克" },
+  "equipment.slot.accessory": { "ja": "アクセサリー", "en": "Accessory", "zh-Hans": "饰品", "zh-Hant": "飾品" },
+  "equipment.unknown_item_format": {
+    "ja": "アイテム {0}",
+    "en": "Item {0}",
+    "zh-Hans": "物品 {0}",
+    "zh-Hant": "物品 {0}"
+  },
+  "charadoll.personality.active": { "ja": "活発", "en": "Active", "zh-Hans": "活泼", "zh-Hant": "活潑" },
+  "charadoll.personality.quiet": { "ja": "おとなしい", "en": "Quiet", "zh-Hans": "文静", "zh-Hant": "文靜" },
+  "charadoll.personality.none": { "ja": "特になし", "en": "No preference", "zh-Hans": "无偏好", "zh-Hant": "無偏好" },
+  "script.shinju.help": {
+    "ja": "何か御用ですか？",
+    "en": "Can I help you?",
+    "zh-Hans": "有什么事吗？",
+    "zh-Hant": "有什麼事嗎？"
+  },
+  "script.shinju.welcome": {
+    "ja": "aisp-emuへようこそ！真珠です。どの島をホームにしますか？",
+    "en": "Welcome to aisp-emu! I'm Shinju. Which island would you like to make your home?",
+    "zh-Hans": "欢迎来到 aisp-emu！我是真珠。你想把哪座岛当作家园？",
+    "zh-Hant": "歡迎來到 aisp-emu！我是真珠。你想把哪座島當作家園？"
+  },
+  "script.shinju.charadoll.question": {
+    "ja": "どのキャラドールがお好みですか？",
+    "en": "Which charadoll type do you prefer?",
+    "zh-Hans": "你喜欢哪种角色人偶？",
+    "zh-Hant": "你喜歡哪種角色人偶？"
+  },
+  "script.shinju.charadoll.prompt": {
+    "ja": "キャラドールのタイプを選んでください。",
+    "en": "Please choose a charadoll type.",
+    "zh-Hans": "请选择角色人偶类型。",
+    "zh-Hant": "請選擇角色人偶類型。"
+  },
+  "script.shinju.charadoll.option.active": {
+    "ja": "活発そうなタイプ",
+    "en": "Active/Energetic",
+    "zh-Hans": "活泼型",
+    "zh-Hant": "活潑型"
+  },
+  "script.shinju.charadoll.option.quiet": {
+    "ja": "おとなし目なタイプ",
+    "en": "Quiet/Reserved",
+    "zh-Hans": "文静型",
+    "zh-Hant": "文靜型"
+  },
+  "script.shinju.charadoll.option.none": {
+    "ja": "特に好みはない",
+    "en": "No preference",
+    "zh-Hans": "没有特别偏好",
+    "zh-Hant": "沒有特別偏好"
+  },
+  "script.station_staff.register_first": {
+    "ja": "先に外神田ビルで登録してください。",
+    "en": "Please register at the Sotokanda Building first.",
+    "zh-Hans": "请先到外神田大楼登记。",
+    "zh-Hant": "請先到外神田大樓登記。"
+  },
+  "script.station_staff.return_akihabara": {
+    "ja": "秋葉原までお連れします",
+    "en": "I'll take you to Akihabara",
+    "zh-Hans": "我带你去秋叶原",
+    "zh-Hant": "我帶你去秋葉原"
+  },
+  "script.introduction.chinese_cosplayer.hello": {
+    "ja": "こんにちは",
+    "en": "Hello",
+    "zh-Hans": "你好",
+    "zh-Hant": "你好"
+  },
+  "script.myroom.door.return_shopping": {
+    "ja": "ショッピングエリアへ戻る",
+    "en": "Return to Shopping Area",
+    "zh-Hans": "返回购物区",
+    "zh-Hant": "返回購物區"
+  },
+  "script.myroom.door.close": {
+    "ja": "閉じる",
+    "en": "Close",
+    "zh-Hans": "关闭",
+    "zh-Hant": "關閉"
+  },
+  "script.myroom.door.leave_prompt": {
+    "ja": "マイルームを出ますか？",
+    "en": "Leave MyRoom?",
+    "zh-Hans": "要离开我的房间吗？",
+    "zh-Hant": "要離開我的房間嗎？"
+  },
+  "script.myroom.wardrobe.use": {
+    "ja": "倉庫を利用する",
+    "en": "Use storage",
+    "zh-Hans": "使用仓库",
+    "zh-Hant": "使用倉庫"
+  },
+  "script.myroom.wardrobe.skip": {
+    "ja": "使用しない",
+    "en": "Don't use",
+    "zh-Hans": "不使用",
+    "zh-Hant": "不使用"
+  },
+  "script.myroom.wardrobe.prompt": {
+    "ja": "倉庫を利用しますか？",
+    "en": "Use storage?",
+    "zh-Hans": "要使用仓库吗？",
+    "zh-Hant": "要使用倉庫嗎？"
+  },
+  "emotion.1.name": { "ja": "うなずく", "en": "Nod", "zh-Hans": "点头", "zh-Hant": "點頭" },
+  "emotion.2.name": { "ja": "首を横に振る", "en": "Shake head", "zh-Hans": "摇头", "zh-Hant": "搖頭" },
+  "emotion.3.name": { "ja": "転ぶ", "en": "Fall", "zh-Hans": "摔倒", "zh-Hant": "摔倒" },
+  "emotion.4.name": { "ja": "ガッツポーズ", "en": "Fist pump", "zh-Hans": "加油姿势", "zh-Hant": "加油姿勢" },
+  "emotion.5.name": { "ja": "指をさす", "en": "Point", "zh-Hans": "指向", "zh-Hant": "指向" },
+  "emotion.6.name": { "ja": "手を振る", "en": "Wave", "zh-Hans": "挥手", "zh-Hant": "揮手" },
+  "emotion.7.name": { "ja": "話す", "en": "Talk", "zh-Hans": "说话", "zh-Hant": "說話" },
+  "emotion.8.name": { "ja": "恥ずかしがる", "en": "Be shy", "zh-Hans": "害羞", "zh-Hant": "害羞" },
+  "emotion.9.name": { "ja": "照れる", "en": "Blush", "zh-Hans": "脸红", "zh-Hant": "臉紅" },
+  "emotion.10.name": { "ja": "がっかりする", "en": "Disappointed", "zh-Hans": "失望", "zh-Hant": "失望" },
+  "emotion.11.name": { "ja": "慌てる", "en": "Panic", "zh-Hans": "慌张", "zh-Hant": "慌張" },
+  "emotion.12.name": { "ja": "キョロキョロする", "en": "Look around", "zh-Hans": "东张西望", "zh-Hant": "東張西望" },
+  "emotion.13.name": { "ja": "頭を抱える", "en": "Hold head", "zh-Hans": "抱头", "zh-Hant": "抱頭" },
+  "emotion.14.name": { "ja": "嬉しい", "en": "Happy", "zh-Hans": "开心", "zh-Hant": "開心" },
+  "emotion.15.name": { "ja": "哀しい", "en": "Sad", "zh-Hans": "悲伤", "zh-Hant": "悲傷" },
+  "emotion.16.name": { "ja": "泣く", "en": "Cry", "zh-Hans": "哭泣", "zh-Hant": "哭泣" },
+  "emotion.17.name": { "ja": "ねだる", "en": "Plead", "zh-Hans": "撒娇恳求", "zh-Hant": "撒嬌懇求" },
+  "emotion.18.name": { "ja": "驚く", "en": "Surprise", "zh-Hans": "惊讶", "zh-Hant": "驚訝" },
+  "emotion.19.name": { "ja": "拍手", "en": "Clap", "zh-Hans": "鼓掌", "zh-Hant": "鼓掌" },
+  "emotion.20.name": { "ja": "ピース", "en": "Peace", "zh-Hans": "剪刀手", "zh-Hant": "剪刀手" },
+  "emotion.21.name": { "ja": "迷う", "en": "Hesitate", "zh-Hans": "犹豫", "zh-Hant": "猶豫" },
+  "emotion.22.name": { "ja": "両手を広げる", "en": "Spread arms", "zh-Hans": "张开双臂", "zh-Hant": "張開雙臂" },
+  "emotion.23.name": { "ja": "考え事", "en": "Think", "zh-Hans": "思考", "zh-Hant": "思考" },
+  "emotion.24.name": { "ja": "威張る", "en": "Boast", "zh-Hans": "炫耀", "zh-Hant": "炫耀" },
+  "emotion.25.name": { "ja": "内緒", "en": "Secret", "zh-Hans": "保密", "zh-Hant": "保密" },
+  "emotion.26.name": { "ja": "約束", "en": "Promise", "zh-Hans": "约定", "zh-Hant": "約定" },
+  "emotion.27.name": { "ja": "座る", "en": "Sit", "zh-Hans": "坐下", "zh-Hant": "坐下" },
+  "emotion.28.name": { "ja": "Game 28", "en": "Game 28", "zh-Hans": "Game 28", "zh-Hant": "Game 28" },
+  "emotion.29.name": { "ja": "Game 29", "en": "Game 29", "zh-Hans": "Game 29", "zh-Hant": "Game 29" },
+  "emotion.30.name": { "ja": "Game 30", "en": "Game 30", "zh-Hans": "Game 30", "zh-Hant": "Game 30" },
+  "emotion.31.name": { "ja": "Game 31", "en": "Game 31", "zh-Hans": "Game 31", "zh-Hant": "Game 31" },
+  "emotion.32.name": { "ja": "Game 32", "en": "Game 32", "zh-Hans": "Game 32", "zh-Hant": "Game 32" },
+  "emotion.33.name": { "ja": "Game 33", "en": "Game 33", "zh-Hans": "Game 33", "zh-Hant": "Game 33" },
+  "emotion.34.name": { "ja": "Game 34", "en": "Game 34", "zh-Hans": "Game 34", "zh-Hant": "Game 34" },
+  "emotion.35.name": { "ja": "Game 35", "en": "Game 35", "zh-Hans": "Game 35", "zh-Hant": "Game 35" },
+  "emotion.36.name": { "ja": "Game 36", "en": "Game 36", "zh-Hans": "Game 36", "zh-Hant": "Game 36" },
+  "emotion.100.name": { "ja": "Wait 100", "en": "Wait 100", "zh-Hans": "Wait 100", "zh-Hant": "Wait 100" },
+  "emotion.101.name": { "ja": "Wait 101", "en": "Wait 101", "zh-Hans": "Wait 101", "zh-Hant": "Wait 101" },
+  "emotion.102.name": { "ja": "Wait 102", "en": "Wait 102", "zh-Hans": "Wait 102", "zh-Hant": "Wait 102" },
+  "emotion.103.name": { "ja": "Wait 103", "en": "Wait 103", "zh-Hans": "Wait 103", "zh-Hant": "Wait 103" },
+  "emotion.104.name": { "ja": "Wait 104", "en": "Wait 104", "zh-Hans": "Wait 104", "zh-Hant": "Wait 104" },
+  "emotion.105.name": { "ja": "捕獲", "en": "Capture", "zh-Hans": "捕获", "zh-Hant": "捕獲" },
+  "emotion.game_format": { "ja": "Game {0}", "en": "Game {0}", "zh-Hans": "Game {0}", "zh-Hant": "Game {0}" },
+  "emotion.wait_format": { "ja": "Wait {0}", "en": "Wait {0}", "zh-Hans": "Wait {0}", "zh-Hant": "Wait {0}" },
+  "emotion.voice_format": {
+    "ja": "Player Voice {0}",
+    "en": "Player Voice {0}",
+    "zh-Hans": "Player Voice {0}",
+    "zh-Hant": "Player Voice {0}"
+  }
+}

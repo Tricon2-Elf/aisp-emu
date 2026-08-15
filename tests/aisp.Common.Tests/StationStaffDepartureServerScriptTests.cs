@@ -410,6 +410,7 @@ public sealed class StationStaffDepartureServerScriptTests
             new ClientScriptSegmentRunner(),
             serverScriptSession,
             CreateDirectMapLinkTransitionService(db, state),
+            TestTextLocaliser.English,
             NullLogger<StationStaffDepartureServerScript>.Instance
         );
         return new ServerScriptDispatcher(
@@ -439,6 +440,7 @@ public sealed class StationStaffDepartureServerScriptTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
 

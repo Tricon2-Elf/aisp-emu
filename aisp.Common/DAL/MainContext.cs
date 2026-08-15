@@ -1,5 +1,6 @@
 using aisp.Common.Config;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<ShopItem> ShopItems => Set<ShopItem>();
     public DbSet<SessionPresence> SessionPresences => Set<SessionPresence>();
     public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
+    public DbSet<LocalisedText> LocalisedTexts => Set<LocalisedText>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -64,6 +66,11 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.IsBanned).HasDefaultValue(false);
             e.Property(x => x.BanReason).HasMaxLength(256);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.Language)
+                .HasColumnName("PreferredLanguage")
+                .HasConversion<byte>()
+                .HasDefaultValue(GameLanguage.Japanese)
+                .HasSentinel(GameLanguage.Japanese);
             e.HasIndex(x => x.Username).IsUnique();
 
             e.HasMany(x => x.Sessions)
@@ -166,6 +173,17 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.Property(x => x.Socket).HasDefaultValue(0);
             e.Property(x => x.IconId).HasDefaultValue(1);
+            e.Property(x => x.CatalogCategory);
+        });
+
+        b.Entity<LocalisedText>(e =>
+        {
+            e.ToTable("LocalisedTexts");
+            e.HasKey(x => new { x.Key, x.Language });
+            e.Property(x => x.Key).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Language).HasConversion<byte>();
+            e.Property(x => x.Value).IsRequired();
+            e.HasIndex(x => x.Key);
         });
 
         b.Entity<Furniture>(e =>

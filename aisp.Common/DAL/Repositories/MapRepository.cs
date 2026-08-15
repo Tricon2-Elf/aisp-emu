@@ -1,5 +1,6 @@
 using System.Text.Json;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Localisation;
 using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.DAL.Repositories;
@@ -14,10 +15,7 @@ public class MapRepository(MainContext db) : IMapRepository
 {
     private readonly MainContext _db = db;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly JsonSerializerOptions JsonOptions = SeedJson.Options;
 
     public async Task<Map?> GetByMapIdAsync(uint mapId, CancellationToken ct = default)
     {
@@ -108,8 +106,8 @@ public class MapRepository(MainContext db) : IMapRepository
             .Select(r => new Map
             {
                 MapId = r.MapId,
-                Island = r.Island,
-                Name = r.Name,
+                Island = r.Island.Canonical,
+                Name = r.Name.Canonical,
                 SpawnX = r.SpawnX,
                 SpawnY = r.SpawnY,
                 SpawnZ = r.SpawnZ,
@@ -121,8 +119,8 @@ public class MapRepository(MainContext db) : IMapRepository
     private sealed class MapSeedRow
     {
         public long MapId { get; set; }
-        public string Island { get; set; } = "";
-        public string Name { get; set; } = "";
+        public LocalisedString Island { get; set; } = new();
+        public LocalisedString Name { get; set; } = new();
         public float SpawnX { get; set; }
         public float SpawnY { get; set; }
         public float SpawnZ { get; set; }

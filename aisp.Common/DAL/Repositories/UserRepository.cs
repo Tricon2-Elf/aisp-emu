@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Localisation;
 using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.DAL.Repositories;
@@ -13,6 +14,7 @@ public interface IUserRepository
     Task SetBannedAsync(int userId, bool isBanned, string? reason = null);
     Task TouchLastLoggedInAsync(int userId, CancellationToken ct = default);
     Task UpdatePasswordAsync(int userId, string newPassword);
+    Task SetLanguageAsync(int userId, GameLanguage language, CancellationToken ct = default);
     Task DeleteAsync(int userId);
     Task<IReadOnlyList<User>> GetAllAsync(
         string? search = null,
@@ -140,6 +142,20 @@ public class UserRepository(MainContext db) : IUserRepository
 
         user.SetPassword(newPassword);
         await _db.SaveChangesAsync();
+    }
+
+    public async Task SetLanguageAsync(
+        int userId,
+        GameLanguage language,
+        CancellationToken ct = default
+    )
+    {
+        var user = await _db.Users.FindAsync([userId], ct);
+        if (user is null)
+            return;
+
+        user.Language = language;
+        await _db.SaveChangesAsync(ct);
     }
 
     public async Task DeleteAsync(int userId)

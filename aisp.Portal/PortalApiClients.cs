@@ -146,6 +146,21 @@ public sealed class AreaPortalApiClient(
         return await ReadAsync<PortalAccountDataDto>(response, ct);
     }
 
+    public async Task SetPreferredLanguageAsync(
+        int userId,
+        PortalChangeLanguageRequest request,
+        CancellationToken ct
+    )
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/area/portal/users/{userId}/language",
+            request,
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+    }
+
     public async Task<IReadOnlyList<PortalCharacterRoboSummaryDto>> GetSummariesAsync(
         IReadOnlyList<int> userIds,
         CancellationToken ct

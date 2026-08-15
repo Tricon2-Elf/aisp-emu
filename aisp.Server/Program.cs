@@ -11,6 +11,7 @@ using aisp.Common;
 using aisp.Common.Game;
 using aisp.Common.Game.ServerScripts;
 using aisp.Common.Handlers.Area;
+using aisp.Common.Localisation;
 using aisp.Common.Services;
 using aisp.Portal;
 using aisp.Server.Services;
@@ -98,6 +99,7 @@ internal class Program
                 .WithScopedLifetime()
         );
         builder.Services.AddScoped<ServerScriptDispatcher>();
+        builder.Services.AddSingleton<ITextLocaliser, TextLocaliser>();
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
         builder.Services.AddSingleton<SharedState>(sp =>
         {
@@ -370,6 +372,9 @@ internal class Program
                 Path.Combine(seedDir, "npcs.json"),
                 app.Logger
             );
+            await LocalisationCatalogSeeder.SeedFromDirectoryAsync(db, seedDir, app.Logger);
+            var localiser = scope.ServiceProvider.GetRequiredService<ITextLocaliser>();
+            await localiser.ReloadAsync();
             await scope.ServiceProvider.GetRequiredService<IItemBaseListCache>().WarmAsync();
         }
 

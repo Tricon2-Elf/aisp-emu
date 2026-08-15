@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using aisp.Common.DAL.Entities;
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -162,7 +163,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
             npc.DateStartUtc = dateStartUtc;
             npc.DateEndUtc = dateEndUtc;
             npc.ModelId = npcRow.ModelId;
-            npc.Name = npcRow.Name;
+            npc.Name = npcRow.Name.Canonical;
             npc.X = npcRow.X;
             npc.Y = npcRow.Y;
             npc.Z = npcRow.Z;
@@ -222,10 +223,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         await db.SaveChangesAsync(ct);
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly JsonSerializerOptions JsonOptions = SeedJson.Options;
 
     private static NpcInteractionType ParseInteractionType(string? value)
     {
@@ -293,7 +291,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         public string? DateEndUtc { get; set; }
         public long NpcObjectId { get; set; }
         public long ModelId { get; set; }
-        public string Name { get; set; } = string.Empty;
+        public LocalisedString Name { get; set; } = new();
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }

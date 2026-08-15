@@ -3,6 +3,7 @@ using System.Text;
 using aisp.Common.DAL.Entities;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Auth;
+using aisp.Common.Localisation;
 using aisp.Common.Tests.Support;
 using aisp.Network;
 using aisp.Network.Packets.Auth;
@@ -73,7 +74,12 @@ public class AuthenticateHandlerTests
     [Fact]
     public async Task CorrectPassword_ReturnsSuccess()
     {
-        var user = new User { Id = 3, Username = "alice" };
+        var user = new User
+        {
+            Id = 3,
+            Username = "alice",
+            Language = GameLanguage.English,
+        };
         user.SetPassword("ok");
 
         var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
@@ -94,6 +100,7 @@ public class AuthenticateHandlerTests
         await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
 
         Assert.Equal(3, session.UserId);
+        Assert.Equal(GameLanguage.English, session.Language);
         Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.AuthenticateResponse, session.Sent[0].Type);

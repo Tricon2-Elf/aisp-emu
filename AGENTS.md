@@ -78,7 +78,7 @@ The generic base class `PacketHandlerBase<TRequest, TResponse>` deserializes the
 - **Default**: SQLite at `db/main.db` (relative to the process working directory). Override via `Server:DbOptions` in config or `Server__DbOptions__ConnectionString` (Docker: `/data/main.db` with compose volume `aisp-data` → `/data`).
 - **Also supports**: SQL Server (packages are referenced).
 - **Migrations auto-applied** at startup via `db.Database.MigrateAsync()` in `Program.cs:193`.
-- **Seeding**: `Program.cs` calls `Seed*IfEmptyAsync` helpers on repositories for maps, map links, worlds, channels. Items are seeded once at startup in `Program.cs` (after migrations) via `ItemRepository.SeedItemsIfEmptyAsync` from `seedData/baseItems.json` (under `aisp.Common/`, copied to output). Runtime code reads items from the database only.
+- **Seeding**: `Program.cs` calls `Seed*IfEmptyAsync` helpers on repositories for maps, map links, worlds, channels. Items are seeded once at startup in `Program.cs` (after migrations) via `ItemRepository.SeedItemsIfEmptyAsync` from `seedData/baseItems.json` (under `aisp.Common/`, copied to output). Localised catalog names use inline `LocalisedString` objects (`ja`/`en`/`zh-Hans`/`zh-Hant`); `LocalisationCatalogSeeder` upserts missing `LocalisedTexts` rows. Runtime code reads items from the database only; display strings go through `ITextLocaliser`.
 - **Integration tests**: Use `TestDb.CreateInMemoryMainContext()` (`tests/aisp.Common.Tests/Support/TestDb.cs`) for a disposable SQLite in-memory context.
 - **Migration command** (from repo root):
 

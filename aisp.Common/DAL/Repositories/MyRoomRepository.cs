@@ -1,6 +1,8 @@
 using System.Data;
 using System.Text.Json;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
@@ -79,10 +81,7 @@ public interface IMyRoomRepository
 
 public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly JsonSerializerOptions JsonOptions = SeedJson.Options;
 
     public Task<Room?> GetRoomAsync(int roomId, CancellationToken ct = default) =>
         db
@@ -317,7 +316,7 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
         if (
             rows.Any(x =>
                 x.ItemId <= 0
-                || x.Name.Length == 0
+                || x.Name.IsEmpty
                 || x.PlacementFlags == 0
                 || (x.PlacementFlags & ~validFlags) != 0
             )
@@ -333,12 +332,22 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
 
         db.Items.AddRange(
             rows.Where(x => !existingItemIds.Contains(x.ItemId))
-                .Select(x => new Item
+                .Select(x =>
                 {
-                    Id = x.ItemId,
-                    Name = x.Name,
-                    Socket = 0,
-                    IconId = x.ItemId,
+                    var canonicalName = x.Name.Canonical;
+                    return new Item
+                    {
+                        Id = x.ItemId,
+                        Name = canonicalName,
+                        Socket = 0,
+                        IconId = x.ItemId,
+                        CatalogCategory = (int)
+                            ItemEntityMapper.ResolvePersistedCatalogCategory(
+                                x.ItemId,
+                                canonicalName,
+                                x.PlacementFlags
+                            ),
+                    };
                 })
         );
         db.Furniture.AddRange(
@@ -456,7 +465,7 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
     private sealed class FurnitureSeedRow
     {
         public int ItemId { get; set; }
-        public string Name { get; set; } = "";
+        public LocalisedString Name { get; set; } = new();
         public uint Type { get; set; }
         public FurniturePlacementFlags PlacementFlags { get; set; }
     }

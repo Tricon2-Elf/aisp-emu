@@ -752,6 +752,7 @@ public class AreaMyRoomEditingHandlerTests
                 }
             ),
             state,
+            TestTextLocaliser.English,
             NullLogger<DirectMapLinkTransitionService>.Instance
         );
         return new AreaMyRoomUpdateSecurityHandler(
@@ -843,7 +844,7 @@ public class AreaMyRoomEditingHandlerTests
     {
         var writer = new PacketWriter();
         writer.Write(roomId);
-        writer.Write(name, "Shift_JIS");
+        writer.Write(name);
         return writer.ToBytes();
     }
 

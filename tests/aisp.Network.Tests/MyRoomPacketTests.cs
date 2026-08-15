@@ -154,7 +154,7 @@ public class MyRoomPacketTests
     {
         var nameWriter = new PacketWriter();
         nameWriter.Write(42u);
-        nameWriter.Write("テスト", "Shift_JIS");
+        nameWriter.Write("テスト");
         var nameRequest = MyRoomUpdateNameRequest.FromBytes(nameWriter.ToBytes());
         Assert.Equal(42u, nameRequest.RoomId);
         Assert.Equal("テスト", nameRequest.Name);
@@ -222,11 +222,8 @@ public class MyRoomPacketTests
         Assert.Equal(4 + rooms.Length * RoomListEntry.WireSize, payload.Length);
         Assert.Equal(2u, reader.ReadUInt());
         Assert.Equal(42u, reader.ReadUInt());
-        Assert.Equal(
-            "テスト部屋",
-            reader.ReadFixedString(RoomListEntry.RoomNameLength, "Shift_JIS")
-        );
-        Assert.Equal("所有者", reader.ReadFixedString(RoomListEntry.OwnerNameLength, "Shift_JIS"));
+        Assert.Equal("テスト部屋", reader.ReadFixedString(RoomListEntry.RoomNameLength));
+        Assert.Equal("所有者", reader.ReadFixedString(RoomListEntry.OwnerNameLength));
         Assert.Equal(0, reader.ReadByte());
         Assert.Equal(120u, reader.ReadUInt());
         Assert.Throws<ArgumentOutOfRangeException>(() =>

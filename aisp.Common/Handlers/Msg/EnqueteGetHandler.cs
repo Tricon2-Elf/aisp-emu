@@ -1,11 +1,14 @@
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class EnqueteGetHandler : IPacketHandler, IRequiresAuthenticatedSession
+public class EnqueteGetHandler(ITextLocaliser localiser)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EnqueteGetRequest;
 
@@ -23,12 +26,12 @@ public class EnqueteGetHandler : IPacketHandler, IRequiresAuthenticatedSession
         [
             new EnqueteData(
                 0,
-                "What is the music of life?",
+                localiser.Get(session, L.Enquete.MusicQuestion),
                 [
-                    "Um... the lute? No, drums!",
-                    "Screaming?",
-                    "Silence, my brother",
-                    "Some kind of choir. With chanting",
+                    localiser.Get(session, L.Enquete.MusicAnswer0),
+                    localiser.Get(session, L.Enquete.MusicAnswer1),
+                    localiser.Get(session, L.Enquete.MusicAnswer2),
+                    localiser.Get(session, L.Enquete.MusicAnswer3),
                 ]
             ),
         ];

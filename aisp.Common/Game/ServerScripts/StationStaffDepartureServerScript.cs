@@ -1,4 +1,5 @@
 using aisp.Common.DAL.Repositories;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
@@ -10,6 +11,7 @@ public sealed class StationStaffDepartureServerScript(
     ClientScriptSegmentRunner clientScriptSegmentRunner,
     ServerScriptSession serverScriptSession,
     DirectMapLinkTransitionService directMapLinkTransitionService,
+    ITextLocaliser localiser,
     ILogger<StationStaffDepartureServerScript> logger
 ) : IServerScript
 {
@@ -56,8 +58,8 @@ public sealed class StationStaffDepartureServerScript(
                 PacketType.EventMessageNotify,
                 new EventMessageNotify(
                     npcObjectId,
-                    context.Npc.Name,
-                    "Please register at the Sotokanda Building first."
+                    localiser.Get(session, L.Npc.Name(context.Npc.NpcObjectId)),
+                    localiser.Get(session, L.Script.StationStaff.RegisterFirst)
                 ).ToBytes(),
                 ct
             );

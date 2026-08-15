@@ -30,4 +30,13 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None
+      Include="..\..\aisp.Common\seedData\**\*.json"
+      Link="seedData\%(RecursiveDir)%(Filename)%(Extension)"
+    >
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

@@ -1,3 +1,5 @@
+using aisp.Common.Localisation;
+
 namespace aisp.Common.DAL.Entities;
 
 public class User
@@ -15,6 +17,7 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoggedInAt { get; set; }
     public DateTime? BannedAt { get; set; }
+    public GameLanguage Language { get; set; } = GameLanguage.Japanese;
 
     public ICollection<Character> Characters { get; set; } = new List<Character>();
     public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();

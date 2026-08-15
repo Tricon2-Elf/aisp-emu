@@ -1,5 +1,6 @@
 using aisp.Common.DAL.Entities;
 using aisp.Common.Game.ServerScripts;
+using aisp.Common.Localisation;
 using aisp.Network;
 
 namespace aisp.Common.Game;
@@ -15,6 +16,7 @@ public interface IPlayerSession
     uint CharacterId { get; set; }
     Character? Character { get; set; }
     User? User { get; set; }
+    GameLanguage Language { get; set; }
     uint MapId { get; set; }
     uint MyRoomId { get; set; }
     uint? PendingMyRoomFurnitureItemId { get; set; }

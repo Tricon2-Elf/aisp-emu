@@ -2,6 +2,7 @@ using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Game.ServerScripts;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
@@ -13,6 +14,7 @@ public class AreaEventAccessNpcHandler(
     INpcRepository npcRepository,
     IShopRepository shopRepository,
     ServerScriptDispatcher serverScriptDispatcher,
+    ITextLocaliser localiser,
     ILogger<AreaEventAccessNpcHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -206,7 +208,7 @@ public class AreaEventAccessNpcHandler(
             PacketType.ShopStartedNotify,
             new ShopStartedNotify(
                 npcObjectId,
-                npc.Shop.DisplayName,
+                localiser.Get(session, L.Shop.DisplayName(npc.Shop.Code)),
                 checked((uint)npc.Shop.BannerVisualId)
             ).ToBytes(),
             ct

@@ -1,5 +1,6 @@
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Auth;
@@ -7,9 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Auth;
 
-public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class WorldListHandler(
+    IWorldRepository repo,
+    ITextLocaliser localiser,
+    ILogger<WorldListHandler> logger
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.WorldListRequest;
     public PacketType ResponseType => PacketType.WorldListResponse;
@@ -29,8 +32,8 @@ public class WorldListHandler(IWorldRepository repo, ILogger<WorldListHandler> l
             .Select(w => new WorldData
             {
                 Id = w.Id,
-                Name = w.Name,
-                Description = w.Description,
+                Name = localiser.Get(session, L.World.Name(w.Name)),
+                Description = localiser.Get(session, L.World.Description(w.Name)),
                 Address = w.Address,
                 Port = w.Port,
             })

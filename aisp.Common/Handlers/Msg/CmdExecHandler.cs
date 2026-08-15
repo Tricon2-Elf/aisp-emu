@@ -1,6 +1,7 @@
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
+using aisp.Common.Localisation;
 using aisp.Common.Services;
 using aisp.Network;
 using aisp.Network.Data;
@@ -21,6 +22,7 @@ public class CmdExecHandler(
     ICircleRepository circleRepository,
     IItemBaseListCache itemBaseListCache,
     DirectMapLinkTransitionService directMapLinkTransitionService,
+    ITextLocaliser localiser,
     ILogger<CmdExecHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -198,7 +200,7 @@ public class CmdExecHandler(
                 {
                     await SendSystemNoticeAsync(
                         session,
-                        $"Invalid room ID. Use a number from 1 to {int.MaxValue}.",
+                        localiser.Get(session, L.Cmd.InvalidRoomId, int.MaxValue),
                         ct
                     );
                     logger.LogWarning(
@@ -213,7 +215,11 @@ public class CmdExecHandler(
                 room = await myRoomRepository.GetRoomAsync(roomId, ct);
                 if (room is null)
                 {
-                    await SendSystemNoticeAsync(session, $"Room {roomId} does not exist.", ct);
+                    await SendSystemNoticeAsync(
+                        session,
+                        localiser.Get(session, L.Cmd.RoomNotFound, roomId),
+                        ct
+                    );
                     logger.LogWarning(
                         "CmdExecHandler: room {RoomId} does not exist for character {CharacterId}",
                         roomId,
@@ -230,10 +236,12 @@ public class CmdExecHandler(
                         && await circleRepository.SharesAnyCircleAsync(character.Id, owner.Id, ct);
                     if (!MyRoomAccess.CanEnter(room, character.Id, sharesCircle))
                     {
-                        var message =
+                        var message = localiser.Get(
+                            session,
                             room.Security == MyRoomSecurity.Private
-                                ? "You can't join that room because it is Private."
-                                : "You can't join that room.";
+                                ? L.Cmd.RoomPrivate
+                                : L.Cmd.RoomDenied
+                        );
                         await SendSystemNoticeAsync(session, message, ct);
                         logger.LogWarning(
                             "CmdExecHandler: denied room {RoomId} for character {CharacterId} (security {Security})",

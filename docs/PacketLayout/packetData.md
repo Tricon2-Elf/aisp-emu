@@ -16,11 +16,12 @@ All multi-byte numeric types are **little-endian**.
 
 - **CString**: Null-terminated string  
   - Default encoding: UTF-8
+  - Writer: `Write(value)` or `Write(value, maxBytes)`; overlong values are truncated on a character boundary
   - Document as `CString` or `CString(encoding)` e.g. `CString(ASCII)` for identifiers
 
 - **FixedString(length)**: Fixed-length string (exactly `length` bytes in the packet)  
   - Default encoding: UTF-8
-  - Writer: `WriteFixedString(value, length)`; default encoding UTF-8; padded with zeros  
+  - Writer: `WriteFixedString(value, length)`; default encoding UTF-8; padded with zeros; overlong values are truncated on a character boundary to fit `length` bytes  
   - Document as `FString(n)` or `FString(n, encoding)` e.g. `FString(65, ASCII)` for IPs/OTPs
   - The client copies these as raw bytes and converts display text with `MultiByteToWideChar(CP_UTF8)` (`vce::utf8`)
 

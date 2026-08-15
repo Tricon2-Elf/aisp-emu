@@ -26,7 +26,11 @@ public class WorldListHandlerTests
         };
 
         var repo = new MockWorldRepository(worlds);
-        var handler = new WorldListHandler(repo, NullLogger<WorldListHandler>.Instance);
+        var handler = new WorldListHandler(
+            repo,
+            TestTextLocaliser.English,
+            NullLogger<WorldListHandler>.Instance
+        );
         var session = new CapturingPlayerSession();
 
         await handler.HandleAsync(

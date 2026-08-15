@@ -74,4 +74,22 @@ public class PacketReaderWriterTests
         var r = new PacketReader(w.ToBytes());
         Assert.Equal("abc", r.ReadFixedString(len, "ASCII"));
     }
+
+    [Fact]
+    public void PacketWriter_FixedString_TruncatesUtf8OnCharacterBoundary()
+    {
+        var w = new PacketWriter();
+        w.WriteFixedString("真珠真珠真珠", 6);
+        var bytes = w.ToBytes();
+        Assert.Equal(6, bytes.Length);
+        Assert.Equal("真珠", new PacketReader(bytes).ReadFixedString(6));
+    }
+
+    [Fact]
+    public void PacketWriter_NullTerminatedString_TruncatesUtf8OnCharacterBoundary()
+    {
+        var w = new PacketWriter();
+        w.Write("真珠真珠真珠", 6);
+        Assert.Equal("真珠", new PacketReader(w.ToBytes()).ReadString());
+    }
 }

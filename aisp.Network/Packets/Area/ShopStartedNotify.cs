@@ -9,7 +9,7 @@ public sealed class ShopStartedNotify(uint npcObjectId, string name, uint visual
     {
         var writer = new PacketWriter();
         writer.Write(npcObjectId);
-        writer.Write(name);
+        writer.Write(name, 192);
         writer.Write(visualId);
         writer.Write((uint)0); // talks count
         return writer.ToBytes();
