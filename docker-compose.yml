@@ -2,7 +2,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: AISpace.Server/Dockerfile
+      dockerfile: aisp.Server/Dockerfile
     ports:
       - "8080:8080"     # HTTP health ( /health, /healthz )
       - "50050:50050"   # Auth
@@ -21,8 +21,8 @@ services:
       - Server__UseDistributedSessionPresence=false
       - IP_OVERRIDE=host.docker.internal
       - Server__DbOptions__ConnectionString=Data Source=/data/main.db;Cache=Shared;Default Timeout=5
-      - ApiSettings__ApiKey=${AISPACE_API_KEY:?set AISPACE_API_KEY}
-      - PortalBackend__ServiceToken=${AISPACE_PORTAL_SERVICE_TOKEN:?set AISPACE_PORTAL_SERVICE_TOKEN}
+      - ApiSettings__ApiKey=${AISPEMU_API_KEY:?set AISPEMU_API_KEY}
+      - PortalBackend__ServiceToken=${AISPEMU_PORTAL_SERVICE_TOKEN:?set AISPEMU_PORTAL_SERVICE_TOKEN}
     volumes:
       - /opt/aisp-data:/data
     restart: unless-stopped

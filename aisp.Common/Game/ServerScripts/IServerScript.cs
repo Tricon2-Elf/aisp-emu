@@ -1,0 +1,26 @@
+using aisp.Common.DAL.Entities;
+using aisp.Network;
+
+namespace aisp.Common.Game.ServerScripts;
+
+public interface IServerScript
+{
+    string EventKey { get; }
+    EventCompletionPolicy CompletionPolicy => EventCompletionPolicy.Once;
+    Task<bool> CanStartAsync(
+        IPlayerSession session,
+        ServerScriptContext context,
+        CancellationToken ct = default
+    ) => Task.FromResult(true);
+    Task StartAsync(
+        IPlayerSession session,
+        ServerScriptContext context,
+        CancellationToken ct = default
+    );
+    Task<bool> TryHandlePacketAsync(
+        PacketType packetType,
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    );
+}

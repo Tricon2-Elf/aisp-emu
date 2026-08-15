@@ -9,7 +9,7 @@ usage() {
     cat <<EOF
 Usage: $0 [dotnet test args...]
 
-Runs AISpace.sln tests with Coverlet (XPlat Code Coverage).
+Runs aisp.sln tests with Coverlet (XPlat Code Coverage).
 Coverage files land under: $RESULTS_DIR/**/coverage.cobertura.xml
 
 Environment:
@@ -19,7 +19,7 @@ Environment:
 Examples:
   $0
   $0 --filter FullyQualifiedName~AvatarCreate
-  CONFIGURATION=Debug $0 --project AISpace.Common.Tests
+  CONFIGURATION=Debug $0 --project aisp.Common.Tests
 
 Generate an HTML report afterwards with:
   ./scripts/reportgenerator.sh
@@ -34,7 +34,7 @@ fi
 mkdir -p "$RESULTS_DIR"
 
 echo "Collecting coverage into $RESULTS_DIR ..."
-dotnet test "$ROOT/AISpace.sln" \
+dotnet test "$ROOT/aisp.sln" \
     --configuration "$CONFIGURATION" \
     --collect:"XPlat Code Coverage" \
     --results-directory "$RESULTS_DIR" \

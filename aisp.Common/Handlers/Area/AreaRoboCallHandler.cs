@@ -1,0 +1,93 @@
+using aisp.Common.DAL.Repositories;
+using aisp.Common.Game;
+using aisp.Network;
+using aisp.Network.Data;
+using aisp.Network.Packets.Area;
+using Microsoft.Extensions.Logging;
+
+namespace aisp.Common.Handlers.Area;
+
+public class AreaRoboCallHandler(
+    IRoboRepository roboRepository,
+    ILogger<AreaRoboCallHandler> logger,
+    SharedState? state = null
+) : IPacketHandler, IRequiresAuthenticatedSession
+{
+    public PacketType RequestType => PacketType.RoboCallRequest;
+    public PacketType ResponseType => PacketType.RoboCallResponse;
+    public ServerType ServerType => ServerType.Area;
+
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
+    {
+        var characterId = checked((int)session.CharacterId);
+        var request = RoboCallRequest.FromBytes(payload.Span);
+        logger.LogInformation(
+            "RoboCallRequest from character {CharacterId}: roboId={RoboId}",
+            session.CharacterId,
+            request.RoboId
+        );
+
+        var robo = await roboRepository.GetAsync(characterId, request.RoboId, ct);
+        if (robo is null)
+        {
+            logger.LogWarning(
+                "Character {CharacterId} tried to call unowned Robo {RoboId}",
+                session.CharacterId,
+                request.RoboId
+            );
+            await session.SendAsync(
+                ResponseType,
+                new RoboCallResponse(request.RoboId, 1).ToBytes(),
+                ct
+            );
+            return;
+        }
+
+        session.AccompanyingRoboIds.Remove(request.RoboId);
+        if (state is not null)
+            await state.BroadcastRoboDisappearAsync(session, request.RoboId, ct);
+
+        var map = new CharacterMapData
+        {
+            ChannelId = checked((uint)session.ChannelId),
+            MapId = session.MapId,
+            Movement = new MovementData(
+                session.X,
+                session.Y,
+                session.Z,
+                session.Rotation,
+                MovementType.Stopped
+            ),
+        };
+        var stateUpdate = new NotifyUpdateRoboState(
+            request.RoboId,
+            robo.Character.SlotId,
+            (uint)RoboState.InMyRoom,
+            map
+        );
+        await session.SendAsync(PacketType.NotifyUpdateRoboState, stateUpdate.ToBytes(), ct);
+
+        // Re-show parked doll to room peers with the same remote spawn used on other maps.
+        if (state is not null && MyRoomInfo.IsMyRoomMap(session.MapId))
+        {
+            var remoteRobo = SharedState.PrepareRemoteRobo(robo, session);
+            remoteRobo.OwnerAvatarId = session.CharacterId;
+            var spawn = new NotifyRoboData(0, remoteRobo).ToBytes();
+            foreach (var peer in state.GetAreaPeers(session))
+            {
+                peer.VisibleRemoteRoboObjectIds.Add(remoteRobo.Character.SlotId);
+                await peer.SendAsync(PacketType.NotifyRoboData, spawn, ct);
+            }
+        }
+
+        await session.SendAsync(
+            ResponseType,
+            new RoboCallResponse(request.RoboId, 0).ToBytes(),
+            ct
+        );
+    }
+}

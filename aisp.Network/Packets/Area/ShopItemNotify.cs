@@ -1,0 +1,23 @@
+using aisp.Network.Data;
+
+namespace aisp.Network.Packets.Area;
+
+public sealed class ShopItemNotify(IReadOnlyList<ShopItemEntry> items) : IOutgoingPacket
+{
+    public byte[] ToBytes()
+    {
+        var writer = new PacketWriter();
+        writer.Write((uint)items.Count);
+
+        foreach (var item in items)
+        {
+            // Decompiled parser (sub_799AF0) reads fixed 20-byte entries for recv_shop_item.
+            // Layout: UInt64 + UInt64 + UInt32.
+            writer.Write(item.AiPrice);
+            writer.Write(item.NicoPrice);
+            writer.Write(item.ItemId);
+        }
+
+        return writer.ToBytes();
+    }
+}

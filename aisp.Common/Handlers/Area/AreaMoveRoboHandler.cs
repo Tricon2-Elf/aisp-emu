@@ -1,0 +1,47 @@
+using aisp.Common.DAL.Repositories;
+using aisp.Common.Game;
+using aisp.Network;
+using aisp.Network.Data;
+using aisp.Network.Packets.Area;
+
+namespace aisp.Common.Handlers.Area;
+
+public class AreaMoveRoboHandler(IRoboRepository roboRepository, SharedState state)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
+{
+    public PacketType RequestType => PacketType.MoveRoboRequest;
+    public PacketType ResponseType => (PacketType)0;
+    public ServerType ServerType => ServerType.Area;
+
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
+    {
+        var request = MoveRoboRequest.FromBytes(payload.Span);
+        var robo = await roboRepository.GetAsync(
+            checked((int)session.CharacterId),
+            request.RoboId,
+            ct
+        );
+        if (robo is null)
+            return;
+
+        // Accompanying dolls move on any map; My Room dolls are not in AccompanyingRoboIds
+        // (furniture load parks them) but still send MoveRobo while walking the room.
+        if (
+            !session.AccompanyingRoboIds.Contains(request.RoboId)
+            && !MyRoomInfo.IsMyRoomMap(session.MapId)
+        )
+            return;
+
+        if (request.Moves.Length > 0)
+            state.RememberRoboMovement(session.CharacterId, request.RoboId, request.Moves[^1]);
+
+        var notify = new AvatarNotifyMove(robo.Character.SlotId, request.Moves).ToBytes();
+        foreach (var peer in state.GetAreaPeers(session))
+            await peer.SendAsync(PacketType.AvatarNotifyMove, notify, ct);
+    }
+}

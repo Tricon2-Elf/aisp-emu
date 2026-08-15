@@ -1,12 +1,12 @@
 # Project Layout
 
-This document explains the structure of the AISpace repository, how the runtime is wired together, and how contributors should approach changes.
+This document explains the structure of the aisp repository, how the runtime is wired together, and how contributors should approach changes.
 
 ## Repository map
 
 ```text
 aisp-emu/
-├── AISpace.sln                          # Solution file
+├── aisp.sln                          # Solution file
 ├── docker-compose.yml                   # Container orchestration
 ├── dotnet-tools.json                    # Local .NET tools (CSharpier, dotnet-ef)
 ├── .pre-commit-config.yaml              # Pre-commit hooks
@@ -19,16 +19,16 @@ aisp-emu/
 ├── scripts/                             # Utility scripts
 │   └── generate-migration.sh
 │
-├── AISpace.Server/                      # Entry point (executable)
-├── AISpace.Common/                      # Server logic & game domain code
-├── AISpace.Network/                     # Wire protocol & transport
-├── AISpace.Common.Tests/                # Tests for Common
-└── AISpace.Network.Tests/              # Tests for Network
+├── aisp.Server/                      # Entry point (executable)
+├── aisp.Common/                      # Server logic & game domain code
+├── aisp.Network/                     # Wire protocol & transport
+├── aisp.Common.Tests/                # Tests for Common
+└── aisp.Network.Tests/              # Tests for Network
 ```
 
 ## Project breakdown
 
-### `AISpace.Server/` — Host & orchestration
+### `aisp.Server/` — Host & orchestration
 
 The executable project. Runs all three game domains as `BackgroundService` instances in a single process.
 
@@ -43,7 +43,7 @@ The executable project. Runs all three game domains as `BackgroundService` insta
 | `appsettings.json` | Runtime configuration (ports, DB provider, IP override) |
 | `NLog.config` | Structured logging configuration |
 
-### `AISpace.Common/` — Server logic
+### `aisp.Common/` — Server logic
 
 All game logic, persistence, and packet handling.
 
@@ -64,7 +64,7 @@ All game logic, persistence, and packet handling.
 | `Handlers/Area/` | ~49 in-world gameplay handlers |
 | `Handlers/Common/` | `PingHandler`, `VersionCheckHandler` |
 
-### `AISpace.Network/` — Protocol & transport
+### `aisp.Network/` — Protocol & transport
 
 Wire-format definitions with zero dependency on game logic.
 
@@ -82,7 +82,7 @@ Wire-format definitions with zero dependency on game logic.
 | `Packets/Area/` | 79 packet types |
 | `Packets/Common/` | 7 packet types |
 
-### `AISpace.Common.Tests/` & `AISpace.Network.Tests/`
+### `aisp.Common.Tests/` & `aisp.Network.Tests/`
 
 - **Common.Tests** (15 files): handler tests (login, authenticate, ping, world, msg, area map), packet dispatcher, password hasher, repository integration, shared state, migrations, map link geometry
 - **Network.Tests** (7 files): packet read/write roundtrips, crypto, world list response, parser tests
@@ -94,7 +94,7 @@ Wire-format definitions with zero dependency on game logic.
 1. Create host builder, apply `IP_OVERRIDE` env var into config
 2. Configure NLog
 3. Register `MainContext`, repositories, `SharedState`, `PacketDispatcher`
-4. Scan `AISpace.Common` for `IPacketHandler` implementations via Scrutor
+4. Scan `aisp.Common` for `IPacketHandler` implementations via Scrutor
 5. Start three hosted services: Auth (:50050), Msg (:50052), Area (:50054)
 6. Run EF Core migrations (`Database.MigrateAsync()`)
 7. Seed maps, map links, worlds, channels if tables are empty
@@ -122,25 +122,25 @@ Client TCP socket
 
 ### Add a new packet/feature
 
-1. Define packet class(es) in `AISpace.Network/Packets/<Domain>/`
-2. Add entry in `AISpace.Network/PacketType.cs`
-3. Create handler in `AISpace.Common/Handlers/<Domain>/` (auto-discovered by Scrutor)
-4. Add persistence in `AISpace.Common/DAL/` if needed
+1. Define packet class(es) in `aisp.Network/Packets/<Domain>/`
+2. Add entry in `aisp.Network/PacketType.cs`
+3. Create handler in `aisp.Common/Handlers/<Domain>/` (auto-discovered by Scrutor)
+4. Add persistence in `aisp.Common/DAL/` if needed
 
 ### Add database-backed game data
 
-1. Add/update entity in `AISpace.Common/DAL/Entities/`
+1. Add/update entity in `aisp.Common/DAL/Entities/`
 2. Update `MainContext.cs`
-3. Add repository methods in `AISpace.Common/DAL/Repositories/`
+3. Add repository methods in `aisp.Common/DAL/Repositories/`
 4. Run `dotnet ef migrations add` to generate a migration
 
 ### Change startup or server topology
 
-`AISpace.Server/Program.cs`, `*Server.cs`, `appsettings.json`, `docker-compose.yml`
+`aisp.Server/Program.cs`, `*Server.cs`, `appsettings.json`, `docker-compose.yml`
 
 ### Change shared session/world state
 
-`AISpace.Common/Game/PlayerSession.cs`, `AISpace.Common/Game/SharedState.cs`
+`aisp.Common/Game/PlayerSession.cs`, `aisp.Common/Game/SharedState.cs`
 
 ## Key technical details
 
@@ -154,6 +154,6 @@ Client TCP socket
 
 ## Boundaries to preserve
 
-- `AISpace.Server/` — orchestration only (no protocol parsing, no game logic)
-- `AISpace.Common/` — game logic and persistence (no transport, no socket code)
-- `AISpace.Network/` — wire format and transport (no game logic, no DB entities)
+- `aisp.Server/` — orchestration only (no protocol parsing, no game logic)
+- `aisp.Common/` — game logic and persistence (no transport, no socket code)
+- `aisp.Network/` — wire format and transport (no game logic, no DB entities)
