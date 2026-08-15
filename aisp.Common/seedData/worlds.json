@@ -1,6 +1,10 @@
 [
   {
-    "name": "default",
-    "description": "Main World"
+    "name": {
+      "ja": "default"
+    },
+    "description": {
+      "ja": "Main World"
+    }
   }
 ]

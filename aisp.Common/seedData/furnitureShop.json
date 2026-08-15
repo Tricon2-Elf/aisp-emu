@@ -3,7 +3,9 @@
   "shops": [
     {
       "code": "furniture",
-      "displayName": "Furniture Shop",
+      "displayName": {
+        "ja": "Furniture Shop"
+      },
       "bannerVisualId": 10117,
       "isEnabled": true,
       "includeAllFurniture": true,
@@ -19,7 +21,9 @@
           "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
           "npcObjectId": 1342177311,
           "modelId": 1001021,
-          "name": "Furniture Shop",
+          "name": {
+            "ja": "Furniture Shop"
+          },
           "x": -3165,
           "y": 0,
           "z": -738,
@@ -28,10 +32,26 @@
           "isEnabled": true,
           "sortOrder": 7,
           "equipment": [
-            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
-            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
-            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
-            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+            {
+              "slotIndex": 0,
+              "itemId": 10100220,
+              "sortOrder": 0
+            },
+            {
+              "slotIndex": 1,
+              "itemId": 10200100,
+              "sortOrder": 1
+            },
+            {
+              "slotIndex": 2,
+              "itemId": 10400030,
+              "sortOrder": 2
+            },
+            {
+              "slotIndex": 3,
+              "itemId": 10500070,
+              "sortOrder": 3
+            }
           ]
         },
         {
@@ -42,7 +62,9 @@
           "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
           "npcObjectId": 1342177312,
           "modelId": 1001021,
-          "name": "Furniture Shop",
+          "name": {
+            "ja": "Furniture Shop"
+          },
           "x": -3165,
           "y": 0,
           "z": -738,
@@ -51,10 +73,26 @@
           "isEnabled": true,
           "sortOrder": 7,
           "equipment": [
-            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
-            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
-            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
-            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+            {
+              "slotIndex": 0,
+              "itemId": 10100220,
+              "sortOrder": 0
+            },
+            {
+              "slotIndex": 1,
+              "itemId": 10200100,
+              "sortOrder": 1
+            },
+            {
+              "slotIndex": 2,
+              "itemId": 10400030,
+              "sortOrder": 2
+            },
+            {
+              "slotIndex": 3,
+              "itemId": 10500070,
+              "sortOrder": 3
+            }
           ]
         },
         {
@@ -65,7 +103,9 @@
           "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
           "npcObjectId": 1342177313,
           "modelId": 1001021,
-          "name": "Furniture Shop",
+          "name": {
+            "ja": "Furniture Shop"
+          },
           "x": -3165,
           "y": 0,
           "z": -738,
@@ -74,10 +114,26 @@
           "isEnabled": true,
           "sortOrder": 7,
           "equipment": [
-            { "slotIndex": 0, "itemId": 10100220, "sortOrder": 0 },
-            { "slotIndex": 1, "itemId": 10200100, "sortOrder": 1 },
-            { "slotIndex": 2, "itemId": 10400030, "sortOrder": 2 },
-            { "slotIndex": 3, "itemId": 10500070, "sortOrder": 3 }
+            {
+              "slotIndex": 0,
+              "itemId": 10100220,
+              "sortOrder": 0
+            },
+            {
+              "slotIndex": 1,
+              "itemId": 10200100,
+              "sortOrder": 1
+            },
+            {
+              "slotIndex": 2,
+              "itemId": 10400030,
+              "sortOrder": 2
+            },
+            {
+              "slotIndex": 3,
+              "itemId": 10500070,
+              "sortOrder": 3
+            }
           ]
         }
       ]

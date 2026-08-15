@@ -1,1495 +1,1993 @@
 [
   {
     "itemId": 11000000,
-    "name": "カントリーなベッド（ピンク）",
+    "name": {
+      "ja": "カントリーなベッド（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000001,
-    "name": "カントリーなベッド（青）",
+    "name": {
+      "ja": "カントリーなベッド（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000002,
-    "name": "カントリーなベッド（白）",
+    "name": {
+      "ja": "カントリーなベッド（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000003,
-    "name": "カントリーなベッド（灰色）",
+    "name": {
+      "ja": "カントリーなベッド（灰色）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000010,
-    "name": "ファブリックソファー（ベージュ）",
+    "name": {
+      "ja": "ファブリックソファー（ベージュ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000011,
-    "name": "ファブリックソファー（ピンク）",
+    "name": {
+      "ja": "ファブリックソファー（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000012,
-    "name": "ファブリックソファー（青）",
+    "name": {
+      "ja": "ファブリックソファー（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000013,
-    "name": "ファブリックソファー（濃い赤）",
+    "name": {
+      "ja": "ファブリックソファー（濃い赤）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000014,
-    "name": "ファブリックソファー（深い茶色）",
+    "name": {
+      "ja": "ファブリックソファー（深い茶色）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000015,
-    "name": "ファブリックソファー（深緑）",
+    "name": {
+      "ja": "ファブリックソファー（深緑）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000040,
-    "name": "ラウンドテーブル（ナチュラル）",
+    "name": {
+      "ja": "ラウンドテーブル（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000041,
-    "name": "ラウンドテーブル（ブラウン）",
+    "name": {
+      "ja": "ラウンドテーブル（ブラウン）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000042,
-    "name": "ラウンドテーブル（白）",
+    "name": {
+      "ja": "ラウンドテーブル（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000043,
-    "name": "ラウンドテーブル（黒）",
+    "name": {
+      "ja": "ラウンドテーブル（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000050,
-    "name": "液晶ＴＶ（２４インチ）",
+    "name": {
+      "ja": "液晶ＴＶ（２４インチ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000051,
-    "name": "液晶ＴＶ（２８インチ）",
+    "name": {
+      "ja": "液晶ＴＶ（２８インチ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000052,
-    "name": "液晶ＴＶ（３２インチ）",
+    "name": {
+      "ja": "液晶ＴＶ（３２インチ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000053,
-    "name": "液晶ＴＶ（４０インチ）",
+    "name": {
+      "ja": "液晶ＴＶ（４０インチ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000100,
-    "name": "カントリーな本棚（ナチュラル）",
+    "name": {
+      "ja": "カントリーな本棚（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000101,
-    "name": "カントリーな本棚（ブラウン）",
+    "name": {
+      "ja": "カントリーな本棚（ブラウン）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000102,
-    "name": "カントリーな本棚（白）",
+    "name": {
+      "ja": "カントリーな本棚（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000103,
-    "name": "カントリーな本棚（黒）",
+    "name": {
+      "ja": "カントリーな本棚（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000130,
-    "name": "丸い壁掛け時計（ナチュラル）",
+    "name": {
+      "ja": "丸い壁掛け時計（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000131,
-    "name": "丸い壁掛け時計（ブラウン）",
+    "name": {
+      "ja": "丸い壁掛け時計（ブラウン）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000132,
-    "name": "丸い壁掛け時計（白）",
+    "name": {
+      "ja": "丸い壁掛け時計（白）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000133,
-    "name": "丸い壁掛け時計（黒）",
+    "name": {
+      "ja": "丸い壁掛け時計（黒）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000134,
-    "name": "丸い壁掛け時計（ピンク）",
+    "name": {
+      "ja": "丸い壁掛け時計（ピンク）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000135,
-    "name": "丸い壁掛け時計（黄）",
+    "name": {
+      "ja": "丸い壁掛け時計（黄）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000136,
-    "name": "丸い壁掛け時計（赤）",
+    "name": {
+      "ja": "丸い壁掛け時計（赤）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000137,
-    "name": "丸い壁掛け時計（水色）",
+    "name": {
+      "ja": "丸い壁掛け時計（水色）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000138,
-    "name": "丸い壁掛け時計（シルバー）",
+    "name": {
+      "ja": "丸い壁掛け時計（シルバー）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000139,
-    "name": "丸い壁掛け時計（ゴールド）",
+    "name": {
+      "ja": "丸い壁掛け時計（ゴールド）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11000160,
-    "name": "鉛筆とノート",
+    "name": {
+      "ja": "鉛筆とノート"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000170,
-    "name": "スタンドミラー（ナチュラル）",
+    "name": {
+      "ja": "スタンドミラー（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000171,
-    "name": "スタンドミラー（ブラウン）",
+    "name": {
+      "ja": "スタンドミラー（ブラウン）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000172,
-    "name": "スタンドミラー（白）",
+    "name": {
+      "ja": "スタンドミラー（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000173,
-    "name": "スタンドミラー（水色）",
+    "name": {
+      "ja": "スタンドミラー（水色）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000174,
-    "name": "スタンドミラー（黄）",
+    "name": {
+      "ja": "スタンドミラー（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000175,
-    "name": "スタンドミラー（ピンク）",
+    "name": {
+      "ja": "スタンドミラー（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000220,
-    "name": "ＰＣaisp@ce2008（ブラック）",
+    "name": {
+      "ja": "ＰＣaisp@ce2008（ブラック）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000250,
-    "name": "カントリーなタンス（ナチュラル）",
+    "name": {
+      "ja": "カントリーなタンス（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000251,
-    "name": "カントリーなタンス（ブラウン）",
+    "name": {
+      "ja": "カントリーなタンス（ブラウン）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000252,
-    "name": "カントリーなタンス（白）",
+    "name": {
+      "ja": "カントリーなタンス（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000253,
-    "name": "カントリーなタンス（ブラック）",
+    "name": {
+      "ja": "カントリーなタンス（ブラック）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000280,
-    "name": "コードレス電話（ピンク）",
+    "name": {
+      "ja": "コードレス電話（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000281,
-    "name": "コードレス電話（水色）",
+    "name": {
+      "ja": "コードレス電話（水色）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000282,
-    "name": "コードレス電話（白）",
+    "name": {
+      "ja": "コードレス電話（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000550,
-    "name": "足つきマットレス（白）",
+    "name": {
+      "ja": "足つきマットレス（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000551,
-    "name": "足つきマットレス（ピンク）",
+    "name": {
+      "ja": "足つきマットレス（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000552,
-    "name": "足つきマットレス（青）",
+    "name": {
+      "ja": "足つきマットレス（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000560,
-    "name": "ミニキッチン（シルバー）",
+    "name": {
+      "ja": "ミニキッチン（シルバー）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000561,
-    "name": "ミニキッチン（白）",
+    "name": {
+      "ja": "ミニキッチン（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000562,
-    "name": "ミニキッチン（ピンク）",
+    "name": {
+      "ja": "ミニキッチン（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000570,
-    "name": "リモーネ学習机（ナチュラル）",
+    "name": {
+      "ja": "リモーネ学習机（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000571,
-    "name": "リモーネ学習机（ピンク）",
+    "name": {
+      "ja": "リモーネ学習机（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000572,
-    "name": "リモーネ学習机（青）",
+    "name": {
+      "ja": "リモーネ学習机（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000573,
-    "name": "リモーネ学習机（白）",
+    "name": {
+      "ja": "リモーネ学習机（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000574,
-    "name": "リモーネ学習机（黒）",
+    "name": {
+      "ja": "リモーネ学習机（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000580,
-    "name": "リモーネ学習椅子（ナチュラル）",
+    "name": {
+      "ja": "リモーネ学習椅子（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000581,
-    "name": "リモーネ学習椅子（ピンク）",
+    "name": {
+      "ja": "リモーネ学習椅子（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000582,
-    "name": "リモーネ学習椅子（青）",
+    "name": {
+      "ja": "リモーネ学習椅子（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000583,
-    "name": "リモーネ学習椅子（白）",
+    "name": {
+      "ja": "リモーネ学習椅子（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000584,
-    "name": "リモーネ学習椅子（黒）",
+    "name": {
+      "ja": "リモーネ学習椅子（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000590,
-    "name": "ブラウン管TV（１４インチ）",
+    "name": {
+      "ja": "ブラウン管TV（１４インチ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000591,
-    "name": "ブラウン管TV（１９インチ）",
+    "name": {
+      "ja": "ブラウン管TV（１９インチ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000600,
-    "name": "コンパクト冷蔵庫（白）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000601,
-    "name": "コンパクト冷蔵庫（黄）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000602,
-    "name": "コンパクト冷蔵庫（黒）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000603,
-    "name": "コンパクト冷蔵庫（グレー）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（グレー）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000604,
-    "name": "コンパクト冷蔵庫（ステンレス）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（ステンレス）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000605,
-    "name": "コンパクト冷蔵庫（紺）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（紺）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000606,
-    "name": "コンパクト冷蔵庫（ピンク）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000607,
-    "name": "コンパクト冷蔵庫（黄緑）",
+    "name": {
+      "ja": "コンパクト冷蔵庫（黄緑）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000610,
-    "name": "カラーボックス（白）",
+    "name": {
+      "ja": "カラーボックス（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000611,
-    "name": "カラーボックス（黒）",
+    "name": {
+      "ja": "カラーボックス（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000612,
-    "name": "カラーボックス（ナチュラル）",
+    "name": {
+      "ja": "カラーボックス（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000613,
-    "name": "カラーボックス（赤）",
+    "name": {
+      "ja": "カラーボックス（赤）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000614,
-    "name": "カラーボックス（ピンク）",
+    "name": {
+      "ja": "カラーボックス（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000615,
-    "name": "カラーボックス（黄）",
+    "name": {
+      "ja": "カラーボックス（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000616,
-    "name": "カラーボックス（緑）",
+    "name": {
+      "ja": "カラーボックス（緑）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000617,
-    "name": "カラーボックス（青）",
+    "name": {
+      "ja": "カラーボックス（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000618,
-    "name": "カラーボックス（水色）",
+    "name": {
+      "ja": "カラーボックス（水色）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000620,
-    "name": "卓上スタンドライト（ピンク）",
+    "name": {
+      "ja": "卓上スタンドライト（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000621,
-    "name": "卓上スタンドライト（水色）",
+    "name": {
+      "ja": "卓上スタンドライト（水色）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000622,
-    "name": "卓上スタンドライト（白）",
+    "name": {
+      "ja": "卓上スタンドライト（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000623,
-    "name": "卓上スタンドライト（黒）",
+    "name": {
+      "ja": "卓上スタンドライト（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000624,
-    "name": "卓上スタンドライト（シルバー）",
+    "name": {
+      "ja": "卓上スタンドライト（シルバー）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000625,
-    "name": "卓上スタンドライト（黄）",
+    "name": {
+      "ja": "卓上スタンドライト（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000970,
-    "name": "モダンなゴミ箱（白）",
+    "name": {
+      "ja": "モダンなゴミ箱（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000971,
-    "name": "モダンなゴミ箱（黒）",
+    "name": {
+      "ja": "モダンなゴミ箱（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000972,
-    "name": "モダンなゴミ箱（グレー）",
+    "name": {
+      "ja": "モダンなゴミ箱（グレー）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000973,
-    "name": "モダンなゴミ箱（オレンジ）",
+    "name": {
+      "ja": "モダンなゴミ箱（オレンジ）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000974,
-    "name": "モダンなゴミ箱（赤）",
+    "name": {
+      "ja": "モダンなゴミ箱（赤）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000975,
-    "name": "モダンなゴミ箱（ピンク）",
+    "name": {
+      "ja": "モダンなゴミ箱（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000976,
-    "name": "モダンなゴミ箱（水色）",
+    "name": {
+      "ja": "モダンなゴミ箱（水色）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000977,
-    "name": "モダンなゴミ箱（ライトグリーン）",
+    "name": {
+      "ja": "モダンなゴミ箱（ライトグリーン）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000978,
-    "name": "モダンなゴミ箱（黄）",
+    "name": {
+      "ja": "モダンなゴミ箱（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000980,
-    "name": "ボックスティッシュ（ピンク）",
+    "name": {
+      "ja": "ボックスティッシュ（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000981,
-    "name": "ボックスティッシュ（青）",
+    "name": {
+      "ja": "ボックスティッシュ（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000982,
-    "name": "ボックスティッシュ（緑）",
+    "name": {
+      "ja": "ボックスティッシュ（緑）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000983,
-    "name": "ボックスティッシュ（黄）",
+    "name": {
+      "ja": "ボックスティッシュ（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000990,
-    "name": "モダンなティッシュケース（白）",
+    "name": {
+      "ja": "モダンなティッシュケース（白）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000991,
-    "name": "モダンなティッシュケース（黒）",
+    "name": {
+      "ja": "モダンなティッシュケース（黒）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000992,
-    "name": "モダンなティッシュケース（赤）",
+    "name": {
+      "ja": "モダンなティッシュケース（赤）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000993,
-    "name": "モダンなティッシュケース（黄）",
+    "name": {
+      "ja": "モダンなティッシュケース（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000994,
-    "name": "モダンなティッシュケース（緑）",
+    "name": {
+      "ja": "モダンなティッシュケース（緑）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11000995,
-    "name": "モダンなティッシュケース（橙）",
+    "name": {
+      "ja": "モダンなティッシュケース（橙）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001000,
-    "name": "ねんどろいど・南極さくら",
+    "name": {
+      "ja": "ねんどろいど・南極さくら"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001010,
-    "name": "和風三連衝立",
+    "name": {
+      "ja": "和風三連衝立"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001020,
-    "name": "絵画「抽象画」",
+    "name": {
+      "ja": "絵画「抽象画」"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001030,
-    "name": "絵画「総理大臣」",
+    "name": {
+      "ja": "絵画「総理大臣」"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001040,
-    "name": "絵画「山の風景」",
+    "name": {
+      "ja": "絵画「山の風景」"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001050,
-    "name": "絵画「日本一の富士山」",
+    "name": {
+      "ja": "絵画「日本一の富士山」"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001060,
-    "name": "絵画「海の風景」",
+    "name": {
+      "ja": "絵画「海の風景」"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001070,
-    "name": "絵画「子どものらくがき」",
+    "name": {
+      "ja": "絵画「子どものらくがき」"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001120,
-    "name": "額縁（アルミ）",
+    "name": {
+      "ja": "額縁（アルミ）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001121,
-    "name": "額縁（ウッド）",
+    "name": {
+      "ja": "額縁（ウッド）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001122,
-    "name": "額縁（ブラウン）",
+    "name": {
+      "ja": "額縁（ブラウン）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001123,
-    "name": "額縁（白）",
+    "name": {
+      "ja": "額縁（白）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001124,
-    "name": "額縁（黒）",
+    "name": {
+      "ja": "額縁（黒）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001125,
-    "name": "額縁（ピンク）",
+    "name": {
+      "ja": "額縁（ピンク）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001126,
-    "name": "額縁（水色）",
+    "name": {
+      "ja": "額縁（水色）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001127,
-    "name": "額縁（緑）",
+    "name": {
+      "ja": "額縁（緑）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001128,
-    "name": "額縁（黄色）",
+    "name": {
+      "ja": "額縁（黄色）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001130,
-    "name": "スクウェアクロック（ナチュラル）",
+    "name": {
+      "ja": "スクウェアクロック（ナチュラル）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001131,
-    "name": "スクウェアクロック（ブラウン）",
+    "name": {
+      "ja": "スクウェアクロック（ブラウン）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001132,
-    "name": "スクウェアクロック（白）",
+    "name": {
+      "ja": "スクウェアクロック（白）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001133,
-    "name": "スクウェアクロック（黒）",
+    "name": {
+      "ja": "スクウェアクロック（黒）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001140,
-    "name": "ダウンライト丸型",
+    "name": {
+      "ja": "ダウンライト丸型"
+    },
     "type": 0,
     "placementFlags": 32
   },
   {
     "itemId": 11001160,
-    "name": "コンプティークポスター",
+    "name": {
+      "ja": "コンプティークポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001161,
-    "name": "D.C.Ⅱ　P.C.記念ポスター",
+    "name": {
+      "ja": "D.C.Ⅱ　P.C.記念ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001162,
-    "name": "Ｋｅｙ10周年記念ポスター",
+    "name": {
+      "ja": "Ｋｅｙ10周年記念ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001163,
-    "name": "ネーブル6周年記念ポスター",
+    "name": {
+      "ja": "ネーブル6周年記念ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001164,
-    "name": "リアリアDS発売記念ポスター",
+    "name": {
+      "ja": "リアリアDS発売記念ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001170,
-    "name": "クリスマスツリー",
+    "name": {
+      "ja": "クリスマスツリー"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001180,
-    "name": "小さなクリスマスツリー",
+    "name": {
+      "ja": "小さなクリスマスツリー"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001190,
-    "name": "クリスマスケーキ",
+    "name": {
+      "ja": "クリスマスケーキ"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001200,
-    "name": "クリスマスリース",
+    "name": {
+      "ja": "クリスマスリース"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001210,
-    "name": "クリスマスモール（特殊）",
+    "name": {
+      "ja": "クリスマスモール（特殊）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001211,
-    "name": "クリスマスモール（普通）",
+    "name": {
+      "ja": "クリスマスモール（普通）"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001220,
-    "name": "迎春門松",
+    "name": {
+      "ja": "迎春門松"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001230,
-    "name": "冬ごもりコタツ",
+    "name": {
+      "ja": "冬ごもりコタツ"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001240,
-    "name": "あこがれハウスミカン",
+    "name": {
+      "ja": "あこがれハウスミカン"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001250,
-    "name": "迎春鏡餅",
+    "name": {
+      "ja": "迎春鏡餅"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001260,
-    "name": "喫茶フローラのパフェ",
+    "name": {
+      "ja": "喫茶フローラのパフェ"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001270,
-    "name": "昭和テレビ",
+    "name": {
+      "ja": "昭和テレビ"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001280,
-    "name": "だんごクッション・プチ（ピンク）",
+    "name": {
+      "ja": "だんごクッション・プチ（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001290,
-    "name": "だんごクッション・デカ（ピンク）",
+    "name": {
+      "ja": "だんごクッション・デカ（ピンク）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001291,
-    "name": "だんごクッション・デカ（青）",
+    "name": {
+      "ja": "だんごクッション・デカ（青）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001292,
-    "name": "だんごクッション・デカ（緑）",
+    "name": {
+      "ja": "だんごクッション・デカ（緑）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001293,
-    "name": "だんごクッション・デカ（紫）",
+    "name": {
+      "ja": "だんごクッション・デカ（紫）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001294,
-    "name": "だんごクッション・デカ（黄）",
+    "name": {
+      "ja": "だんごクッション・デカ（黄）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001300,
-    "name": "マジスキえんどり描いてみた色紙",
+    "name": {
+      "ja": "マジスキえんどり描いてみた色紙"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001301,
-    "name": "マジスキ伊東ライフ描いてみた色紙",
+    "name": {
+      "ja": "マジスキ伊東ライフ描いてみた色紙"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001302,
-    "name": "ジュエルスの色紙",
+    "name": {
+      "ja": "ジュエルスの色紙"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001303,
-    "name": "プリパカメリア鷹乃ゆき色紙",
+    "name": {
+      "ja": "プリパカメリア鷹乃ゆき色紙"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001171,
-    "name": "雪空のクリスマスツリー★",
+    "name": {
+      "ja": "雪空のクリスマスツリー★"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001172,
-    "name": "白銀のクリスマスツリー",
+    "name": {
+      "ja": "白銀のクリスマスツリー"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001310,
-    "name": "風子の木彫りのヒトデ（観賞用）",
+    "name": {
+      "ja": "風子の木彫りのヒトデ（観賞用）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001320,
-    "name": "クリスマスシール",
+    "name": {
+      "ja": "クリスマスシール"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001330,
-    "name": "ai sp@ceコミック用ポスター",
+    "name": {
+      "ja": "ai sp@ceコミック用ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001165,
-    "name": "棗鈴ポスター",
+    "name": {
+      "ja": "棗鈴ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001166,
-    "name": "朝倉音姫ポスター",
+    "name": {
+      "ja": "朝倉音姫ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001167,
-    "name": "古河渚ポスター",
+    "name": {
+      "ja": "古河渚ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001168,
-    "name": "リシアンサスポスター",
+    "name": {
+      "ja": "リシアンサスポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001340,
-    "name": "棗鈴クッション",
+    "name": {
+      "ja": "棗鈴クッション"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001341,
-    "name": "朝倉音姫クッション",
+    "name": {
+      "ja": "朝倉音姫クッション"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001342,
-    "name": "古河渚クッション",
+    "name": {
+      "ja": "古河渚クッション"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001343,
-    "name": "リシアンサスクッション",
+    "name": {
+      "ja": "リシアンサスクッション"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001350,
-    "name": "ミニ痛車（棗鈴モデル）",
+    "name": {
+      "ja": "ミニ痛車（棗鈴モデル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001351,
-    "name": "ミニ痛車（朝倉音姫モデル）",
+    "name": {
+      "ja": "ミニ痛車（朝倉音姫モデル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001352,
-    "name": "ミニ痛車（古河渚モデル）",
+    "name": {
+      "ja": "ミニ痛車（古河渚モデル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001353,
-    "name": "ミニ痛車（リシアンサスモデル）",
+    "name": {
+      "ja": "ミニ痛車（リシアンサスモデル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001360,
-    "name": "ドルジぬいぐるみ",
+    "name": {
+      "ja": "ドルジぬいぐるみ"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001331,
-    "name": "ほしうたポスター１",
+    "name": {
+      "ja": "ほしうたポスター１"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001332,
-    "name": "ほしうたポスター２",
+    "name": {
+      "ja": "ほしうたポスター２"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001344,
-    "name": "黒田結衣クッション",
+    "name": {
+      "ja": "黒田結衣クッション"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001354,
-    "name": "ミニ痛車（ほしうたモデル）",
+    "name": {
+      "ja": "ミニ痛車（ほしうたモデル）"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001334,
-    "name": "朝倉由夢ポスター",
+    "name": {
+      "ja": "朝倉由夢ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001335,
-    "name": "白河ななかポスター",
+    "name": {
+      "ja": "白河ななかポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001336,
-    "name": "月島小恋ポスター",
+    "name": {
+      "ja": "月島小恋ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001337,
-    "name": "雪村杏ポスター",
+    "name": {
+      "ja": "雪村杏ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001338,
-    "name": "DEARDROPSポスターA",
+    "name": {
+      "ja": "DEARDROPSポスターA"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001339,
-    "name": "DEARDROPSポスターB",
+    "name": {
+      "ja": "DEARDROPSポスターB"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001370,
-    "name": "●●カーテン",
+    "name": {
+      "ja": "●●カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001371,
-    "name": "朝倉由夢カーテン",
+    "name": {
+      "ja": "朝倉由夢カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001372,
-    "name": "白河ななかカーテン",
+    "name": {
+      "ja": "白河ななかカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001373,
-    "name": "月島小恋カーテン",
+    "name": {
+      "ja": "月島小恋カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001374,
-    "name": "雪村杏カーテン",
+    "name": {
+      "ja": "雪村杏カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001380,
-    "name": "真恋姫†無双劉備ポスター",
+    "name": {
+      "ja": "真恋姫†無双劉備ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001381,
-    "name": "真恋姫†無双曹操ポスター",
+    "name": {
+      "ja": "真恋姫†無双曹操ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001382,
-    "name": "真恋姫†無双孫権ポスター",
+    "name": {
+      "ja": "真恋姫†無双孫権ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001383,
-    "name": "真恋姫†無双集合ポスター",
+    "name": {
+      "ja": "真恋姫†無双集合ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001375,
-    "name": "能美クドリャフカカーテン",
+    "name": {
+      "ja": "能美クドリャフカカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001376,
-    "name": "柊茉莉カーテン",
+    "name": {
+      "ja": "柊茉莉カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001384,
-    "name": "能美クドリャフカポスター",
+    "name": {
+      "ja": "能美クドリャフカポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001385,
-    "name": "あるぴじ学園ポスター",
+    "name": {
+      "ja": "あるぴじ学園ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001390,
-    "name": "ストレルカぬいぐるみ",
+    "name": {
+      "ja": "ストレルカぬいぐるみ"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001400,
-    "name": "ヴェルカぬいぐるみ",
+    "name": {
+      "ja": "ヴェルカぬいぐるみ"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001410,
-    "name": "藤林杏ポスター",
+    "name": {
+      "ja": "藤林杏ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001411,
-    "name": "坂上智代ポスター",
+    "name": {
+      "ja": "坂上智代ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001412,
-    "name": "一ノ瀬ことみポスター",
+    "name": {
+      "ja": "一ノ瀬ことみポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001413,
-    "name": "伊吹風子ポスター",
+    "name": {
+      "ja": "伊吹風子ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001420,
-    "name": "藤林杏カーテン",
+    "name": {
+      "ja": "藤林杏カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001421,
-    "name": "坂上智代カーテン",
+    "name": {
+      "ja": "坂上智代カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001422,
-    "name": "一ノ瀬ことみカーテン",
+    "name": {
+      "ja": "一ノ瀬ことみカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001423,
-    "name": "伊吹風子カーテン",
+    "name": {
+      "ja": "伊吹風子カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001387,
-    "name": "Angel Beats!ポスターA",
+    "name": {
+      "ja": "Angel Beats!ポスターA"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001378,
-    "name": "仲村ゆりカーテン",
+    "name": {
+      "ja": "仲村ゆりカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001430,
-    "name": "ミニロードローラー",
+    "name": {
+      "ja": "ミニロードローラー"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001379,
-    "name": "立華かなでカーテン",
+    "name": {
+      "ja": "立華かなでカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001388,
-    "name": "Angel Beats!ポスターB",
+    "name": {
+      "ja": "Angel Beats!ポスターB"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001346,
-    "name": "シャーロックカーテン",
+    "name": {
+      "ja": "シャーロックカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001347,
-    "name": "ネロカーテン",
+    "name": {
+      "ja": "ネロカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001348,
-    "name": "エルキュールカーテン",
+    "name": {
+      "ja": "エルキュールカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001349,
-    "name": "コーデリアカーテン",
+    "name": {
+      "ja": "コーデリアカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001440,
-    "name": "ミルキィホームズポスターA",
+    "name": {
+      "ja": "ミルキィホームズポスターA"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001441,
-    "name": "ミルキィホームズポスターB",
+    "name": {
+      "ja": "ミルキィホームズポスターB"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001442,
-    "name": "ミルキィホームズポスターC",
+    "name": {
+      "ja": "ミルキィホームズポスターC"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001443,
-    "name": "ミルキィホームズポスターD",
+    "name": {
+      "ja": "ミルキィホームズポスターD"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001444,
-    "name": "ミルキィホームズポスターA",
+    "name": {
+      "ja": "ミルキィホームズポスターA"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001445,
-    "name": "ミルキィホームズポスターB",
+    "name": {
+      "ja": "ミルキィホームズポスターB"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001446,
-    "name": "ミルキィホームズポスターC",
+    "name": {
+      "ja": "ミルキィホームズポスターC"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001447,
-    "name": "ミルキィホームズポスターD",
+    "name": {
+      "ja": "ミルキィホームズポスターD"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001460,
-    "name": "D.C.DXカーテン",
+    "name": {
+      "ja": "D.C.DXカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001470,
-    "name": "クリスマスケーキ2010",
+    "name": {
+      "ja": "クリスマスケーキ2010"
+    },
     "type": 0,
     "placementFlags": 8
   },
   {
     "itemId": 11001424,
-    "name": "ネリネカーテン",
+    "name": {
+      "ja": "ネリネカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001425,
-    "name": "芙蓉楓カーテン",
+    "name": {
+      "ja": "芙蓉楓カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001426,
-    "name": "時雨亜沙カーテン",
+    "name": {
+      "ja": "時雨亜沙カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001427,
-    "name": "プリムラカーテン",
+    "name": {
+      "ja": "プリムラカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001452,
-    "name": "ネリネポスター",
+    "name": {
+      "ja": "ネリネポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001453,
-    "name": "芙蓉楓ポスター",
+    "name": {
+      "ja": "芙蓉楓ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001454,
-    "name": "時雨亜沙ポスター",
+    "name": {
+      "ja": "時雨亜沙ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001455,
-    "name": "プリムラポスター",
+    "name": {
+      "ja": "プリムラポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001480,
-    "name": "月宮あゆカーテン",
+    "name": {
+      "ja": "月宮あゆカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001490,
-    "name": "月宮あゆポスター",
+    "name": {
+      "ja": "月宮あゆポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001500,
-    "name": "アル・アジフカーテン",
+    "name": {
+      "ja": "アル・アジフカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001510,
-    "name": "アル・アジフポスター",
+    "name": {
+      "ja": "アル・アジフポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001520,
-    "name": "遠野美凪カーテン",
+    "name": {
+      "ja": "遠野美凪カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001530,
-    "name": "AIRポスター",
+    "name": {
+      "ja": "AIRポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001540,
-    "name": "ヴィオラートのアトリエポスター",
+    "name": {
+      "ja": "ヴィオラートのアトリエポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 41000000,
-    "name": "朱鷺戸沙耶ポスター",
+    "name": {
+      "ja": "朱鷺戸沙耶ポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 41000002,
-    "name": "アイスペ×東方ポスターＡ",
+    "name": {
+      "ja": "アイスペ×東方ポスターＡ"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 41000003,
-    "name": "アイスペ×東方ポスターＢ",
+    "name": {
+      "ja": "アイスペ×東方ポスターＢ"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 41000100,
-    "name": "朱鷺戸沙耶カーテン",
+    "name": {
+      "ja": "朱鷺戸沙耶カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 41000001,
-    "name": "鳳ちはやポスター",
+    "name": {
+      "ja": "鳳ちはやポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 41000101,
-    "name": "鳳ちはやカーテン",
+    "name": {
+      "ja": "鳳ちはやカーテン"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001450,
-    "name": "Steins;Gateポスター",
+    "name": {
+      "ja": "Steins;Gateポスター"
+    },
     "type": 0,
     "placementFlags": 16
   },
   {
     "itemId": 11001451,
-    "name": "牧瀬紅莉栖カーテン",
+    "name": {
+      "ja": "牧瀬紅莉栖カーテン"
+    },
     "type": 0,
     "placementFlags": 16
   }
