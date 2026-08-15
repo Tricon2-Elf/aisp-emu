@@ -13,7 +13,7 @@ AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MM
 - `aisp.Network/` — Wire format, TCP transport, and client-compatible encryption (no game logic or database code).
 - `aisp.Common/` — Game logic, packet handlers, and Entity Framework Core persistence; references `aisp.Network`.
 - `aisp.Server/` — Executable host; runs Auth, Msg, and Area servers in one process. Includes runtime configuration such as `appsettings.json` and `NLog.config`.
-- `aisp.Network.Tests/`, `aisp.Common.Tests/`, `aisp.Server.Tests/` — xUnit test projects for each layer.
+- `tests/aisp.Network.Tests/`, `tests/aisp.Common.Tests/`, `tests/aisp.Server.Tests/` — xUnit test projects for each layer.
 
 Dependency order: `aisp.Network` → `aisp.Common` → `aisp.Server`.
 

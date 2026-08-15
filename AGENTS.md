@@ -79,7 +79,7 @@ The generic base class `PacketHandlerBase<TRequest, TResponse>` deserializes the
 - **Also supports**: SQL Server (packages are referenced).
 - **Migrations auto-applied** at startup via `db.Database.MigrateAsync()` in `Program.cs:193`.
 - **Seeding**: `Program.cs` calls `Seed*IfEmptyAsync` helpers on repositories for maps, map links, worlds, channels. Items are seeded once at startup in `Program.cs` (after migrations) via `ItemRepository.SeedItemsIfEmptyAsync` from `seedData/baseItems.json` (under `aisp.Common/`, copied to output). Runtime code reads items from the database only.
-- **Integration tests**: Use `TestDb.CreateInMemoryMainContext()` (`Support/TestDb.cs:10`) for a disposable SQLite in-memory context.
+- **Integration tests**: Use `TestDb.CreateInMemoryMainContext()` (`tests/aisp.Common.Tests/Support/TestDb.cs`) for a disposable SQLite in-memory context.
 - **Migration command** (from repo root):
 
   ```bash
@@ -124,7 +124,7 @@ The generic base class `PacketHandlerBase<TRequest, TResponse>` deserializes the
 
 - `xunit.v3` with `OutputType Exe` — test projects are standalone executables.
 - Integration tests that need a DB use SQLite in-memory via `TestDb.CreateInMemoryMainContext()`.
-- `aisp.Common.Tests` has a `Support/CapturingPlayerSession.cs` helper for capturing handler responses without a real network connection.
+- `tests/aisp.Common.Tests` has a `Support/CapturingPlayerSession.cs` helper for capturing handler responses without a real network connection.
 - Tests with `Distributed` in the name exercise the `SessionPresenceRepository` / `PendingMapTransferRepository` singletons (used for cross-server state sharing).
 
 ## Environment / Docker
