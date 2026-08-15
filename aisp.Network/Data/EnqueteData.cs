@@ -8,9 +8,9 @@ public class EnqueteData(uint id, string question, List<string> answers)
             answers.Add("");
         var writer = new PacketWriter();
         writer.Write(id);
-        writer.WriteFixedJisString(question, 181);
+        writer.WriteFixedString(question, 181);
         foreach (var answer in answers)
-            writer.WriteFixedJisString(answer, 61);
+            writer.WriteFixedString(answer, 61);
         return writer.ToBytes();
     }
 }

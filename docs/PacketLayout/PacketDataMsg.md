@@ -73,7 +73,7 @@
 **Layout:**
 
 ```text
-    CString(ASCII) {AvatarName}
+    CString {AvatarName}
     UInt {ModelId}
     Bytes(19) {Visual}  // CharaVisual: UInt BloodType, Byte Month, Byte Day, UInt Gender, UInt CharacterID, Byte Face, UInt Hairstyle
     UInt {SlotId}
@@ -107,7 +107,7 @@
 
 ```text
     UInt {Result}
-    CString(ASCII) {Name}
+    CString {Name}
     UInt {ModelId}
     Bytes(19) {Visual}  // CharaVisual
     UInt {IslandId}
@@ -146,8 +146,8 @@
     UInt {QuestionCount}
     foreach question:
         UInt {Id}
-        FixedString(181, Shift_JIS) {Question}
-        10 × FixedString(61, Shift_JIS) {Answer}
+        FixedString(181) {Question}
+        10 × FixedString(61) {Answer}
 ```
 
 ## send_enquete_answer (EnqueteAnswerRequest)
@@ -333,7 +333,7 @@
 ```text
     UInt {MessageID}
     UInt {DistID}
-    CString(ASCII) {Message}
+    CString {Message}
     UInt {BalloonID}
 ```
 
@@ -368,9 +368,9 @@
     UInt {ItemCount}
     foreach item:
         UInt {Key}, UInt {SortedListPriority}, UInt {ItemId}, UInt {SkillId}
-        FixedString(97, Shift_JIS) {Name}
+        FixedString(97) {Name}
         UInt {Category}, UInt {Socket1}, UInt {Socket2}
-        FixedString(769, Shift_JIS) {Description}
-        FixedString(193, Shift_JIS) {LimitDesc}
+        FixedString(769) {Description}
+        FixedString(193) {LimitDesc}
         UInt {Flags}, UShort {_0x0448}, UInt {_0x044c}, UInt {_0x0450}, UInt {EmotionId}, UInt {_0x0458}
 ```

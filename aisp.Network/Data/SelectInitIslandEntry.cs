@@ -5,7 +5,7 @@ namespace aisp.Network.Data;
 /// <summary>
 /// One island_t entry for recv_select_init_island_start.
 /// Decompiled parsing aligns with:
-/// UInt IslandId + FixedString(97, Shift_JIS) + FixedString(385, Shift_JIS).
+/// UInt IslandId + FixedString(97, UTF-8) + FixedString(385, UTF-8).
 /// </summary>
 public sealed class SelectInitIslandEntry
 {
@@ -20,8 +20,8 @@ public sealed class SelectInitIslandEntry
     public void WriteTo(PacketWriter writer)
     {
         writer.Write(IslandId);
-        writer.WriteFixedJisString(Title, TitleLength);
-        writer.WriteFixedJisString(Description, DescriptionLength);
+        writer.WriteFixedString(Title, TitleLength);
+        writer.WriteFixedString(Description, DescriptionLength);
     }
 
     public static SelectInitIslandEntry FromBytes(ReadOnlySpan<byte> data)
@@ -30,8 +30,8 @@ public sealed class SelectInitIslandEntry
         return new SelectInitIslandEntry
         {
             IslandId = reader.ReadUInt(),
-            Title = reader.ReadFixedString(TitleLength, "Shift_JIS"),
-            Description = reader.ReadFixedString(DescriptionLength, "Shift_JIS"),
+            Title = reader.ReadFixedString(TitleLength),
+            Description = reader.ReadFixedString(DescriptionLength),
         };
     }
 }

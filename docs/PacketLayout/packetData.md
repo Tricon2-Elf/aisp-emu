@@ -15,13 +15,14 @@ All multi-byte numeric types are **little-endian**.
 - **Bytes(n)**: raw bytes, `n` is a fixed count (no length prefix)
 
 - **CString**: Null-terminated string  
-  - Default encoding: ASCII
-  - Document as `CString` or `CString(encoding)` e.g. `CString(Shift_JIS)`
+  - Default encoding: UTF-8
+  - Document as `CString` or `CString(encoding)` e.g. `CString(ASCII)` for identifiers
 
 - **FixedString(length)**: Fixed-length string (exactly `length` bytes in the packet)  
-  - Default encoding: Shift_JIS
-  - Writer: `WriteFixedString(value, length)`; default encoding Shift_JIS; padded with zeros  
-  - Document as `FString(n)` or `FString(n, encoding)` e.g. `FString(32, Shift_JIS)`
+  - Default encoding: UTF-8
+  - Writer: `WriteFixedString(value, length)`; default encoding UTF-8; padded with zeros  
+  - Document as `FString(n)` or `FString(n, encoding)` e.g. `FString(65, ASCII)` for IPs/OTPs
+  - The client copies these as raw bytes and converts display text with `MultiByteToWideChar(CP_UTF8)` (`vce::utf8`)
 
 ## Encrypted wire and multi-packet layout (VCE codec)
 
@@ -79,5 +80,5 @@ If the decrypted block does not look like a valid codec (e.g. first message is a
 ```text
     {PacketID}
     {Result}
-    CString(ASCII) {username}
+    CString {username}
 ```

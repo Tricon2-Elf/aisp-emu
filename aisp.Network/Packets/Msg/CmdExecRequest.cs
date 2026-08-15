@@ -20,12 +20,12 @@ public class CmdExecRequest(uint messageId, string command, uint argCount, List<
         var reader = new PacketReader(data);
 
         var msgId = reader.ReadUInt();
-        var cmd = reader.ReadFixedString(CmdLength, "ASCII");
+        var cmd = reader.ReadFixedString(CmdLength);
 
         var args = new List<string>(MaxArgs);
         for (int i = 0; i < MaxArgs; i++)
         {
-            string arg = reader.ReadFixedString(ArgLength, "ASCII");
+            string arg = reader.ReadFixedString(ArgLength);
             args.Add(arg);
         }
         uint argCount = reader.ReadUInt();

@@ -15,7 +15,7 @@ public class PostTalkRequest(uint messageID, uint distID, string message, uint b
         var reader = new PacketReader(data);
         uint msgId = reader.ReadUInt();
         uint distId = reader.ReadUInt();
-        string msg = reader.ReadString("Shift_JIS");
+        string msg = reader.ReadString();
         uint balloonId = reader.ReadUInt();
         return new PostTalkRequest(msgId, distId, msg, balloonId);
     }
