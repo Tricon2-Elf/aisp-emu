@@ -137,6 +137,22 @@ public sealed class LocalisationTests
                 localiser.TryGet(GameLanguage.Japanese, new LocKey("demo.missing"), out var missing)
             );
             Assert.Equal("demo.missing", missing);
+            Assert.Equal(
+                "日本語のみ",
+                localiser.GetOr(
+                    GameLanguage.English,
+                    new LocKey("demo.only_ja"),
+                    new LocKey("demo.fallback")
+                )
+            );
+            Assert.Equal(
+                "English",
+                localiser.GetOr(
+                    GameLanguage.English,
+                    new LocKey("demo.missing"),
+                    new LocKey("demo.both")
+                )
+            );
         }
         finally
         {

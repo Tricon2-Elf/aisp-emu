@@ -39,29 +39,17 @@ public sealed class ItemBaseListCache(IServiceScopeFactory scopeFactory) : IItem
         foreach (var language in GameLanguages.All)
         {
             var items = rows.Select(row =>
-                {
-                    var name = localiser.Get(language, L.Item.Name(row.Id));
-                    var description = localiser.TryGet(
-                        language,
-                        L.Item.Description(row.Id),
-                        out var desc
-                    )
-                        ? desc
-                        : localiser.Get(language, L.Item.NoDescription);
-                    var limitDescription = localiser.TryGet(
-                        language,
-                        L.Item.LimitDescription(row.Id),
-                        out var limitDesc
-                    )
-                        ? limitDesc
-                        : localiser.Get(language, L.Item.NoLimitDescription);
-                    return ItemEntityMapper.ToItemBaseListData(
+                    ItemEntityMapper.ToItemBaseListData(
                         row,
-                        name,
-                        description,
-                        limitDescription
-                    );
-                })
+                        localiser.Get(language, L.Item.Name(row.Id)),
+                        localiser.GetOr(language, L.Item.Description(row.Id), L.Item.NoDescription),
+                        localiser.GetOr(
+                            language,
+                            L.Item.LimitDescription(row.Id),
+                            L.Item.NoLimitDescription
+                        )
+                    )
+                )
                 .ToList();
             _payloads[language] = new ItemGetBaseListResponse(0, items).ToBytes();
         }
