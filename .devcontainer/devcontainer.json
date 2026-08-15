@@ -15,7 +15,7 @@
     "vscode": {
       "extensions": ["ms-dotnettools.csharp", "ms-dotnettools.csdevkit"],
       "settings": {
-        "dotnet.defaultSolution": "AISpace.sln"
+        "dotnet.defaultSolution": "aisp.sln"
       }
     }
   },

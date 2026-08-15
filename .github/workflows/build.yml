@@ -26,10 +26,10 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore AISpace.sln
+        run: dotnet restore aisp.sln
 
       - name: Build
-        run: dotnet build AISpace.sln --configuration Release --no-restore
+        run: dotnet build aisp.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test AISpace.sln --configuration Release --no-build --verbosity normal
+        run: dotnet test aisp.sln --configuration Release --no-build --verbosity normal

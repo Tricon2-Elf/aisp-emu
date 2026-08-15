@@ -1,0 +1,60 @@
+using aisp.Common.DAL;
+using aisp.Common.DAL.Entities;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+
+namespace aisp.Common.Tests.Support;
+
+internal static class TestDb
+{
+    /// <summary>Opens an in-memory SQLite connection and builds a <see cref="MainContext"/> schema. Caller disposes the connection.</summary>
+    public static (
+        SqliteConnection Connection,
+        DbContextOptions<MainContext> Options
+    ) CreateInMemoryMainContext()
+    {
+        var connection = new SqliteConnection("DataSource=:memory:");
+        connection.Open();
+        var options = new DbContextOptionsBuilder<MainContext>().UseSqlite(connection).Options;
+        using (var ctx = new MainContext(options))
+        {
+            ctx.Database.EnsureCreated();
+        }
+        return (connection, options);
+    }
+
+    public static async Task SeedCharacterAsync(
+        DbContextOptions<MainContext> options,
+        int characterId,
+        CancellationToken ct = default
+    )
+    {
+        await using var db = new MainContext(options);
+        var user = new User { Id = characterId, Username = $"user-{characterId}" };
+        user.SetPassword("pw");
+        var character = new Character
+        {
+            Id = characterId,
+            Name = $"character-{characterId}",
+            UserId = characterId,
+            Birthdate = new DateTime(2000, 1, 1),
+        };
+        character.Rooms.Add(
+            new Room
+            {
+                Id = characterId,
+                Name = "My Room",
+                IsDefault = true,
+            }
+        );
+        user.Characters.Add(character);
+        db.Users.Add(user);
+        await db.SaveChangesAsync(ct);
+    }
+}
+
+internal sealed class TestMainContextFactory(DbContextOptions<MainContext> options)
+    : IDbContextFactory<MainContext>
+{
+    public MainContext CreateDbContext() => new(options);
+}

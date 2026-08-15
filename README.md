@@ -10,12 +10,12 @@ AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MM
 
 ## Repository layout
 
-- `AISpace.Network/` — Wire format, TCP transport, and client-compatible encryption (no game logic or database code).
-- `AISpace.Common/` — Game logic, packet handlers, and Entity Framework Core persistence; references `AISpace.Network`.
-- `AISpace.Server/` — Executable host; runs Auth, Msg, and Area servers in one process. Includes runtime configuration such as `appsettings.json` and `NLog.config`.
-- `AISpace.Network.Tests/`, `AISpace.Common.Tests/`, `AISpace.Server.Tests/` — xUnit test projects for each layer.
+- `aisp.Network/` — Wire format, TCP transport, and client-compatible encryption (no game logic or database code).
+- `aisp.Common/` — Game logic, packet handlers, and Entity Framework Core persistence; references `aisp.Network`.
+- `aisp.Server/` — Executable host; runs Auth, Msg, and Area servers in one process. Includes runtime configuration such as `appsettings.json` and `NLog.config`.
+- `aisp.Network.Tests/`, `aisp.Common.Tests/`, `aisp.Server.Tests/` — xUnit test projects for each layer.
 
-Dependency order: `AISpace.Network` → `AISpace.Common` → `AISpace.Server`.
+Dependency order: `aisp.Network` → `aisp.Common` → `aisp.Server`.
 
 ## Prerequisites
 
@@ -38,15 +38,15 @@ This restores NuGet dependencies and compiles all projects in the solution.
 Run the full test suite from the repository root:
 
 ```bash
-dotnet test AISpace.sln
+dotnet test aisp.sln
 ```
 
 Run tests for a single project:
 
 ```bash
-dotnet test AISpace.Common.Tests
-dotnet test AISpace.Network.Tests
-dotnet test AISpace.Server.Tests
+dotnet test aisp.Common.Tests
+dotnet test aisp.Network.Tests
+dotnet test aisp.Server.Tests
 ```
 
 Tests use **xUnit v3** with in-memory SQLite for database integration tests. See `AGENTS.md` for more detail on test conventions and helpers.
@@ -56,7 +56,7 @@ Tests use **xUnit v3** with in-memory SQLite for database integration tests. See
 After building, start the server project:
 
 ```bash
-dotnet run --project AISpace.Server
+dotnet run --project aisp.Server
 ```
 
 Configuration files such as `appsettings.json` and `NLog.config` are copied to the output directory during build. Adjust database providers or logging behavior there before launching.

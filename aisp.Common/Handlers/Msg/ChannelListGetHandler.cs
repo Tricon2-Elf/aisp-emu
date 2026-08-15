@@ -1,0 +1,44 @@
+using aisp.Common.Config;
+using aisp.Common.DAL.Repositories;
+using aisp.Common.Game;
+using aisp.Network;
+using aisp.Network.Data;
+using aisp.Network.Packets.Msg;
+using Microsoft.Extensions.Options;
+
+namespace aisp.Common.Handlers.Msg;
+
+public class ChannelListGetHandler(
+    IOptions<ServerOptions> serverOptions,
+    IChannelRepository channelRepo
+) : IPacketHandler, IRequiresAuthenticatedSession
+{
+    public PacketType RequestType => PacketType.ChannelListGetRequest;
+    public PacketType ResponseType => PacketType.ChannelListGetResponse;
+    public ServerType ServerType => ServerType.Msg;
+
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
+    {
+        var dbChannels = await channelRepo.GetAllAsync(ct);
+        var channels = dbChannels
+            .Select(c =>
+            {
+                var maxUsers = c.MaxUsers != 0 ? c.MaxUsers : 1000u;
+                var currentUsers = c.CurrentUsers > maxUsers ? maxUsers : c.CurrentUsers;
+                return new ChannelInfo(
+                    (uint)c.ChannelNum,
+                    currentUsers,
+                    maxUsers,
+                    new ServerInfo(serverOptions.Value.ResolveAddress(c.IP), c.Port)
+                );
+            })
+            .ToList();
+
+        var response = new ChannelListGetResponse(0, channels);
+        await session.SendAsync(ResponseType, response.ToBytes(), ct);
+    }
+}

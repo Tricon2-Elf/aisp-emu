@@ -1,0 +1,29 @@
+@page "/login"
+@model aisp.Portal.Pages.LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = "/Pages/Shared/_Layout.cshtml";
+}
+<section class="portal-card p-4 p-lg-5">
+    <div class="portal-card-icon" aria-hidden="true">A</div>
+    <span class="eyebrow">Account access</span>
+    <h1 class="portal-title h2">Welcome back</h1>
+    <p class="portal-subtitle mb-4">Sign in with your aisp-emu game account.</p>
+    <form method="post" class="vstack gap-3">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div>
+            <label asp-for="Input.Username" class="form-label"></label>
+            <input asp-for="Input.Username" class="form-control" autocomplete="username" autofocus />
+        </div>
+        <div>
+            <label asp-for="Input.Password" class="form-label"></label>
+            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" />
+        </div>
+        <input type="hidden" asp-for="ReturnUrl" />
+        <button type="submit" class="btn btn-primary py-2">Sign in</button>
+    </form>
+    @if (Model.AllowRegistration)
+    {
+        <p class="auth-link mt-4 mb-0">New here? <a href="/register">Create an account</a></p>
+    }
+</section>
