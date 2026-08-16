@@ -182,5 +182,6 @@ public class ClientConnection(
         catch
         { /* ignore */
         }
+        GC.SuppressFinalize(this);
     }
 }
