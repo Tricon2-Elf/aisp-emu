@@ -1,5 +1,6 @@
 using aisp.Common.DAL.Entities;
 using aisp.Common.Game;
+using aisp.Network;
 using aisp.Network.Data;
 
 namespace aisp.Common.Tests;

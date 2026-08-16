@@ -1,3 +1,4 @@
+using aisp.Network;
 using aisp.Network.Data;
 
 namespace aisp.Common.DAL.Entities;

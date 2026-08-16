@@ -2,6 +2,7 @@ using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Tests.Support;
+using aisp.Network;
 using aisp.Network.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
