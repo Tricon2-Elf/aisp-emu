@@ -16,7 +16,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageReference Include="Microsoft.OpenApi" Version="3.10.0" />
     <PackageReference Include="NLog" Version="6.1.4" />
     <PackageReference Include="NLog.Extensions.Logging" Version="6.1.4" />
     <PackageReference Include="Scrutor" Version="7.0.0" />
