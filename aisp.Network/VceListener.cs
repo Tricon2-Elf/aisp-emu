@@ -349,7 +349,7 @@ public class VceListener(
         await ReadExactAsync(context.Stream, header, ct, readCt, armIdle);
         int msgSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(header);
 
-        if (msgSize > 0 && msgSize <= maxReceiveFrameSize)
+        if (!VceFrameValidation.IsAcceptableFrameSize(msgSize, _maxReceiveFrameSize))
         {
             logger.LogDebug(
                 "{Name} disconnecting client {RemoteEndPoint}: invalid frame size msgSize={MsgSize} max={MaxReceiveFrameSize}",
