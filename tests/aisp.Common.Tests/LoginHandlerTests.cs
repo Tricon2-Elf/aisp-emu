@@ -64,6 +64,8 @@ public class LoginHandlerTests
         Assert.Equal(5, session.UserId);
         Assert.NotNull(session.User);
         Assert.Equal(42u, session.CharacterId);
+        Assert.NotNull(session.Character);
+        Assert.Equal("ChatUser", session.Character!.Name);
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.LoginResponse, session.Sent[0].Type);
         Assert.Equal(

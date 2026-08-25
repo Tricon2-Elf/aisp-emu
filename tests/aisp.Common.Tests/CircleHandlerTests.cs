@@ -85,7 +85,11 @@ public sealed class CircleHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        var response = session.Sent.Single(p => p.Type == PacketType.CircleGetDataResponse);
+        Assert.True(session.Sent.Count >= 2);
+        Assert.Equal(PacketType.CircleGetDataResponse, session.Sent[0].Type);
+        Assert.Equal(PacketType.CircleNotifyMember, session.Sent[1].Type);
+
+        var response = session.Sent[0];
         var reader = new PacketReader(response.Payload);
         Assert.Equal(0u, reader.ReadUInt());
         Assert.Equal(1u, reader.ReadUInt());
@@ -93,6 +97,16 @@ public sealed class CircleHandlerTests
         Assert.Equal((ulong)created.Circle.Id, circle.Id);
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(CircleMemberData.RoleMember, reader.ReadUInt());
+
+        var roster = new PacketReader(session.Sent[1].Payload);
+        Assert.Equal((ulong)created.Circle.Id, roster.ReadULong());
+        Assert.Equal(2u, roster.ReadUInt());
+        var leader = CircleMemberData.Read(ref roster);
+        var member = CircleMemberData.Read(ref roster);
+        Assert.Equal(1u, leader.AvatarId);
+        Assert.Equal(2u, member.AvatarId);
+        Assert.Equal("character-1", leader.Name);
+        Assert.Equal("character-2", member.Name);
     }
 
     [Fact]
@@ -422,5 +436,105 @@ public sealed class CircleHandlerTests
             state.GetCircleChatClients(created.Circle.Id),
             c => c.ConnectionId == member.ConnectionId
         );
+    }
+
+    [Fact]
+    public async Task JoinAnswer_Accept_NotifiesAddMemberWithCharacterName()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+        await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "Named",
+            0,
+            TestContext.Current.CancellationToken
+        );
+        await circles.InviteAsync(1, 2, created.Circle!.Id, TestContext.Current.CancellationToken);
+
+        var state = new SharedState();
+        var leader = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            Character = db.Characters.First(c => c.Id == 1),
+            User = db.Users.First(u => u.Id == 1),
+        };
+        var invitee = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            Character = db.Characters.First(c => c.Id == 2),
+            User = db.Users.First(u => u.Id == 2),
+        };
+        state.RegisterClient(ServerType.Msg, leader);
+        state.RegisterClient(ServerType.Msg, invitee);
+
+        var handler = new CircleMemberJoinAnswerHandler(circles, state);
+        var writer = new PacketWriter();
+        writer.Write(1u); // accept
+        await handler.HandleAsync(writer.ToBytes(), invitee, TestContext.Current.CancellationToken);
+
+        var add = leader.Sent.Single(p => p.Type == PacketType.CircleNotifyAddMember);
+        var reader = new PacketReader(add.Payload);
+        Assert.Equal((ulong)created.Circle!.Id, reader.ReadULong());
+        Assert.Equal(2u, reader.ReadUInt());
+        Assert.Equal("character-2", reader.ReadString());
+    }
+
+    [Fact]
+    public async Task MemberLogin_SendsRosterWithAlreadyOnlinePeers()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+        await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "Online",
+            0,
+            TestContext.Current.CancellationToken
+        );
+        await circles.InviteAsync(1, 2, created.Circle!.Id, TestContext.Current.CancellationToken);
+        await circles.AnswerInviteAsync(2, true, TestContext.Current.CancellationToken);
+
+        var state = new SharedState();
+        var alreadyOnline = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            Character = db.Characters.First(c => c.Id == 1),
+            User = db.Users.First(u => u.Id == 1),
+        };
+        var loggingIn = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            Character = db.Characters.First(c => c.Id == 2),
+            User = db.Users.First(u => u.Id == 2),
+        };
+        state.RegisterClient(ServerType.Msg, alreadyOnline);
+        state.RegisterClient(ServerType.Msg, loggingIn);
+
+        await CircleNotifyHelper.NotifyMemberLoginAsync(
+            circles,
+            state,
+            2,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Contains(alreadyOnline.Sent, p => p.Type == PacketType.CircleNotifyMemberLogin);
+        var roster = loggingIn.Sent.Single(p => p.Type == PacketType.CircleNotifyMember);
+        var reader = new PacketReader(roster.Payload);
+        Assert.Equal((ulong)created.Circle!.Id, reader.ReadULong());
+        Assert.Equal(2u, reader.ReadUInt()); // member count
+        CircleMemberData.Read(ref reader);
+        CircleMemberData.Read(ref reader);
+        Assert.Equal(2u, reader.ReadUInt()); // login flag count
+        Assert.Equal(1, reader.ReadByte()); // member 1 online
+        Assert.Equal(1, reader.ReadByte()); // member 2 online
     }
 }

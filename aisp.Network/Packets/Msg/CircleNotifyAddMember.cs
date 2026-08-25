@@ -9,7 +9,7 @@ public class CircleNotifyAddMember(ulong circleId, uint avatarId, string name) :
         var writer = new PacketWriter();
         writer.Write(circleId);
         writer.Write(avatarId);
-        writer.Write(name, "utf-8");
+        writer.Write(name, 36);
         return writer.ToBytes();
     }
 }

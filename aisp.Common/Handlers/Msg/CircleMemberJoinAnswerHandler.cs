@@ -50,7 +50,10 @@ public class CircleMemberJoinAnswerHandler(ICircleRepository circles, SharedStat
         if (!accept || result.Member is null)
             return;
 
-        var name = session.Character?.Name ?? string.Empty;
+        var name =
+            session.Character?.Name
+            ?? session.User?.Characters.FirstOrDefault(c => c.Id == (int)session.CharacterId)?.Name
+            ?? string.Empty;
         var add = new CircleNotifyAddMember(
             (ulong)result.Circle.Id,
             session.CharacterId,

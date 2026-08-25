@@ -86,6 +86,9 @@ public static class CircleNotifyHelper
                 ct,
                 excludeCharacterId: characterId
             );
+            // Refresh roster (names + already_login) for every online member, including the
+            // logging-in client who otherwise only learns about peers via later GetData.
+            await SendRosterAsync(circles, state, circle.Id, ct);
         }
     }
 
