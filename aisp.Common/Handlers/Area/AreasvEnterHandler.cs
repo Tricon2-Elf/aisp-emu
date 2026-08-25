@@ -101,7 +101,10 @@ public class AreasvEnterHandler(
                 var sharesCircle =
                     owner is not null
                     && await circleRepository.SharesAnyCircleAsync(chara.Id, owner.Id, ct);
-                if (!MyRoomAccess.CanEnter(room, chara.Id, sharesCircle))
+                var isFriend =
+                    owner is not null
+                    && await myRoomRepository.AreFriendsAsync(chara.Id, owner.Id, ct);
+                if (!MyRoomAccess.CanEnter(room, chara.Id, sharesCircle, isFriend))
                 {
                     logger.LogWarning(
                         "AreasvEnter denied My Room {RoomId} for character {CharacterId} (security {Security}); falling back to owner room",

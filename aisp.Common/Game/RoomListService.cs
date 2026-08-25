@@ -36,7 +36,12 @@ public sealed class RoomListService(
                 room.OwnerCharacterId,
                 ct
             );
-            if (!MyRoomAccess.CanEnter(room, visitorId, sharesCircle))
+            var isFriend = await myRoomRepository.AreFriendsAsync(
+                visitorId,
+                room.OwnerCharacterId,
+                ct
+            );
+            if (!MyRoomAccess.CanEnter(room, visitorId, sharesCircle, isFriend))
                 continue;
 
             entries.Add(
@@ -91,10 +96,7 @@ public sealed class RoomListService(
                 continue;
 
             ownerOnline = true;
-            if (
-                MyRoomInfo.IsMyRoomMap(areaSession.MapId)
-                && areaSession.MyRoomId == (uint)room.Id
-            )
+            if (MyRoomInfo.IsMyRoomMap(areaSession.MapId) && areaSession.MyRoomId == (uint)room.Id)
                 return RoomListStatus.AtHome;
 
             if (MyRoomInfo.IsMyRoomMap(areaSession.MapId))

@@ -442,7 +442,10 @@ public sealed class DirectMapLinkTransitionService(
             var sharesCircle =
                 owner is not null
                 && await circleRepository.SharesAnyCircleAsync(character.Id, owner.Id, ct);
-            if (!MyRoomAccess.CanEnter(room, character.Id, sharesCircle))
+            var isFriend =
+                owner is not null
+                && await myRoomRepository.AreFriendsAsync(character.Id, owner.Id, ct);
+            if (!MyRoomAccess.CanEnter(room, character.Id, sharesCircle, isFriend))
             {
                 logger.LogWarning(
                     "Denied My Room entry for character {CharacterId} into room {RoomId} (security {Security}, owner {OwnerCharacterId})",

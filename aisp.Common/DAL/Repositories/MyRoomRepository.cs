@@ -24,6 +24,7 @@ public interface IMyRoomRepository
     Task<Room?> GetDefaultRoomAsync(int ownerCharacterId, CancellationToken ct = default);
     Task<Room?> GetOrCreateDefaultRoomAsync(int ownerCharacterId, CancellationToken ct = default);
     Task<IReadOnlyList<Room>> GetRoomsAsync(int ownerCharacterId, CancellationToken ct = default);
+    Task<bool> AreFriendsAsync(int characterIdA, int characterIdB, CancellationToken ct = default);
     Task<IReadOnlyList<Room>> GetCandidateVisitRoomsAsync(
         int excludeOwnerCharacterId,
         int take,
@@ -156,6 +157,20 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
             .ThenBy(x => x.Id)
             .ToListAsync(ct);
 
+    public Task<bool> AreFriendsAsync(
+        int characterIdA,
+        int characterIdB,
+        CancellationToken ct = default
+    )
+    {
+        var low = Math.Min(characterIdA, characterIdB);
+        var high = Math.Max(characterIdA, characterIdB);
+        return db.Friendships.AnyAsync(
+            friendship => friendship.CharacterIdLow == low && friendship.CharacterIdHigh == high,
+            ct
+        );
+    }
+
     public async Task<IReadOnlyList<Room>> GetCandidateVisitRoomsAsync(
         int excludeOwnerCharacterId,
         int take,
@@ -171,7 +186,19 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
             .Where(x =>
                 x.OwnerCharacterId != excludeOwnerCharacterId
                 && x.Security != MyRoomSecurity.Private
-                && x.Security != MyRoomSecurity.FriendsOnly
+                && (
+                    x.Security != MyRoomSecurity.FriendsOnly
+                    || db.Friendships.Any(friendship =>
+                        (
+                            friendship.CharacterIdLow == excludeOwnerCharacterId
+                            && friendship.CharacterIdHigh == x.OwnerCharacterId
+                        )
+                        || (
+                            friendship.CharacterIdHigh == excludeOwnerCharacterId
+                            && friendship.CharacterIdLow == x.OwnerCharacterId
+                        )
+                    )
+                )
             )
             .OrderByDescending(x => x.IsDefault)
             .ThenBy(x => x.Id)

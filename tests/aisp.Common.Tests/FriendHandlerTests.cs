@@ -37,6 +37,16 @@ public sealed class FriendHandlerTests
         };
         state.RegisterClient(ServerType.Area, requester);
         state.RegisterClient(ServerType.Area, target);
+        await db
+            .Rooms.Where(room => room.OwnerCharacterId == 2)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(room => room.Security, MyRoomSecurity.FriendsOnly),
+                ct
+            );
+        Assert.DoesNotContain(
+            await new MyRoomRepository(db).GetCandidateVisitRoomsAsync(1, 100, ct),
+            room => room.OwnerCharacterId == 2
+        );
 
         var requestHandler = new AreaRequestAddFriendListHandler(friends, state);
         var response = await requestHandler.HandleAsync(
@@ -66,6 +76,10 @@ public sealed class FriendHandlerTests
             Assert.Equal(1, friendship.CharacterIdLow);
             Assert.Equal(2, friendship.CharacterIdHigh);
         }
+        var rooms = await new MyRoomRepository(db).GetCandidateVisitRoomsAsync(1, 100, ct);
+        Assert.Contains(rooms, room => room.OwnerCharacterId == 2);
+        Assert.True(await new MyRoomRepository(db).AreFriendsAsync(1, 2, ct));
+
         Assert.Contains(
             requester.Sent,
             packet =>

@@ -388,7 +388,10 @@ public class CmdExecHandler(
                     var sharesCircle =
                         owner is not null
                         && await circleRepository.SharesAnyCircleAsync(character.Id, owner.Id, ct);
-                    if (!MyRoomAccess.CanEnter(room, character.Id, sharesCircle))
+                    var isFriend =
+                        owner is not null
+                        && await myRoomRepository.AreFriendsAsync(character.Id, owner.Id, ct);
+                    if (!MyRoomAccess.CanEnter(room, character.Id, sharesCircle, isFriend))
                     {
                         var message = localiser.Get(
                             session,

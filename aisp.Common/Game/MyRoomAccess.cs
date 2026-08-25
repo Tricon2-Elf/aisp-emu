@@ -4,9 +4,7 @@ using aisp.Network;
 namespace aisp.Common.Game;
 
 /// <summary>
-/// Server-side My Room visit ACL. Friend lists are not persisted yet, so
-/// FriendsOnly denies non-owners and FriendsAndCircleMembers falls back to
-/// circle membership (or ownership) rather than a friend link.
+/// Server-side My Room visit ACL.
 /// </summary>
 public static class MyRoomAccess
 {
@@ -22,7 +20,12 @@ public static class MyRoomAccess
             sharesCircle: visitorCircleId is > 0 && visitorCircleId == ownerCircleId
         );
 
-    public static bool CanEnter(Room room, int visitorCharacterId, bool sharesCircle)
+    public static bool CanEnter(
+        Room room,
+        int visitorCharacterId,
+        bool sharesCircle,
+        bool isFriend = false
+    )
     {
         if (room.OwnerCharacterId == visitorCharacterId)
             return true;
@@ -32,8 +35,8 @@ public static class MyRoomAccess
             MyRoomSecurity.Public => true,
             MyRoomSecurity.Private => false,
             MyRoomSecurity.CircleMembersOnly => sharesCircle,
-            MyRoomSecurity.FriendsOnly => false,
-            MyRoomSecurity.FriendsAndCircleMembers => sharesCircle,
+            MyRoomSecurity.FriendsOnly => isFriend,
+            MyRoomSecurity.FriendsAndCircleMembers => isFriend || sharesCircle,
             _ => false,
         };
     }
