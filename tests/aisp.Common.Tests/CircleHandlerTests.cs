@@ -475,7 +475,7 @@ public sealed class CircleHandlerTests
 
         var handler = new CircleMemberJoinAnswerHandler(circles, state);
         var writer = new PacketWriter();
-        writer.Write(1u); // accept
+        writer.Write(0u); // Yes / accept (client wire: 0=Yes, 1=No)
         await handler.HandleAsync(writer.ToBytes(), invitee, TestContext.Current.CancellationToken);
 
         var add = leader.Sent.Single(p => p.Type == PacketType.CircleNotifyAddMember);
@@ -483,6 +483,51 @@ public sealed class CircleHandlerTests
         Assert.Equal((ulong)created.Circle!.Id, reader.ReadULong());
         Assert.Equal(2u, reader.ReadUInt());
         Assert.Equal("character-2", reader.ReadString());
+    }
+
+    [Fact]
+    public async Task JoinAnswer_Reject_DoesNotAddMember()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+        await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "Named",
+            0,
+            TestContext.Current.CancellationToken
+        );
+        await circles.InviteAsync(1, 2, created.Circle!.Id, TestContext.Current.CancellationToken);
+
+        var state = new SharedState();
+        var leader = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            Character = db.Characters.First(c => c.Id == 1),
+            User = db.Users.First(u => u.Id == 1),
+        };
+        var invitee = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            Character = db.Characters.First(c => c.Id == 2),
+            User = db.Users.First(u => u.Id == 2),
+        };
+        state.RegisterClient(ServerType.Msg, leader);
+        state.RegisterClient(ServerType.Msg, invitee);
+
+        var handler = new CircleMemberJoinAnswerHandler(circles, state);
+        var writer = new PacketWriter();
+        writer.Write(1u); // No / reject
+        await handler.HandleAsync(writer.ToBytes(), invitee, TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain(leader.Sent, p => p.Type == PacketType.CircleNotifyAddMember);
+        Assert.Null(
+            await circles.GetMembershipAsync(created.Circle!.Id, 2, TestContext.Current.CancellationToken)
+        );
     }
 
     [Fact]

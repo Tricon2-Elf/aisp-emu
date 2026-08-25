@@ -20,7 +20,9 @@ public class CircleMemberJoinAnswerHandler(ICircleRepository circles, SharedStat
     )
     {
         var request = CircleMemberJoinAnswerRequest.FromBytes(payload.Span);
-        var accept = request.Answer != 0;
+        // Client send_circle_request_join_answer: Yes → 0, No → 1
+        // (dialog Yes button id 0x82040001 maps to answer = (id != Yes) = false).
+        var accept = request.Answer == 0;
         var result = await circles.AnswerInviteAsync((int)session.CharacterId, accept, ct);
 
         // Invitee gets result notify; on accept, roster + add-member go to circle.
