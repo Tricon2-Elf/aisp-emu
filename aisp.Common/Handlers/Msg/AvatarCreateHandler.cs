@@ -7,9 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacterRepository charRepo)
-    : PacketHandlerBase<AvatarCreateRequest, AvatarCreateResponse>,
-        IRequiresAuthenticatedSession
+public class AvatarCreateHandler(
+    ILogger<AvatarCreateHandler> logger,
+    ICharacterRepository charRepo,
+    IWordFilter wordFilter
+) : PacketHandlerBase<AvatarCreateRequest, AvatarCreateResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.AvatarCreateRequest;
     public override PacketType ResponseType => PacketType.AvatarCreateResponse;
@@ -24,6 +26,15 @@ public class AvatarCreateHandler(ILogger<AvatarCreateHandler> logger, ICharacter
     )
     {
         _logger.LogInformation("createRequest: {request}", request.ToString());
+
+        if (wordFilter.ContainsBlockedWord(request.AvatarName))
+        {
+            _logger.LogWarning(
+                "Rejecting avatar create for user {UserId}: blocked name",
+                session.User!.Id
+            );
+            return new AvatarCreateResponse(1);
+        }
 
         Character newChar = await charRepo.CreateAsync(
             request.AvatarName,

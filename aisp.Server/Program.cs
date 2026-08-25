@@ -102,6 +102,7 @@ internal class Program
         );
         builder.Services.AddScoped<ServerScriptDispatcher>();
         builder.Services.AddSingleton<ITextLocaliser, TextLocaliser>();
+        builder.Services.AddSingleton<IWordFilter, WordFilter>();
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
         builder.Services.AddSingleton<SharedState>(sp =>
         {
