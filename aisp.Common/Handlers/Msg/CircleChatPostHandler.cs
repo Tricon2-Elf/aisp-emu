@@ -44,9 +44,16 @@ public class CircleChatPostHandler(
             return;
         }
 
+        var fromId = session.CharacterId;
+        if (fromId == 0)
+        {
+            var areaSession = state.GetAreaSessionByUserId(session.UserId);
+            fromId = areaSession?.CharacterId ?? 0;
+        }
+
         logger.LogInformation(
             "[CIRCLE CHAT] From:{CharacterId} Circle:{CircleId}: {Message}",
-            session.CharacterId,
+            fromId,
             circleId,
             req.Message
         );
@@ -57,8 +64,13 @@ public class CircleChatPostHandler(
             ct
         );
 
-        var forward = new CircleChatForwardNotify(session.CharacterId, req.Message).ToBytes();
-        foreach (var client in state.GetCircleChatClients(circleId))
+        await CircleNotifyHelper.SendRosterAsync(circles, state, circleId, ct);
+
+        var forward = new CircleChatForwardNotify(fromId, req.Message).ToBytes();
+        var members = await circles.GetMembersAsync(circleId, ct);
+        foreach (
+            var client in state.GetOnlineMsgClientsByCharacterIds(members.Select(m => m.CharacterId))
+        )
         {
             if (client.ConnectionId != session.ConnectionId)
                 await client.SendAsync(PacketType.CircleChatForwardNotify, forward, ct);

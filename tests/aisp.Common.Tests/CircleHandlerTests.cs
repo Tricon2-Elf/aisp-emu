@@ -110,7 +110,7 @@ public sealed class CircleHandlerTests
     }
 
     [Fact]
-    public async Task ChatPost_OnlyForwardsToActiveChatMembers()
+    public async Task ChatPost_ForwardsToAllOnlineCircleMembers()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         await using var _ = connection;
@@ -135,16 +135,19 @@ public sealed class CircleHandlerTests
         var leader = new CapturingPlayerSession
         {
             CharacterId = 1,
+            Character = db.Characters.First(c => c.Id == 1),
             User = db.Users.First(u => u.Id == 1),
         };
         var memberInChat = new CapturingPlayerSession
         {
             CharacterId = 2,
+            Character = db.Characters.First(c => c.Id == 2),
             User = db.Users.First(u => u.Id == 2),
         };
         var memberNotInChat = new CapturingPlayerSession
         {
             CharacterId = 3,
+            Character = db.Characters.First(c => c.Id == 3),
             User = db.Users.First(u => u.Id == 3),
         };
         state.RegisterClient(ServerType.Msg, leader);
@@ -165,10 +168,8 @@ public sealed class CircleHandlerTests
 
         Assert.Contains(leader.Sent, p => p.Type == PacketType.CircleChatPostResponse);
         Assert.Contains(memberInChat.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
-        Assert.DoesNotContain(
-            memberNotInChat.Sent,
-            p => p.Type == PacketType.CircleChatForwardNotify
-        );
+        Assert.Contains(memberNotInChat.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
+        Assert.Contains(memberNotInChat.Sent, p => p.Type == PacketType.CircleNotifyMember);
     }
 
     [Fact]
