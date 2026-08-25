@@ -10,6 +10,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.DAL.Repositories;
 
+public enum RemoveRoomResult
+{
+    Removed,
+    NotOwned,
+    DefaultRoom,
+    NotEmpty,
+}
+
 public interface IMyRoomRepository
 {
     Task<Room?> GetRoomAsync(int roomId, CancellationToken ct = default);
@@ -28,6 +36,11 @@ public interface IMyRoomRepository
         CancellationToken ct = default
     );
     Task<bool> SetDefaultRoomAsync(
+        int roomId,
+        int ownerCharacterId,
+        CancellationToken ct = default
+    );
+    Task<RemoveRoomResult> RemoveRoomAsync(
         int roomId,
         int ownerCharacterId,
         CancellationToken ct = default
@@ -219,6 +232,33 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return true;
+    }
+
+    public async Task<RemoveRoomResult> RemoveRoomAsync(
+        int roomId,
+        int ownerCharacterId,
+        CancellationToken ct = default
+    )
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+        var room = await db.Rooms.SingleOrDefaultAsync(
+            candidate => candidate.Id == roomId && candidate.OwnerCharacterId == ownerCharacterId,
+            ct
+        );
+        if (room is null)
+            return RemoveRoomResult.NotOwned;
+        if (room.IsDefault)
+            return RemoveRoomResult.DefaultRoom;
+        if (await db.MyRoomFurniture.AnyAsync(furniture => furniture.RoomId == roomId, ct))
+            return RemoveRoomResult.NotEmpty;
+
+        db.Rooms.Remove(room);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return RemoveRoomResult.Removed;
     }
 
     public Task<bool> IsOwnerAsync(int roomId, int characterId, CancellationToken ct = default) =>

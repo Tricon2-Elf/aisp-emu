@@ -90,6 +90,15 @@ public static class L
         public static readonly LocKey RoomDenied = new("cmd.room.denied");
         public static readonly LocKey RoomSetNotOwned = new("cmd.room.set_not_owned");
         public static readonly LocKey RoomSetSuccess = new("cmd.room.set_success");
+        public static readonly LocKey RoomListEmpty = new("cmd.room.list_empty");
+        public static readonly LocKey RoomListHeader = new("cmd.room.list_header");
+        public static readonly LocKey RoomListEntry = new("cmd.room.list_entry");
+        public static readonly LocKey RoomListDefault = new("cmd.room.list_default");
+        public static readonly LocKey RoomRemoveNotOwned = new("cmd.room.remove_not_owned");
+        public static readonly LocKey RoomRemoveDefault = new("cmd.room.remove_default");
+        public static readonly LocKey RoomRemoveNotEmpty = new("cmd.room.remove_not_empty");
+        public static readonly LocKey RoomRemoveCurrent = new("cmd.room.remove_current");
+        public static readonly LocKey RoomRemoveSuccess = new("cmd.room.remove_success");
     }
 
     public static class Equipment

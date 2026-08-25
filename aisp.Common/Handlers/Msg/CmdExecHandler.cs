@@ -150,6 +150,94 @@ public class CmdExecHandler(
             if (
                 cmd == "room"
                 && request.Arguments.Count > 0
+                && string.Equals(request.Arguments[0], "list", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                var rooms = await myRoomRepository.GetRoomsAsync(character.Id, ct);
+                if (rooms.Count == 0)
+                {
+                    await SendSystemNoticeAsync(
+                        session,
+                        localiser.Get(session, L.Cmd.RoomListEmpty),
+                        ct
+                    );
+                    return;
+                }
+
+                var lines = new List<string> { localiser.Get(session, L.Cmd.RoomListHeader) };
+                lines.AddRange(
+                    rooms.Select(ownedRoom =>
+                        localiser.Get(
+                            session,
+                            L.Cmd.RoomListEntry,
+                            ownedRoom.Id,
+                            ownedRoom.Name,
+                            GetTatamiSize(ownedRoom.Stage),
+                            ownedRoom.IsDefault
+                                ? localiser.Get(session, L.Cmd.RoomListDefault)
+                                : string.Empty
+                        )
+                    )
+                );
+                await SendSystemNoticeAsync(session, string.Join('\n', lines), ct);
+                return;
+            }
+            else if (
+                cmd == "room"
+                && request.Arguments.Count > 0
+                && string.Equals(request.Arguments[0], "remove", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                if (
+                    request.Arguments.Count < 2
+                    || !long.TryParse(request.Arguments[1], out var parsedRoomId)
+                    || parsedRoomId <= 0
+                    || parsedRoomId > int.MaxValue
+                )
+                {
+                    await SendSystemNoticeAsync(
+                        session,
+                        localiser.Get(session, L.Cmd.InvalidRoomId, int.MaxValue),
+                        ct
+                    );
+                    return;
+                }
+
+                var roomId = checked((int)parsedRoomId);
+                if (areaClient.MyRoomId == (uint)roomId)
+                {
+                    await SendSystemNoticeAsync(
+                        session,
+                        localiser.Get(session, L.Cmd.RoomRemoveCurrent),
+                        ct
+                    );
+                    return;
+                }
+
+                var result = await myRoomRepository.RemoveRoomAsync(roomId, character.Id, ct);
+                var message = result switch
+                {
+                    RemoveRoomResult.Removed => localiser.Get(
+                        session,
+                        L.Cmd.RoomRemoveSuccess,
+                        roomId
+                    ),
+                    RemoveRoomResult.DefaultRoom => localiser.Get(session, L.Cmd.RoomRemoveDefault),
+                    RemoveRoomResult.NotEmpty => localiser.Get(session, L.Cmd.RoomRemoveNotEmpty),
+                    _ => localiser.Get(session, L.Cmd.RoomRemoveNotOwned),
+                };
+                await SendSystemNoticeAsync(session, message, ct);
+                logger.LogInformation(
+                    "CmdExecHandler: character {CharacterId} remove room {RoomId} result: {Result}",
+                    character.Id,
+                    roomId,
+                    result
+                );
+                return;
+            }
+            else if (
+                cmd == "room"
+                && request.Arguments.Count > 0
                 && string.Equals(request.Arguments[0], "set", StringComparison.OrdinalIgnoreCase)
             )
             {
@@ -684,6 +772,16 @@ public class CmdExecHandler(
         return Enum.IsDefined(stage);
     }
 
+    private static int GetTatamiSize(MyRoomStage stage) =>
+        stage switch
+        {
+            MyRoomStage.SixTatami => 6,
+            MyRoomStage.EightTatami => 8,
+            MyRoomStage.TenTatami => 10,
+            MyRoomStage.TwelveTatami => 12,
+            _ => 0,
+        };
+
     private IPlayerSession? ResolveAreaClient(IPlayerSession msgSession)
     {
         var userId = msgSession.User?.Id ?? msgSession.UserId;
@@ -710,7 +808,7 @@ public class CmdExecHandler(
         const uint systemDistId = unchecked((uint)-5);
         return session.SendAsync(
             PacketType.TalkForwardNotify,
-            new TalkForwardNotify(0, systemDistId, text, 0).ToBytes(),
+            new TalkForwardNotify(0, systemDistId, $"{text}\r\n", 0).ToBytes(),
             ct
         );
     }
