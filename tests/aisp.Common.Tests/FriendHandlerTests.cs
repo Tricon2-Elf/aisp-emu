@@ -1,4 +1,5 @@
 using aisp.Common.DAL;
+using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
@@ -11,6 +12,69 @@ namespace aisp.Common.Tests;
 
 public sealed class FriendHandlerTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Accept_RejectsWhenEitherParticipantReachedFriendLimit(bool targetAtLimit)
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        var ct = TestContext.Current.CancellationToken;
+
+        await using (var seed = new MainContext(options))
+        {
+            var user = new User { Id = 1, Username = "friend-limit" };
+            user.SetPassword("pw");
+            for (var id = 1; id <= FriendRepository.MaxFriends + 2; id++)
+            {
+                user.Characters.Add(
+                    new Character
+                    {
+                        Id = id,
+                        Name = $"limit-character-{id}",
+                        Birthdate = new DateTime(2000, 1, 1),
+                    }
+                );
+            }
+            seed.Users.Add(user);
+
+            var fullCharacterId = targetAtLimit ? 2 : 1;
+            for (var id = 3; id <= FriendRepository.MaxFriends + 2; id++)
+            {
+                seed.Friendships.Add(
+                    new Friendship
+                    {
+                        CharacterIdLow = Math.Min(fullCharacterId, id),
+                        CharacterIdHigh = Math.Max(fullCharacterId, id),
+                    }
+                );
+            }
+            seed.FriendRequests.Add(
+                new FriendRequest
+                {
+                    RequesterCharacterId = 1,
+                    TargetCharacterId = 2,
+                    Status = FriendRequestStatus.Pending,
+                }
+            );
+            await seed.SaveChangesAsync(ct);
+        }
+
+        await using var db = new MainContext(options);
+        var result = await new FriendRepository(db).AnswerAsync(2, accept: true, ct);
+
+        Assert.Equal(FriendResult.LimitReached, result.Result);
+        Assert.False(
+            await db.Friendships.AnyAsync(
+                friendship => friendship.CharacterIdLow == 1 && friendship.CharacterIdHigh == 2,
+                ct
+            )
+        );
+        var request = await db.FriendRequests.SingleAsync(ct);
+        Assert.Equal(FriendRequestStatus.Rejected, request.Status);
+        Assert.NotNull(request.ResolvedAt);
+    }
+
     [Fact]
     public async Task RequestAndAccept_PersistsFriendshipAndPopulatesList()
     {

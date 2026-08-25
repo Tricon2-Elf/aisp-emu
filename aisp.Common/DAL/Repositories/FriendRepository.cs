@@ -133,19 +133,32 @@ public sealed class FriendRepository(MainContext db) : IFriendRepository
         if (request is null)
             return new FriendOperationResult(FriendResult.NoPendingRequest);
 
-        request.Status = accept ? FriendRequestStatus.Accepted : FriendRequestStatus.Rejected;
-        request.ResolvedAt = DateTime.UtcNow;
         if (accept)
         {
             var low = Math.Min(request.RequesterCharacterId, targetCharacterId);
             var high = Math.Max(request.RequesterCharacterId, targetCharacterId);
-            if (
-                !await db.Friendships.AnyAsync(
-                    x => x.CharacterIdLow == low && x.CharacterIdHigh == high,
-                    ct
-                )
-            )
+            var alreadyFriends = await db.Friendships.AnyAsync(
+                x => x.CharacterIdLow == low && x.CharacterIdHigh == high,
+                ct
+            );
+            if (!alreadyFriends)
             {
+                if (
+                    await CountFriendsAsync(request.RequesterCharacterId, ct) >= MaxFriends
+                    || await CountFriendsAsync(targetCharacterId, ct) >= MaxFriends
+                )
+                {
+                    request.Status = FriendRequestStatus.Rejected;
+                    request.ResolvedAt = DateTime.UtcNow;
+                    await db.SaveChangesAsync(ct);
+                    await tx.CommitAsync(ct);
+                    return new FriendOperationResult(
+                        FriendResult.LimitReached,
+                        request,
+                        request.RequesterCharacter
+                    );
+                }
+
                 db.Friendships.Add(
                     new Friendship
                     {
@@ -157,6 +170,8 @@ public sealed class FriendRepository(MainContext db) : IFriendRepository
             }
         }
 
+        request.Status = accept ? FriendRequestStatus.Accepted : FriendRequestStatus.Rejected;
+        request.ResolvedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return new FriendOperationResult(FriendResult.Ok, request, request.RequesterCharacter);
