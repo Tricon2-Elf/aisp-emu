@@ -13,6 +13,13 @@
     <form method="get" class="search-form" role="search">
         <label class="visually-hidden" for="user-search">Search by username</label>
         <input id="user-search" class="form-control" name="search" value="@Model.Search" placeholder="Search by username" />
+        <label class="visually-hidden" for="page-size">Users per page</label>
+        <select asp-for="PageSize" id="page-size" class="form-select" aria-label="Users per page">
+            <option value="20">20 users</option>
+            <option value="50">50 users</option>
+            <option value="100">100 users</option>
+            <option value="all">All users</option>
+        </select>
         <button class="btn btn-primary px-3" type="submit">Search</button>
     </form>
 </header>
@@ -32,7 +39,9 @@ else
                         <th class="ps-4">User</th>
                         <th>Characters</th>
                         <th>Dolls</th>
-                        <th class="pe-4">Status</th>
+                        <th>Online</th>
+                        <th>Location</th>
+                        <th class="pe-4">Account</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,6 +51,8 @@ else
                             <td class="ps-4"><a class="user-link" href="/admin/users/@user.UserId">@user.Username</a></td>
                             <td class="text-secondary">@(user.CharacterNames.Count == 0 ? "—" : string.Join(", ", user.CharacterNames))</td>
                             <td>@user.RoboCount</td>
+                            <td><span class="status-pill @(user.IsOnline ? "status-active" : "status-offline")">@(user.IsOnline ? "Online" : "Offline")</span></td>
+                            <td class="text-secondary">@user.Location</td>
                             <td class="pe-4"><span class="status-pill @(user.IsBanned ? "status-banned" : "status-active")">@(user.IsBanned ? "Banned" : "Active")</span></td>
                         </tr>
                     }
@@ -55,11 +66,11 @@ else
     <div class="d-flex gap-2">
         @if (Model.PageNumber > 1)
         {
-            <a class="btn btn-sm btn-ghost" href="?search=@Model.Search&page=@(Model.PageNumber - 1)">Previous</a>
+            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Users" asp-route-search="@Model.Search" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-pageSize="@Model.PageSize">Previous</a>
         }
         @if (Model.HasNextPage)
         {
-            <a class="btn btn-sm btn-ghost" href="?search=@Model.Search&page=@(Model.PageNumber + 1)">Next</a>
+            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Users" asp-route-search="@Model.Search" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-pageSize="@Model.PageSize">Next</a>
         }
     </div>
 </nav>

@@ -134,7 +134,9 @@ public sealed record PortalCharacterRoboSummaryDto(
 public sealed record PortalCharacterRoboEntryDto(
     int CharacterId,
     string CharacterName,
-    int RoboCount
+    int RoboCount,
+    bool IsOnline,
+    string Location
 );
 
 public sealed record PortalUserIdsRequest(

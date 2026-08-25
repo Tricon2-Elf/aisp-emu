@@ -2,7 +2,9 @@ using aisp.Common;
 using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
+using aisp.Common.Game;
 using aisp.Common.Localisation;
+using aisp.Network;
 using aisp.Portal;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Builder;
@@ -125,12 +127,14 @@ internal static class PortalApiEndpointsExtensions
         string? search,
         int? skip,
         int? take,
+        bool? all,
         IUserRepository users,
         CancellationToken ct
     )
     {
-        var actualSkip = Math.Max(skip ?? 0, 0);
-        var actualTake = Math.Clamp(take ?? 50, 1, 100);
+        var returnAll = all == true;
+        var actualSkip = returnAll ? 0 : Math.Max(skip ?? 0, 0);
+        var actualTake = returnAll ? int.MaxValue : Math.Clamp(take ?? 50, 1, 100);
         var result = await users.GetAllAsync(search, actualSkip, actualTake);
         var total = await users.CountAsync(search);
         return TypedResults.Ok(new PortalUserPageDto(result.Select(MapSummary).ToArray(), total));
@@ -299,6 +303,7 @@ internal static class PortalApiEndpointsExtensions
     private static async Task<IResult> GetSummariesAsync(
         PortalUserIdsRequest request,
         MainContext db,
+        SharedState state,
         CancellationToken ct
     )
     {
@@ -311,6 +316,50 @@ internal static class PortalApiEndpointsExtensions
             .Include(user => user.Characters)
                 .ThenInclude(character => character.Robos)
             .ToListAsync(ct);
+        var areaSessions = state
+            .GetServerClients(ServerType.Area)
+            .Where(session => session.IsAuthenticated && session.CharacterId != 0)
+            .GroupBy(session => session.CharacterId)
+            .ToDictionary(group => group.Key, group => group.First());
+        var msgCharacterIds = state
+            .GetServerClients(ServerType.Msg)
+            .Where(session => session.IsAuthenticated && session.CharacterId != 0)
+            .Select(session => session.CharacterId)
+            .ToHashSet();
+        var mapIds = areaSessions
+            .Values.Select(session => (long)session.MapId)
+            .Distinct()
+            .ToArray();
+        var maps = await db
+            .Maps.AsNoTracking()
+            .Where(map => mapIds.Contains(map.MapId))
+            .ToDictionaryAsync(map => map.MapId, map => map.Name, ct);
+        var roomIds = areaSessions
+            .Values.Where(session => MyRoomInfo.IsMyRoomMap(session.MapId) && session.MyRoomId != 0)
+            .Select(session => checked((int)session.MyRoomId))
+            .Distinct()
+            .ToArray();
+        var rooms = await db
+            .Rooms.AsNoTracking()
+            .Where(room => roomIds.Contains(room.Id))
+            .ToDictionaryAsync(room => room.Id, room => room.Name, ct);
+
+        string ResolveLocation(int characterId)
+        {
+            if (!areaSessions.TryGetValue((uint)characterId, out var session))
+                return msgCharacterIds.Contains((uint)characterId) ? "Character select" : "—";
+            if (
+                MyRoomInfo.IsMyRoomMap(session.MapId) && session.MyRoomId is > 0 and <= int.MaxValue
+            )
+            {
+                var roomId = (int)session.MyRoomId;
+                var roomName = rooms.GetValueOrDefault(roomId, "MYROOM");
+                return $"{roomName}({roomId})";
+            }
+
+            return maps.GetValueOrDefault(session.MapId, $"Map {session.MapId}");
+        }
+
         return TypedResults.Ok<IReadOnlyList<PortalCharacterRoboSummaryDto>>(
             users
                 .Select(user => new PortalCharacterRoboSummaryDto(
@@ -318,7 +367,10 @@ internal static class PortalApiEndpointsExtensions
                     user.Characters.Select(character => new PortalCharacterRoboEntryDto(
                             character.Id,
                             character.Name,
-                            character.Robos.Count
+                            character.Robos.Count,
+                            areaSessions.ContainsKey((uint)character.Id)
+                                || msgCharacterIds.Contains((uint)character.Id),
+                            ResolveLocation(character.Id)
                         ))
                         .ToArray()
                 ))
