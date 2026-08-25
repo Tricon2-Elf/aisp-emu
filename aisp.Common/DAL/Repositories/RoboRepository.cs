@@ -197,12 +197,19 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             )
             .ToDictionaryAsync(i => i.ItemId, ct);
 
-        // Newly equipped pieces must come from inventory (or from pieces removed from this
-        // Robo in the same replace). Unequipped pieces return to the owner's inventory.
+        // Shared wardrobe: pieces may come from bag, from this Robo's removed slots, or from the
+        // owner's currently worn avatar equipment. Client wardrobe UI treats all three as owned.
+        var avatarEquipment = await db
+            .CharacterEquipments.Include(e => e.Item)
+            .Where(e => e.CharacterId == characterId)
+            .ToListAsync(ct);
+
         var availableByItemId = inventoryByItemId.ToDictionary(x => x.Key, x => x.Value.Quantity);
         foreach (var change in removed)
             availableByItemId[change.ItemId] =
                 availableByItemId.GetValueOrDefault(change.ItemId) + 1;
+        foreach (var row in avatarEquipment.Where(e => e.ItemId > 0))
+            availableByItemId[row.ItemId] = availableByItemId.GetValueOrDefault(row.ItemId) + 1;
 
         var requiredByItemId = pendingAdds
             .GroupBy(x => (int)x.Equip.ItemId)
@@ -235,14 +242,43 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             }
         }
 
+        var avatarRemoved = new List<EquippedItemChange>();
         foreach (var (itemId, required) in requiredByItemId)
         {
-            var inventory = inventoryByItemId[itemId];
-            inventory.Quantity -= required;
-            if (inventory.Quantity <= 0)
+            var stillNeeded = required;
+            if (inventoryByItemId.TryGetValue(itemId, out var inventory))
             {
-                db.CharacterInventories.Remove(inventory);
-                inventoryByItemId.Remove(itemId);
+                var take = Math.Min(inventory.Quantity, stillNeeded);
+                inventory.Quantity -= take;
+                stillNeeded -= take;
+                if (inventory.Quantity <= 0)
+                {
+                    db.CharacterInventories.Remove(inventory);
+                    inventoryByItemId.Remove(itemId);
+                }
+            }
+
+            while (stillNeeded > 0)
+            {
+                var avatarRow = avatarEquipment.FirstOrDefault(e => e.ItemId == itemId);
+                if (avatarRow is null)
+                    throw new InvalidOperationException(
+                        $"Character {characterId} does not own required quantity of item {itemId} for Robo {roboId}."
+                    );
+
+                avatarRemoved.Add(
+                    new EquippedItemChange(
+                        avatarRow.ItemId,
+                        avatarRow.Item?.Name,
+                        ItemEntityMapper.ResolveBodyspot(
+                            avatarRow.ItemId,
+                            name: avatarRow.Item?.Name
+                        )
+                    )
+                );
+                db.CharacterEquipments.Remove(avatarRow);
+                avatarEquipment.Remove(avatarRow);
+                stillNeeded--;
             }
         }
 
@@ -277,7 +313,8 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
 
         return new RoboEquipReplaceResult(
             ToRoboData(entity),
-            new EquipReplaceResult(removed, added, countsByItemId)
+            new EquipReplaceResult(removed, added, countsByItemId),
+            avatarRemoved
         );
     }
 
