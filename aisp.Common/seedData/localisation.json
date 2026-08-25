@@ -89,6 +89,18 @@
     "zh-Hans": "无法加入该房间。",
     "zh-Hant": "無法加入該房間。"
   },
+  "cmd.room.set_not_owned": {
+    "ja": "自分が所有する部屋にいる時だけ、その部屋をデフォルトに設定できます。",
+    "en": "You can only set a room you own as your default room.",
+    "zh-Hans": "只能将自己拥有的房间设为默认房间。",
+    "zh-Hant": "只能將自己擁有的房間設為預設房間。"
+  },
+  "cmd.room.set_success": {
+    "ja": "部屋 {0} をデフォルトの部屋に設定しました。",
+    "en": "Room {0} is now your default room.",
+    "zh-Hans": "房间 {0} 现已设为默认房间。",
+    "zh-Hant": "房間 {0} 現已設為預設房間。"
+  },
   "map.island_title_format": {
     "ja": "{0}島 {1}",
     "en": "{0} Island {1}",

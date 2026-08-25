@@ -452,6 +452,32 @@ public class CmdExecHandlerTests
             Assert.Equal("Second Room", createdRoom.Name);
             Assert.Equal(MyRoomStage.EightTatami, createdRoom.Stage);
             Assert.Equal(checked((uint)createdRoom.Id), areaSession.MyRoomId);
+
+            msgSession.Sent.Clear();
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "set"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var ownedRooms = await verifyDb
+                .Rooms.AsNoTracking()
+                .Where(room => room.OwnerCharacterId == 8101)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            Assert.True(ownedRooms.Single(room => room.Id == createdRoom.Id).IsDefault);
+            Assert.False(ownedRooms.Single(room => room.Id == 9000).IsDefault);
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var noticeReader = new PacketReader(notice.Payload);
+            Assert.Equal(0u, noticeReader.ReadUInt());
+            Assert.Equal(unchecked((uint)-5), noticeReader.ReadUInt());
+            Assert.Contains(
+                "default room",
+                noticeReader.ReadString("utf-8"),
+                StringComparison.Ordinal
+            );
         }
         finally
         {

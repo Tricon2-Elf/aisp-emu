@@ -27,6 +27,11 @@ public interface IMyRoomRepository
         string name,
         CancellationToken ct = default
     );
+    Task<bool> SetDefaultRoomAsync(
+        int roomId,
+        int ownerCharacterId,
+        CancellationToken ct = default
+    );
     Task<bool> IsOwnerAsync(int roomId, int characterId, CancellationToken ct = default);
     Task<IReadOnlyList<Furniture>> GetFurnitureCatalogAsync(CancellationToken ct = default);
     Task<IReadOnlyList<MyRoomFurniture>> GetFurnitureAsync(
@@ -185,6 +190,35 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
         db.Rooms.Add(room);
         await db.SaveChangesAsync(ct);
         return await GetRoomAsync(room.Id, ct);
+    }
+
+    public async Task<bool> SetDefaultRoomAsync(
+        int roomId,
+        int ownerCharacterId,
+        CancellationToken ct = default
+    )
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+        var rooms = await db
+            .Rooms.Where(room => room.OwnerCharacterId == ownerCharacterId)
+            .ToListAsync(ct);
+        var selected = rooms.SingleOrDefault(room => room.Id == roomId);
+        if (selected is null)
+            return false;
+
+        var now = DateTime.UtcNow;
+        foreach (var room in rooms)
+        {
+            room.IsDefault = room.Id == roomId;
+            room.UpdatedAt = now;
+        }
+
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return true;
     }
 
     public Task<bool> IsOwnerAsync(int roomId, int characterId, CancellationToken ct = default) =>

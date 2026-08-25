@@ -150,6 +150,72 @@ public class CmdExecHandler(
             if (
                 cmd == "room"
                 && request.Arguments.Count > 0
+                && string.Equals(request.Arguments[0], "set", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                int roomId;
+                if (request.Arguments.Count == 1)
+                {
+                    if (areaClient.MyRoomId == 0 || areaClient.MyRoomId > int.MaxValue)
+                    {
+                        await SendSystemNoticeAsync(
+                            session,
+                            localiser.Get(session, L.Cmd.RoomSetNotOwned),
+                            ct
+                        );
+                        return;
+                    }
+
+                    roomId = checked((int)areaClient.MyRoomId);
+                }
+                else if (
+                    !long.TryParse(request.Arguments[1], out var parsedRoomId)
+                    || parsedRoomId <= 0
+                    || parsedRoomId > int.MaxValue
+                )
+                {
+                    await SendSystemNoticeAsync(
+                        session,
+                        localiser.Get(session, L.Cmd.InvalidRoomId, int.MaxValue),
+                        ct
+                    );
+                    return;
+                }
+                else
+                {
+                    roomId = checked((int)parsedRoomId);
+                }
+
+                if (!await myRoomRepository.SetDefaultRoomAsync(roomId, character.Id, ct))
+                {
+                    await SendSystemNoticeAsync(
+                        session,
+                        localiser.Get(session, L.Cmd.RoomSetNotOwned),
+                        ct
+                    );
+                    logger.LogWarning(
+                        "CmdExecHandler: character {CharacterId} cannot set room {RoomId} as default because they do not own it",
+                        character.Id,
+                        roomId
+                    );
+                    return;
+                }
+
+                await SendSystemNoticeAsync(
+                    session,
+                    localiser.Get(session, L.Cmd.RoomSetSuccess, roomId),
+                    ct
+                );
+                logger.LogInformation(
+                    "CmdExecHandler: character {CharacterId} set room {RoomId} as their default",
+                    character.Id,
+                    roomId
+                );
+                return;
+            }
+            else if (
+                cmd == "room"
+                && request.Arguments.Count > 0
                 && string.Equals(request.Arguments[0], "create", StringComparison.OrdinalIgnoreCase)
             )
             {

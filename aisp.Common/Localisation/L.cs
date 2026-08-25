@@ -88,6 +88,8 @@ public static class L
         public static readonly LocKey RoomNotFound = new("cmd.room.not_found");
         public static readonly LocKey RoomPrivate = new("cmd.room.private");
         public static readonly LocKey RoomDenied = new("cmd.room.denied");
+        public static readonly LocKey RoomSetNotOwned = new("cmd.room.set_not_owned");
+        public static readonly LocKey RoomSetSuccess = new("cmd.room.set_success");
     }
 
     public static class Equipment
