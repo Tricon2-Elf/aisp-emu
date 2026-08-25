@@ -76,6 +76,7 @@ internal class Program
         builder.Services.AddScoped<IRoboRepository, RoboRepository>();
         builder.Services.AddScoped<IMyRoomRepository, MyRoomRepository>();
         builder.Services.AddScoped<ICircleRepository, CircleRepository>();
+        builder.Services.AddScoped<IFriendRepository, FriendRepository>();
         builder.Services.AddScoped<INicotvRepository, NicotvRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();

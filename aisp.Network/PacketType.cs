@@ -1776,10 +1776,26 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
-        "send_friend_link_tag_get_other",
+        "send_request_add_friend_list",
         ImplementationState.Implemented
     )]
-    FriendLinkTagGetOtherRequest = 0xC9D8,
+    RequestAddFriendListRequest = 0xC9D8,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_request_add_friend_list_r",
+        ImplementationState.Implemented
+    )]
+    RequestAddFriendListResponse = 0x24D8,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_request_add_friend_list_cancel",
+        ImplementationState.Implemented
+    )]
+    RequestAddFriendListCancelRequest = 0x6827,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -3234,7 +3250,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_add_friend_list_result",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyAddFriendListResult = 0xE04C,
 
@@ -3810,7 +3826,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_request_friend_list",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRequestFriendList = 0xABE6,
 
@@ -3818,7 +3834,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_request_friend_list_cancel",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRequestFriendListCancel = 0x54D6,
 
@@ -5154,7 +5170,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_request_friend_list_answer",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     RequestFriendListAnswerRequest = 0xC42A,
 

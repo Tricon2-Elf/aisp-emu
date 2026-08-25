@@ -11,7 +11,7 @@ namespace aisp.Common.Tests;
 public class AvatarDestroyHandlerTests
 {
     [Fact]
-    public async Task Destroy_RemovesRestrictedCircleDataAndCharacter()
+    public async Task Destroy_RemovesRestrictedSocialDataAndCharacter()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -59,6 +59,10 @@ public class AvatarDestroyHandlerTests
                         ],
                     }
                 );
+                db.Friendships.Add(new Friendship { CharacterIdLow = 101, CharacterIdHigh = 202 });
+                db.FriendRequests.Add(
+                    new FriendRequest { RequesterCharacterId = 202, TargetCharacterId = 101 }
+                );
                 await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
                 // Reproduce the legacy Character.CircleId back-reference used by existing data.
@@ -105,6 +109,12 @@ public class AvatarDestroyHandlerTests
             );
             Assert.Empty(
                 await verifyDb.CircleJoinRequests.ToListAsync(TestContext.Current.CancellationToken)
+            );
+            Assert.Empty(
+                await verifyDb.Friendships.ToListAsync(TestContext.Current.CancellationToken)
+            );
+            Assert.Empty(
+                await verifyDb.FriendRequests.ToListAsync(TestContext.Current.CancellationToken)
             );
             Assert.Empty(user.Characters);
             Assert.Null(session.Character);

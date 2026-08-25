@@ -52,6 +52,16 @@ public class AvatarDestroyHandler(MainContext db, ILogger<AvatarDestroyHandler> 
                     request.RequesterCharacterId == cha.Id || request.TargetCharacterId == cha.Id
                 )
                 .ExecuteDeleteAsync(ct);
+            await db
+                .FriendRequests.Where(request =>
+                    request.RequesterCharacterId == cha.Id || request.TargetCharacterId == cha.Id
+                )
+                .ExecuteDeleteAsync(ct);
+            await db
+                .Friendships.Where(friendship =>
+                    friendship.CharacterIdLow == cha.Id || friendship.CharacterIdHigh == cha.Id
+                )
+                .ExecuteDeleteAsync(ct);
 
             var ledCircleIds = await db
                 .Circles.Where(circle => circle.LeaderCharacterId == cha.Id)

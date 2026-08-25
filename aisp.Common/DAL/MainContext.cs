@@ -33,6 +33,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<Circle> Circles => Set<Circle>();
     public DbSet<CircleMember> CircleMembers => Set<CircleMember>();
     public DbSet<CircleJoinRequest> CircleJoinRequests => Set<CircleJoinRequest>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
     public DbSet<Npc> Npcs => Set<Npc>();
@@ -407,6 +409,39 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.TargetCharacterId,
                 x.Status,
             });
+        });
+
+        b.Entity<Friendship>(e =>
+        {
+            e.ToTable("Friendships");
+            e.HasKey(x => new { x.CharacterIdLow, x.CharacterIdHigh });
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.CharacterLow)
+                .WithMany()
+                .HasForeignKey(x => x.CharacterIdLow)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.CharacterHigh)
+                .WithMany()
+                .HasForeignKey(x => x.CharacterIdHigh)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.CharacterIdHigh);
+        });
+
+        b.Entity<FriendRequest>(e =>
+        {
+            e.ToTable("FriendRequests");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.RequesterCharacter)
+                .WithMany()
+                .HasForeignKey(x => x.RequesterCharacterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.TargetCharacter)
+                .WithMany()
+                .HasForeignKey(x => x.TargetCharacterId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.TargetCharacterId, x.Status });
+            e.HasIndex(x => new { x.RequesterCharacterId, x.Status });
         });
 
         b.Entity<Map>(e =>
