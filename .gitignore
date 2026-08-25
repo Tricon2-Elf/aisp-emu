@@ -372,3 +372,4 @@ aisp-decompiled.c
 localDocs
 internal-nlog.txt
 tools/
+**/seedData/blockedWords.txt

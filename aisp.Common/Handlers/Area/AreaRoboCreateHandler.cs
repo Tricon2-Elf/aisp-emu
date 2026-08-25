@@ -9,6 +9,7 @@ namespace aisp.Common.Handlers.Area;
 
 public class AreaRoboCreateHandler(
     IRoboRepository roboRepository,
+    IWordFilter wordFilter,
     ILogger<AreaRoboCreateHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -39,6 +40,20 @@ public class AreaRoboCreateHandler(
             request.Visual,
             objectId
         );
+
+        if (wordFilter.ContainsBlockedWord(request.Name))
+        {
+            logger.LogWarning(
+                "Rejecting Robo create for character {CharacterId}: blocked name",
+                session.CharacterId
+            );
+            var stub = new RoboData(roboId, new CharaData(objectId, request.ModelId, string.Empty))
+            {
+                OwnerAvatarId = session.CharacterId,
+            };
+            await session.SendAsync(ResponseType, new RoboCreateResponse(1, stub).ToBytes(), ct);
+            return;
+        }
 
         // Never reuse CharacterId as m_SlotId — after call, client LookupChara(slotId) and may destroy it when state=0.
         var blood = (uint)request.Visual.BloodType is >= 1 and <= 4
@@ -74,7 +89,4 @@ public class AreaRoboCreateHandler(
         var response = new RoboCreateResponse(0, robo);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
-
-    private static bool IsCharadollPresetModel(uint modelId) =>
-        modelId is >= 2_000_000 and < 5_000_000;
 }

@@ -6,6 +6,7 @@ using aisp.Common.Tests.Support;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace aisp.Common.Tests;
@@ -79,6 +80,7 @@ public class AreaRoboCreateHandlerTests
             var repository = new RoboRepository(db);
             var handler = new AreaRoboCreateHandler(
                 repository,
+                WordFilter.FromTerms(Array.Empty<string>()),
                 NullLogger<AreaRoboCreateHandler>.Instance
             );
             var session = new CapturingPlayerSession { CharacterId = 42 };
@@ -136,6 +138,50 @@ public class AreaRoboCreateHandlerTests
             Assert.Equal(42u, stored.OwnerAvatarId);
             Assert.Equal(RoboRepository.GetObjectId(42, 1), stored.Chara.Visual.VisualId);
             Assert.Equal("Robot", stored.Character.Name);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task HandleAsync_RejectsBlockedName_WithoutPersisting()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+            await using var db = new MainContext(options);
+            var repository = new RoboRepository(db);
+            var handler = new AreaRoboCreateHandler(
+                repository,
+                WordFilter.FromTerms(["faggot"]),
+                NullLogger<AreaRoboCreateHandler>.Instance
+            );
+            var session = new CapturingPlayerSession { CharacterId = 42 };
+
+            var writer = new PacketWriter();
+            writer.Write("Faggot", "utf-8");
+            writer.Write(new CharaVisual(BloodType.A, 12, 12, 0, 0, 0, 0).ToBytes());
+            writer.Write(1002011u);
+
+            await handler.HandleAsync(
+                writer.ToBytes(),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var sent = Assert.Single(session.Sent);
+            Assert.Equal(PacketType.RoboCreateResponse, sent.Type);
+            Assert.Equal(1u, new PacketReader(sent.Payload).ReadUInt());
+
+            Assert.False(
+                await db.Robos.AnyAsync(
+                    r => r.CharacterId == 42,
+                    TestContext.Current.CancellationToken
+                )
+            );
         }
         finally
         {
