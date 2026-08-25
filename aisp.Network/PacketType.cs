@@ -1089,7 +1089,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_open_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailOpenRequest = 0x1292,
 
@@ -1097,7 +1097,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_open_mail_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailOpenResponse = 0xDF76,
 
@@ -1105,7 +1105,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_post_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailPostRequest = 0x34BC,
 
@@ -1113,7 +1113,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_post_mail_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailPostResponse = 0x2306,
 
@@ -3698,7 +3698,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_new_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyNewMail = 0x61A8,
 
