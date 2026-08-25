@@ -1963,6 +1963,7 @@ public class AreaMapHandlersTests
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
                 new MyRoomRepository(handlerDb),
                 new CircleRepository(handlerDb),
+                new FriendRepository(handlerDb),
                 new SharedState(),
                 NullLogger<AreasvEnterHandler>.Instance
             );
@@ -2047,6 +2048,7 @@ public class AreaMapHandlersTests
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
                 new MyRoomRepository(handlerDb),
                 new CircleRepository(handlerDb),
+                new FriendRepository(handlerDb),
                 state,
                 NullLogger<AreasvEnterHandler>.Instance
             );

@@ -3257,6 +3257,22 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_notify_friend_list_avatar_login",
+        ImplementationState.Implemented
+    )]
+    NotifyFriendListAvatarLogin = 0xECF5,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_friend_list_avatar_logout",
+        ImplementationState.Implemented
+    )]
+    NotifyFriendListAvatarLogout = 0xE672,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_notify_battle_raise_start",
         ImplementationState.NotImplemented
     )]

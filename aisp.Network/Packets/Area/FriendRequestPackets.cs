@@ -10,6 +10,16 @@ public sealed class FriendResultResponse(uint result) : IOutgoingPacket
     }
 }
 
+public sealed class FriendAvatarPresenceNotify(uint avatarId) : IOutgoingPacket
+{
+    public byte[] ToBytes()
+    {
+        var writer = new PacketWriter();
+        writer.Write(avatarId);
+        return writer.ToBytes();
+    }
+}
+
 public sealed class NotifyRequestFriendList(uint fromAvatarId, string fromName) : IOutgoingPacket
 {
     public const int NameLength = 37;
@@ -18,7 +28,7 @@ public sealed class NotifyRequestFriendList(uint fromAvatarId, string fromName) 
     {
         var writer = new PacketWriter();
         writer.Write(fromAvatarId);
-        writer.Write(fromName, NameLength - 1);
+        writer.WriteFixedString(fromName, NameLength);
         return writer.ToBytes();
     }
 }

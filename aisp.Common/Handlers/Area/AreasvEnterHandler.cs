@@ -16,6 +16,7 @@ public class AreasvEnterHandler(
     ICharacterRepository characterRepo,
     IMyRoomRepository myRoomRepository,
     ICircleRepository circleRepository,
+    IFriendRepository friendRepository,
     SharedState state,
     ILogger<AreasvEnterHandler> logger
 ) : IPacketHandler
@@ -211,6 +212,19 @@ public class AreasvEnterHandler(
         chara.LastLoggedInAt = DateTime.UtcNow;
 
         await session.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
+        try
+        {
+            await FriendNotifyHelper.NotifyLoginAsync(friendRepository, state, chara.Id, ct);
+        }
+        catch (Exception ex)
+        {
+            // Presence notifications are best-effort and must never abort Area login.
+            logger.LogWarning(
+                ex,
+                "Failed broadcasting friend login for character {CharacterId}",
+                chara.Id
+            );
+        }
         // Self avatar: AvatarGetData / MapDataEnterEnd. Peers: MapEnter (post-load).
     }
 

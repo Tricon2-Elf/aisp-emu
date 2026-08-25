@@ -99,6 +99,35 @@ public abstract class GameServerBase<T> : BackgroundService
                                     id
                                 );
                             }
+
+                            if (
+                                disconnectedSession.CharacterId != 0
+                                && disconnectedSession.CharacterId <= int.MaxValue
+                            )
+                            {
+                                try
+                                {
+                                    using var scope = ScopeFactory.CreateScope();
+                                    var friends =
+                                        scope.ServiceProvider.GetRequiredService<aisp.Common.DAL.Repositories.IFriendRepository>();
+                                    aisp.Common.Handlers.Area.FriendNotifyHelper.NotifyLogoutAsync(
+                                            friends,
+                                            State,
+                                            (int)disconnectedSession.CharacterId,
+                                            CancellationToken.None
+                                        )
+                                        .GetAwaiter()
+                                        .GetResult();
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.LogWarning(
+                                        ex,
+                                        "Failed broadcasting friend logout for client {ClientId}",
+                                        id
+                                    );
+                                }
+                            }
                         }
 
                         if (

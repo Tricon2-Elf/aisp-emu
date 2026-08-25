@@ -53,7 +53,7 @@ public sealed class FriendHandlerTests
         );
         var requestReader = new PacketReader(requestNotify.Payload);
         Assert.Equal(1u, requestReader.ReadUInt());
-        Assert.Equal("character-1", requestReader.ReadString());
+        Assert.Equal("character-1", requestReader.ReadFixedString(37));
 
         var answerHandler = new AreaRequestFriendListAnswerHandler(friends, state);
         var answerWriter = new PacketWriter();
@@ -80,13 +80,30 @@ public sealed class FriendHandlerTests
             requester.Sent,
             packet => packet.Type == PacketType.FriendGetListDataResponse
         );
+        Assert.Equal(58, list.Payload.Length);
         var listReader = new PacketReader(list.Payload);
         Assert.Equal(0u, listReader.ReadUInt());
         Assert.Equal(1u, listReader.ReadUInt());
         Assert.Equal(2u, listReader.ReadUInt());
-        Assert.Equal("character-2", listReader.ReadString());
+        Assert.Equal("character-2", listReader.ReadFixedString(37));
         Assert.Equal(1u, listReader.ReadUInt());
         Assert.Equal(1, listReader.ReadByte());
         Assert.Equal(0u, listReader.ReadUInt());
+
+        requester.Sent.Clear();
+        await FriendNotifyHelper.NotifyLogoutAsync(friends, state, 2, ct);
+        var logout = Assert.Single(
+            requester.Sent,
+            packet => packet.Type == PacketType.NotifyFriendListAvatarLogout
+        );
+        Assert.Equal(2u, new PacketReader(logout.Payload).ReadUInt());
+
+        requester.Sent.Clear();
+        await FriendNotifyHelper.NotifyLoginAsync(friends, state, 2, ct);
+        var login = Assert.Single(
+            requester.Sent,
+            packet => packet.Type == PacketType.NotifyFriendListAvatarLogin
+        );
+        Assert.Equal(2u, new PacketReader(login.Payload).ReadUInt());
     }
 }
