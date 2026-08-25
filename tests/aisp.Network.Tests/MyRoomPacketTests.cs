@@ -212,8 +212,8 @@ public class MyRoomPacketTests
     {
         var rooms = new[]
         {
-            new RoomListEntry(42, "テスト部屋", "所有者", 0, 120),
-            new RoomListEntry(73, "Second room", "Owner", 3, 121),
+            new RoomListEntry(42, "テスト部屋", "所有者", 0),
+            new RoomListEntry(73, "Second room", "Owner", 3),
         };
 
         var payload = new NotifyRoomListPack(rooms).ToBytes();
@@ -225,7 +225,7 @@ public class MyRoomPacketTests
         Assert.Equal("テスト部屋", reader.ReadFixedString(RoomListEntry.RoomNameLength));
         Assert.Equal("所有者", reader.ReadFixedString(RoomListEntry.OwnerNameLength));
         Assert.Equal(0, reader.ReadByte());
-        Assert.Equal(120u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new NotifyRoomListPack(
                 Enumerable.Repeat(rooms[0], NotifyRoomListPack.MaximumRooms + 1).ToArray()

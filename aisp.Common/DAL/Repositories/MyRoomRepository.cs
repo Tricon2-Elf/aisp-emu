@@ -16,6 +16,11 @@ public interface IMyRoomRepository
     Task<Room?> GetDefaultRoomAsync(int ownerCharacterId, CancellationToken ct = default);
     Task<Room?> GetOrCreateDefaultRoomAsync(int ownerCharacterId, CancellationToken ct = default);
     Task<IReadOnlyList<Room>> GetRoomsAsync(int ownerCharacterId, CancellationToken ct = default);
+    Task<IReadOnlyList<Room>> GetCandidateVisitRoomsAsync(
+        int excludeOwnerCharacterId,
+        int take,
+        CancellationToken ct = default
+    );
     Task<Room?> CreateRoomAsync(
         int ownerCharacterId,
         MyRoomStage stage,
@@ -132,6 +137,29 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
             .OrderByDescending(x => x.IsDefault)
             .ThenBy(x => x.Id)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Room>> GetCandidateVisitRoomsAsync(
+        int excludeOwnerCharacterId,
+        int take,
+        CancellationToken ct = default
+    )
+    {
+        if (take <= 0)
+            return [];
+
+        return await db
+            .Rooms.AsNoTracking()
+            .Include(x => x.OwnerCharacter)
+            .Where(x =>
+                x.OwnerCharacterId != excludeOwnerCharacterId
+                && x.Security != MyRoomSecurity.Private
+                && x.Security != MyRoomSecurity.FriendsOnly
+            )
+            .OrderByDescending(x => x.IsDefault)
+            .ThenBy(x => x.Id)
+            .Take(take)
+            .ToListAsync(ct);
+    }
 
     public async Task<Room?> CreateRoomAsync(
         int ownerCharacterId,

@@ -223,17 +223,23 @@
     "zh-Hans": "你好",
     "zh-Hant": "你好"
   },
-  "script.myroom.door.return_shopping": {
-    "ja": "ショッピングエリアへ戻る",
-    "en": "Return to Shopping Area",
-    "zh-Hans": "返回购物区",
-    "zh-Hant": "返回購物區"
+  "script.myroom.door.go_outside": {
+    "ja": "外に出かける",
+    "en": "Go outside",
+    "zh-Hans": "外出",
+    "zh-Hant": "外出"
   },
-  "script.myroom.door.close": {
-    "ja": "閉じる",
-    "en": "Close",
-    "zh-Hans": "关闭",
-    "zh-Hant": "關閉"
+  "script.myroom.door.go_other_room": {
+    "ja": "他の部屋に行く",
+    "en": "Go to another room",
+    "zh-Hans": "去其他房间",
+    "zh-Hant": "去其他房間"
+  },
+  "script.myroom.door.stay_in": {
+    "ja": "今日は出かける気分じゃない",
+    "en": "Don't feel like going out today",
+    "zh-Hans": "今天不想出门",
+    "zh-Hant": "今天不想出門"
   },
   "script.myroom.door.leave_prompt": {
     "ja": "マイルームを出ますか？",

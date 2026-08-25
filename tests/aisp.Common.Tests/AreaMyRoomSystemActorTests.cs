@@ -356,15 +356,22 @@ public class AreaMyRoomSystemActorTests
             var popupOptions = session
                 .Sent.Where(packet => packet.Type == PacketType.EventSelectPushNotify)
                 .ToArray();
-            Assert.Equal(2, popupOptions.Length);
+            Assert.Equal(3, popupOptions.Length);
             Assert.Equal(
-                "Return to Shopping Area",
+                "Go outside",
                 new PacketReader(popupOptions[0].Payload).ReadString("utf-8")
             );
-            Assert.Equal("Close", new PacketReader(popupOptions[1].Payload).ReadString("utf-8"));
+            Assert.Equal(
+                "Go to another room",
+                new PacketReader(popupOptions[1].Payload).ReadString("utf-8")
+            );
+            Assert.Equal(
+                "Don't feel like going out today",
+                new PacketReader(popupOptions[2].Payload).ReadString("utf-8")
+            );
 
             await selectHandler.HandleAsync(
-                BuildEventSelectionPayload(1),
+                BuildEventSelectionPayload(2),
                 session,
                 TestContext.Current.CancellationToken
             );
@@ -393,6 +400,122 @@ public class AreaMyRoomSystemActorTests
             Assert.True(session.IsMapTransitionPending);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyChangeMap);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task CompletedDoorAccess_GoOtherRoom_OpensRoomList()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            await SeedMyRoomActorsAsync(db);
+            await SeedDoorTravelMapsAsync(db);
+
+            var visitorUser = new User { Username = "door-visitor" };
+            var visitor = new Character
+            {
+                Name = "Visitor",
+                User = visitorUser,
+                ModelId = 1,
+                Birthdate = DateTime.UnixEpoch,
+                CurrentMapId = MyRoomInfo.BaseMapId,
+                HomeIslandId = 1,
+            };
+            var hostUser = new User { Username = "door-host" };
+            var host = new Character
+            {
+                Name = "Host",
+                User = hostUser,
+                ModelId = 1,
+                Birthdate = DateTime.UnixEpoch,
+                CurrentMapId = MyRoomInfo.BaseMapId,
+                HomeIslandId = 1,
+            };
+            db.Users.AddRange(visitorUser, hostUser);
+            db.Characters.AddRange(visitor, host);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            db.Rooms.Add(
+                new Room
+                {
+                    OwnerCharacterId = host.Id,
+                    Name = "Host Room",
+                    Stage = MyRoomStage.SixTatami,
+                    Security = MyRoomSecurity.Public,
+                    IsDefault = true,
+                }
+            );
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var eventRepository = new CharacterEventRepository(db);
+            await eventRepository.MarkCompletedAsync(
+                visitor.Id,
+                ServerEvents.Keys.MyRoomDoor,
+                TestContext.Current.CancellationToken
+            );
+
+            var state = new SharedState();
+            var dispatcher = CreateDispatcher(db, state);
+            var accessHandler = new AreaEventAccessNpcHandler(
+                new NpcRepository(db),
+                new ShopRepository(db),
+                dispatcher,
+                TestTextLocaliser.English,
+                NullLogger<AreaEventAccessNpcHandler>.Instance
+            );
+            var selectHandler = new AreaEventSelectExecRHandler(
+                dispatcher,
+                NullLogger<AreaEventSelectExecRHandler>.Instance
+            );
+            var session = new CapturingPlayerSession
+            {
+                MapId = MyRoomInfo.BaseMapId,
+                ChannelId = 1,
+                CharacterId = (uint)visitor.Id,
+                User = visitorUser,
+                Character = visitor,
+            };
+            visitorUser.Characters.Add(visitor);
+
+            await accessHandler.HandleAsync(
+                BuildEventAccessNpcPayload(0x5FFF_FF01),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            await selectHandler.HandleAsync(
+                BuildEventSelectionPayload(1),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.Null(session.ActiveEventKey);
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyRoomListOpenStart
+            );
+            Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyRoomListPack);
+            Assert.Contains(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyRoomListOpenEnd
+            );
+
+            var pack = session.Sent.Single(packet =>
+                packet.Type == PacketType.NotifyRoomListPack
+            );
+            var reader = new PacketReader(pack.Payload);
+            Assert.Equal(1u, reader.ReadUInt());
+            Assert.Equal((uint)db.Rooms.Single().Id, reader.ReadUInt());
+            Assert.Equal("Host Room", reader.ReadFixedString(RoomListEntry.RoomNameLength));
+            Assert.Equal("Host", reader.ReadFixedString(RoomListEntry.OwnerNameLength));
+            // Owner offline → LoggedOut (3)
+            Assert.Equal((byte)RoomListStatus.LoggedOut, reader.ReadByte());
+            Assert.Equal(RoomListStatus.LoggedOut, reader.ReadUInt());
         }
         finally
         {
@@ -782,6 +905,12 @@ public class AreaMyRoomSystemActorTests
             CreateDirectMapLinkTransitionService(db, state),
             new CharacterEventRepository(db),
             new MyRoomRepository(db),
+            new RoomListService(
+                new MyRoomRepository(db),
+                new CircleRepository(db),
+                state,
+                NullLogger<RoomListService>.Instance
+            ),
             TestTextLocaliser.English,
             NullLogger<MyRoomDoorServerScript>.Instance
         );

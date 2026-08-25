@@ -3858,7 +3858,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_room_list_open_start",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoomListOpenStart = 0xA5BA,
 
@@ -3866,7 +3866,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_room_list_open_end",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoomListOpenEnd = 0xDC32,
 
@@ -3874,7 +3874,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_room_list_pack",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoomListPack = 0xC0B2,
 

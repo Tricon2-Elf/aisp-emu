@@ -145,10 +145,9 @@ public static class L
 
         public static class MyRoom
         {
-            public static readonly LocKey DoorReturnShopping = new(
-                "script.myroom.door.return_shopping"
-            );
-            public static readonly LocKey DoorClose = new("script.myroom.door.close");
+            public static readonly LocKey DoorGoOutside = new("script.myroom.door.go_outside");
+            public static readonly LocKey DoorGoOtherRoom = new("script.myroom.door.go_other_room");
+            public static readonly LocKey DoorStayIn = new("script.myroom.door.stay_in");
             public static readonly LocKey DoorLeavePrompt = new("script.myroom.door.leave_prompt");
             public static readonly LocKey WardrobeUse = new("script.myroom.wardrobe.use");
             public static readonly LocKey WardrobeSkip = new("script.myroom.wardrobe.skip");

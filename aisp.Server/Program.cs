@@ -89,6 +89,7 @@ internal class Program
             PendingMapTransferRepository
         >();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
+        builder.Services.AddScoped<RoomListService>();
         builder.Services.AddScoped<ClientScriptSegmentRunner>();
         builder.Services.AddScoped<ServerScriptSession>();
         builder.Services.Scan(scan =>

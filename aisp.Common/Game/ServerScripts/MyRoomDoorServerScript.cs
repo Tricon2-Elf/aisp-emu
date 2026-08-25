@@ -13,6 +13,7 @@ public sealed class MyRoomDoorServerScript(
     DirectMapLinkTransitionService directMapLinkTransitionService,
     ICharacterEventRepository characterEventRepository,
     IMyRoomRepository myRoomRepository,
+    RoomListService roomListService,
     ITextLocaliser localiser,
     ILogger<MyRoomDoorServerScript> logger
 ) : IServerScript
@@ -40,6 +41,11 @@ public sealed class MyRoomDoorServerScript(
     private const string PhaseTpsBat0101011 = "tpsBat0101011";
     private const string PhaseAwaitingUdxMapReady = "awaitingUdxMapReady";
     private const string PhaseTpsBat0101021 = "tpsBat0101021";
+
+    // Post-quest popup SelectNo values (order of EventSelectPushNotify).
+    private const uint SelectGoOutside = 0;
+    private const uint SelectGoOtherRoom = 1;
+    private const uint SelectStayIn = 2;
 
     public string EventKey => ServerEvents.Keys.MyRoomDoor;
 
@@ -74,7 +80,7 @@ public sealed class MyRoomDoorServerScript(
                 PacketType.EventSelectPushNotify,
                 new EventSelectPushNotify
                 {
-                    SelectName = localiser.Get(session, L.Script.MyRoom.DoorReturnShopping),
+                    SelectName = localiser.Get(session, L.Script.MyRoom.DoorGoOutside),
                 }.ToBytes(),
                 ct
             );
@@ -82,7 +88,15 @@ public sealed class MyRoomDoorServerScript(
                 PacketType.EventSelectPushNotify,
                 new EventSelectPushNotify
                 {
-                    SelectName = localiser.Get(session, L.Script.MyRoom.DoorClose),
+                    SelectName = localiser.Get(session, L.Script.MyRoom.DoorGoOtherRoom),
+                }.ToBytes(),
+                ct
+            );
+            await session.SendAsync(
+                PacketType.EventSelectPushNotify,
+                new EventSelectPushNotify
+                {
+                    SelectName = localiser.Get(session, L.Script.MyRoom.DoorStayIn),
                 }.ToBytes(),
                 ct
             );
@@ -323,7 +337,7 @@ public sealed class MyRoomDoorServerScript(
     )
     {
         var request = EventSelectExecRRequest.FromBytes(payload.Span);
-        if (request.Result != 0 || request.SelectNo == 1)
+        if (request.Result != 0 || request.SelectNo == SelectStayIn)
         {
             await serverScriptSession.CompleteAsync(
                 session,
@@ -334,7 +348,14 @@ public sealed class MyRoomDoorServerScript(
             return true;
         }
 
-        if (request.SelectNo != 0)
+        if (request.SelectNo == SelectGoOtherRoom)
+        {
+            await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
+            await roomListService.OpenAsync(session, ct);
+            return true;
+        }
+
+        if (request.SelectNo != SelectGoOutside)
         {
             await serverScriptSession.AbortAsync(session, EventFailure, ct);
             return true;
