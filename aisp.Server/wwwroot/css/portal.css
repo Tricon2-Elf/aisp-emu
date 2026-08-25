@@ -638,6 +638,11 @@ body:has(.moderation-modal[open]) {
     color: var(--portal-success);
 }
 
+.status-offline {
+    background: #eef1f5;
+    color: var(--portal-muted);
+}
+
 .status-banned {
     background: #fdecef;
     color: var(--portal-danger);
