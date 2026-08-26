@@ -1,4 +1,3 @@
-using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Data;
@@ -6,9 +5,7 @@ using aisp.Network.Packets.Area;
 
 namespace aisp.Common.Handlers.Area;
 
-public class AreaEquipOrderListHandler(ICharacterRepository characterRepo)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class AreaEquipOrderListHandler : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EquipOrderListRequest;
 
@@ -22,18 +19,7 @@ public class AreaEquipOrderListHandler(ICharacterRepository characterRepo)
         CancellationToken ct = default
     )
     {
-        var gender = 1;
-        if (session.CharacterId != 0)
-        {
-            var cha = await characterRepo.GetByIdAsync((int)session.CharacterId, ct);
-            if (cha is not null)
-                gender = cha.Gender;
-        }
-
-        var response = new EquipOrderListResponse
-        {
-            CharaOrders = CharaOrderData.ForGender(gender),
-        };
+        var response = new EquipOrderListResponse { CharaOrders = CharaOrderData.WardrobeOrders };
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

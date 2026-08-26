@@ -15,33 +15,42 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
     /// <summary>Allow wardrobe equip on both avatars and Charadolls.</summary>
     public const byte ControllerAvatarOrRobo = ControllerAvatar | ControllerRobo;
 
+    /// <summary>
+    /// Skip the sub_406E60 gender equality check. Equip-order is one map for the session, and
+    /// Charadolls are always female, so avatar-matched LimitByte2 (1 male / 2 female) blocks
+    /// doll wardrobe on male accounts.
+    /// </summary>
+    public const byte GenderUnrestricted = 0;
+
     public uint Category { get; set; } = category;
     public byte LimitByte1 { get; set; } = limitByte1;
     public byte LimitByte2 { get; set; } = limitByte2;
 
     /// <summary>
     /// Client offline defaults (sub_48FB30) mix male/female and avatar/robo limit bytes per
-    /// category, which blocks wardrobe re-equip via sub_406E60. Send gender-matched orders with
-    /// LimitByte1 covering both avatar (1) and Robo/Charadoll (2) controller types.
+    /// category, which blocks wardrobe re-equip via sub_406E60. Send one shared table with
+    /// LimitByte1 covering avatar (1) and Robo (2), and LimitByte2 unrestricted so male
+    /// avatars and female dolls can both apply clothes.
     /// </summary>
+    public static IReadOnlyList<CharaOrderData> WardrobeOrders { get; } =
+    [
+        new(101, ControllerAvatarOrRobo, GenderUnrestricted), // shirt
+        new(102, ControllerAvatarOrRobo, GenderUnrestricted), // pants / skirt
+        new(103, ControllerAvatarOrRobo, GenderUnrestricted), // gloves
+        new(104, ControllerAvatarOrRobo, GenderUnrestricted), // socks
+        new(105, 0, GenderUnrestricted), // shoes
+        new(106, 0, GenderUnrestricted), // bra
+        new(107, 0, GenderUnrestricted), // lower underwear
+        new(200), // accessories / misc
+    ];
+
     public static IReadOnlyList<CharaOrderData> ForGender(int gender)
     {
-        // Client sub_406E60: v7 = (genderMethod() != 1) + 1 → 1 male, 2 female.
-        byte limitByte2 = (byte)(gender == 1 ? 1 : 2);
-        return
-        [
-            new(101, ControllerAvatarOrRobo, limitByte2), // shirt
-            new(102, ControllerAvatarOrRobo, limitByte2), // pants / skirt
-            new(103, ControllerAvatarOrRobo, limitByte2), // gloves
-            new(104, ControllerAvatarOrRobo, limitByte2), // socks
-            new(105, 0, limitByte2), // shoes
-            new(106, 0, limitByte2), // bra
-            new(107, 0, limitByte2), // lower underwear
-            new(200), // accessories / misc
-        ];
+        _ = gender;
+        return WardrobeOrders;
     }
 
-    public static IReadOnlyList<CharaOrderData> DefaultClothingOrders { get; } = ForGender(1);
+    public static IReadOnlyList<CharaOrderData> DefaultClothingOrders { get; } = WardrobeOrders;
 
     public byte[] ToBytes()
     {
