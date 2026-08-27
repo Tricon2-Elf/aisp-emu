@@ -26,6 +26,9 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
     public byte LimitByte1 { get; set; } = limitByte1;
     public byte LimitByte2 { get; set; } = limitByte2;
 
+    /// <summary>Fixed char[193] label (ITEM_DATA.limit_description). Left empty.</summary>
+    public string LimitDesc { get; set; } = string.Empty;
+
     /// <summary>
     /// Client offline defaults (sub_48FB30) mix male/female and avatar/robo limit bytes per
     /// category, which blocks wardrobe re-equip via sub_406E60. Send one shared table with
@@ -56,7 +59,7 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
     {
         var writer = new PacketWriter();
         writer.Write(Category);
-        writer.Write(new byte[193]);
+        writer.WriteFixedString(LimitDesc, 193);
         writer.Write(LimitByte1);
         writer.Write(LimitByte2);
         writer.Write((byte)0);
