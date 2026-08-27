@@ -9,13 +9,14 @@ public class EquipOrderListResponseTests
     public void ToBytes_writes_chara_orders_before_job_count()
     {
         var payload = new EquipOrderListResponse().ToBytes();
+        var orderCount = CharaOrderData.WardrobeOrders.Count;
 
         Assert.Equal(0u, BitConverter.ToUInt32(payload, 0));
-        Assert.Equal(8u, BitConverter.ToUInt32(payload, 4));
-        Assert.Equal(101u, BitConverter.ToUInt32(payload, 8));
-        Assert.Equal(285 * 8 + 8 + 4, payload.Length);
+        Assert.Equal((uint)orderCount, BitConverter.ToUInt32(payload, 4));
+        Assert.Equal(100u, BitConverter.ToUInt32(payload, 8));
+        Assert.Equal(285 * orderCount + 8 + 4, payload.Length);
 
-        var jobCountOffset = 8 + 285 * 8;
+        var jobCountOffset = 8 + 285 * orderCount;
         Assert.Equal(0u, BitConverter.ToUInt32(payload, jobCountOffset));
         Assert.Equal(jobCountOffset + 4, payload.Length);
     }
@@ -43,5 +44,17 @@ public class EquipOrderListResponseTests
 
         var femaleShirt = CharaOrderData.ForGender(2).First(o => o.Category == 101);
         Assert.Equal(shirt.LimitByte2, femaleShirt.LimitByte2);
+
+        var hat = CharaOrderData.WardrobeOrders.First(o => o.Category == 100);
+        Assert.Equal(CharaOrderData.ControllerAvatarOrRobo, hat.LimitByte1);
+        Assert.Equal(CharaOrderData.GenderUnrestricted, hat.LimitByte2);
+
+        var accessory = CharaOrderData.WardrobeOrders.First(o => o.Category == 108);
+        Assert.Equal(CharaOrderData.ControllerAvatarOrRobo, accessory.LimitByte1);
+        Assert.Equal(CharaOrderData.GenderUnrestricted, accessory.LimitByte2);
+
+        var wig = CharaOrderData.WardrobeOrders.First(o => o.Category == 109);
+        Assert.Equal(CharaOrderData.ControllerAvatarOrRobo, wig.LimitByte1);
+        Assert.Equal(CharaOrderData.GenderUnrestricted, wig.LimitByte2);
     }
 }

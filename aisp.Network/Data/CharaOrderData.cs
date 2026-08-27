@@ -37,6 +37,7 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
     /// </summary>
     public static IReadOnlyList<CharaOrderData> WardrobeOrders { get; } =
     [
+        new(100, ControllerAvatarOrRobo, GenderUnrestricted), // hats (100xxxxx)
         new(101, ControllerAvatarOrRobo, GenderUnrestricted), // shirt
         new(102, ControllerAvatarOrRobo, GenderUnrestricted), // pants / skirt
         new(103, ControllerAvatarOrRobo, GenderUnrestricted), // gloves
@@ -44,7 +45,9 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
         new(105, 0, GenderUnrestricted), // shoes
         new(106, 0, GenderUnrestricted), // bra
         new(107, 0, GenderUnrestricted), // lower underwear
-        new(200), // accessories / misc
+        new(108, ControllerAvatarOrRobo, GenderUnrestricted), // accessories (108xxxxx)
+        new(109, ControllerAvatarOrRobo, GenderUnrestricted), // wigs (109xxxxx)
+        new(200), // misc / leftover prefixes (bags, …)
     ];
 
     public static IReadOnlyList<CharaOrderData> ForGender(int gender)

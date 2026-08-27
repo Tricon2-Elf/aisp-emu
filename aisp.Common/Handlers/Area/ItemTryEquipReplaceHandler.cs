@@ -214,7 +214,10 @@ public class ItemTryEquipReplaceHandler(
         return equips
             .Select(e =>
             {
-                var socket = ItemEntityMapper.ResolveBodyspot((int)e.ItemId);
+                var socket = ItemEntityMapper.ResolveBodyspot(
+                    (int)e.ItemId,
+                    storedSocket: (int)e.SocketBit
+                );
                 if (socket == 0)
                     socket = e.SocketBit;
                 return new ItemEquipEntry(e.ItemId, socket);

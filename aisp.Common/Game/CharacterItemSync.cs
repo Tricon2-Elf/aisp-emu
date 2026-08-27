@@ -126,7 +126,11 @@ internal static class CharacterItemSync
                 continue;
 
             var serialId = ResolveSerialId(equip.ItemId);
-            var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId, name: equip.Item?.Name);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                equip.ItemId,
+                storedSocket: equip.Item?.Socket ?? 0,
+                name: equip.Item?.Name
+            );
 
             await session.SendAsync(
                 PacketType.ItemEquippedNotify,

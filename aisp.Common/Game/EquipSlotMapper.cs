@@ -12,6 +12,25 @@ internal enum CharacterEquipmentSlotIndex : byte
     Gloves = 7,
     Coat = 8,
     Jacket = 9,
+
+    Accessory = 10,
+    Headband = 10,
+    Glasses = 12,
+    Wig = 13,
+    Necklace = 14,
+    HairRibbonRight = 15,
+    HairRibbon = 16,
+    RightEarring = 17,
+    LeftEarring = 18,
+    Handheld = 18,
+    WristLeft = 20,
+    WristPrimary = 20,
+    WristRibbon = 21,
+    Armband = 22,
+    WristCharm = 23,
+    LeftShoulderBand = 24,
+    Wings = 26,
+    Tail = 27,
 }
 
 internal static class EquipSlotMapper
@@ -26,7 +45,8 @@ internal static class EquipSlotMapper
 
         if (itemId is >= 10_000_000 and < 200_000_000)
         {
-            slotIndex = (itemId / 100_000) switch
+            var prefix = itemId / 100_000;
+            slotIndex = prefix switch
             {
                 100 => (byte)CharacterEquipmentSlotIndex.Hat,
                 101 => (byte)CharacterEquipmentSlotIndex.Shirt,
@@ -36,6 +56,10 @@ internal static class EquipSlotMapper
                 105 => (byte)CharacterEquipmentSlotIndex.Shoes,
                 107 => (byte)CharacterEquipmentSlotIndex.LowerUnderwear,
                 106 => (byte)CharacterEquipmentSlotIndex.Bra,
+                108 or 109 or >= 114 and <= 124 => AccessoryAttachMap.ToSlotIndex(
+                    (int)itemId,
+                    socketBit
+                ),
                 _ => InvalidSlot,
             };
             if (slotIndex != InvalidSlot)

@@ -17,7 +17,11 @@ internal static class TryEquipNotifyBuilder
             if (equip.ItemId == 0)
                 continue;
 
-            var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId, name: equip.Item?.Name);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                equip.ItemId,
+                name: equip.Item?.Name,
+                storedSocket: equip.Item?.Socket ?? 0
+            );
             entries.Add(new ItemEquipEntry((uint)equip.ItemId, socket));
         }
 
@@ -31,7 +35,10 @@ internal static class TryEquipNotifyBuilder
     public static List<ItemEquipEntry> FromRobo(RoboData robo)
     {
         return robo
-            .Character.Equips.Select(equip => new ItemEquipEntry(equip.ItemId, equip.Socket))
+            .Character.Equips.Select(equip => new ItemEquipEntry(
+                equip.ItemId,
+                ItemEntityMapper.ResolveBodyspot((int)equip.ItemId, storedSocket: (int)equip.Socket)
+            ))
             .ToList();
     }
 }

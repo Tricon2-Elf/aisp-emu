@@ -386,7 +386,11 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
                 new EquippedItemChange(
                     old.ItemId,
                     old.Item?.Name,
-                    ItemEntityMapper.ResolveBodyspot(old.ItemId, name: old.Item?.Name)
+                    ItemEntityMapper.ResolveBodyspot(
+                        old.ItemId,
+                        storedSocket: old.Item?.Socket ?? 0,
+                        name: old.Item?.Name
+                    )
                 )
             );
         }
@@ -414,7 +418,11 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             addedItemsById.TryGetValue(equipItemId, out var item);
             // Treat incoming socket bits as advisory; derive canonical bodyspot from item metadata
             // so mis-categorized UI tabs cannot force wrong slots (e.g. hats showing as coat).
-            var socket = ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                equipItemId,
+                storedSocket: item?.Socket ?? (int)equip.SocketBit,
+                name: item?.Name
+            );
             if (socket == 0)
                 socket = equip.SocketBit;
             added.Add(new EquippedItemChange(equipItemId, item?.Name, socket));

@@ -134,7 +134,10 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             )
                 continue;
 
-            var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                (int)equip.ItemId,
+                storedSocket: (int)equip.SocketBit
+            );
             newBySlot[slotIndex] = socket == 0 ? equip : new ItemEquipEntry(equip.ItemId, socket);
         }
 
@@ -156,7 +159,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
                 new EquippedItemChange(
                     (int)row.ItemId,
                     ItemName: null,
-                    ItemEntityMapper.ResolveBodyspot(row.ItemId)
+                    ItemEntityMapper.ResolveBodyspot((int)row.ItemId, storedSocket: (int)row.Socket)
                 )
             );
         }
@@ -180,7 +183,11 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         {
             var equipItemId = (int)equip.ItemId;
             addedItemsById.TryGetValue(equipItemId, out var item);
-            var socket = ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                equipItemId,
+                storedSocket: item?.Socket ?? (int)equip.SocketBit,
+                name: item?.Name
+            );
             if (socket == 0)
                 socket = equip.SocketBit;
             added.Add(new EquippedItemChange(equipItemId, item?.Name, socket));
@@ -272,6 +279,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
                         avatarRow.Item?.Name,
                         ItemEntityMapper.ResolveBodyspot(
                             avatarRow.ItemId,
+                            storedSocket: avatarRow.Item?.Socket ?? 0,
                             name: avatarRow.Item?.Name
                         )
                     )

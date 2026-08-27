@@ -19,6 +19,30 @@ internal enum WardrobeSocketBit : uint
     ShoesPrimary = 512,
     Bra = 1024,
     LowerUnderwear = 2048,
+
+    /// <summary>
+    /// Seed JSON stores accessory attach IDs / window slots, not bitmasks. The client unequips by
+    /// bitwise AND, so those IDs collide with clothing (11 = hat|coat|shirt, 16 = skirt, 51 = hat|coat|skirt|pants).
+    /// </summary>
+    Headband = 1u << 25,
+    Glasses = 1u << 12,
+    Wig = 1u << 13,
+    Necklace = 1u << 14,
+    HairRibbonRight = 1u << 15,
+    HairRibbon = 1u << 16,
+    RightEarring = 1u << 17,
+    LeftEarring = 1u << 18,
+    Handheld = 1u << 18,
+    WristPrimary = 1u << 20,
+    WristRibbon = 1u << 21,
+    Armband = 1u << 22,
+    Bracelet = 1u << 23,
+    LeftShoulderBand = 1u << 24,
+    Wings = 1u << 26,
+    Tail = 1u << 27,
+    CostumeHead = 1u << 25,
+    HeldItem = 1u << 18,
+    KigurumiHead = 1u << 28,
 }
 
 internal enum WardrobeCategoryId : uint
@@ -52,6 +76,10 @@ internal static class ItemEntityMapper
             var derived = DeriveClothingBodyspot(itemId, name);
             if (derived != (uint)WardrobeSocketBit.None)
                 return derived;
+
+            var accessory = DeriveAccessoryBodyspot(itemId, storedSocket);
+            if (accessory != (uint)WardrobeSocketBit.None)
+                return accessory;
         }
 
         if (storedSocket != 0)
@@ -65,8 +93,17 @@ internal static class ItemEntityMapper
 
     public static uint ResolveBodyspot(uint itemId) => ResolveBodyspot((int)itemId);
 
-    public static uint ResolveEquipSocket(CharacterEquipSlot slot) =>
-        slot.ItemId is >= 10_000_000 and < 200_000_000 ? 0 : ResolveBodyspot((int)slot.ItemId);
+    public static uint ResolveEquipSocket(CharacterEquipSlot slot)
+    {
+        if (slot.ItemId is < 10_000_000 or >= 200_000_000)
+            return ResolveBodyspot((int)slot.ItemId);
+
+        var prefix = slot.ItemId / 100_000;
+        if (prefix is >= 100 and <= 107)
+            return 0;
+
+        return ResolveBodyspot((int)slot.ItemId);
+    }
 
     private static uint DeriveClothingBodyspot(int itemId, string? name)
     {
@@ -82,6 +119,15 @@ internal static class ItemEntityMapper
             107 => (uint)WardrobeSocketBit.LowerUnderwear,
             _ => (uint)WardrobeSocketBit.None,
         };
+    }
+
+    private static uint DeriveAccessoryBodyspot(int itemId, int storedSocket)
+    {
+        var prefix = itemId / 100_000;
+        if (prefix is >= 100 and <= 107)
+            return (uint)WardrobeSocketBit.None;
+
+        return AccessoryAttachMap.ToSocketBit(itemId, (uint)storedSocket);
     }
 
     private static uint ResolveLowerBodyBodyspot(int itemId, string? name)
@@ -257,7 +303,7 @@ internal static class ItemEntityMapper
         var prefix = itemId / 100_000;
         return prefix switch
         {
-            101 or 102 or 103 or 104 or 105 or 106 or 107 => (uint)prefix,
+            100 or 101 or 102 or 103 or 104 or 105 or 106 or 107 or 108 or 109 => (uint)prefix,
             _ => 200u,
         };
     }
