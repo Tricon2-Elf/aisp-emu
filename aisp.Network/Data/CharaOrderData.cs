@@ -45,9 +45,16 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
         new(105, 0, GenderUnrestricted), // shoes
         new(106, 0, GenderUnrestricted), // bra
         new(107, 0, GenderUnrestricted), // lower underwear
-        new(108, ControllerAvatarOrRobo, GenderUnrestricted), // accessories (108xxxxx)
+        new(108, ControllerAvatarOrRobo, GenderUnrestricted), // face accessories (108xxxxx)
         new(109, ControllerAvatarOrRobo, GenderUnrestricted), // wigs (109xxxxx)
-        new(200), // misc / leftover prefixes (bags, …)
+        new(112, ControllerAvatarOrRobo, GenderUnrestricted), // handheld / bags (112xxxxx)
+        new(114, ControllerAvatarOrRobo, GenderUnrestricted), // wings / backpacks / tails
+        new(115, ControllerAvatarOrRobo, GenderUnrestricted), // wrist
+        new(116, ControllerAvatarOrRobo, GenderUnrestricted), // necklaces (116xxxxx)
+        new(117, ControllerAvatarOrRobo, GenderUnrestricted), // hair ribbons / headbands (117xxxxx)
+        new(118, ControllerAvatarOrRobo, GenderUnrestricted), // masks (118xxxxx)
+        new(122, ControllerAvatarOrRobo, GenderUnrestricted), // held items (122xxxxx)
+        new(200), // leftover prefixes
     ];
 
     public static IReadOnlyList<CharaOrderData> ForGender(int gender)

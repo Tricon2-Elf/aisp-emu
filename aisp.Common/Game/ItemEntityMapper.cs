@@ -32,16 +32,18 @@ internal enum WardrobeSocketBit : uint
     HairRibbon = 1u << 16,
     RightEarring = 1u << 17,
     LeftEarring = 1u << 18,
-    Handheld = 1u << 18,
+    RightHandbag = 1u << 19,
+    Handheld = 1u << 19,
     WristPrimary = 1u << 20,
     WristRibbon = 1u << 21,
     Armband = 1u << 22,
     Bracelet = 1u << 23,
     LeftShoulderBand = 1u << 24,
     Wings = 1u << 26,
+    LeftShoulderBag = 1u << 26,
     Tail = 1u << 27,
     CostumeHead = 1u << 25,
-    HeldItem = 1u << 18,
+    HeldItem = 1u << 19,
     KigurumiHead = 1u << 28,
 }
 
@@ -212,8 +214,10 @@ internal static class ItemEntityMapper
         if (itemId is < 10_000_000 or >= 200_000_000)
             return (uint)WardrobeCategoryId.None;
 
-        // Furniture catalog IDs are 11xxxxxx; without a Furniture row they still must
-        // not fall into clothing category 0 (hat), or the wardrobe furniture tab stays empty.
+        // Furniture catalog IDs are 11xxxxxx except wardrobe accessory prefixes 112-118 / 122-124.
+        if (IsWardrobeAccessoryPrefix(itemId / 100_000))
+            return (uint)WardrobeCategoryId.Accessory;
+
         if (itemId / 100_000 >= 110)
             return (uint)WardrobeCategoryId.FurnitureFloor;
 
@@ -295,6 +299,9 @@ internal static class ItemEntityMapper
         return (socket, 0);
     }
 
+    private static bool IsWardrobeAccessoryPrefix(int prefix) =>
+        prefix is 108 or 109 or 112 or >= 114 and <= 118 or >= 122 and <= 124;
+
     private static uint ResolveLimitMapKey(int itemId)
     {
         if (itemId is < 10_000_000 or >= 200_000_000)
@@ -303,7 +310,14 @@ internal static class ItemEntityMapper
         var prefix = itemId / 100_000;
         return prefix switch
         {
-            100 or 101 or 102 or 103 or 104 or 105 or 106 or 107 or 108 or 109 => (uint)prefix,
+            100 or 101 or 102 or 103 or 104 or 105 or 106 or 107 or 108 or 109 or 112 or 114
+                or 115
+                or 116
+                or 117
+                or 118
+                or 122
+                or 123
+                or 124 => (uint)prefix,
             _ => 200u,
         };
     }

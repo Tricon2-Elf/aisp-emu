@@ -5,10 +5,11 @@ namespace aisp.Common.Game;
 
 /// <summary>
 /// The client paper-doll maps accessory catalog/notify sockets by bit index (1&lt;&lt;cell).
-/// Seed JSON sockets are attach IDs, not those cells. Item id decides the cell; the overlap
+/// Seed JSON sockets are attach IDs, not those cells. Item-id prefix picks the family; the overlap
 /// bit is always 1&lt;&lt;cell for cells 12-29 (bits 0-11 are clothing).
 /// Confirmed cells: 12 glasses, 13 wig, 14 necklace, 15 right hair ribbon, 16 hair ribbon,
-/// 17 right earring, 19 right handbag, 24 left shoulder band, 26 left shoulder bag.
+/// 17 right earring, 18 left earring, 19 right handbag, 24 left shoulder band, 26 left shoulder bag.
+/// Prefixes: 108 face, 109 wig, 112 handheld/bags, 116 necklace, 117 hair ribbon, 118 mask.
 /// </summary>
 internal static class AccessoryAttachMap
 {
@@ -37,36 +38,68 @@ internal static class AccessoryAttachMap
         var prefix = itemId / 100_000;
         var seed = AttachSeed(seedOrBit);
 
-        if (prefix == 109)
-            return CharacterEquipmentSlotIndex.Wig;
-
-        if (prefix == 108)
-            return Face108(itemId, seed);
-
-        if (prefix == 117)
+        return prefix switch
         {
-            return seed == 14
-                ? CharacterEquipmentSlotIndex.HairRibbon
-                : CharacterEquipmentSlotIndex.Headband;
-        }
+            109 => CharacterEquipmentSlotIndex.Wig,
+            108 => Face108(itemId, seed),
+            112 => BagOrHandheld(seed),
+            114 => seed == 27 ? CharacterEquipmentSlotIndex.Tail : CharacterEquipmentSlotIndex.Wings,
+            115 => Wrist115(seed),
+            116 => CharacterEquipmentSlotIndex.Necklace,
+            117 => Hair117(seed),
+            118 => Mask118(seed),
+            122 or 123 or 124 => CharacterEquipmentSlotIndex.Handheld,
+            _ => SeedFallback(seed),
+        };
+    }
 
-        return seed switch
+    private static CharacterEquipmentSlotIndex Hair117(uint seed) =>
+        seed == 10 ? CharacterEquipmentSlotIndex.Headband : CharacterEquipmentSlotIndex.HairRibbon;
+
+    private static CharacterEquipmentSlotIndex Mask118(uint seed) =>
+        seed switch
+        {
+            50 => CharacterEquipmentSlotIndex.Headband,
+            80 => CharacterEquipmentSlotIndex.KigurumiHead,
+            _ => CharacterEquipmentSlotIndex.Glasses,
+        };
+
+    private static CharacterEquipmentSlotIndex BagOrHandheld(uint seed) =>
+        seed switch
+        {
+            26 => CharacterEquipmentSlotIndex.LeftShoulderBag,
+            24 => CharacterEquipmentSlotIndex.LeftShoulderBand,
+            18 or 60 => CharacterEquipmentSlotIndex.Handheld,
+            _ => CharacterEquipmentSlotIndex.RightHandbag,
+        };
+
+    private static CharacterEquipmentSlotIndex Wrist115(uint seed) =>
+        seed switch
+        {
+            21 => CharacterEquipmentSlotIndex.WristRibbon,
+            22 => CharacterEquipmentSlotIndex.Armband,
+            23 => CharacterEquipmentSlotIndex.WristCharm,
+            _ => CharacterEquipmentSlotIndex.WristPrimary,
+        };
+
+    private static CharacterEquipmentSlotIndex SeedFallback(uint seed) =>
+        seed switch
         {
             10 => CharacterEquipmentSlotIndex.Headband,
             12 => CharacterEquipmentSlotIndex.Necklace,
             14 => CharacterEquipmentSlotIndex.HairRibbon,
             15 => CharacterEquipmentSlotIndex.WristLeft,
-            18 => CharacterEquipmentSlotIndex.Handheld,
+            18 or 60 => CharacterEquipmentSlotIndex.Handheld,
+            19 => CharacterEquipmentSlotIndex.RightHandbag,
             20 => CharacterEquipmentSlotIndex.WristPrimary,
             21 => CharacterEquipmentSlotIndex.WristRibbon,
             22 => CharacterEquipmentSlotIndex.Armband,
             23 => CharacterEquipmentSlotIndex.WristCharm,
+            24 => CharacterEquipmentSlotIndex.LeftShoulderBand,
             26 => CharacterEquipmentSlotIndex.Wings,
             27 => CharacterEquipmentSlotIndex.Tail,
-            60 => CharacterEquipmentSlotIndex.Handheld,
             _ => CharacterEquipmentSlotIndex.Accessory,
         };
-    }
 
     private static CharacterEquipmentSlotIndex Face108(int itemId, uint seed)
     {

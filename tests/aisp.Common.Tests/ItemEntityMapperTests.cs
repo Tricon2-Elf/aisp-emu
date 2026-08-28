@@ -94,6 +94,10 @@ public class ItemEntityMapperTests
     [InlineData(10000050, 100)]
     [InlineData(10800000, 108)]
     [InlineData(10900000, 109)]
+    [InlineData(11200000, 112)]
+    [InlineData(11600060, 116)]
+    [InlineData(11700020, 117)]
+    [InlineData(11800030, 118)]
     public void ToItemBaseListData_sets_limit_map_key_for_wardrobe_equip_checks(
         int itemId,
         uint expectedKey
@@ -116,6 +120,10 @@ public class ItemEntityMapperTests
     [InlineData(10400030, 7)] // socks
     [InlineData(10500070, 8)] // shoes
     [InlineData(10600000, 9)] // bra
+    [InlineData(10800000, 11)] // accessory
+    [InlineData(11600060, 11)] // necklace
+    [InlineData(11700020, 11)] // hair ribbon
+    [InlineData(11800030, 11)] // mask
     public void ToItemBaseListData_maps_wardrobe_category_by_item_type(
         int itemId,
         uint expectedCategory
@@ -151,6 +159,10 @@ public class ItemEntityMapperTests
     [InlineData(10900000, 51, (uint)WardrobeSocketBit.Wig)]
     [InlineData(10930050, 11, (uint)WardrobeSocketBit.Wig)]
     [InlineData(11600060, 12, (uint)WardrobeSocketBit.Necklace)]
+    [InlineData(11600010, 0, (uint)WardrobeSocketBit.Necklace)]
+    [InlineData(11700020, 14, (uint)WardrobeSocketBit.HairRibbon)]
+    [InlineData(11800030, 11, (uint)WardrobeSocketBit.Glasses)]
+    [InlineData(11200000, 0, (uint)WardrobeSocketBit.RightHandbag)]
     public void ResolveBodyspot_maps_accessory_seed_ids_to_one_hot_bits(
         int itemId,
         int storedSocket,

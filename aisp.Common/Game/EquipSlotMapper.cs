@@ -22,7 +22,8 @@ internal enum CharacterEquipmentSlotIndex : byte
     HairRibbon = 16,
     RightEarring = 17,
     LeftEarring = 18,
-    Handheld = 18,
+    RightHandbag = 19,
+    Handheld = 19,
     WristLeft = 20,
     WristPrimary = 20,
     WristRibbon = 21,
@@ -30,7 +31,9 @@ internal enum CharacterEquipmentSlotIndex : byte
     WristCharm = 23,
     LeftShoulderBand = 24,
     Wings = 26,
+    LeftShoulderBag = 26,
     Tail = 27,
+    KigurumiHead = 28,
 }
 
 internal static class EquipSlotMapper
@@ -56,7 +59,7 @@ internal static class EquipSlotMapper
                 105 => (byte)CharacterEquipmentSlotIndex.Shoes,
                 107 => (byte)CharacterEquipmentSlotIndex.LowerUnderwear,
                 106 => (byte)CharacterEquipmentSlotIndex.Bra,
-                108 or 109 or >= 114 and <= 124 => AccessoryAttachMap.ToSlotIndex(
+                108 or 109 or 112 or >= 114 and <= 124 => AccessoryAttachMap.ToSlotIndex(
                     (int)itemId,
                     socketBit
                 ),
