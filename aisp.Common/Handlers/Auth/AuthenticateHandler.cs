@@ -66,6 +66,7 @@ public class AuthenticateHandler(
         session.User = user;
         session.UserId = user.Id;
         session.Language = user.Language;
+        state.DisconnectOtherConnectionsForUser(user.Id, session.ConnectionId);
         state.RegisterClient(ServerType.Auth, session);
         return new AuthenticateResponse((uint)user.Id);
     }

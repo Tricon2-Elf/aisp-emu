@@ -265,6 +265,15 @@ public class ClientConnection(
 
         try
         {
+            if (_tcpClient is not null)
+                _tcpClient.LingerState = new LingerOption(true, 0);
+        }
+        catch
+        { /* ignore */
+        }
+
+        try
+        {
             Stream.Dispose();
         }
         catch

@@ -76,6 +76,85 @@ public class LoginHandlerTests
     }
 
     [Fact]
+    public async Task ValidOtp_DropsExistingConnectionsForSameUser()
+    {
+        const string otp = "12345678901234567890";
+        var user = new User { Id = 5, Username = "u" };
+        user.Characters.Add(
+            new Character
+            {
+                Id = 42,
+                Name = "ChatUser",
+                UserId = 5,
+            }
+        );
+        var us = new UserSession
+        {
+            UserId = 5,
+            OTP = otp,
+            User = user,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+        };
+
+        var sessionRepo = new Mock<aisp.Common.DAL.Repositories.IUserSessionRepository>();
+        sessionRepo
+            .Setup(r => r.GetValidSessionAsync(otp, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(us);
+
+        var state = new SharedState();
+        var staleAuth = new CapturingPlayerSession { UserId = 5, User = user };
+        var staleMsg = new CapturingPlayerSession { UserId = 5, User = user };
+        var staleArea = new CapturingPlayerSession
+        {
+            UserId = 5,
+            User = user,
+            CharacterId = 42,
+            Character = user.Characters.First(),
+        };
+        var otherMsg = new CapturingPlayerSession { UserId = 9 };
+        state.RegisterClient(ServerType.Auth, staleAuth);
+        state.RegisterClient(ServerType.Msg, staleMsg);
+        state.RegisterClient(ServerType.Area, staleArea);
+        state.RegisterClient(ServerType.Msg, otherMsg);
+
+        var circles = new Mock<aisp.Common.DAL.Repositories.ICircleRepository>();
+        circles
+            .Setup(r =>
+                r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
+            )
+            .ReturnsAsync(Array.Empty<(aisp.Common.DAL.Entities.Circle, uint)>());
+        var handler = new LoginHandler(
+            sessionRepo.Object,
+            circles.Object,
+            state,
+            NullLogger<LoginHandler>.Instance
+        );
+        IPacketHandler wire = handler;
+        var session = new CapturingPlayerSession();
+
+        var w = new PacketWriter();
+        w.Write(5u);
+        w.Write(Encoding.ASCII.GetBytes(otp));
+
+        await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain(
+            state.AuthClients,
+            client => client.ConnectionId == staleAuth.ConnectionId
+        );
+        Assert.DoesNotContain(
+            state.MsgClients,
+            client => client.ConnectionId == staleMsg.ConnectionId
+        );
+        Assert.DoesNotContain(
+            state.AreaClients,
+            client => client.ConnectionId == staleArea.ConnectionId
+        );
+        Assert.Contains(state.MsgClients, client => client.ConnectionId == otherMsg.ConnectionId);
+        Assert.Contains(state.MsgClients, client => client.ConnectionId == session.ConnectionId);
+    }
+
+    [Fact]
     public async Task InvalidOtp_ReturnsInvalidCredentials()
     {
         var sessionRepo = new Mock<aisp.Common.DAL.Repositories.IUserSessionRepository>();

@@ -68,6 +68,7 @@ public class LoginHandler(
             session.Character = character;
         }
 
+        state.DisconnectOtherConnectionsForUser(session.UserId, session.ConnectionId);
         state.RegisterClient(ServerType.Msg, session);
         if (session.CharacterId != 0)
         {

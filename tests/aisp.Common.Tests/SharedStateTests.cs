@@ -35,6 +35,59 @@ public class SharedStateTests
     }
 
     [Fact]
+    public void DisconnectOtherConnectionsForUser_DropsAuthMsgAndArea_KeepsIncoming()
+    {
+        var state = new SharedState();
+        var incomingId = Guid.NewGuid();
+        var oldAuth = new FakeSession(Guid.NewGuid()) { UserId = 7 };
+        var oldMsg = new FakeSession(Guid.NewGuid()) { UserId = 7 };
+        var oldArea = new FakeSession(Guid.NewGuid())
+        {
+            UserId = 7,
+            CharacterId = 70,
+            Character = new Character { Id = 70, UserId = 7 },
+        };
+        var otherUser = new FakeSession(Guid.NewGuid()) { UserId = 8 };
+        var incoming = new FakeSession(incomingId) { UserId = 7 };
+
+        state.RegisterClient(ServerType.Auth, oldAuth);
+        state.RegisterClient(ServerType.Msg, oldMsg);
+        state.RegisterClient(ServerType.Area, oldArea);
+        state.RegisterClient(ServerType.Msg, otherUser);
+
+        state.DisconnectOtherConnectionsForUser(7, incomingId);
+
+        Assert.DoesNotContain(
+            state.AuthClients,
+            client => client.ConnectionId == oldAuth.ConnectionId
+        );
+        Assert.DoesNotContain(
+            state.MsgClients,
+            client => client.ConnectionId == oldMsg.ConnectionId
+        );
+        Assert.DoesNotContain(
+            state.AreaClients,
+            client => client.ConnectionId == oldArea.ConnectionId
+        );
+        Assert.Contains(state.MsgClients, client => client.ConnectionId == otherUser.ConnectionId);
+
+        state.RegisterClient(ServerType.Auth, incoming);
+        Assert.Contains(state.AuthClients, client => client.ConnectionId == incomingId);
+    }
+
+    [Fact]
+    public void DisconnectOtherConnectionsForUser_IgnoresZeroUserId()
+    {
+        var state = new SharedState();
+        var unauth = new FakeSession(Guid.NewGuid());
+        state.RegisterClient(ServerType.Auth, unauth);
+
+        state.DisconnectOtherConnectionsForUser(0, Guid.NewGuid());
+
+        Assert.Contains(state.AuthClients, client => client.ConnectionId == unauth.ConnectionId);
+    }
+
+    [Fact]
     public void UnregisterClient_RemovesFromAllMaps()
     {
         var state = new SharedState();
