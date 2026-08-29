@@ -76,7 +76,7 @@ public class LoginHandlerTests
     }
 
     [Fact]
-    public async Task ValidOtp_DropsExistingConnectionsForSameUser()
+    public async Task ValidOtp_DropsExistingAuthAndMsg_KeepsArea()
     {
         const string otp = "12345678901234567890";
         var user = new User { Id = 5, Username = "u" };
@@ -146,10 +146,7 @@ public class LoginHandlerTests
             state.MsgClients,
             client => client.ConnectionId == staleMsg.ConnectionId
         );
-        Assert.DoesNotContain(
-            state.AreaClients,
-            client => client.ConnectionId == staleArea.ConnectionId
-        );
+        Assert.Contains(state.AreaClients, client => client.ConnectionId == staleArea.ConnectionId);
         Assert.Contains(state.MsgClients, client => client.ConnectionId == otherMsg.ConnectionId);
         Assert.Contains(state.MsgClients, client => client.ConnectionId == session.ConnectionId);
     }

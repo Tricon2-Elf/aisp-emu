@@ -126,8 +126,15 @@ public class AuthenticateHandlerTests
         var state = new SharedState();
         var staleAuth = new CapturingPlayerSession { UserId = 3, User = user };
         var staleMsg = new CapturingPlayerSession { UserId = 3, User = user };
+        var staleArea = new CapturingPlayerSession
+        {
+            UserId = 3,
+            User = user,
+            CharacterId = 30,
+        };
         state.RegisterClient(ServerType.Auth, staleAuth);
         state.RegisterClient(ServerType.Msg, staleMsg);
+        state.RegisterClient(ServerType.Area, staleArea);
 
         var handler = new AuthenticateHandler(
             userRepo.Object,
@@ -150,6 +157,7 @@ public class AuthenticateHandlerTests
             state.MsgClients,
             client => client.ConnectionId == staleMsg.ConnectionId
         );
+        Assert.Contains(state.AreaClients, client => client.ConnectionId == staleArea.ConnectionId);
         Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
     }
 

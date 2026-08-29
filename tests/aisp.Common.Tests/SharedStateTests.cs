@@ -35,7 +35,7 @@ public class SharedStateTests
     }
 
     [Fact]
-    public void DisconnectOtherConnectionsForUser_DropsAuthMsgAndArea_KeepsIncoming()
+    public void DisconnectOtherConnectionsForUser_DropsAuthAndMsg_KeepsAreaUntilNewAreaRegisters()
     {
         var state = new SharedState();
         var incomingId = Guid.NewGuid();
@@ -65,14 +65,24 @@ public class SharedStateTests
             state.MsgClients,
             client => client.ConnectionId == oldMsg.ConnectionId
         );
-        Assert.DoesNotContain(
-            state.AreaClients,
-            client => client.ConnectionId == oldArea.ConnectionId
-        );
+        Assert.Contains(state.AreaClients, client => client.ConnectionId == oldArea.ConnectionId);
         Assert.Contains(state.MsgClients, client => client.ConnectionId == otherUser.ConnectionId);
 
         state.RegisterClient(ServerType.Auth, incoming);
         Assert.Contains(state.AuthClients, client => client.ConnectionId == incomingId);
+
+        var newArea = new FakeSession(Guid.NewGuid())
+        {
+            UserId = 7,
+            CharacterId = 70,
+            Character = new Character { Id = 70, UserId = 7 },
+        };
+        state.RegisterClient(ServerType.Area, newArea);
+        Assert.DoesNotContain(
+            state.AreaClients,
+            client => client.ConnectionId == oldArea.ConnectionId
+        );
+        Assert.Contains(state.AreaClients, client => client.ConnectionId == newArea.ConnectionId);
     }
 
     [Fact]
