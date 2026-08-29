@@ -36,7 +36,7 @@ public class CircleChatInHandler(ICircleRepository circles, SharedState state)
         foreach (var client in state.GetCircleChatClients(circleId))
         {
             if (client.ConnectionId != session.ConnectionId)
-                await client.SendAsync(PacketType.CircleNotifyChatIn, notify, ct);
+                _ = client.SendAsync(PacketType.CircleNotifyChatIn, notify, ct);
         }
 
         return new CircleChatInResponse(0, 1, onlineInChat);

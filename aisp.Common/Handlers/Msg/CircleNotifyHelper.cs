@@ -42,7 +42,7 @@ public static class CircleNotifyHelper
                 members.Select(m => m.CharacterId)
             )
         )
-            await client.SendAsync(PacketType.CircleNotifyMember, payload, ct);
+            _ = client.SendAsync(PacketType.CircleNotifyMember, payload, ct);
     }
 
     public static async Task NotifyMembersAsync(
@@ -60,7 +60,7 @@ public static class CircleNotifyHelper
             .Select(m => m.CharacterId)
             .Where(id => excludeCharacterId is null || id != excludeCharacterId.Value);
         foreach (var client in state.GetOnlineMsgClientsByCharacterIds(ids))
-            await client.SendAsync(type, payload, ct);
+            _ = client.SendAsync(type, payload, ct);
     }
 
     public static async Task NotifyMemberLoginAsync(

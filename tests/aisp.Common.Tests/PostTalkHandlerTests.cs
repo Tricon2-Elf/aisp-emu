@@ -45,6 +45,46 @@ public class PostTalkHandlerTests
     }
 
     [Fact]
+    public async Task ForwardNotify_DoesNotWaitForSlowRecipient()
+    {
+        var user = CreateUser(1, 9001);
+        var state = new SharedState();
+
+        var sender = new CapturingPlayerSession
+        {
+            User = user,
+            UserId = user.Id,
+            CharacterId = 9001,
+        };
+        var recipient = new CapturingPlayerSession
+        {
+            User = CreateUser(2, 9002),
+            UserId = 2,
+            CharacterId = 9002,
+            HangOnSend = true,
+        };
+
+        state.RegisterClient(ServerType.Msg, sender);
+        state.RegisterClient(ServerType.Msg, recipient);
+
+        var handler = new PostTalkHandler(state);
+        var completed = handler.HandleAsync(
+            BuildPostTalkPayload(1, -1, "hello", 0),
+            sender,
+            TestContext.Current.CancellationToken
+        );
+
+        var finished = await Task.WhenAny(
+            completed,
+            Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken)
+        );
+        Assert.Same(completed, finished);
+        await completed;
+
+        Assert.Contains(recipient.Sent, packet => packet.Type == PacketType.TalkForwardNotify);
+    }
+
+    [Fact]
     public async Task ForwardNotify_FallsBackToAreaSessionCharacterId_WhenMsgCharacterIdUnset()
     {
         var user = CreateUser(1, 9001);

@@ -41,11 +41,23 @@ internal sealed class CapturingPlayerSession : IPlayerSession
     public ISet<uint> VisibleRemoteRoboObjectIds { get; } = new HashSet<uint>();
     public bool IsAuthenticated => User != null;
 
+    public bool HangOnSend { get; set; }
+
     public List<(PacketType Type, byte[] Payload)> Sent { get; } = new();
 
-    public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default)
+    public async Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default)
     {
         Sent.Add((type, payload));
-        return Task.CompletedTask;
+        if (!HangOnSend)
+            return;
+
+        try
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // test shutdown
+        }
     }
 }

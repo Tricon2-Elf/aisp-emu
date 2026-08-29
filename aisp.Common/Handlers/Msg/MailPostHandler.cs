@@ -57,7 +57,7 @@ public class MailPostHandler(ICharacterRepository characters, SharedState state)
         {
             if (client.ConnectionId == session.ConnectionId)
                 continue;
-            await client.SendAsync(PacketType.NotifyNewMail, notify, ct);
+            _ = client.SendAsync(PacketType.NotifyNewMail, notify, ct);
         }
 
         // Post-mail response is stored client-side in the sent box; type 1 matches that folder.

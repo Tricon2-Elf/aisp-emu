@@ -36,12 +36,12 @@ public class PostTalkHandler(SharedState state) : IPacketHandler, IRequiresAuthe
         );
         byte[] broadcastData = forwardPacket.ToBytes();
 
+        // Fire-and-forget: a hung TCP write to one Msg client must not stall the single
+        // Msg dispatch loop (chat, logins, and every other Msg packet share that loop).
         foreach (var client in state.GetServerClients(ServerType.Msg))
         {
             if (client.IsAuthenticated && client.ConnectionId != session.ConnectionId)
-            {
-                await client.SendAsync(PacketType.TalkForwardNotify, broadcastData, ct);
-            }
+                _ = client.SendAsync(PacketType.TalkForwardNotify, broadcastData, ct);
         }
     }
 }

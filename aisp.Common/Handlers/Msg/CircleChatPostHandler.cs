@@ -69,11 +69,13 @@ public class CircleChatPostHandler(
         var forward = new CircleChatForwardNotify(fromId, req.Message).ToBytes();
         var members = await circles.GetMembersAsync(circleId, ct);
         foreach (
-            var client in state.GetOnlineMsgClientsByCharacterIds(members.Select(m => m.CharacterId))
+            var client in state.GetOnlineMsgClientsByCharacterIds(
+                members.Select(m => m.CharacterId)
+            )
         )
         {
             if (client.ConnectionId != session.ConnectionId)
-                await client.SendAsync(PacketType.CircleChatForwardNotify, forward, ct);
+                _ = client.SendAsync(PacketType.CircleChatForwardNotify, forward, ct);
         }
     }
 }
