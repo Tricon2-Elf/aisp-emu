@@ -71,6 +71,11 @@ public abstract class GameServerBase<T> : BackgroundService
             };
             var channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
 
+            await using var scheduler = new SessionWorkScheduler<(
+                Packet Packet,
+                IPlayerSession Session
+            )>(_packetChannelCapacity, DispatchScheduledPacketAsync, runToken, Logger);
+
             var listener = new VceListener(
                 _loggerFactory.CreateLogger<VceListener>(),
                 channel,
@@ -79,6 +84,7 @@ public abstract class GameServerBase<T> : BackgroundService
                 _loggerFactory,
                 id =>
                 {
+                    scheduler.CompleteSession(id);
                     if (
                         State.TryGetSession(id, out var disconnectedSession)
                         && disconnectedSession is not null
@@ -182,7 +188,7 @@ public abstract class GameServerBase<T> : BackgroundService
             HealthRegistry.SetClientLoadCheck(ActiveServerType, () => listener.GetClientLoad());
 
             var acceptLoop = listener.RunAsync(runToken);
-            var packetLoop = RunPacketLoop(channel.Reader, runToken);
+            var packetLoop = RunPacketLoop(channel.Reader, scheduler, runToken);
             var heartbeatLoop = RunHeartbeatLoop(runToken);
             var additionalLoops = GetAdditionalLoops(runToken).ToArray();
 
@@ -258,7 +264,15 @@ public abstract class GameServerBase<T> : BackgroundService
         }
     }
 
-    private async Task RunPacketLoop(ChannelReader<Packet> channel, CancellationToken ct)
+    /// <summary>
+    /// Demux inbound packets onto per-session queues. Handlers for different clients run in parallel;
+    /// packets for one client stay in order.
+    /// </summary>
+    private async Task RunPacketLoop(
+        ChannelReader<Packet> channel,
+        SessionWorkScheduler<(Packet Packet, IPlayerSession Session)> scheduler,
+        CancellationToken ct
+    )
     {
         try
         {
@@ -298,13 +312,15 @@ public abstract class GameServerBase<T> : BackgroundService
                         );
                     }
 
-                    await Dispatcher.DispatchAsync(
-                        ActiveServerType,
-                        packet.Type,
-                        packet.Data,
-                        session,
-                        ct
-                    );
+                    if (!scheduler.TryEnqueue(packet.Client.Id, (packet, session)))
+                    {
+                        Logger.LogWarning(
+                            "Session packet queue full for {ClientId} on {ServerType}; dropping {Type}",
+                            packet.Client.Id,
+                            ActiveServerType,
+                            packet.Type
+                        );
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -314,7 +330,7 @@ public abstract class GameServerBase<T> : BackgroundService
                 {
                     Logger.LogError(
                         ex,
-                        "Packet dispatch failed (ServerType={ServerType}, type={Type}): {Message}",
+                        "Packet routing failed (ServerType={ServerType}, type={Type}): {Message}",
                         ActiveServerType,
                         packet.Type,
                         ex.Message
@@ -325,6 +341,48 @@ public abstract class GameServerBase<T> : BackgroundService
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // expected during listener restart
+        }
+    }
+
+    private async Task DispatchScheduledPacketAsync(
+        (Packet Packet, IPlayerSession Session) work,
+        CancellationToken ct
+    )
+    {
+        if (work.Packet.Client.IsClosed)
+        {
+            Logger.LogDebug(
+                "Dropping packet {Type} for closed client {ClientId} on {ServerType}",
+                work.Packet.Type,
+                work.Packet.Client.Id,
+                ActiveServerType
+            );
+            return;
+        }
+
+        try
+        {
+            await Dispatcher.DispatchAsync(
+                ActiveServerType,
+                work.Packet.Type,
+                work.Packet.Data,
+                work.Session,
+                ct
+            );
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Packet dispatch failed (ServerType={ServerType}, type={Type}): {Message}",
+                ActiveServerType,
+                work.Packet.Type,
+                ex.Message
+            );
         }
     }
 }
