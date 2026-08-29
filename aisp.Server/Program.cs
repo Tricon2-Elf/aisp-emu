@@ -265,7 +265,8 @@ internal class Program
                 o.MaxConcurrentClients,
                 o.PacketChannelCapacity,
                 o.MaxReceiveFrameSize,
-                o.ClientReadTimeoutSeconds
+                o.ClientReadTimeoutSeconds,
+                o.ClientSendTimeoutSeconds
             );
         }
 

@@ -20,6 +20,9 @@ public class ServerOptions
     /// <summary>Idle read timeout in seconds for client TCP connections. Handlers are released when no data arrives within this window.</summary>
     public int ClientReadTimeoutSeconds { get; set; } = 300;
 
+    /// <summary>Per-packet outbound write timeout in seconds. Slow clients that cannot accept a packet (including the ~2MB item catalog) within this window are disconnected.</summary>
+    public int ClientSendTimeoutSeconds { get; set; } = 30;
+
     /// <summary>When false, session presence is kept in-memory (single-node VPS). When true, SessionPresences table is used (multi-instance).</summary>
     public bool UseDistributedSessionPresence { get; set; } = false;
 

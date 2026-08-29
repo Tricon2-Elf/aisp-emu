@@ -14,7 +14,8 @@ public sealed record GameServerContext(
     int MaxConcurrentClients,
     int PacketChannelCapacity,
     int MaxReceiveFrameSize,
-    int ClientReadTimeoutSeconds
+    int ClientReadTimeoutSeconds,
+    int ClientSendTimeoutSeconds
 )
 {
     public static GameServerContext Create(
@@ -22,7 +23,8 @@ public sealed record GameServerContext(
         int maxConcurrentClients,
         int packetChannelCapacity,
         int maxReceiveFrameSize,
-        int clientReadTimeoutSeconds
+        int clientReadTimeoutSeconds,
+        int clientSendTimeoutSeconds
     ) =>
         new(
             services.GetRequiredService<ILoggerFactory>(),
@@ -33,6 +35,7 @@ public sealed record GameServerContext(
             maxConcurrentClients,
             packetChannelCapacity,
             maxReceiveFrameSize,
-            clientReadTimeoutSeconds
+            clientReadTimeoutSeconds,
+            clientSendTimeoutSeconds
         );
 }

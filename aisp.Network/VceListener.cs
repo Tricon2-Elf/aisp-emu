@@ -20,6 +20,7 @@ public class VceListener(
     int maxConcurrentClients = 1024,
     int maxReceiveFrameSize = 4096,
     int clientReadTimeoutSeconds = 300,
+    int clientSendTimeoutSeconds = 30,
     Func<Guid, int?>? resolveUserId = null
 )
 {
@@ -40,6 +41,7 @@ public class VceListener(
         Math.Max(1, maxConcurrentClients)
     );
     private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
+    private readonly int _sendTimeoutSeconds = Math.Max(1, clientSendTimeoutSeconds);
     private readonly TimeSpan _readTimeout =
         clientReadTimeoutSeconds > 0
             ? TimeSpan.FromSeconds(clientReadTimeoutSeconds)
@@ -114,7 +116,8 @@ public class VceListener(
                             loggerFactory.CreateLogger<ClientConnection>(),
                             tcpClient,
                             name,
-                            resolveUserId
+                            resolveUserId,
+                            sendTimeoutSeconds: _sendTimeoutSeconds
                         );
                         _clients[context.Id] = context;
                         _ = RunClientWithGateAsync(context, ct);

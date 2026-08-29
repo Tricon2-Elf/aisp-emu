@@ -16,7 +16,7 @@ public class ClientConnection(
     string? _serverType = null,
     Func<Guid, int?>? _userIdResolver = null,
     int sendQueueCapacity = 128,
-    int sendTimeoutSeconds = 5
+    int sendTimeoutSeconds = 30
 ) : IDisposable
 {
     private static readonly HashSet<PacketType> DebugSendLogs =

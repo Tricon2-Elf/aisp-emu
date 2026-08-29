@@ -23,6 +23,7 @@ public abstract class GameServerBase<T> : BackgroundService
     private readonly int _maxConcurrentClients;
     private readonly int _maxReceiveFrameSize;
     private readonly int _clientReadTimeoutSeconds;
+    private readonly int _clientSendTimeoutSeconds;
     private readonly int _packetChannelCapacity;
     private bool _initialized;
 
@@ -38,6 +39,7 @@ public abstract class GameServerBase<T> : BackgroundService
         _maxConcurrentClients = ctx.MaxConcurrentClients;
         _maxReceiveFrameSize = ctx.MaxReceiveFrameSize;
         _clientReadTimeoutSeconds = ctx.ClientReadTimeoutSeconds;
+        _clientSendTimeoutSeconds = ctx.ClientSendTimeoutSeconds;
         _packetChannelCapacity = ctx.PacketChannelCapacity;
         HealthRegistry.AddServer(ActiveServerType, _port);
     }
@@ -166,6 +168,7 @@ public abstract class GameServerBase<T> : BackgroundService
                 _maxConcurrentClients,
                 _maxReceiveFrameSize,
                 _clientReadTimeoutSeconds,
+                _clientSendTimeoutSeconds,
                 id =>
                 {
                     if (!State.TryGetSession(id, out var session) || session is null)
