@@ -203,4 +203,66 @@ public class SessionWorkSchedulerTests
         await scheduler.DisposeAsync();
         Assert.Equal(1, Volatile.Read(ref dispatched));
     }
+
+    [Fact]
+    public async Task CompleteSession_WithoutEnqueue_DoesNotRetainState()
+    {
+        await using var scheduler = new SessionWorkScheduler<int>(
+            queueCapacity: 16,
+            (_, _) => Task.CompletedTask,
+            TestContext.Current.CancellationToken,
+            NullLogger.Instance
+        );
+
+        scheduler.CompleteSession(Guid.NewGuid());
+        scheduler.CompleteSession(Guid.NewGuid());
+
+        Assert.Equal(0, scheduler.TrackedSessionCount);
+    }
+
+    [Fact]
+    public async Task CompleteSession_ReclaimsStateAfterRunnerFinishes()
+    {
+        var sessionId = Guid.NewGuid();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using var scheduler = new SessionWorkScheduler<int>(
+            queueCapacity: 16,
+            async (_, ct) =>
+            {
+                started.TrySetResult();
+                await release.Task.WaitAsync(ct);
+            },
+            TestContext.Current.CancellationToken,
+            NullLogger.Instance
+        );
+
+        Assert.True(scheduler.TryEnqueue(sessionId, 1));
+        await started.Task.WaitAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(1, scheduler.TrackedSessionCount);
+
+        scheduler.CompleteSession(sessionId);
+        Assert.False(scheduler.TryEnqueue(sessionId, 2));
+        release.TrySetResult();
+
+        await WaitUntilAsync(
+            () => scheduler.TrackedSessionCount == 0,
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(0, scheduler.TrackedSessionCount);
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition, CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (!condition())
+        {
+            if (DateTime.UtcNow >= deadline)
+                throw new TimeoutException(
+                    "Timed out waiting for scheduler to reclaim session state"
+                );
+            await Task.Delay(10, ct);
+        }
+    }
 }

@@ -10,9 +10,7 @@ namespace aisp.Common;
 /// </summary>
 public sealed class SessionWorkScheduler<TWork> : IAsyncDisposable
 {
-    private readonly ConcurrentDictionary<Guid, SessionQueue> _queues = new();
-    private readonly ConcurrentDictionary<Guid, byte> _completedSessions = new();
-    private readonly ConcurrentBag<Task> _runTasks = [];
+    private readonly ConcurrentDictionary<Guid, SessionState> _sessions = new();
     private readonly int _queueCapacity;
     private readonly Func<TWork, CancellationToken, Task> _dispatch;
     private readonly CancellationTokenSource _cts;
@@ -33,32 +31,41 @@ public sealed class SessionWorkScheduler<TWork> : IAsyncDisposable
         _logger = logger;
     }
 
+    internal int TrackedSessionCount => _sessions.Count;
+
     public bool TryEnqueue(Guid sessionId, TWork work)
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
-        if (_completedSessions.ContainsKey(sessionId))
-            return false;
-
-        var queue = GetOrCreateQueue(sessionId);
-        if (queue is null)
-            return false;
-
-        if (_completedSessions.ContainsKey(sessionId))
+        var state = _sessions.GetOrAdd(sessionId, static _ => new SessionState());
+        lock (state.Gate)
         {
-            queue.Complete();
-            _queues.TryRemove(sessionId, out _);
-            return false;
-        }
+            if (state.Completed || Volatile.Read(ref _disposed) != 0)
+                return false;
 
-        return queue.TryEnqueue(work);
+            if (state.Queue is null)
+            {
+                state.Queue = new SessionQueue(_queueCapacity);
+                state.Runner = state.Queue.Start(_dispatch, _cts.Token, _logger);
+                ObserveRunner(sessionId, state, state.Runner);
+            }
+
+            return state.Queue.TryEnqueue(work);
+        }
     }
 
     public void CompleteSession(Guid sessionId)
     {
-        _completedSessions.TryAdd(sessionId, 0);
-        if (_queues.TryRemove(sessionId, out var queue))
-            queue.Complete();
+        if (!_sessions.TryGetValue(sessionId, out var state))
+            return;
+
+        lock (state.Gate)
+        {
+            state.Completed = true;
+            state.Queue?.Complete();
+            if (state.Runner is null)
+                _sessions.TryRemove(sessionId, out _);
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -75,39 +82,72 @@ public sealed class SessionWorkScheduler<TWork> : IAsyncDisposable
             // already cancelled/disposed
         }
 
-        foreach (var queue in _queues.Values)
-            queue.Complete();
+        List<Task> runners = [];
+        foreach (var state in _sessions.Values)
+        {
+            lock (state.Gate)
+            {
+                state.Completed = true;
+                state.Queue?.Complete();
+                if (state.Runner is not null)
+                    runners.Add(state.Runner);
+            }
+        }
 
         try
         {
-            await Task.WhenAll(_runTasks);
+            await Task.WhenAll(runners);
         }
         catch (OperationCanceledException)
         {
             // expected when the host token is cancelled
         }
 
-        _queues.Clear();
-        _completedSessions.Clear();
+        _sessions.Clear();
         _cts.Dispose();
         GC.SuppressFinalize(this);
     }
 
-    private SessionQueue? GetOrCreateQueue(Guid sessionId)
+    private void ObserveRunner(Guid sessionId, SessionState state, Task runner)
     {
-        if (_queues.TryGetValue(sessionId, out var existing))
-            return existing;
+        _ = ForgetRunnerWhenCompleteAsync(sessionId, state, runner);
+    }
 
-        var created = new SessionQueue(_queueCapacity);
-        if (_queues.TryAdd(sessionId, created))
+    private async Task ForgetRunnerWhenCompleteAsync(
+        Guid sessionId,
+        SessionState state,
+        Task runner
+    )
+    {
+        try
         {
-            var run = created.Start(_dispatch, _cts.Token, _logger);
-            _runTasks.Add(run);
-            return created;
+            await runner.ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            // host shutting down or listener restarting
+        }
+        finally
+        {
+            lock (state.Gate)
+            {
+                if (ReferenceEquals(state.Runner, runner))
+                {
+                    state.Runner = null;
+                    state.Queue = null;
+                    if (state.Completed)
+                        _sessions.TryRemove(sessionId, out _);
+                }
+            }
+        }
+    }
 
-        created.Complete();
-        return _queues.TryGetValue(sessionId, out existing) ? existing : null;
+    private sealed class SessionState
+    {
+        public readonly object Gate = new();
+        public SessionQueue? Queue;
+        public Task? Runner;
+        public bool Completed;
     }
 
     private sealed class SessionQueue
