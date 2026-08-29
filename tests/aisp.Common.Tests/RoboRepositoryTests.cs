@@ -139,6 +139,197 @@ public class RoboRepositoryTests
         }
     }
 
+    [Fact]
+    public async Task ResetEquipmentAndRename_returns_items_to_inventory_and_applies_defaults()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 9, TestContext.Current.CancellationToken);
+            const int customHat = 10000010;
+            const int existingShirt = 10100060;
+
+            await using (var seedDb = new MainContext(options))
+            {
+                seedDb.Items.AddRange(
+                    new aisp.Common.DAL.Entities.Item { Id = customHat, Name = "Custom Hat" },
+                    new aisp.Common.DAL.Entities.Item
+                    {
+                        Id = existingShirt,
+                        Name = "Starter Shirt",
+                    },
+                    new aisp.Common.DAL.Entities.Item { Id = 10200090, Name = "Starter Shorts" },
+                    new aisp.Common.DAL.Entities.Item { Id = 10400000, Name = "Starter Socks" },
+                    new aisp.Common.DAL.Entities.Item { Id = 10500010, Name = "Starter Shoes" }
+                );
+                seedDb.CharacterInventories.Add(
+                    new aisp.Common.DAL.Entities.CharacterInventory
+                    {
+                        CharacterId = 9,
+                        ItemId = existingShirt,
+                        Quantity = 2,
+                    }
+                );
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+                var robo = CreateRobo(9, 1, "Old Name");
+                robo.Character.Equips.Clear();
+                for (byte slot = 0; slot < CharaData.EquipmentSlotCount; slot++)
+                    robo.Character.Equips.Add(new ItemSlotInfo(0, 0));
+                robo.Character.Equips[0] = new ItemSlotInfo((uint)existingShirt, 0);
+                robo.Character.Equips[6] = new ItemSlotInfo((uint)customHat, 0);
+                await new RoboRepository(seedDb).UpsertAsync(
+                    9,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
+
+                var seededCharacter = await seedDb.Characters.SingleAsync(
+                    TestContext.Current.CancellationToken
+                );
+                seededCharacter.HomeIslandId = 1;
+                seededCharacter.CharadollPersonality = aisp.Common
+                    .DAL
+                    .Entities
+                    .CharadollPersonality
+                    .Quiet;
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var db = new MainContext(options);
+            var repository = new RoboRepository(db);
+            var ok = await repository.ResetEquipmentAndRenameAsync(
+                9,
+                1,
+                "New Doll",
+                aisp.Common.DAL.Entities.CharadollPersonality.Active,
+                TestContext.Current.CancellationToken
+            );
+            Assert.True(ok);
+
+            var loaded = await repository.GetAsync(9, 1, TestContext.Current.CancellationToken);
+            Assert.NotNull(loaded);
+            Assert.Equal("New Doll", loaded.Character.Name);
+            Assert.Equal(2012030u, loaded.Character.ModelId);
+            Assert.Equal(0u, loaded.Character.Visual.Hairstyle);
+            Assert.Equal(88, loaded.Character.Progress.Level);
+
+            Assert.Equal(
+                [
+                    (uint)DefaultClothingItems.Female[0],
+                    (uint)DefaultClothingItems.Female[1],
+                    (uint)DefaultClothingItems.Female[2],
+                    (uint)DefaultClothingItems.Female[3],
+                ],
+                loaded.Character.Equips.Where(e => e.ItemId != 0).Select(e => e.ItemId).ToArray()
+            );
+            Assert.Equal(4, loaded.Character.Equips.Count(e => e.ItemId != 0));
+
+            var inventory = await db
+                .CharacterInventories.AsNoTracking()
+                .Where(i => i.CharacterId == 9)
+                .ToDictionaryAsync(
+                    i => i.ItemId,
+                    i => i.Quantity,
+                    TestContext.Current.CancellationToken
+                );
+            Assert.Equal(3, inventory[existingShirt]);
+            Assert.Equal(1, inventory[customHat]);
+
+            var updatedCharacter = await db
+                .Characters.AsNoTracking()
+                .SingleAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(
+                aisp.Common.DAL.Entities.CharadollPersonality.Active,
+                updatedCharacter.CharadollPersonality
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ResetEquipmentAndRename_returns_false_when_robo_missing()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 10, TestContext.Current.CancellationToken);
+            await using var db = new MainContext(options);
+            var ok = await new RoboRepository(db).ResetEquipmentAndRenameAsync(
+                10,
+                1,
+                "Ghost",
+                aisp.Common.DAL.Entities.CharadollPersonality.Quiet,
+                TestContext.Current.CancellationToken
+            );
+            Assert.False(ok);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ResetEquipmentAndRename_applies_defaults_when_doll_has_no_extra_gear()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 11, TestContext.Current.CancellationToken);
+            await using (var seedDb = new MainContext(options))
+            {
+                foreach (var itemId in DefaultClothingItems.Female)
+                    seedDb.Items.Add(
+                        new aisp.Common.DAL.Entities.Item { Id = itemId, Name = $"item-{itemId}" }
+                    );
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+                var robo = CreateRobo(11, 1, "Bare");
+                robo.Character.Equips.Clear();
+                for (byte slot = 0; slot < CharaData.EquipmentSlotCount; slot++)
+                    robo.Character.Equips.Add(new ItemSlotInfo(0, 0));
+                await new RoboRepository(seedDb).UpsertAsync(
+                    11,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
+
+                var character = await seedDb.Characters.SingleAsync(
+                    TestContext.Current.CancellationToken
+                );
+                character.HomeIslandId = 2;
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var db = new MainContext(options);
+            var repository = new RoboRepository(db);
+            Assert.True(
+                await repository.ResetEquipmentAndRenameAsync(
+                    11,
+                    1,
+                    "Renamed Bare",
+                    aisp.Common.DAL.Entities.CharadollPersonality.Quiet,
+                    TestContext.Current.CancellationToken
+                )
+            );
+
+            var loaded = await repository.GetAsync(11, 1, TestContext.Current.CancellationToken);
+            Assert.NotNull(loaded);
+            Assert.Equal("Renamed Bare", loaded.Character.Name);
+            Assert.Equal(2022030u, loaded.Character.ModelId);
+            Assert.Equal(4, loaded.Character.Equips.Count(e => e.ItemId != 0));
+            Assert.Equal((uint)DefaultClothingItems.Female[0], loaded.Character.Equips[0].ItemId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static RoboData CreateRobo(uint characterId, uint roboId, string name)
     {
         var objectId = RoboRepository.GetObjectId(characterId, roboId);

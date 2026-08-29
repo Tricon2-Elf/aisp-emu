@@ -164,6 +164,23 @@ public sealed class AreaPortalApiClient(
             throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
     }
 
+    public async Task ResetRoboAsync(
+        int userId,
+        int characterId,
+        uint roboId,
+        PortalResetRoboRequest request,
+        CancellationToken ct
+    )
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/area/portal/users/{userId}/characters/{characterId}/robos/{roboId}/reset",
+            request,
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+    }
+
     public async Task<IReadOnlyList<PortalCharacterRoboSummaryDto>> GetSummariesAsync(
         IReadOnlyList<int> userIds,
         CancellationToken ct

@@ -106,6 +106,7 @@ public sealed record PortalCharacterDto(
     string CurrentMapName,
     uint HomeIslandId,
     string HomeIslandName,
+    string CharadollPersonality,
     IReadOnlyList<PortalItemDto> Inventory,
     IReadOnlyList<PortalCharacterEquipmentDto> Equipment,
     IReadOnlyList<PortalRoboDto> Robos
@@ -125,6 +126,11 @@ public sealed record PortalAccountDataDto(
 );
 
 public sealed record PortalChangeLanguageRequest([property: Required] string PreferredLanguage);
+
+public sealed record PortalResetRoboRequest(
+    [property: Required, StringLength(37, MinimumLength = 1)] string Name,
+    [property: Required] string Personality
+);
 
 public sealed record PortalCharacterRoboSummaryDto(
     int UserId,

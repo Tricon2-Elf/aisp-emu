@@ -48,6 +48,10 @@ internal static class PortalApiEndpointsExtensions
         );
         area.MapGet("/users/{userId:int}/account", GetAccountAsync);
         area.MapPost("/users/{userId:int}/language", SetPreferredLanguageAsync);
+        area.MapPost(
+            "/users/{userId:int}/characters/{characterId:int}/robos/{roboId:int}/reset",
+            ResetRoboAsync
+        );
         area.MapPost("/users/summaries", GetSummariesAsync);
         area.MapPost(
             "/users/{userId:int}/disconnect",
@@ -300,6 +304,76 @@ internal static class PortalApiEndpointsExtensions
         return TypedResults.Ok(new PortalChangeLanguageRequest(language.ToTag()));
     }
 
+    private static async Task<IResult> ResetRoboAsync(
+        int userId,
+        int characterId,
+        int roboId,
+        PortalResetRoboRequest request,
+        MainContext db,
+        IRoboRepository roboRepository,
+        IWordFilter wordFilter,
+        CancellationToken ct
+    )
+    {
+        var name = request.Name?.Trim() ?? string.Empty;
+        if (name.Length is < 1 or > 37)
+            return TypedResults.BadRequest(
+                new PortalErrorDto("Doll name must be between 1 and 37 characters.")
+            );
+        if (wordFilter.ContainsBlockedWord(name))
+            return TypedResults.BadRequest(new PortalErrorDto("That doll name is not allowed."));
+
+        if (
+            !TryParseResetPersonality(request.Personality, out var personality)
+            || personality is not (CharadollPersonality.Active or CharadollPersonality.Quiet)
+        )
+            return TypedResults.BadRequest(
+                new PortalErrorDto("Personality must be Active or Quiet.")
+            );
+
+        var ownsCharacter = await db
+            .Characters.AsNoTracking()
+            .AnyAsync(character => character.Id == characterId && character.UserId == userId, ct);
+        if (!ownsCharacter)
+            return TypedResults.NotFound(new PortalErrorDto("Character not found."));
+
+        if (roboId is < 1 or > 10)
+            return TypedResults.NotFound(new PortalErrorDto("Doll not found."));
+
+        var reset = await roboRepository.ResetEquipmentAndRenameAsync(
+            characterId,
+            (uint)roboId,
+            name,
+            personality,
+            ct
+        );
+        if (!reset)
+            return TypedResults.NotFound(new PortalErrorDto("Doll not found."));
+
+        return TypedResults.NoContent();
+    }
+
+    private static bool TryParseResetPersonality(
+        string? value,
+        out CharadollPersonality personality
+    )
+    {
+        personality = CharadollPersonality.None;
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+        if (string.Equals(value, "Active", StringComparison.OrdinalIgnoreCase))
+        {
+            personality = CharadollPersonality.Active;
+            return true;
+        }
+        if (string.Equals(value, "Quiet", StringComparison.OrdinalIgnoreCase))
+        {
+            personality = CharadollPersonality.Quiet;
+            return true;
+        }
+        return false;
+    }
+
     private static async Task<IResult> GetSummariesAsync(
         PortalUserIdsRequest request,
         MainContext db,
@@ -445,6 +519,7 @@ internal static class PortalApiEndpointsExtensions
                         : localiser.Get(language, L.Map.Name(character.CurrentMapId)),
                     character.HomeIslandId,
                     ResolveHomeIslandName(character.HomeIslandId, language, localiser),
+                    character.CharadollPersonality.ToString(),
                     character
                         .Inventory.OrderBy(item => item.ItemId)
                         .Select(item => new PortalItemDto(

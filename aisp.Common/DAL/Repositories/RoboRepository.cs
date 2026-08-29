@@ -23,6 +23,18 @@ public interface IRoboRepository
         CancellationToken ct = default
     );
     Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns equipped items to character inventory, applies starter clothing, renames the doll,
+    /// and updates character personality plus this doll's model/hairstyle. Returns false if missing.
+    /// </summary>
+    Task<bool> ResetEquipmentAndRenameAsync(
+        int characterId,
+        uint roboId,
+        string name,
+        CharadollPersonality personality,
+        CancellationToken ct = default
+    );
 }
 
 public sealed class RoboRepository(MainContext db) : IRoboRepository
@@ -397,6 +409,73 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         entity.UpdatedAt = now;
 
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> ResetEquipmentAndRenameAsync(
+        int characterId,
+        uint roboId,
+        string name,
+        CharadollPersonality personality,
+        CancellationToken ct = default
+    )
+    {
+        if (personality is not (CharadollPersonality.Active or CharadollPersonality.Quiet))
+            throw new ArgumentOutOfRangeException(
+                nameof(personality),
+                personality,
+                "Portal doll reset requires Active or Quiet personality."
+            );
+
+        var entity = await WithDetails(db.Robos)
+            .Include(x => x.Character)
+            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        if (entity is null)
+            return false;
+
+        var unequippedItemIds = entity
+            .Equipment.Where(row => row.ItemId != 0)
+            .Select(row => (int)row.ItemId)
+            .ToList();
+
+        var inventoryByItemId = await db
+            .CharacterInventories.Where(i =>
+                i.CharacterId == characterId && unequippedItemIds.Contains(i.ItemId)
+            )
+            .ToDictionaryAsync(i => i.ItemId, ct);
+
+        foreach (var itemId in unequippedItemIds)
+        {
+            if (inventoryByItemId.TryGetValue(itemId, out var existingInventory))
+            {
+                existingInventory.Quantity += 1;
+            }
+            else
+            {
+                existingInventory = new CharacterInventory
+                {
+                    CharacterId = characterId,
+                    ItemId = itemId,
+                    Quantity = 1,
+                };
+                db.CharacterInventories.Add(existingInventory);
+                inventoryByItemId[itemId] = existingInventory;
+            }
+        }
+
+        SynchronizeEquipment(
+            entity,
+            DefaultClothingItems.Female.Select(itemId => new ItemSlotInfo((uint)itemId, 0)).ToList()
+        );
+
+        var appearance = CharadollAppearance.Resolve(entity.Character.HomeIslandId, personality);
+        entity.Name = name;
+        entity.ModelId = appearance.ModelId;
+        entity.Hairstyle = appearance.Hairstyle;
+        entity.Character.CharadollPersonality = personality;
+        entity.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     private static IQueryable<Robo> WithDetails(IQueryable<Robo> query)
