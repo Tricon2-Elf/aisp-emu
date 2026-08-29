@@ -23,6 +23,21 @@ public class ServerOptions
     /// <summary>Per-packet outbound write timeout in seconds. Slow clients that cannot accept a packet (including the ~2MB item catalog) within this window are disconnected.</summary>
     public int ClientSendTimeoutSeconds { get; set; } = 30;
 
+    /// <summary>When true, TCP_NODELAY is set on accepted clients (disables Nagle).</summary>
+    public bool TcpNoDelay { get; set; } = true;
+
+    /// <summary>When true, TCP keepalive probes are enabled on accepted clients.</summary>
+    public bool TcpKeepAlive { get; set; } = true;
+
+    /// <summary>Idle seconds before the first keepalive probe.</summary>
+    public int TcpKeepAliveIdleSeconds { get; set; } = 45;
+
+    /// <summary>Seconds between keepalive probes.</summary>
+    public int TcpKeepAliveIntervalSeconds { get; set; } = 10;
+
+    /// <summary>Failed keepalive probes before the kernel drops the socket.</summary>
+    public int TcpKeepAliveRetryCount { get; set; } = 3;
+
     /// <summary>When false, session presence is kept in-memory (single-node VPS). When true, SessionPresences table is used (multi-instance).</summary>
     public bool UseDistributedSessionPresence { get; set; } = false;
 
@@ -41,6 +56,16 @@ public class ServerOptions
             return IPOverride;
         return address;
     }
+
+    public aisp.Network.TcpSocketOptions ToTcpSocketOptions() =>
+        new()
+        {
+            NoDelay = TcpNoDelay,
+            KeepAlive = TcpKeepAlive,
+            KeepAliveIdleSeconds = Math.Max(1, TcpKeepAliveIdleSeconds),
+            KeepAliveIntervalSeconds = Math.Max(1, TcpKeepAliveIntervalSeconds),
+            KeepAliveRetryCount = Math.Max(1, TcpKeepAliveRetryCount),
+        };
 
     public bool AuthServerEnabled => AuthServer.Enabled;
     public bool MsgServerEnabled => MsgServer.Enabled;

@@ -266,7 +266,8 @@ internal class Program
                 o.PacketChannelCapacity,
                 o.MaxReceiveFrameSize,
                 o.ClientReadTimeoutSeconds,
-                o.ClientSendTimeoutSeconds
+                o.ClientSendTimeoutSeconds,
+                o.ToTcpSocketOptions()
             );
         }
 

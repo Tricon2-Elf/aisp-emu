@@ -25,6 +25,7 @@ public abstract class GameServerBase<T> : BackgroundService
     private readonly int _clientReadTimeoutSeconds;
     private readonly int _clientSendTimeoutSeconds;
     private readonly int _packetChannelCapacity;
+    private readonly TcpSocketOptions _tcpSocketOptions;
     private bool _initialized;
 
     protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
@@ -41,6 +42,7 @@ public abstract class GameServerBase<T> : BackgroundService
         _clientReadTimeoutSeconds = ctx.ClientReadTimeoutSeconds;
         _clientSendTimeoutSeconds = ctx.ClientSendTimeoutSeconds;
         _packetChannelCapacity = ctx.PacketChannelCapacity;
+        _tcpSocketOptions = ctx.TcpSocketOptions;
         HealthRegistry.AddServer(ActiveServerType, _port);
     }
 
@@ -182,7 +184,8 @@ public abstract class GameServerBase<T> : BackgroundService
 
                     var userId = session.User?.Id ?? session.UserId;
                     return userId > 0 ? userId : null;
-                }
+                },
+                _tcpSocketOptions
             );
             HealthRegistry.SetAcceptCheck(ActiveServerType, () => listener.IsListening);
             HealthRegistry.SetClientLoadCheck(ActiveServerType, () => listener.GetClientLoad());
