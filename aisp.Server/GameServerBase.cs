@@ -185,22 +185,17 @@ public abstract class GameServerBase<T> : BackgroundService
                     var userId = session.User?.Id ?? session.UserId;
                     return userId > 0 ? userId : null;
                 },
-                _tcpSocketOptions
+                _tcpSocketOptions,
+                (packet, ct) => RouteInboundPacketAsync(packet, scheduler, ct)
             );
             HealthRegistry.SetAcceptCheck(ActiveServerType, () => listener.IsListening);
             HealthRegistry.SetClientLoadCheck(ActiveServerType, () => listener.GetClientLoad());
 
             var acceptLoop = listener.RunAsync(runToken);
-            var packetLoop = RunPacketLoop(channel.Reader, scheduler, runToken);
             var heartbeatLoop = RunHeartbeatLoop(runToken);
             var additionalLoops = GetAdditionalLoops(runToken).ToArray();
 
-            var allLoops = new List<Task>(3 + additionalLoops.Length)
-            {
-                acceptLoop,
-                packetLoop,
-                heartbeatLoop,
-            };
+            var allLoops = new List<Task>(2 + additionalLoops.Length) { acceptLoop, heartbeatLoop };
             allLoops.AddRange(additionalLoops);
 
             var completed = await Task.WhenAny(allLoops);
@@ -211,14 +206,6 @@ public abstract class GameServerBase<T> : BackgroundService
                     ActiveServerType
                 );
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "tcp listener stopped");
-            }
-            else if (completed == packetLoop)
-            {
-                Logger.LogWarning(
-                    "{ServerType} packet loop stopped unexpectedly; restarting listener",
-                    ActiveServerType
-                );
-                HealthRegistry.MarkUnhealthy(ActiveServerType, "packet loop stopped");
             }
             else if (completed == heartbeatLoop)
             {
@@ -268,83 +255,48 @@ public abstract class GameServerBase<T> : BackgroundService
     }
 
     /// <summary>
-    /// Demux inbound packets onto per-session queues. Handlers for different clients run in parallel;
-    /// packets for one client stay in order.
+    /// Called on the receiving client's I/O task. Waits if that session's handler queue is full so
+    /// only this connection applies TCP backpressure.
     /// </summary>
-    private async Task RunPacketLoop(
-        ChannelReader<Packet> channel,
+    private async ValueTask RouteInboundPacketAsync(
+        Packet packet,
         SessionWorkScheduler<(Packet Packet, IPlayerSession Session)> scheduler,
         CancellationToken ct
     )
     {
-        try
+        if (packet.Client.IsClosed)
         {
-            await foreach (var packet in channel.ReadAllAsync(ct))
+            Logger.LogDebug(
+                "Dropping packet {Type} for closed client {ClientId} on {ServerType}",
+                packet.Type,
+                packet.Client.Id,
+                ActiveServerType
+            );
+            return;
+        }
+
+        IPlayerSession? session;
+        if (!State.TryGetSession(packet.Client.Id, out session) || session is null)
+        {
+            // Do not resurrect sessions for clients that disconnected while packets were still queued.
+            if (packet.Client.IsClosed)
             {
-                try
-                {
-                    if (packet.Client.IsClosed)
-                    {
-                        Logger.LogDebug(
-                            "Dropping packet {Type} for closed client {ClientId} on {ServerType}",
-                            packet.Type,
-                            packet.Client.Id,
-                            ActiveServerType
-                        );
-                        continue;
-                    }
-
-                    IPlayerSession? session;
-                    if (!State.TryGetSession(packet.Client.Id, out session) || session is null)
-                    {
-                        // Do not resurrect sessions for clients that disconnected while packets were still queued.
-                        if (packet.Client.IsClosed)
-                        {
-                            Logger.LogDebug(
-                                "Skipping stale queued packet {Type} after disconnect for client {ClientId} on {ServerType}",
-                                packet.Type,
-                                packet.Client.Id,
-                                ActiveServerType
-                            );
-                            continue;
-                        }
-
-                        session = State.GetOrAddSession(
-                            packet.Client.Id,
-                            () => new PlayerSession(packet.Client.Id, packet.Client)
-                        );
-                    }
-
-                    if (!scheduler.TryEnqueue(packet.Client.Id, (packet, session)))
-                    {
-                        Logger.LogWarning(
-                            "Session packet queue full for {ClientId} on {ServerType}; dropping {Type}",
-                            packet.Client.Id,
-                            ActiveServerType,
-                            packet.Type
-                        );
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(
-                        ex,
-                        "Packet routing failed (ServerType={ServerType}, type={Type}): {Message}",
-                        ActiveServerType,
-                        packet.Type,
-                        ex.Message
-                    );
-                }
+                Logger.LogDebug(
+                    "Skipping stale queued packet {Type} after disconnect for client {ClientId} on {ServerType}",
+                    packet.Type,
+                    packet.Client.Id,
+                    ActiveServerType
+                );
+                return;
             }
+
+            session = State.GetOrAddSession(
+                packet.Client.Id,
+                () => new PlayerSession(packet.Client.Id, packet.Client)
+            );
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            // expected during listener restart
-        }
+
+        await scheduler.EnqueueAsync(packet.Client.Id, (packet, session), ct);
     }
 
     private async Task DispatchScheduledPacketAsync(

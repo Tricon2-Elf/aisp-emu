@@ -33,11 +33,20 @@ public sealed class SessionWorkScheduler<TWork> : IAsyncDisposable
 
     internal int TrackedSessionCount => _sessions.Count;
 
-    public bool TryEnqueue(Guid sessionId, TWork work)
+    /// <summary>
+    /// Enqueues work for <paramref name="sessionId"/>, waiting if that session's queue is at capacity.
+    /// Returns false if the session is already completed or the scheduler is disposing.
+    /// </summary>
+    public async ValueTask<bool> EnqueueAsync(
+        Guid sessionId,
+        TWork work,
+        CancellationToken ct = default
+    )
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
         var state = _sessions.GetOrAdd(sessionId, static _ => new SessionState());
+        ChannelWriter<TWork> writer;
         lock (state.Gate)
         {
             if (state.Completed || Volatile.Read(ref _disposed) != 0)
@@ -50,7 +59,17 @@ public sealed class SessionWorkScheduler<TWork> : IAsyncDisposable
                 ObserveRunner(sessionId, state, state.Runner);
             }
 
-            return state.Queue.TryEnqueue(work);
+            writer = state.Queue.Writer;
+        }
+
+        try
+        {
+            await writer.WriteAsync(work, ct).ConfigureAwait(false);
+            return true;
+        }
+        catch (ChannelClosedException)
+        {
+            return false;
         }
     }
 
@@ -166,7 +185,7 @@ public sealed class SessionWorkScheduler<TWork> : IAsyncDisposable
             );
         }
 
-        public bool TryEnqueue(TWork work) => _channel.Writer.TryWrite(work);
+        public ChannelWriter<TWork> Writer => _channel.Writer;
 
         public void Complete() => _channel.Writer.TryComplete();
 
