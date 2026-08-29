@@ -78,7 +78,7 @@ public class SharedState
             return;
 
         List<(ServerType Type, IPlayerSession Session)> stale = [];
-        foreach (var serverType in (ServerType[])[ServerType.Auth, ServerType.Msg, ServerType.Area])
+        foreach (var serverType in (ServerType[])[ServerType.Auth, ServerType.Msg])
         {
             foreach (var existing in GetServerClients(serverType))
             {
@@ -261,6 +261,15 @@ public class SharedState
         if (peers.Count == 0)
             return;
 
+        await NotifyDisappearToPeersAsync(session, peers, ct);
+    }
+
+    private static async Task NotifyDisappearToPeersAsync(
+        IPlayerSession session,
+        IReadOnlyList<IPlayerSession> peers,
+        CancellationToken ct = default
+    )
+    {
         var payload = new NotifyDisappearChara(session.CharacterId).ToBytes();
         foreach (var peer in peers)
         {
@@ -382,12 +391,16 @@ public class SharedState
 
     private void CloseAndUnregister(ServerType serverType, IPlayerSession existing)
     {
-        if (serverType == ServerType.Area)
-            _ = BroadcastAreaDisappearAsync(existing);
+        IReadOnlyList<IPlayerSession>? disappearPeers = null;
+        if (serverType == ServerType.Area && existing.CharacterId != 0)
+            disappearPeers = GetAreaPeers(existing);
 
         UnregisterClient(serverType, existing.ConnectionId);
         if (existing is PlayerSession playerSession)
             playerSession.ClientConnection.Dispose();
+
+        if (disappearPeers is { Count: > 0 })
+            _ = NotifyDisappearToPeersAsync(existing, disappearPeers);
     }
 
     private static bool BelongsToUser(IPlayerSession session, int userId) =>

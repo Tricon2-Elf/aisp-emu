@@ -21,7 +21,9 @@ public class VceListener(
     int maxReceiveFrameSize = 4096,
     int clientReadTimeoutSeconds = 300,
     int clientSendTimeoutSeconds = 30,
-    Func<Guid, int?>? resolveUserId = null
+    Func<Guid, int?>? resolveUserId = null,
+    TcpSocketOptions? tcpSocketOptions = null,
+    Func<Packet, CancellationToken, ValueTask>? onInboundPacket = null
 )
 {
     private static readonly HashSet<PacketType> SuppressedReceiveLogs =
@@ -42,6 +44,8 @@ public class VceListener(
     );
     private readonly int _maxReceiveFrameSize = Math.Max(1, maxReceiveFrameSize);
     private readonly int _sendTimeoutSeconds = Math.Max(1, clientSendTimeoutSeconds);
+    private readonly TcpSocketOptions _tcpSocketOptions =
+        tcpSocketOptions ?? TcpSocketOptions.Default;
     private readonly TimeSpan _readTimeout =
         clientReadTimeoutSeconds > 0
             ? TimeSpan.FromSeconds(clientReadTimeoutSeconds)
@@ -83,10 +87,12 @@ public class VceListener(
         onListeningStarted?.Invoke(name, port);
         int handlerCap = Math.Max(1, maxConcurrentClients);
         logger.LogInformation(
-            "Server {Name} started on {LocalEP} (max concurrent client handlers: {MaxHandlers})",
+            "Server {Name} started on {LocalEP} (max concurrent client handlers: {MaxHandlers}, noDelay={NoDelay}, keepAlive={KeepAlive})",
             name,
             _tcpListener.LocalEndpoint,
-            handlerCap
+            handlerCap,
+            _tcpSocketOptions.NoDelay,
+            _tcpSocketOptions.KeepAlive
         );
 
         try
@@ -109,6 +115,20 @@ public class VceListener(
 
                     try
                     {
+                        try
+                        {
+                            TcpSocketTuning.Apply(tcpClient.Client, _tcpSocketOptions);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug(
+                                ex,
+                                "{Name} failed applying TCP socket options for {RemoteEndPoint}",
+                                name,
+                                tcpClient.Client.RemoteEndPoint
+                            );
+                        }
+
                         var context = new ClientConnection(
                             Guid.NewGuid(),
                             tcpClient.Client.RemoteEndPoint!,
@@ -494,7 +514,7 @@ public class VceListener(
                     if (context.CurrentState == ClientState.WaitingForVersionCheck)
                         context.CurrentState = ClientState.Connected;
                     LogReceivedPacket(context, singleType, singlePayload);
-                    await channel.Writer.WriteAsync(
+                    await PublishPacketAsync(
                         new Packet(context, singleType, singlePayload.ToArray(), singleTypeRaw),
                         ct
                     );
@@ -539,14 +559,16 @@ public class VceListener(
             ReadOnlySpan<byte> payload =
                 bodyLen > 0 ? decryptedFrame.AsSpan(payloadStart + 2, bodyLen) : [];
             LogReceivedPacket(context, type, payload);
-            await channel.Writer.WriteAsync(
-                new Packet(context, type, payload.ToArray(), typeRaw),
-                ct
-            );
+            await PublishPacketAsync(new Packet(context, type, payload.ToArray(), typeRaw), ct);
 
             offset = payloadEnd;
         }
     }
+
+    private ValueTask PublishPacketAsync(Packet packet, CancellationToken ct) =>
+        onInboundPacket is not null
+            ? onInboundPacket(packet, ct)
+            : channel.Writer.WriteAsync(packet, ct);
 
     private void LogReceivedPacket(
         ClientConnection context,
