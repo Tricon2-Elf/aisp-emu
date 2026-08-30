@@ -1,6 +1,7 @@
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Localisation;
 using aisp.Network;
+using aisp.Network.Data;
 using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
@@ -8,28 +9,29 @@ namespace aisp.Common.Game.ServerScripts;
 
 public sealed class StationStaffDepartureServerScript(
     ICharacterRepository characterRepository,
-    ClientScriptSegmentRunner clientScriptSegmentRunner,
     ServerScriptSession serverScriptSession,
     DirectMapLinkTransitionService directMapLinkTransitionService,
     ITextLocaliser localiser,
     ILogger<StationStaffDepartureServerScript> logger
 ) : IServerScript
 {
+    public const uint DaCapoShoppingStreetMapId = 10_010_200;
+    public const uint ShuffleShoppingStreetMapId = 10_030_200;
+    public const uint ClannadShoppingStreetMapId = 10_020_200;
+
     private const uint EventFailure = 1;
     private const string AwaitingRegistrationMessageSyncStep = "AwaitingRegistrationMessageSync";
-    private const string DestinationMapDataKey = "destinationMapId";
+    private const string AwaitingIslandSelectStep = "AwaitingIslandSelect";
 
-    private static readonly IReadOnlyDictionary<uint, DepartureRoute> Routes = new Dictionary<
-        uint,
-        DepartureRoute
-    >
-    {
-        [1] = new(ScriptedEvents.Keys.IntroductionMyRoomDaCapo, 10010200),
-        [2] = new(ScriptedEvents.Keys.IntroductionMyRoomClannad, 10020200),
-        [3] = new(ScriptedEvents.Keys.IntroductionMyRoomShuffle, 10030200),
-    };
+    private static readonly (uint DestinationMapId, LocKey Label)[] Destinations =
+    [
+        (DaCapoShoppingStreetMapId, L.Island.Name(1)),
+        (ShuffleShoppingStreetMapId, L.Island.Name(3)),
+        (ClannadShoppingStreetMapId, L.Island.Name(2)),
+    ];
 
     public string EventKey => ServerEvents.Keys.StationStaffDeparture;
+    public EventCompletionPolicy CompletionPolicy => EventCompletionPolicy.Replayable;
 
     public async Task StartAsync(
         IPlayerSession session,
@@ -76,26 +78,26 @@ public sealed class StationStaffDepartureServerScript(
             return;
         }
 
-        if (!Routes.TryGetValue(character.HomeIslandId, out var route))
-        {
-            logger.LogWarning(
-                "Aborting server script {EventKey} for character {CharacterId}: unsupported home island {IslandId}",
-                EventKey,
-                session.CharacterId,
-                character.HomeIslandId
-            );
-            await serverScriptSession.AbortAsync(session, EventFailure, ct);
-            return;
-        }
-
-        session.ServerScriptState!.Data[DestinationMapDataKey] = route.DestinationMapId;
-        logger.LogInformation(
-            "Starting client script segment {ClientScriptKey} for character {CharacterId} before travel to map {DestinationMapId}",
-            route.ClientScriptKey,
-            session.CharacterId,
-            route.DestinationMapId
+        session.ServerScriptState!.Step = AwaitingIslandSelectStep;
+        await session.SendAsync(
+            PacketType.EventSelectInitNotify,
+            new EventSelectInitNotify { SelectType = EventSelectType.Dialogue }.ToBytes(),
+            ct
         );
-        await clientScriptSegmentRunner.BeginAsync(session, route.ClientScriptKey, ct);
+        foreach (var (_, label) in Destinations)
+            await session.SendAsync(
+                PacketType.EventSelectPushNotify,
+                new EventSelectPushNotify { SelectName = localiser.Get(session, label) }.ToBytes(),
+                ct
+            );
+        await session.SendAsync(
+            PacketType.EventSelectExecNotify,
+            new EventSelectExecNotify
+            {
+                Text = localiser.Get(session, L.Script.StationStaff.ChooseIsland),
+            }.ToBytes(),
+            ct
+        );
     }
 
     public async Task<bool> TryHandlePacketAsync(
@@ -114,7 +116,25 @@ public sealed class StationStaffDepartureServerScript(
             && packetType == PacketType.EventSyncRRequest
         )
         {
-            var request = EventSyncRRequest.FromBytes(payload.Span);
+            var syncRequest = EventSyncRRequest.FromBytes(payload.Span);
+            await serverScriptSession.CompleteAsync(
+                session,
+                syncRequest.Result,
+                markComplete: false,
+                ct
+            );
+            return true;
+        }
+
+        if (
+            state.Step != AwaitingIslandSelectStep
+            || packetType != PacketType.EventSelectExecRRequest
+        )
+            return false;
+
+        var request = EventSelectExecRRequest.FromBytes(payload.Span);
+        if (request.Result != 0)
+        {
             await serverScriptSession.CompleteAsync(
                 session,
                 request.Result,
@@ -124,52 +144,34 @@ public sealed class StationStaffDepartureServerScript(
             return true;
         }
 
-        var segmentResult = await clientScriptSegmentRunner.TryHandleAsync(
-            packetType,
-            payload,
-            session,
-            ct
-        );
-        switch (segmentResult.Status)
+        if (request.SelectNo >= Destinations.Length)
         {
-            case ClientScriptSegmentStatus.NotHandled:
-                return false;
-            case ClientScriptSegmentStatus.InProgress:
-                return true;
-            case ClientScriptSegmentStatus.Failed:
-                logger.LogWarning(
-                    "Aborting server script {EventKey} for character {CharacterId}: client script result {Result}",
-                    EventKey,
-                    session.CharacterId,
-                    segmentResult.Result
-                );
-                await serverScriptSession.AbortAsync(
-                    session,
-                    segmentResult.Result == 0 ? EventFailure : segmentResult.Result,
-                    ct
-                );
-                return true;
-            case ClientScriptSegmentStatus.Completed:
-                var destinationMapId = (uint)state.Data[DestinationMapDataKey];
-                await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
-                if (
-                    !await directMapLinkTransitionService.TryTeleportToMapAsync(
-                        session,
-                        destinationMapId,
-                        ct
-                    )
-                )
-                    logger.LogWarning(
-                        "Server script {EventKey} completed for character {CharacterId}, but teleport to map {DestinationMapId} failed",
-                        EventKey,
-                        session.CharacterId,
-                        destinationMapId
-                    );
-                return true;
-            default:
-                throw new ArgumentOutOfRangeException();
+            logger.LogWarning(
+                "Rejecting server script {EventKey} for character {CharacterId}: invalid island selection {SelectNo}",
+                EventKey,
+                session.CharacterId,
+                request.SelectNo
+            );
+            await serverScriptSession.AbortAsync(session, EventFailure, ct);
+            return true;
         }
-    }
 
-    private sealed record DepartureRoute(string ClientScriptKey, uint DestinationMapId);
+        var destinationMapId = Destinations[request.SelectNo].DestinationMapId;
+        await serverScriptSession.CompleteAsync(session, 0, markComplete: false, ct);
+        if (
+            !await directMapLinkTransitionService.TryTeleportToMapAsync(
+                session,
+                destinationMapId,
+                ct
+            )
+        )
+            logger.LogWarning(
+                "Server script {EventKey} completed for character {CharacterId}, but teleport to map {DestinationMapId} failed",
+                EventKey,
+                session.CharacterId,
+                destinationMapId
+            );
+
+        return true;
+    }
 }

@@ -277,6 +277,12 @@
     "zh-Hans": "请先到外神田大楼登记。",
     "zh-Hant": "請先到外神田大樓登記。"
   },
+  "script.station_staff.choose_island": {
+    "ja": "どの島へ行きますか？",
+    "en": "Which island would you like to visit?",
+    "zh-Hans": "你想去哪座岛？",
+    "zh-Hant": "你想去哪座島？"
+  },
   "script.station_staff.return_akihabara": {
     "ja": "秋葉原までお連れします",
     "en": "I'll take you to Akihabara",

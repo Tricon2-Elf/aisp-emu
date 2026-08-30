@@ -142,6 +142,7 @@ public static class L
             public static readonly LocKey RegisterFirst = new(
                 "script.station_staff.register_first"
             );
+            public static readonly LocKey ChooseIsland = new("script.station_staff.choose_island");
             public static readonly LocKey ReturnToAkihabara = new(
                 "script.station_staff.return_akihabara"
             );
