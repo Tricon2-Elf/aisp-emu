@@ -90,6 +90,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -195,6 +196,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -291,6 +293,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -429,6 +432,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -644,6 +648,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -718,6 +723,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -794,6 +800,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -862,6 +869,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -948,6 +956,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -1037,6 +1046,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache([itemId]),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -1122,6 +1132,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -1191,6 +1202,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -1316,6 +1328,7 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
@@ -1361,6 +1374,20 @@ public class CmdExecHandlerTests
         writer.Write((uint)args.Length);
         return writer.ToBytes();
     }
+
+    private static ModerationService CreateModerationService(
+        DbContextOptions<MainContext> options,
+        SharedState state
+    ) =>
+        new(
+            new UserRepository(new MainContext(options)),
+            new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            ),
+            state,
+            NullLogger<ModerationService>.Instance
+        );
 
     private static User CreateUserWithCharacter(
         int userId,
