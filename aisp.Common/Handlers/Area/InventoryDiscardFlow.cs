@@ -6,8 +6,7 @@ namespace aisp.Common.Handlers.Area;
 
 /// <summary>
 /// Server side of throwing items away. Used by the bag's 捨てる option (send_item_discard, one
-/// stack); written so the trashbox window flow (send_trashbox_discard_item, up to ten stacks)
-/// can reuse it once that path is implemented and tested.
+/// stack) and the trashbox window (send_trashbox_discard_item, up to ten stacks).
 /// The client never touches its item table locally for either flow; it only shows the result of
 /// the _r packet and relies on recv_item_update_num / recv_item_delete for the bag itself, so those are
 /// sent here before the caller sends its _r.

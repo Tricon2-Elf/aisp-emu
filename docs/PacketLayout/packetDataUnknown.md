@@ -741,12 +741,6 @@ send_trade_item_remove
 send_trade_ok
 send_trade_request
 send_trade_respond
-recv_trashbox_close_r
-recv_trashbox_discard_item_r
-recv_trashbox_open_r
-send_trashbox_close
-send_trashbox_discard_item
-send_trashbox_open
 recv_ucc_adv_figure_obtain
 recv_ucc_voice_obtain
 recv_get_ai_upload_list_r

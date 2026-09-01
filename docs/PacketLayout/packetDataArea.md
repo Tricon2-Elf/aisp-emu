@@ -1055,3 +1055,90 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
     UInt {SerialId}
     UShort {Num}
 ```
+
+## send_trashbox_open (TrashboxOpenRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xF41F
+- **Packet Size:** 0
+- **Description:** Opens the bin. Sent from the item window's bin button (IF::CItemWindow slot 93) and from the battle result window's drop-parts message 0x82500010.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_trashbox_open_r (TrashboxOpenResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x770E
+- **Packet Size:** 4
+- **Description:** Result 0 switches the item window into bin mode (mode 3); any other value shows an error and leaves the bag as it was.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_trashbox_discard_item (TrashboxDiscardItemRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xB18E
+- **Packet Size:** Variable, max 68 (4 + 10×4 + 4 + 10×2)
+- **Description:** Confirm in bin mode. Every stack dropped into the bin, as two counted arrays filled from the same selection list (counts are equal, at most 10). The client does not touch its item table; the server must answer with recv_item_update_num / recv_item_delete per stack, then recv_trashbox_discard_item_r.
+
+**Layout:**
+
+```text
+    UInt {SerialCount}
+    UInt {SerialId}[SerialCount]
+    UInt {NumCount}
+    UShort {Num}[NumCount]
+```
+
+## recv_trashbox_discard_item_r (TrashboxDiscardItemResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xBBEB
+- **Packet Size:** 4
+- **Description:** Result of the bin discard. While the window is in bin mode the client answers this with send_trashbox_close regardless of result.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_trashbox_close (TrashboxCloseRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x6A3A
+- **Packet Size:** 0
+- **Description:** Sent after recv_trashbox_discard_item_r, or by the window's close message (0x82040001) in bin mode.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_trashbox_close_r (TrashboxCloseResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x9ABE
+- **Packet Size:** 4
+- **Description:** Tears the bin window down (0x495970); result is not inspected. The client dispatcher matches `cmp eax,0x9ABE` — the emulator previously sent 0x9A7E, which no client handler receives.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
