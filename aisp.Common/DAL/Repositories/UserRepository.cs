@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Game;
 using aisp.Common.Localisation;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,16 @@ public interface IUserRepository
     Task AddAsync(string username, string password);
     Task<User?> GetByUsernameAsync(string username);
     Task<User?> GetById(int userId);
-    Task SetBannedAsync(int userId, bool isBanned, string? reason = null);
+    Task SetBannedAsync(
+        int userId,
+        bool isBanned,
+        string? reason = null,
+        DateTime? bannedUntil = null
+    );
+    Task SetKickedUntilAsync(int userId, DateTime? kickedUntil, CancellationToken ct = default);
+    Task SetRoleAsync(int userId, UserRole role, CancellationToken ct = default);
+    Task ClearExpiredBanAsync(int userId, CancellationToken ct = default);
+    Task PromoteToServerAdminIfBelowAsync(int userId, CancellationToken ct = default);
     Task TouchLastLoggedInAsync(int userId, CancellationToken ct = default);
     Task UpdatePasswordAsync(int userId, string newPassword);
     Task SetLanguageAsync(int userId, GameLanguage language, CancellationToken ct = default);
@@ -112,7 +122,12 @@ public class UserRepository(MainContext db) : IUserRepository
             .FirstOrDefaultAsync(u => u.Id == userId);
     }
 
-    public async Task SetBannedAsync(int userId, bool isBanned, string? reason = null)
+    public async Task SetBannedAsync(
+        int userId,
+        bool isBanned,
+        string? reason = null,
+        DateTime? bannedUntil = null
+    )
     {
         var user = await _db.Users.FindAsync(userId);
         if (user == null)
@@ -121,7 +136,55 @@ public class UserRepository(MainContext db) : IUserRepository
         user.IsBanned = isBanned;
         user.BanReason = isBanned ? reason : null;
         user.BannedAt = isBanned ? DateTime.UtcNow : null;
+        user.BannedUntil = isBanned ? bannedUntil : null;
         await _db.SaveChangesAsync();
+    }
+
+    public async Task SetKickedUntilAsync(
+        int userId,
+        DateTime? kickedUntil,
+        CancellationToken ct = default
+    )
+    {
+        var user = await _db.Users.FindAsync([userId], ct);
+        if (user is null)
+            return;
+
+        user.KickedUntil = kickedUntil;
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task SetRoleAsync(int userId, UserRole role, CancellationToken ct = default)
+    {
+        var user = await _db.Users.FindAsync([userId], ct);
+        if (user is null)
+            return;
+
+        user.Role = role;
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task ClearExpiredBanAsync(int userId, CancellationToken ct = default)
+    {
+        var user = await _db.Users.FindAsync([userId], ct);
+        if (user is null || !UserModerationState.ShouldClearExpiredBan(user))
+            return;
+
+        user.IsBanned = false;
+        user.BanReason = null;
+        user.BannedAt = null;
+        user.BannedUntil = null;
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task PromoteToServerAdminIfBelowAsync(int userId, CancellationToken ct = default)
+    {
+        var user = await _db.Users.FindAsync([userId], ct);
+        if (user is null || user.Role >= UserRole.ServerAdmin)
+            return;
+
+        user.Role = UserRole.ServerAdmin;
+        await _db.SaveChangesAsync(ct);
     }
 
     public async Task TouchLastLoggedInAsync(int userId, CancellationToken ct = default)

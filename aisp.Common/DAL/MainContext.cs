@@ -1,5 +1,6 @@
 using aisp.Common.Config;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Game;
 using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
@@ -66,6 +67,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.AiPoints).HasDefaultValue(0L);
             e.Property(x => x.NicoPoints).HasDefaultValue(0L);
             e.Property(x => x.StorageDeposit).HasDefaultValue(0L);
+            e.Property(x => x.Role)
+                .HasConversion<byte>()
+                .HasDefaultValue(UserRole.User)
+                .HasSentinel(UserRole.User);
             e.Property(x => x.IsBanned).HasDefaultValue(false);
             e.Property(x => x.AdventureSheetStock).HasDefaultValue(0);
             e.Property(x => x.NextAdventureWorkId).HasDefaultValue(1);
