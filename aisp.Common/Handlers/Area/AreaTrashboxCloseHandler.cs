@@ -16,7 +16,8 @@ public class AreaTrashboxCloseHandler : IPacketHandler, IRequiresAuthenticatedSe
         CancellationToken ct = default
     )
     {
-        var response = new TrashboxCloseResponse(1);
+        // The client tears the bin window down without inspecting the result; 0 matches the other _r packets.
+        var response = new TrashboxCloseResponse(0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

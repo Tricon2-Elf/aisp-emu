@@ -271,8 +271,6 @@ recv_get_itembox_item_list_r
 recv_get_tps_use_item_list_r
 recv_item_create
 recv_item_delete
-recv_item_discard_r
-recv_item_discard_sum_r
 recv_item_equip_end_r
 recv_item_equip_ended
 recv_item_equip_force_started
@@ -294,7 +292,6 @@ recv_item_try_equipped
 recv_item_try_remove_r
 recv_item_try_removed
 recv_item_update_list
-recv_item_update_num
 recv_item_update_price
 recv_item_use_r
 recv_itembox_close_r
@@ -307,7 +304,6 @@ send_expire_item_limit_select_r
 send_get_cosplay_list
 send_get_item_list
 send_get_tps_use_item_list
-send_item_discard
 send_item_equip_end
 send_item_equip_start
 send_item_move
@@ -745,12 +741,6 @@ send_trade_item_remove
 send_trade_ok
 send_trade_request
 send_trade_respond
-recv_trashbox_close_r
-recv_trashbox_discard_item_r
-recv_trashbox_open_r
-send_trashbox_close
-send_trashbox_discard_item
-send_trashbox_open
 recv_ucc_adv_figure_obtain
 recv_ucc_voice_obtain
 recv_get_ai_upload_list_r

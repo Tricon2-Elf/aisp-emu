@@ -1707,13 +1707,13 @@ public enum PacketType : ushort
         "recv_trashbox_close_r",
         ImplementationState.Implemented
     )]
-    TrashboxCloseResponse = 0x9A7E,
+    TrashboxCloseResponse = 0x9ABE,
 
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_trashbox_discard_item",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     TrashboxDiscardItemRequest = 0xB18E,
 
@@ -1721,7 +1721,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_trashbox_discard_item_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     TrashboxDiscardItemResponse = 0xBBEB,
 
@@ -2872,6 +2872,22 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_item_discard",
+        ImplementationState.Implemented
+    )]
+    ItemDiscardRequest = 0xED61,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_item_discard_r",
+        ImplementationState.Implemented
+    )]
+    ItemDiscardResponse = 0x2546,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_item_delete",
         ImplementationState.Implemented
@@ -2970,7 +2986,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_item_update_num",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     ItemUpdateNumNotify = 0x05F8,
 
