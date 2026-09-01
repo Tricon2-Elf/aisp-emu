@@ -993,3 +993,65 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 ```
 
 ---
+
+## send_item_discard (ItemDiscardRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xED61
+- **Packet ID (int):** 60769
+- **Packet Size:** 6
+- **Description:** Bag 捨てる option. Sent by IF::CItemWindow (vtable slot 95) with the stack's serial and the count chosen in the quantity dialog. Opcode read from `CProtoArea_client::send_item_discard` (`mov word [buf], 0xED61`); the client declares it as `send_item_discard(serialid, num)`.
+
+**Layout:**
+
+```text
+    UInt {SerialId}
+    UShort {Num}
+```
+
+## recv_item_discard_r (ItemDiscardResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x2546
+- **Packet ID (int):** 9542
+- **Packet Size:** 4
+- **Description:** Result of send_item_discard. Client dispatcher `cmp eax,0x2546`; handler (CAIProtoArea slot 98 → 0x48CC50) shows UI message 0x149 when result is 0 and does nothing otherwise. The bag is **not** changed by this packet — send recv_item_update_num (copies remain) or recv_item_delete (stack gone) before it.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## recv_item_discard_sum_r
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x6EE1
+- **Packet Size:** 4
+- **Description:** Declared in the client proto (`recv_item_discard_sum_r(result)`, RPC id 0x73) but the game handler only logs it and there is no matching send in this client build. Not sent by the emulator. Note: `PacketType.CloseAiPowerWindowResponse` currently claims 0x6EE1 too; the client dispatcher routes 0x6EE1 here.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## recv_item_update_num (ItemUpdateNumNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x05F8
+- **Packet ID (int):** 1528
+- **Packet Size:** 10
+- **Description:** Sets the count of a stack in a place (bag = place 0). Client (CAIProtoArea slot 92 → 0x794C80) calls the item table's SetCount(serial, num, place) and refreshes the item window. Use recv_item_delete when the count reaches 0 so the record leaves the owned-item list.
+
+**Layout:**
+
+```text
+    UInt {Place}
+    UInt {SerialId}
+    UShort {Num}
+```

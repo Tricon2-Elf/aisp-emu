@@ -2872,6 +2872,22 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_item_discard",
+        ImplementationState.Implemented
+    )]
+    ItemDiscardRequest = 0xED61,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_item_discard_r",
+        ImplementationState.Implemented
+    )]
+    ItemDiscardResponse = 0x2546,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_item_delete",
         ImplementationState.Implemented
@@ -2970,7 +2986,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_item_update_num",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     ItemUpdateNumNotify = 0x05F8,
 
