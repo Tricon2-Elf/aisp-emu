@@ -153,6 +153,7 @@ internal static class HttpEndpointsExtensions
                 var (success, error, sessionsKicked) = await service.BanUserAsync(
                     username,
                     body?.Reason,
+                    body?.Days,
                     ct
                 );
                 if (!success)
@@ -183,9 +184,19 @@ internal static class HttpEndpointsExtensions
 
         app.MapPost(
             "/api/users/{username}/kick",
-            async (string username, UserAdminService service, CancellationToken ct) =>
+            async (
+                string username,
+                HttpRequest request,
+                UserAdminService service,
+                CancellationToken ct
+            ) =>
             {
-                var (success, error, sessionsClosed) = await service.KickUserAsync(username, ct);
+                var body = await request.ReadFromJsonAsync<KickRequest>(ct);
+                var (success, error, sessionsClosed) = await service.KickUserAsync(
+                    username,
+                    body?.Minutes,
+                    ct
+                );
                 if (!success)
                     return Results.NotFound(new { error });
 
@@ -197,6 +208,27 @@ internal static class HttpEndpointsExtensions
                         sessionsClosed,
                     }
                 );
+            }
+        );
+
+        app.MapPost(
+            "/api/users/{username}/role",
+            async (
+                string username,
+                HttpRequest request,
+                UserAdminService service,
+                CancellationToken ct
+            ) =>
+            {
+                var body = await request.ReadFromJsonAsync<SetRoleRequest>(ct);
+                if (body is null)
+                    return Results.BadRequest(new { error = "role is required" });
+
+                var (success, error) = await service.SetRoleAsync(username, body.Role, ct);
+                if (!success)
+                    return Results.NotFound(new { error });
+
+                return Results.Ok(new { username, role = body.Role.ToString() });
             }
         );
 

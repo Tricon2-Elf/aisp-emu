@@ -2,6 +2,7 @@ using aisp.Common;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Services;
 using aisp.Network;
 using aisp.Network.Packets.Common;
 using Microsoft.Extensions.Logging;
@@ -11,16 +12,19 @@ namespace aisp.Server.Services;
 public class UserAdminService
 {
     private readonly IUserRepository _userRepo;
+    private readonly ModerationService _moderation;
     private readonly SharedState _state;
     private readonly ILogger<UserAdminService> _logger;
 
     public UserAdminService(
         IUserRepository userRepo,
+        ModerationService moderation,
         SharedState state,
         ILogger<UserAdminService> logger
     )
     {
         _userRepo = userRepo;
+        _moderation = moderation;
         _state = state;
         _logger = logger;
     }
@@ -62,7 +66,7 @@ public class UserAdminService
         if (user == null)
             return (false, "user not found");
 
-        await KickUserAsync(user, ct);
+        await _moderation.DisconnectUserAsync(user, ct);
 
         await _userRepo.DeleteAsync(user.Id);
         _logger.LogInformation(
@@ -94,6 +98,7 @@ public class UserAdminService
     public async Task<(bool Success, string? Error, int SessionsKicked)> BanUserAsync(
         string username,
         string? reason,
+        int? days = null,
         CancellationToken ct = default
     )
     {
@@ -101,10 +106,17 @@ public class UserAdminService
         if (user == null)
             return (false, "user not found", 0);
 
-        await _userRepo.SetBannedAsync(user.Id, true, reason);
-        _logger.LogInformation("API banned user {Username}. Reason: {Reason}", username, reason);
+        var (error, sessionsKicked) = await _moderation.BanAsync(
+            0,
+            username,
+            days,
+            reason,
+            bypassHierarchy: true,
+            ct: ct
+        );
+        if (error != ModerationError.None)
+            return (false, error.ToString(), 0);
 
-        var sessionsKicked = await KickUserAsync(user, ct);
         return (true, null, sessionsKicked);
     }
 
@@ -124,6 +136,7 @@ public class UserAdminService
 
     public async Task<(bool Success, string? Error, int SessionsClosed)> KickUserAsync(
         string username,
+        int? minutes = null,
         CancellationToken ct = default
     )
     {
@@ -131,53 +144,35 @@ public class UserAdminService
         if (user == null)
             return (false, "user not found", 0);
 
-        var sessionsClosed = await KickUserAsync(user, ct);
+        var kickMinutes = ModerationService.ClampKickMinutes(
+            minutes ?? ModerationService.DefaultKickMinutes
+        );
+        var kickedUntil = DateTime.UtcNow.AddMinutes(kickMinutes);
+        await _userRepo.SetKickedUntilAsync(user.Id, kickedUntil, ct);
+
+        var sessionsClosed = await _moderation.DisconnectUserAsync(user, ct);
         _logger.LogInformation(
-            "API kicked user {Username}, closed {Count} sessions",
+            "API kicked user {Username} until {KickedUntil}, closed {Count} sessions",
             username,
+            kickedUntil,
             sessionsClosed
         );
         return (true, null, sessionsClosed);
     }
 
-    private async Task<int> KickUserAsync(User user, CancellationToken ct)
+    public async Task<(bool Success, string? Error)> SetRoleAsync(
+        string username,
+        UserRole role,
+        CancellationToken ct = default
+    )
     {
-        var serverTypes = new[] { ServerType.Auth, ServerType.Msg, ServerType.Area };
-        var matchingSessions = new List<IPlayerSession>();
+        var user = await _userRepo.GetByUsernameAsync(username);
+        if (user == null)
+            return (false, "user not found");
 
-        foreach (var serverType in serverTypes)
-        {
-            foreach (var session in _state.GetServerClients(serverType))
-            {
-                if (session.UserId == user.Id)
-                    matchingSessions.Add(session);
-            }
-        }
-
-        var logoutData = new LogoutResponse().ToBytes();
-
-        foreach (var session in matchingSessions)
-        {
-            try
-            {
-                await session.SendAsync(PacketType.LogoutResponse, logoutData, ct);
-                await Task.Delay(500, ct);
-
-                if (session is PlayerSession ps)
-                    ps.ClientConnection.Stream.Close();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Error disconnecting session {ConnectionId} for user {Username}",
-                    session.ConnectionId,
-                    user.Username
-                );
-            }
-        }
-
-        return matchingSessions.Count;
+        await _userRepo.SetRoleAsync(user.Id, role, ct);
+        _logger.LogInformation("API set role for {Username} to {Role}", username, role);
+        return (true, null);
     }
 
     public async Task<(IReadOnlyList<UserSummary> Users, int Total)> ListUsersAsync(
@@ -195,7 +190,10 @@ public class UserAdminService
             {
                 Id = u.Id,
                 Username = u.Username,
-                IsBanned = u.IsBanned,
+                Role = u.Role,
+                IsBanned = UserModerationState.IsCurrentlyBanned(u),
+                BannedUntil = u.BannedUntil,
+                KickedUntil = u.KickedUntil,
                 CreatedAt = u.CreatedAt,
                 CharacterCount = u.Characters.Count,
             })
@@ -271,10 +269,13 @@ public class UserAdminService
         {
             Id = user.Id,
             Username = user.Username,
-            IsBanned = user.IsBanned,
+            Role = user.Role,
+            IsBanned = UserModerationState.IsCurrentlyBanned(user),
             BanReason = user.BanReason,
             CreatedAt = user.CreatedAt,
             BannedAt = user.BannedAt,
+            BannedUntil = user.BannedUntil,
+            KickedUntil = user.KickedUntil,
             AiPoints = user.AiPoints,
             NicoPoints = user.NicoPoints,
             CharacterCount = user.Characters.Count,

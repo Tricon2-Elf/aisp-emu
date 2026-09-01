@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
+using aisp.Common.Game;
 using aisp.Portal;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
@@ -28,10 +26,8 @@ public sealed class LoginModel(AuthPortalApiClient authApi, IOptions<PortalOptio
         try
         {
             var identity = await authApi.LoginAsync(new(Input.Username, Input.Password), ct);
-            await SignInAsync(identity.UserId, identity.Username);
-            var fallbackUrl = portalOptions.Value.IsAdmin(identity.Username)
-                ? "/admin/users"
-                : "/account";
+            await PortalSignInHelper.SignInAsync(HttpContext, identity);
+            var fallbackUrl = identity.Role.HasPortalAccess() ? "/admin/users" : "/account";
             return LocalRedirect(IsLocalReturnUrl(ReturnUrl) ? ReturnUrl! : fallbackUrl);
         }
         catch (PortalApiException)
@@ -39,22 +35,6 @@ public sealed class LoginModel(AuthPortalApiClient authApi, IOptions<PortalOptio
             ModelState.AddModelError(string.Empty, "Invalid username or password.");
             return Page();
         }
-    }
-
-    private async Task SignInAsync(int userId, string username)
-    {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
-            new(ClaimTypes.Name, username),
-        };
-        if (portalOptions.Value.IsAdmin(username))
-            claims.Add(new("portal_admin", "true"));
-
-        var principal = new ClaimsPrincipal(
-            new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)
-        );
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
     }
 
     private bool IsLocalReturnUrl(string? returnUrl) =>

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using aisp.Common.Game;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace aisp.Portal;
@@ -61,11 +62,50 @@ public sealed class AuthPortalApiClient(
     public Task<PortalUserDetailDto> GetUserAsync(int userId, CancellationToken ct) =>
         GetAsync<PortalUserDetailDto>($"api/auth/portal/users/{userId}", ct);
 
-    public Task BanAsync(int userId, string? reason, CancellationToken ct) =>
-        PostNoContentAsync($"api/auth/portal/users/{userId}/ban", new PortalBanRequest(reason), ct);
+    public Task BanAsync(
+        int userId,
+        int actorUserId,
+        int? days,
+        string? reason,
+        CancellationToken ct
+    ) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/ban",
+            new PortalBanRequest(actorUserId, days, reason),
+            ct
+        );
 
-    public Task UnbanAsync(int userId, CancellationToken ct) =>
-        PostNoContentAsync<object?>($"api/auth/portal/users/{userId}/unban", null, ct);
+    public Task KickAsync(
+        int userId,
+        int actorUserId,
+        int? minutes,
+        string? reason,
+        CancellationToken ct
+    ) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/kick",
+            new PortalKickRequest(actorUserId, minutes, reason),
+            ct
+        );
+
+    public Task UnbanAsync(int userId, int actorUserId, CancellationToken ct) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/unban",
+            new PortalActorRequest(actorUserId),
+            ct
+        );
+
+    public Task SetRoleAsync(
+        int userId,
+        int actorUserId,
+        UserRole role,
+        CancellationToken ct
+    ) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/role",
+            new PortalSetRoleRequest(actorUserId, role),
+            ct
+        );
 
     public Task SetPasswordAsync(
         int userId,

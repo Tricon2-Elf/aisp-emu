@@ -28,6 +28,10 @@
                 <div class="portal-nav-actions">
                     @if (isAuthenticated)
                     {
+                        @if (isAdmin)
+                        {
+                            <a class="btn btn-sm btn-ghost d-none d-sm-inline-flex" href="/admin/users">Users</a>
+                        }
                         <span class="portal-user d-none d-sm-inline">@User.Identity?.Name</span>
                         <form method="post" action="/logout">
                             @Html.AntiForgeryToken()

@@ -5,11 +5,13 @@ using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Localisation;
 using aisp.Network;
+using aisp.Common.Services;
 using aisp.Portal;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace aisp.Server;
 
@@ -32,7 +34,9 @@ internal static class PortalApiEndpointsExtensions
         auth.MapGet("/users", ListUsersAsync);
         auth.MapGet("/users/{userId:int}", GetUserAsync);
         auth.MapPost("/users/{userId:int}/ban", BanAsync);
+        auth.MapPost("/users/{userId:int}/kick", KickAsync);
         auth.MapPost("/users/{userId:int}/unban", UnbanAsync);
+        auth.MapPost("/users/{userId:int}/role", SetRoleAsync);
         auth.MapPost("/users/{userId:int}/password", SetPasswordAsync);
         auth.MapPost("/users/{userId:int}/password/change", ChangePasswordAsync);
         auth.MapPost(
@@ -90,13 +94,22 @@ internal static class PortalApiEndpointsExtensions
                 statusCode: StatusCodes.Status500InternalServerError
             );
 
+        await UserRoleBootstrapService.PromoteIfListedAsync(
+            users,
+            username,
+            portalOptions.Value.AdminUsernames,
+            ct
+        );
+        user = await users.GetById(user.Id) ?? user;
+
         await users.TouchLastLoggedInAsync(user.Id, ct);
-        return TypedResults.Ok(new PortalIdentityDto(user.Id, user.Username));
+        return TypedResults.Ok(new PortalIdentityDto(user.Id, user.Username, user.Role));
     }
 
     private static async Task<IResult> LoginAsync(
         PortalLoginRequest request,
         IUserRepository users,
+        IOptions<PortalOptions> portalOptions,
         ILoggerFactory loggerFactory,
         CancellationToken ct
     )
@@ -112,7 +125,11 @@ internal static class PortalApiEndpointsExtensions
                 );
             return TypedResults.Unauthorized();
         }
-        if (user.IsBanned)
+
+        user =
+            await UserModerationState.PrepareUserForGameLoginAsync(users, user.Id, ct) ?? user;
+
+        if (UserModerationState.IsCurrentlyBanned(user))
         {
             loggerFactory
                 .CreateLogger("PortalAuthApi")
@@ -123,8 +140,16 @@ internal static class PortalApiEndpointsExtensions
             return TypedResults.Unauthorized();
         }
 
+        await UserRoleBootstrapService.PromoteIfListedAsync(
+            users,
+            user.Username,
+            portalOptions.Value.AdminUsernames,
+            ct
+        );
+        user = await users.GetById(user.Id) ?? user;
+
         await users.TouchLastLoggedInAsync(user.Id, ct);
-        return TypedResults.Ok(new PortalIdentityDto(user.Id, user.Username));
+        return TypedResults.Ok(new PortalIdentityDto(user.Id, user.Username, user.Role));
     }
 
     private static async Task<IResult> ListUsersAsync(
@@ -159,33 +184,110 @@ internal static class PortalApiEndpointsExtensions
     private static async Task<IResult> BanAsync(
         int userId,
         PortalBanRequest request,
+        ModerationService moderation,
         IUserRepository users,
         CancellationToken ct
     )
     {
-        var user = await users.GetById(userId);
-        if (user is null)
+        var target = await users.GetById(userId);
+        if (target is null)
             return TypedResults.NotFound(new PortalErrorDto("User not found."));
-        await users.SetBannedAsync(userId, true, request.Reason);
-        return TypedResults.NoContent();
+
+        var (error, _) = await moderation.BanAsync(
+            request.ActorUserId,
+            target.Username,
+            request.Days,
+            request.Reason,
+            ct: ct
+        );
+        return MapModerationResult(error);
+    }
+
+    private static async Task<IResult> KickAsync(
+        int userId,
+        PortalKickRequest request,
+        ModerationService moderation,
+        IUserRepository users,
+        CancellationToken ct
+    )
+    {
+        var target = await users.GetById(userId);
+        if (target is null)
+            return TypedResults.NotFound(new PortalErrorDto("User not found."));
+
+        var (error, _) = await moderation.KickAsync(
+            request.ActorUserId,
+            target.Username,
+            request.Minutes,
+            request.Reason,
+            ct: ct
+        );
+        return MapModerationResult(error);
     }
 
     private static async Task<IResult> UnbanAsync(
         int userId,
+        PortalActorRequest request,
+        ModerationService moderation,
+        IUserRepository users,
+        CancellationToken ct
+    )
+    {
+        var target = await users.GetById(userId);
+        if (target is null)
+            return TypedResults.NotFound(new PortalErrorDto("User not found."));
+
+        var error = await moderation.UnbanAsync(request.ActorUserId, target.Username, ct: ct);
+        return MapModerationResult(error);
+    }
+
+    private static async Task<IResult> SetRoleAsync(
+        int userId,
+        PortalSetRoleRequest request,
+        ModerationService moderation,
         IUserRepository users,
         CancellationToken ct
     )
     {
         if (await users.GetById(userId) is null)
             return TypedResults.NotFound(new PortalErrorDto("User not found."));
-        await users.SetBannedAsync(userId, false);
-        return TypedResults.NoContent();
+
+        var error = await moderation.SetRoleAsync(
+            request.ActorUserId,
+            userId,
+            request.Role,
+            ct
+        );
+        return MapModerationResult(error);
     }
+
+    private static IResult MapModerationResult(ModerationError error) =>
+        error switch
+        {
+            ModerationError.None => TypedResults.NoContent(),
+            ModerationError.TargetNotFound => TypedResults.NotFound(
+                new PortalErrorDto("User not found.")
+            ),
+            ModerationError.PermissionDenied => TypedResults.Forbid(),
+            ModerationError.CannotTargetSelf => TypedResults.BadRequest(
+                new PortalErrorDto("You cannot target yourself.")
+            ),
+            ModerationError.AlreadyModerator => TypedResults.BadRequest(
+                new PortalErrorDto("That player is already staff.")
+            ),
+            ModerationError.NotModerator => TypedResults.BadRequest(
+                new PortalErrorDto("That player is not a Moderator.")
+            ),
+            ModerationError.InvalidRoleChange => TypedResults.BadRequest(
+                new PortalErrorDto("Invalid role change.")
+            ),
+            _ => TypedResults.BadRequest(new PortalErrorDto("Moderation action failed.")),
+        };
 
     private static async Task<IResult> SetPasswordAsync(
         int userId,
         PortalSetPasswordRequest request,
-        IUserRepository users,
+        ModerationService moderation,
         CancellationToken ct
     )
     {
@@ -195,10 +297,18 @@ internal static class PortalApiEndpointsExtensions
                     "The new password must be 8 to 128 characters and both entries must match."
                 )
             );
-        if (await users.GetById(userId) is null)
-            return TypedResults.NotFound(new PortalErrorDto("User not found."));
 
-        await users.UpdatePasswordAsync(userId, request.NewPassword);
+        var error = await moderation.ResetPasswordAsync(
+            request.ActorUserId,
+            userId,
+            request.NewPassword,
+            ct
+        );
+        if (error == ModerationError.TargetNotFound)
+            return TypedResults.NotFound(new PortalErrorDto("User not found."));
+        if (error != ModerationError.None)
+            return MapModerationResult(error);
+
         return TypedResults.NoContent();
     }
 
@@ -456,7 +566,8 @@ internal static class PortalApiEndpointsExtensions
         new(
             user.Id,
             user.Username,
-            user.IsBanned,
+            user.Role,
+            UserModerationState.IsCurrentlyBanned(user),
             user.CreatedAt,
             user.Characters.Count,
             user.Characters.Select(character => character.Name).ToArray()
@@ -466,11 +577,14 @@ internal static class PortalApiEndpointsExtensions
         new(
             user.Id,
             user.Username,
-            user.IsBanned,
+            user.Role,
+            UserModerationState.IsCurrentlyBanned(user),
             user.BanReason,
             user.CreatedAt,
             user.LastLoggedInAt,
-            user.BannedAt
+            user.BannedAt,
+            user.BannedUntil,
+            user.KickedUntil
         );
 
     private static PortalAccountDataDto MapAccount(

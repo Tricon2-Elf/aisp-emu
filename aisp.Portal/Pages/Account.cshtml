@@ -10,6 +10,10 @@
         <span class="eyebrow">aisp-emu account</span>
         <h1 class="portal-title">@Model.Account.Username</h1>
         <p class="portal-subtitle mb-0">Your characters, equipment, and stored items.</p>
+        @if (User.HasClaim("portal_admin", "true"))
+        {
+            <p class="mb-0 mt-2"><a href="/admin/users">User administration</a></p>
+        }
     </div>
     <button class="btn btn-ghost" type="button" data-modal-target="change-password-modal">Change password</button>
 </header>

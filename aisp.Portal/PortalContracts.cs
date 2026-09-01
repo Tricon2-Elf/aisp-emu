@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using aisp.Common.Game;
 
 namespace aisp.Portal;
 
@@ -14,11 +15,12 @@ public sealed record PortalLoginRequest(
     [property: Required] string Password
 );
 
-public sealed record PortalIdentityDto(int UserId, string Username);
+public sealed record PortalIdentityDto(int UserId, string Username, UserRole Role);
 
 public sealed record PortalUserSummaryDto(
     int UserId,
     string Username,
+    UserRole Role,
     bool IsBanned,
     DateTime CreatedAt,
     int CharacterCount,
@@ -30,16 +32,34 @@ public sealed record PortalUserPageDto(IReadOnlyList<PortalUserSummaryDto> Users
 public sealed record PortalUserDetailDto(
     int UserId,
     string Username,
+    UserRole Role,
     bool IsBanned,
     string? BanReason,
     DateTime CreatedAt,
     DateTime? LastLoggedInAt,
-    DateTime? BannedAt
+    DateTime? BannedAt,
+    DateTime? BannedUntil,
+    DateTime? KickedUntil
 );
 
-public sealed record PortalBanRequest([property: StringLength(256)] string? Reason);
+public sealed record PortalBanRequest(
+    int ActorUserId,
+    int? Days,
+    [property: StringLength(256)] string? Reason
+);
+
+public sealed record PortalKickRequest(
+    int ActorUserId,
+    int? Minutes,
+    [property: StringLength(256)] string? Reason
+);
+
+public sealed record PortalSetRoleRequest(int ActorUserId, UserRole Role);
+
+public sealed record PortalActorRequest(int ActorUserId);
 
 public sealed record PortalSetPasswordRequest(
+    int ActorUserId,
     [property: Required, StringLength(128, MinimumLength = 8)] string NewPassword,
     [property: Required, Compare(nameof(PortalSetPasswordRequest.NewPassword))]
         string ConfirmPassword

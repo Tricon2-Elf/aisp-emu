@@ -1,5 +1,7 @@
 @page "/admin/users/{userId:int}"
 @model aisp.Portal.Pages.Admin.UserDetailModel
+@using aisp.Common.Game
+@using aisp.Common.Services
 @{
     ViewData["Title"] = Model.TargetUser.Username;
     Layout = "/Pages/Shared/_Layout.cshtml";
@@ -10,27 +12,41 @@
     <div>
         <span class="eyebrow">User account</span>
         <h1 class="portal-title mb-1">@Model.TargetUser.Username</h1>
-        @if (Model.TargetUser.IsBanned)
+        <p class="portal-subtitle mb-0">
+            <span class="status-pill status-active me-2">@Model.TargetUser.Role</span>
+            @if (Model.TargetUser.IsBanned)
         {
-            <p class="portal-subtitle mb-0"><span class="status-pill status-banned me-2">Banned</span>@(string.IsNullOrWhiteSpace(Model.TargetUser.BanReason) ? "No reason provided" : Model.TargetUser.BanReason)</p>
+            <span class="status-pill status-banned me-2">Banned</span>@(string.IsNullOrWhiteSpace(Model.TargetUser.BanReason) ? "No reason provided" : Model.TargetUser.BanReason)
+            @if (Model.TargetUser.BannedUntil is not null)
+            {
+                <span class="text-secondary"> until @Model.TargetUser.BannedUntil.Value.ToString("g") UTC</span>
+            }
         }
         else
         {
-            <p class="portal-subtitle mb-0"><span class="status-pill status-active">Active account</span></p>
+            <span class="status-pill status-active">Active account</span>
+            @if (Model.TargetUser.KickedUntil is not null && Model.TargetUser.KickedUntil > DateTime.UtcNow)
+            {
+                <span class="text-secondary ms-2">Kicked until @Model.TargetUser.KickedUntil.Value.ToString("g") UTC</span>
+            }
         }
+        </p>
     </div>
     <div class="admin-actions">
-        <button class="btn btn-ghost" type="button" data-modal-target="reset-password-modal">Reset password</button>
-        <button class="btn btn-outline-warning" type="button" data-modal-target="kick-user-modal">Kick user</button>
-        @if (Model.TargetUser.IsBanned)
+        @if (Model.CanModerateTargetUser)
         {
-            <form method="post" asp-page-handler="Unban">
-                <button class="btn btn-outline-success" type="submit">Unban user</button>
-            </form>
-        }
-        else
-        {
-            <button class="btn btn-danger" type="button" data-modal-target="ban-user-modal">Ban user</button>
+            <button class="btn btn-ghost" type="button" data-modal-target="reset-password-modal">Reset password</button>
+            <button class="btn btn-outline-warning" type="button" data-modal-target="kick-user-modal">Kick user</button>
+            @if (Model.TargetUser.IsBanned)
+            {
+                <form method="post" asp-page-handler="Unban">
+                    <button class="btn btn-outline-success" type="submit">Unban user</button>
+                </form>
+            }
+            else
+            {
+                <button class="btn btn-danger" type="button" data-modal-target="ban-user-modal">Ban user</button>
+            }
         }
     </div>
 </header>
@@ -75,6 +91,8 @@
         </header>
         <div class="modal-content">
             <p>This immediately disconnects the user from all game servers.</p>
+            <label class="form-label" for="kick-minutes">Duration (minutes, 1–15)</label>
+            <input id="kick-minutes" class="form-control mb-3" type="number" name="minutes" min="1" max="15" value="@ModerationService.DefaultKickMinutes" />
             <label class="form-label" for="kick-reason">Reason <span class="text-secondary fw-normal">(optional)</span></label>
             <textarea id="kick-reason" class="form-control" name="reason" maxlength="256" rows="4" placeholder="Add a note for the moderation log"></textarea>
         </div>
@@ -97,6 +115,16 @@
             </header>
             <div class="modal-content">
                 <p>This bans the account and immediately disconnects the user.</p>
+                @if (Model.ActorRole >= UserRole.Admin)
+                {
+                    <label class="form-label" for="ban-days">Duration (days, 0 = permanent)</label>
+                    <input id="ban-days" class="form-control mb-3" type="number" name="days" min="0" value="@ModerationService.DefaultBanDays" />
+                }
+                else
+                {
+                    <label class="form-label" for="ban-days">Duration (days, 1–30)</label>
+                    <input id="ban-days" class="form-control mb-3" type="number" name="days" min="1" max="30" value="@ModerationService.DefaultBanDays" />
+                }
                 <label class="form-label" for="ban-reason">Reason <span class="text-secondary fw-normal">(optional)</span></label>
                 <textarea id="ban-reason" class="form-control" name="reason" maxlength="256" rows="4" placeholder="Explain why this account is being banned"></textarea>
             </div>
@@ -106,6 +134,26 @@
             </footer>
         </form>
     </dialog>
+}
+@if (Model.CanChangeRole && Model.AssignableRoles.Count > 0)
+{
+    <section class="character-card mb-4">
+        <span class="eyebrow">Staff role</span>
+        <form method="post" asp-page-handler="SetRole" class="row g-3 align-items-end mt-2">
+            <div class="col-md-4">
+                <label class="form-label" for="user-role">Role</label>
+                <select id="user-role" class="form-select" name="role">
+                    @foreach (var role in Model.AssignableRoles)
+                    {
+                        <option value="@role" selected="@(role == Model.TargetUser.Role)">@role</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <button class="btn btn-primary" type="submit">Update role</button>
+            </div>
+        </form>
+    </section>
 }
 <section class="character-card storage-card">
     <span class="eyebrow">Shared</span>
