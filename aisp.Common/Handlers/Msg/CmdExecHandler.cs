@@ -22,6 +22,7 @@ public class CmdExecHandler(
     ICircleRepository circleRepository,
     IItemBaseListCache itemBaseListCache,
     DirectMapLinkTransitionService directMapLinkTransitionService,
+    ModerationService moderationService,
     ITextLocaliser localiser,
     IAdventureWorkRepository adventureWorks,
     ILogger<CmdExecHandler> logger
@@ -752,6 +753,30 @@ public class CmdExecHandler(
             return;
         }
 
+        if (cmd is "kick")
+        {
+            await HandleKickCommandAsync(session, request.Arguments, ct);
+            return;
+        }
+
+        if (cmd is "ban")
+        {
+            await HandleBanCommandAsync(session, request.Arguments, ct);
+            return;
+        }
+
+        if (cmd is "mod")
+        {
+            await HandleModCommandAsync(session, request.Arguments, ct);
+            return;
+        }
+
+        if (cmd is "unmod")
+        {
+            await HandleUnmodCommandAsync(session, request.Arguments, ct);
+            return;
+        }
+
         if (cmd is "escape" or "reset")
         {
             var areaClient = ResolveAreaClient(session);
@@ -844,6 +869,218 @@ public class CmdExecHandler(
 
         return null;
     }
+
+    private async Task HandleKickCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (args.Count == 0)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.KickUsage, ct);
+            return;
+        }
+
+        var (duration, reason) = ParseDurationAndReason(
+            args,
+            ModerationService.DefaultKickMinutes,
+            ModerationService.MaxKickMinutes
+        );
+        var (error, sessionsClosed) = await moderationService.KickAsync(
+            session.UserId,
+            args[0],
+            duration,
+            reason,
+            ct: ct
+        );
+        await SendModerationResultAsync(
+            session,
+            error,
+            error == ModerationError.None
+                ? localiser.Get(
+                    session.Language,
+                    L.Cmd.KickSuccess,
+                    args[0],
+                    duration ?? ModerationService.DefaultKickMinutes,
+                    sessionsClosed
+                )
+                : null,
+            ct
+        );
+    }
+
+    private async Task HandleBanCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (args.Count == 0)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.BanUsage, ct);
+            return;
+        }
+
+        var (banDays, reason) = ParseBanDurationAndReason(args);
+        var (error, sessionsClosed) = await moderationService.BanAsync(
+            session.UserId,
+            args[0],
+            banDays,
+            reason,
+            ct: ct
+        );
+        string? successMessage = null;
+        if (error == ModerationError.None)
+        {
+            var actor = await userRepo.GetById(session.UserId);
+            var resolved = ModerationService.ResolveBanDuration(actor?.Role ?? UserRole.User, banDays);
+            if (resolved.IsPermanent)
+            {
+                successMessage = localiser.Get(
+                    session.Language,
+                    L.Cmd.BanSuccessPermanent,
+                    args[0],
+                    sessionsClosed
+                );
+            }
+            else
+            {
+                var displayDays =
+                    actor?.Role == UserRole.Moderator
+                        ? ModerationService.ClampModeratorBanDays(
+                            banDays ?? ModerationService.DefaultBanDays
+                        )
+                        : banDays ?? ModerationService.DefaultBanDays;
+                successMessage = localiser.Get(
+                    session.Language,
+                    L.Cmd.BanSuccess,
+                    args[0],
+                    displayDays,
+                    sessionsClosed
+                );
+            }
+        }
+
+        await SendModerationResultAsync(session, error, successMessage, ct);
+    }
+
+    private async Task HandleModCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (args.Count == 0)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.ModUsage, ct);
+            return;
+        }
+
+        var error = await moderationService.PromoteToModeratorAsync(session.UserId, args[0], ct);
+        await SendModerationResultAsync(
+            session,
+            error,
+            error == ModerationError.None
+                ? localiser.Get(session.Language, L.Cmd.ModSuccess, args[0])
+                : null,
+            ct
+        );
+    }
+
+    private async Task HandleUnmodCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (args.Count == 0)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.UnmodUsage, ct);
+            return;
+        }
+
+        var error = await moderationService.DemoteFromModeratorAsync(session.UserId, args[0], ct);
+        await SendModerationResultAsync(
+            session,
+            error,
+            error == ModerationError.None
+                ? localiser.Get(session.Language, L.Cmd.UnmodSuccess, args[0])
+                : null,
+            ct
+        );
+    }
+
+    private static (int? Duration, string? Reason) ParseDurationAndReason(
+        IReadOnlyList<string> args,
+        int defaultDuration,
+        int maxDuration
+    )
+    {
+        if (args.Count <= 1)
+            return (defaultDuration, null);
+
+        if (int.TryParse(args[1], out var parsed))
+        {
+            var duration = Math.Clamp(parsed, 1, maxDuration);
+            var reason = args.Count > 2 ? string.Join(' ', args.Skip(2)) : null;
+            return (duration, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim());
+        }
+
+        return (defaultDuration, string.Join(' ', args.Skip(1)).Trim());
+    }
+
+    private static (int? Days, string? Reason) ParseBanDurationAndReason(IReadOnlyList<string> args)
+    {
+        if (args.Count <= 1)
+            return (ModerationService.DefaultBanDays, null);
+
+        if (ModerationService.IsPermanentBanToken(args[1]))
+        {
+            var reason = args.Count > 2 ? string.Join(' ', args.Skip(2)) : null;
+            return (0, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim());
+        }
+
+        if (int.TryParse(args[1], out var parsed))
+        {
+            var reason = args.Count > 2 ? string.Join(' ', args.Skip(2)) : null;
+            return (parsed, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim());
+        }
+
+        return (ModerationService.DefaultBanDays, string.Join(' ', args.Skip(1)).Trim());
+    }
+
+    private async Task SendModerationResultAsync(
+        IPlayerSession session,
+        ModerationError error,
+        string? successMessage,
+        CancellationToken ct
+    )
+    {
+        if (error == ModerationError.None && successMessage is not null)
+        {
+            await SendSystemNoticeAsync(session, successMessage, ct);
+            return;
+        }
+
+        var key = error switch
+        {
+            ModerationError.TargetNotFound => L.Cmd.TargetNotFound,
+            ModerationError.PermissionDenied => L.Cmd.PermissionDenied,
+            ModerationError.CannotTargetSelf => L.Cmd.CannotTargetSelf,
+            ModerationError.AlreadyModerator => L.Cmd.AlreadyModerator,
+            ModerationError.NotModerator => L.Cmd.NotModerator,
+            ModerationError.InvalidDuration => L.Cmd.InvalidBanDuration,
+            _ => L.Cmd.ModerationFailed,
+        };
+        await SendModerationNoticeAsync(session, key, ct);
+    }
+
+    private Task SendModerationNoticeAsync(
+        IPlayerSession session,
+        LocKey key,
+        CancellationToken ct
+    ) => SendSystemNoticeAsync(session, localiser.Get(session.Language, key), ct);
 
     private static Task SendSystemNoticeAsync(
         IPlayerSession session,
