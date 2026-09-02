@@ -17,6 +17,8 @@ public interface IChatLogRepository
         int take = 100,
         CancellationToken ct = default
     );
+
+    Task<int> PruneOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
 }
 
 public sealed class ChatLogRepository(MainContext db) : IChatLogRepository
@@ -65,4 +67,7 @@ public sealed class ChatLogRepository(MainContext db) : IChatLogRepository
             .ToListAsync(ct);
         return (items, total);
     }
+
+    public Task<int> PruneOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default) =>
+        db.ChatMessages.Where(x => x.CreatedAt < cutoffUtc).ExecuteDeleteAsync(ct);
 }

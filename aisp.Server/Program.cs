@@ -301,8 +301,12 @@ internal class Program
                 )
             );
 
+        builder
+            .Services.AddOptions<ChatLogOptions>()
+            .Bind(builder.Configuration.GetSection(ChatLogOptions.SectionName));
         builder.Services.AddHostedService<GameServerSchedulerService>();
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
+        builder.Services.AddHostedService<ChatLogPruneService>();
 
         var app = builder.Build();
         var configuredApiKey = app

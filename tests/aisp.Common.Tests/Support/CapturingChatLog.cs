@@ -46,4 +46,10 @@ internal sealed class CapturingChatLog : IChatLogRepository
         var page = matched.Skip(Math.Max(skip, 0)).Take(Math.Clamp(take, 1, 500)).ToList();
         return Task.FromResult<(IReadOnlyList<ChatMessage>, int)>((page, matched.Count));
     }
+
+    public Task<int> PruneOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default)
+    {
+        var removed = Entries.RemoveAll(x => x.CreatedAt < cutoffUtc);
+        return Task.FromResult(removed);
+    }
 }

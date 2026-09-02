@@ -118,4 +118,49 @@ public sealed class ChatLogRepositoryTests
         Assert.Equal(3, total);
         Assert.Equal(["slur", "circle"], page.Select(x => x.Message).ToArray());
     }
+
+    [Fact]
+    public async Task PruneOlderThanAsync_DeletesOnlyRowsBeforeCutoff()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await using var db = new MainContext(options);
+        var repo = new ChatLogRepository(db);
+        var now = DateTime.UtcNow;
+
+        await repo.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Public,
+                UserId = 1,
+                CharacterId = 1,
+                CharacterName = "a",
+                Message = "old",
+                CreatedAt = now.AddDays(-61),
+            },
+            TestContext.Current.CancellationToken
+        );
+        await repo.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Public,
+                UserId = 1,
+                CharacterId = 1,
+                CharacterName = "a",
+                Message = "kept",
+                CreatedAt = now.AddDays(-10),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        var removed = await repo.PruneOlderThanAsync(
+            now.AddDays(-60),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(1, removed);
+
+        var (items, total) = await repo.ListAsync(ct: TestContext.Current.CancellationToken);
+        Assert.Equal(1, total);
+        Assert.Equal("kept", Assert.Single(items).Message);
+    }
 }
