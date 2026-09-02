@@ -155,6 +155,41 @@ public class AreaEventAccessNpcHandler(
         }
 
         if (
+            npc.InteractionType
+            is NpcInteractionType.AdventureShopBuy
+                or NpcInteractionType.AdventureShopUpload
+        )
+        {
+            session.ActiveShopId = null;
+            var adventureNpcObjectId = checked((uint)npc.NpcObjectId);
+            await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.NotifySupplyNpcExec,
+                new NotifySupplyNpcExec(adventureNpcObjectId).ToBytes(),
+                ct
+            );
+
+            switch (npc.InteractionType)
+            {
+                case NpcInteractionType.AdventureShopBuy:
+                    // The client wants the catalog snapshot, not the NPC id; empty until listings exist.
+                    await session.SendAsync(
+                        PacketType.AdventureShopStartedNotify,
+                        new AdventureShopStartedNotify().ToBytes(),
+                        ct
+                    );
+                    return;
+                case NpcInteractionType.AdventureShopUpload:
+                    await session.SendAsync(
+                        PacketType.AdventureUploadStartedNotify,
+                        new AdventureUploadStartedNotify(adventureNpcObjectId, 0).ToBytes(),
+                        ct
+                    );
+                    return;
+            }
+        }
+
+        if (
             npc.InteractionType != NpcInteractionType.Shop
             || npc.ShopId is null
             || npc.Shop is null

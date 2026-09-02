@@ -1179,19 +1179,184 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
     UInt {RatePercent}
 ```
 
+## recv_adventure_shop_started (AdventureShopStartedNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x03EA
+- **Packet Size:** variable (45 bytes when empty; client buffer 0x294E0)
+- **Description:** Pushed after the player talks to the drama disc shop's 販売担当 clerk (はっぴぃ・すとぉりぃ販売). Not the 8-byte shape of upload-started: the client parser (case 0x7BC061) reads a catalog snapshot and never an NPC id. The client bails out silently on a short or over-cap body, so the emulator sends an empty catalog until listings are modelled. Item records are 1589 bytes on the wire (int64 scriptId, char[37] author, char[121] title, int64 price, int64, 10×char[61] tags, u16, u8, char[768] comment, u8, u8, 4×u32, int64); the same record is used by recv_adventure_shop_item (0x9B08) and the search replies. Seeded on all three island 商店街 maps.
+
+**Layout:**
+
+```text
+    ULong  {AllCount}
+    String {Word}          // NUL-terminated, max 385 bytes incl. NUL
+    UInt   {Filter}
+    UInt   {Sort}
+    UInt   {Index}
+    ULong  {SearchCount}
+    UInt   {ItemCount}     // max 50
+    Item   {Items}[ItemCount]
+    UInt   {RankSort}
+    UInt   {RankingCount}  // max 5
+    Item + UShort + UInt {Rankings}[RankingCount]
+    UInt   {HistoryCount}  // max 50
+    Item + Byte + UInt   {Historys}[HistoryCount]
+```
+
+## send_adventure_shop_end (AdventureShopEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xB34F
+- **Packet Size:** 0
+- **Description:** Sent when the drama disc shop window is closed. The client keeps the window open until the reply arrives.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_adventure_shop_end_r (AdventureShopEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xC605
+- **Packet Size:** 4
+- **Description:** Acknowledges the close. On its own it does not close the window; recv_adventure_shop_ended follows.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## recv_adventure_shop_ended (AdventureShopEndedNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xAD2D
+- **Packet Size:** 0
+- **Description:** Sent right after recv_adventure_shop_end_r; the client tears the drama disc shop window down on this, the same pairing as recv_shop_end_r / recv_shop_ended.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
 ## recv_adventure_upload_started (AdventureUploadStartedNotify)
 
 - **Server:** Area
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x90BD
 - **Packet Size:** 8
-- **Description:** Pushed after the player talks to the drama disc shop's 買取担当 clerk. The client looks up the NPC object by NpcObjectId (name and position go on the window), opens the drama upload window (ドラマショップ) and then sends get_adventure_work_list and get_adventure_upload_list. Not sent by the emulator yet: the shop map and its clerk are not in the seed data.
+- **Description:** Pushed after the player talks to the drama disc shop's 買取担当 clerk (はっぴぃ・すとぉりぃ買取). The client looks up the NPC object by NpcObjectId (name and position go on the window), opens the drama upload window (ドラマショップ) and then sends get_adventure_work_list and get_adventure_upload_list. Seeded on all three island 商店街 maps.
 
 **Layout:**
 
 ```text
     UInt {NpcObjectId}
     UInt {Value}  // second field, not read by the window
+```
+
+## send_adventure_upload_end (AdventureUploadEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xB592
+- **Packet Size:** 0
+- **Description:** Sent when the drama upload window is closed. The client keeps the window open until the reply arrives.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_adventure_upload_end_r (AdventureUploadEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x2562
+- **Packet Size:** 4
+- **Description:** Acknowledges the close.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_adventure_upload_request (AdventureUploadRequestRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x89F8
+- **Packet Size:** variable
+- **Description:** Sent from the drama upload window's 説明事項 dialog (同意する). Listing metadata only; the manuscript itself is POSTed to upload.php over HTTP after a success reply. The emulator refuses with result 1 until listings and the HTTP endpoint exist.
+
+**Layout:**
+
+```text
+    UShort {WorkId}
+    String {Title}       // NUL-terminated, max 121
+    UInt   {Genre}
+    String {Comment}     // NUL-terminated, max 769
+    String {AuthorName}  // NUL-terminated, max 37
+    Long   {Price}       // デレ
+    Byte   {Publish}
+    Long   {ContentSize} // byte size of drama_N.csv + datalist_N.txt, the two parts of the HTTP upload
+```
+
+## recv_adventure_upload_request_r (AdventureUploadRequestResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xF857
+- **Packet Size:** 55
+- **Description:** Fixed 55-byte reply (client case 0x7F41D1). Result 0 makes the client POST the manuscript to the upload host with userid / scriptid / ticket and then send send_adventure_upload_request_report. Non-zero shows an error dialog.
+
+**Layout:**
+
+```text
+    UInt   {Result}
+    UShort {WorkId}
+    Long   {ScriptId}
+    Char[41] {Ticket}    // one-time token for upload.php
+```
+
+## send_adventure_upload_request_report (AdventureUploadRequestReportRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x2494
+- **Packet Size:** 14
+- **Description:** The client's verdict on the HTTP upload (0 = the XML reply said ok).
+
+**Layout:**
+
+```text
+    UInt   {Report}
+    UShort {WorkId}
+    Long   {ScriptId}
+```
+
+## recv_adventure_upload_request_report_r (AdventureUploadRequestReportResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x1F30
+- **Packet Size:** 12
+- **Description:** Acknowledges the report. Once uploads exist, report 0 is where the work's Uploaded flag gets set.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    Long {ScriptId}
 ```
 
 ## send_get_adventure_upload_list (GetAdventureUploadListRequest)
@@ -1337,7 +1502,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 - **Server:** Area
 - **Direction:** ServerToClient
-- **Packet ID (hex):** 0xCEF4
+- **Packet ID (hex):** 0xCE6A
 - **Packet Size:** 10
 - **Description:** Delta is the applied count: the client adds it to its local sheet count for WorkId rather than replacing it (`add [work+0x3C], delta` at 0x4A82F9). It does not touch CAdvMgr+0x1BC or +0x1C0 and does not paint the 原稿用紙 caption. Preceded by recv_adventure_updated_sheet_stack so +0x1BC is already the new stock. Adding a page in the editor increments +0x1C0 immediately (caption = 1BC−1C0) and redraws; deleting a page does not replenish stock until save, when sub_sheet returns pages and 0xABE0 writes +0x1BC. The caption stays stale across save and catches up on the next local add/remove. The editor sends add_sheet on save with the pages added since the last save, then sub_sheet with the pages deleted, never netted; the work-list window sends one of them before 編集 when its local page count differs from the server record.
 
@@ -1368,7 +1533,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 - **Server:** Area
 - **Direction:** ServerToClient
-- **Packet ID (hex):** 0x216E
+- **Packet ID (hex):** 0x203C
 - **Packet Size:** 10
 - **Description:** Same shape as recv_adventure_work_add_sheet_r.
 

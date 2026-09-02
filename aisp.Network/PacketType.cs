@@ -1940,7 +1940,7 @@ public enum PacketType : ushort
         "recv_adventure_shop_attn_tag",
         ImplementationState.NotImplemented
     )]
-    AdventureShopAttnTagNotify = 0x7B72,
+    AdventureShopAttnTagNotify = 0x665E,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -1970,7 +1970,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_end_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopEndResponse = 0xC605,
 
@@ -1978,9 +1978,9 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_ended",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
-    AdventureShopEndedNotify = 0xAD06,
+    AdventureShopEndedNotify = 0xAD2D,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -1996,7 +1996,7 @@ public enum PacketType : ushort
         "recv_adventure_shop_item",
         ImplementationState.NotImplemented
     )]
-    AdventureShopItemNotify = 0x9EA9,
+    AdventureShopItemNotify = 0x9B08,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2025,10 +2025,18 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
-        "recv_adventure_shop_started",
+        "recv_adventure_shop_ranking_search_r",
         ImplementationState.NotImplemented
     )]
-    AdventureShopStartedNotify = 0x0566,
+    AdventureShopRankingSearchResponse = 0x9EA9,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_adventure_shop_started",
+        ImplementationState.Implemented
+    )]
+    AdventureShopStartedNotify = 0x03EA,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2074,7 +2082,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_upload_end_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUploadEndResponse = 0x2562,
 
@@ -2082,7 +2090,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_upload_request_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUploadRequestResponse = 0xF857,
 
@@ -2090,7 +2098,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_upload_request_report_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUploadRequestReportResponse = 0x1F30,
 
@@ -2098,7 +2106,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_upload_started",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUploadStartedNotify = 0x90BD,
 
@@ -2116,7 +2124,7 @@ public enum PacketType : ushort
         "recv_adventure_work_add_sheet_r",
         ImplementationState.Implemented
     )]
-    AdventureWorkAddSheetResponse = 0xCEF4,
+    AdventureWorkAddSheetResponse = 0xCE6A,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2156,7 +2164,7 @@ public enum PacketType : ushort
         "recv_adventure_work_sub_sheet_r",
         ImplementationState.Implemented
     )]
-    AdventureWorkSubSheetResponse = 0x216E,
+    AdventureWorkSubSheetResponse = 0x203C,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4690,9 +4698,9 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_adventure_shop_end",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
-    AdventureShopEndRequest = 0xADB6,
+    AdventureShopEndRequest = 0xB34F,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4733,6 +4741,30 @@ public enum PacketType : ushort
         ImplementationState.NotImplemented
     )]
     AdventureUploadDeleteRequestRequest = 0xCB22,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_upload_end",
+        ImplementationState.Implemented
+    )]
+    AdventureUploadEndRequest = 0xB592,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_upload_request",
+        ImplementationState.Implemented
+    )]
+    AdventureUploadRequestRequest = 0x89F8,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_upload_request_report",
+        ImplementationState.Implemented
+    )]
+    AdventureUploadRequestReportRequest = 0x2494,
 
     [PacketMetadata(
         PacketServerType.Area,

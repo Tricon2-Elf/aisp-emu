@@ -1,4 +1,10 @@
 {
+  "adventure.shop.sales_empty": {
+    "ja": "まだお支払いできる売上はありません。販売が確定するとメールでお知らせします。",
+    "en": "There are no sales to collect yet. You will get mail when a copy sells.",
+    "zh-Hans": "目前没有可领取的销售额。售出后会发邮件通知。",
+    "zh-Hant": "目前沒有可領取的銷售額。售出後會發郵件通知。"
+  },
   "item.no_description": {
     "ja": "N/A",
     "en": "N/A",

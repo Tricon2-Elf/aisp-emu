@@ -4,6 +4,7 @@ using aisp.Common.DAL.Repositories;
 using aisp.Common.Handlers.Area;
 using aisp.Common.Tests.Support;
 using aisp.Network;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace aisp.Common.Tests;
 
@@ -253,5 +254,91 @@ public class AdventureWorkHandlersTests
         {
             await connection.DisposeAsync();
         }
+    }
+
+    [Fact]
+    public async Task ShopAndUploadEndHandlers_AcknowledgeWithFourByteResult()
+    {
+        var session = new CapturingPlayerSession();
+
+        await new AreaAdventureUploadEndHandler().HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await new AreaAdventureShopEndHandler().HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        // Both windows stay open until the client reads a fixed 4-byte result.
+        var upload = Assert.Single(
+            session.Sent,
+            p => p.Type == PacketType.AdventureUploadEndResponse
+        );
+        Assert.Equal(4, upload.Payload.Length);
+        Assert.Equal(0u, new PacketReader(upload.Payload).ReadUInt());
+
+        var shop = Assert.Single(session.Sent, p => p.Type == PacketType.AdventureShopEndResponse);
+        Assert.Equal(4, shop.Payload.Length);
+        Assert.Equal(0u, new PacketReader(shop.Payload).ReadUInt());
+        // The shop window only closes on the empty "ended" notify that follows the reply.
+        var ended = Assert.Single(session.Sent, p => p.Type == PacketType.AdventureShopEndedNotify);
+        Assert.Empty(ended.Payload);
+        Assert.True(session.Sent.IndexOf(shop) < session.Sent.IndexOf(ended));
+    }
+
+    [Fact]
+    public async Task UploadRequestHandler_RefusesWithFixedSizeReply()
+    {
+        var session = new CapturingPlayerSession { UserId = 2 };
+        var writer = new PacketWriter();
+        writer.Write((ushort)7);
+        writer.Write("Thimbleglow");
+        writer.Write(2u);
+        writer.Write("");
+        writer.Write("Yomogi");
+        writer.Write(1000ul);
+        writer.Write((byte)1);
+        writer.Write(0ul);
+
+        await new AreaAdventureUploadRequestHandler(
+            NullLogger<AreaAdventureUploadRequestHandler>.Instance
+        ).HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+
+        // The client reads a fixed 55-byte body: result, workId, scriptId, 41-byte ticket.
+        var reply = Assert.Single(
+            session.Sent,
+            p => p.Type == PacketType.AdventureUploadRequestResponse
+        );
+        Assert.Equal(55, reply.Payload.Length);
+        var reader = new PacketReader(reply.Payload);
+        Assert.Equal(AreaAdventureUploadRequestHandler.UploadUnavailableResult, reader.ReadUInt());
+        Assert.Equal(7, reader.ReadUShort());
+        Assert.Equal(0ul, reader.ReadULong());
+    }
+
+    [Fact]
+    public async Task UploadRequestReportHandler_AcknowledgesWithScriptId()
+    {
+        var session = new CapturingPlayerSession { UserId = 2 };
+        var writer = new PacketWriter();
+        writer.Write(1u);
+        writer.Write((ushort)7);
+        writer.Write(1729ul);
+
+        await new AreaAdventureUploadRequestReportHandler(
+            NullLogger<AreaAdventureUploadRequestReportHandler>.Instance
+        ).HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+
+        var reply = Assert.Single(
+            session.Sent,
+            p => p.Type == PacketType.AdventureUploadRequestReportResponse
+        );
+        Assert.Equal(12, reply.Payload.Length);
+        var reader = new PacketReader(reply.Payload);
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(1729ul, reader.ReadULong());
     }
 }

@@ -944,6 +944,126 @@ public class AreaShopNpcHandlersTests
         }
     }
 
+    [Fact]
+    public async Task EventAccessNpcHandler_OpensAdventureUploadWindow()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                SeedAdventureShopNpc(db, 1342177331, NpcInteractionType.AdventureShopUpload);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var handler = CreateEventAccessNpcHandler(runDb);
+            var session = new CapturingPlayerSession { MapId = 10030200, CharacterId = 9001 };
+
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177331),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.Null(session.ActiveShopId);
+            Assert.Equal(
+                0u,
+                new PacketReader(
+                    session.Sent.Single(p => p.Type == PacketType.EventAccessNpcResponse).Payload
+                ).ReadUInt()
+            );
+            Assert.Contains(session.Sent, p => p.Type == PacketType.NotifySupplyNpcExec);
+            var started = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.AdventureUploadStartedNotify
+            );
+            var reader = new PacketReader(started.Payload);
+            Assert.Equal(1342177331u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.ShopStartedNotify);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EventAccessNpcHandler_OpensAdventureBuyWindow()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using (var db = new MainContext(options))
+            {
+                SeedAdventureShopNpc(db, 1342177332, NpcInteractionType.AdventureShopBuy);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var runDb = new MainContext(options);
+            var handler = CreateEventAccessNpcHandler(runDb);
+            var session = new CapturingPlayerSession { MapId = 10030200, CharacterId = 9001 };
+
+            await handler.HandleAsync(
+                BuildEventAccessNpcPayload(1342177332),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var started = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.AdventureShopStartedNotify
+            );
+            // Empty catalog snapshot: counts, keyword, filter/sort/index, hits, three zero-length arrays.
+            Assert.Equal(45, started.Payload.Length);
+            var reader = new PacketReader(started.Payload);
+            Assert.Equal(0ul, reader.ReadULong());
+            Assert.Equal("", reader.ReadString());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0ul, reader.ReadULong());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.ShopStartedNotify);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    private static void SeedAdventureShopNpc(
+        MainContext db,
+        uint npcObjectId,
+        NpcInteractionType interactionType
+    )
+    {
+        db.Npcs.Add(
+            new Npc
+            {
+                MapId = 10030200,
+                ChannelId = -1,
+                DayPhase = -1,
+                DateStartUtc = DateTime.UnixEpoch,
+                DateEndUtc = DateTime.MaxValue,
+                NpcObjectId = npcObjectId,
+                ModelId = 1002011,
+                Name = "はっぴぃ・すとぉりぃ売上",
+                X = -5809.014f,
+                Y = 10.01f,
+                Z = 1021.87f,
+                Rotation = 180,
+                InteractionType = interactionType,
+                IsEnabled = true,
+                SortOrder = 110,
+            }
+        );
+    }
+
     private static AreaEventAccessNpcHandler CreateEventAccessNpcHandler(MainContext db) =>
         new(
             new NpcRepository(db),

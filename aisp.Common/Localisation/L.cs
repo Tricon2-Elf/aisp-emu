@@ -20,6 +20,11 @@ public static class L
         public static LocKey Name(long npcObjectId) => new($"npc.{npcObjectId}.name");
     }
 
+    public static class Adventure
+    {
+        public static readonly LocKey ShopSalesEmpty = new("adventure.shop.sales_empty");
+    }
+
     public static class Shop
     {
         public static LocKey DisplayName(string code) => new($"shop.{code}.display_name");
