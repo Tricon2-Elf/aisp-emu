@@ -78,6 +78,7 @@ internal class Program
         builder.Services.AddScoped<ICircleRepository, CircleRepository>();
         builder.Services.AddScoped<IFriendRepository, FriendRepository>();
         builder.Services.AddScoped<IAdventureWorkRepository, AdventureWorkRepository>();
+        builder.Services.AddScoped<IChatLogRepository, ChatLogRepository>();
         builder.Services.AddScoped<INicotvRepository, NicotvRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();

@@ -46,6 +46,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<SessionPresence> SessionPresences => Set<SessionPresence>();
     public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
     public DbSet<LocalisedText> LocalisedTexts => Set<LocalisedText>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -571,6 +572,22 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("PendingMapTransfers");
             e.HasKey(x => x.UserId);
             e.HasIndex(x => x.ExpiresAtUtc);
+        });
+
+        b.Entity<ChatMessage>(e =>
+        {
+            e.ToTable("ChatMessages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Kind).HasConversion<byte>();
+            e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
+            e.Property(x => x.Rejected).HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.CharacterId, x.CreatedAt });
+            e.HasIndex(x => new { x.UserId, x.CreatedAt });
+            e.HasIndex(x => new { x.Kind, x.CreatedAt });
+            e.HasIndex(x => new { x.CircleId, x.CreatedAt });
         });
     }
 }

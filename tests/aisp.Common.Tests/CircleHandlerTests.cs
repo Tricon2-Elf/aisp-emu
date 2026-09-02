@@ -156,12 +156,14 @@ public sealed class CircleHandlerTests
         state.EnterCircleChat(leader.ConnectionId, created.Circle.Id);
         state.EnterCircleChat(memberInChat.ConnectionId, created.Circle.Id);
 
+        var chatLog = new CapturingChatLog();
         var handler = new CircleChatPostHandler(
             NullLogger<CircleChatPostHandler>.Instance,
             circles,
             state,
             WordFilter.FromTerms([]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            chatLog
         );
         var writer = new PacketWriter();
         writer.Write(9u);
@@ -172,6 +174,11 @@ public sealed class CircleHandlerTests
         Assert.Contains(memberInChat.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
         Assert.Contains(memberNotInChat.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
         Assert.Contains(memberNotInChat.Sent, p => p.Type == PacketType.CircleNotifyMember);
+        var logged = Assert.Single(chatLog.Entries);
+        Assert.Equal(ChatLogKind.Circle, logged.Kind);
+        Assert.Equal("hello", logged.Message);
+        Assert.Equal(created.Circle.Id, logged.CircleId);
+        Assert.False(logged.Rejected);
     }
 
     [Fact]
@@ -654,12 +661,14 @@ public sealed class CircleHandlerTests
         state.EnterCircleChat(leader.ConnectionId, created.Circle.Id);
         state.EnterCircleChat(member.ConnectionId, created.Circle.Id);
 
+        var chatLog = new CapturingChatLog();
         var handler = new CircleChatPostHandler(
             NullLogger<CircleChatPostHandler>.Instance,
             circles,
             state,
             WordFilter.FromTerms(["faggot"]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            chatLog
         );
         var writer = new PacketWriter();
         writer.Write(9u);
@@ -680,6 +689,11 @@ public sealed class CircleHandlerTests
             StringComparison.Ordinal
         );
         Assert.DoesNotContain(member.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
+        var logged = Assert.Single(chatLog.Entries);
+        Assert.Equal(ChatLogKind.Circle, logged.Kind);
+        Assert.Equal("Faggot", logged.Message);
+        Assert.Equal(created.Circle.Id, logged.CircleId);
+        Assert.True(logged.Rejected);
     }
 
     [Fact]
@@ -719,12 +733,14 @@ public sealed class CircleHandlerTests
         state.EnterCircleChat(leader.ConnectionId, created.Circle.Id);
         state.EnterCircleChat(member.ConnectionId, created.Circle.Id);
 
+        var chatLog = new CapturingChatLog();
         var handler = new CircleChatPostHandler(
             NullLogger<CircleChatPostHandler>.Instance,
             circles,
             state,
             WordFilter.FromTerms(["fuck", "faggot"], ["faggot"]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            chatLog
         );
         var writer = new PacketWriter();
         writer.Write(9u);
@@ -733,6 +749,10 @@ public sealed class CircleHandlerTests
 
         Assert.Contains(leader.Sent, p => p.Type == PacketType.CircleChatPostResponse);
         Assert.Contains(member.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
+        var logged = Assert.Single(chatLog.Entries);
+        Assert.Equal("this is fucked", logged.Message);
+        Assert.False(logged.Rejected);
+        Assert.Equal(created.Circle.Id, logged.CircleId);
     }
 
     [Fact]

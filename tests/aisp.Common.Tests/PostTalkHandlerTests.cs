@@ -36,7 +36,8 @@ public class PostTalkHandlerTests
         var handler = new PostTalkHandler(
             state,
             WordFilter.FromTerms([]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            new CapturingChatLog()
         );
         await handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "hello", 0),
@@ -74,7 +75,8 @@ public class PostTalkHandlerTests
         var handler = new PostTalkHandler(
             state,
             WordFilter.FromTerms([]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            new CapturingChatLog()
         );
         var completed = handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "hello", 0),
@@ -119,7 +121,8 @@ public class PostTalkHandlerTests
         var handler = new PostTalkHandler(
             state,
             WordFilter.FromTerms([]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            new CapturingChatLog()
         );
         await handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "hello", 0),
@@ -153,10 +156,12 @@ public class PostTalkHandlerTests
         state.RegisterClient(ServerType.Msg, sender);
         state.RegisterClient(ServerType.Msg, recipient);
 
+        var chatLog = new CapturingChatLog();
         var handler = new PostTalkHandler(
             state,
             WordFilter.FromTerms(["faggot"]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            chatLog
         );
         await handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "Faggot", 0),
@@ -181,6 +186,11 @@ public class PostTalkHandlerTests
             recipient.Sent,
             packet => packet.Type == PacketType.TalkForwardNotify
         );
+        var logged = Assert.Single(chatLog.Entries);
+        Assert.Equal(ChatLogKind.Public, logged.Kind);
+        Assert.Equal("Faggot", logged.Message);
+        Assert.True(logged.Rejected);
+        Assert.Equal(9001, logged.CharacterId);
     }
 
     [Fact]
@@ -205,10 +215,12 @@ public class PostTalkHandlerTests
         state.RegisterClient(ServerType.Msg, sender);
         state.RegisterClient(ServerType.Msg, recipient);
 
+        var chatLog = new CapturingChatLog();
         var handler = new PostTalkHandler(
             state,
             WordFilter.FromTerms(["fuck", "faggot"], ["faggot"]),
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            chatLog
         );
         await handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "this is fucked", 0),
@@ -221,6 +233,10 @@ public class PostTalkHandlerTests
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(0u, reader.ReadUInt());
         Assert.Contains(recipient.Sent, packet => packet.Type == PacketType.TalkForwardNotify);
+        var logged = Assert.Single(chatLog.Entries);
+        Assert.Equal("this is fucked", logged.Message);
+        Assert.False(logged.Rejected);
+        Assert.Equal(unchecked((uint)-1), logged.DistId);
     }
 
     private static User CreateUser(int userId, int characterId)

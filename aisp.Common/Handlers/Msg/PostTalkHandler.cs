@@ -1,3 +1,5 @@
+using aisp.Common.DAL.Entities;
+using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Localisation;
 using aisp.Network;
@@ -5,9 +7,12 @@ using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class PostTalkHandler(SharedState state, IWordFilter wordFilter, ITextLocaliser localiser)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class PostTalkHandler(
+    SharedState state,
+    IWordFilter wordFilter,
+    ITextLocaliser localiser,
+    IChatLogRepository chatLog
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.PostTalkRequest;
     public PacketType ResponseType => PacketType.PostTalkResponse;
@@ -22,6 +27,18 @@ public class PostTalkHandler(SharedState state, IWordFilter wordFilter, ITextLoc
         var chatRequest = PostTalkRequest.FromBytes(payload.Span);
         if (wordFilter.ContainsBlockedWord(WordFilterLevel.NoSlurs, chatRequest.Message))
         {
+            await chatLog.AddAsync(
+                ChatLogCapture.FromSession(
+                    session,
+                    state,
+                    ChatLogKind.Public,
+                    chatRequest.Message,
+                    chatRequest.DistID,
+                    chatRequest.BalloonID,
+                    rejected: true
+                ),
+                ct
+            );
             await session.SendAsync(
                 ResponseType,
                 new PostTalkResponse(chatRequest.MessageID, 1).ToBytes(),
@@ -40,6 +57,18 @@ public class PostTalkHandler(SharedState state, IWordFilter wordFilter, ITextLoc
             var areaSession = state.GetAreaSessionByUserId(session.UserId);
             fromId = areaSession?.CharacterId ?? 0;
         }
+
+        await chatLog.AddAsync(
+            ChatLogCapture.FromSession(
+                session,
+                state,
+                ChatLogKind.Public,
+                chatRequest.Message,
+                chatRequest.DistID,
+                chatRequest.BalloonID
+            ),
+            ct
+        );
 
         var forwardPacket = new TalkForwardNotify(
             fromId,
