@@ -68,6 +68,55 @@ public class ModerationServiceTests
     }
 
     [Fact]
+    public async Task ResolveTargetUserAsync_ResolvesNumericUserId()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var target = CreateUser(2, "player", UserRole.User);
+            await SeedUsersAsync(options, target);
+
+            var service = CreateService(options);
+            var resolved = await service.ResolveTargetUserAsync(
+                "2",
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.NotNull(resolved);
+            Assert.Equal("player", resolved.Username);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task KickAsync_AcceptsNumericUserId()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var actor = CreateUser(1, "admin", UserRole.Admin);
+            var target = CreateUser(2, "player", UserRole.User);
+            await SeedUsersAsync(options, actor, target);
+
+            var service = CreateService(options);
+            var (error, _) = await service.KickAsync(
+                1,
+                "2",
+                ct: TestContext.Current.CancellationToken
+            );
+
+            Assert.Equal(ModerationError.None, error);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task PromoteToModeratorAsync_TogglesUserRole()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();

@@ -765,6 +765,18 @@ public class CmdExecHandler(
             return;
         }
 
+        if (cmd is "userlist")
+        {
+            await HandleUserListCommandAsync(session, ct);
+            return;
+        }
+
+        if (cmd is "tpu")
+        {
+            await HandleTeleportToUserCommandAsync(session, request.Arguments, ct);
+            return;
+        }
+
         if (cmd is "kick")
         {
             await HandleKickCommandAsync(session, request.Arguments, ct);
@@ -905,27 +917,30 @@ public class CmdExecHandler(
             ModerationService.DefaultKickMinutes,
             ModerationService.MaxKickMinutes
         );
+        var targetKey = args[0];
         var (error, sessionsClosed) = await moderationService.KickAsync(
             session.UserId,
-            args[0],
+            targetKey,
             duration,
             reason,
             ct: ct
         );
-        await SendModerationResultAsync(
-            session,
-            error,
-            error == ModerationError.None
-                ? localiser.Get(
-                    session.Language,
-                    L.Cmd.KickSuccess,
-                    args[0],
-                    duration ?? ModerationService.DefaultKickMinutes,
-                    sessionsClosed
-                )
-                : null,
-            ct
-        );
+        string? successMessage = null;
+        if (error == ModerationError.None)
+        {
+            var targetName =
+                (await moderationService.ResolveTargetUserAsync(targetKey, ct))?.Username
+                ?? targetKey;
+            successMessage = localiser.Get(
+                session.Language,
+                L.Cmd.KickSuccess,
+                targetName,
+                duration ?? ModerationService.DefaultKickMinutes,
+                sessionsClosed
+            );
+        }
+
+        await SendModerationResultAsync(session, error, successMessage, ct);
     }
 
     private async Task HandleBanCommandAsync(
@@ -941,9 +956,10 @@ public class CmdExecHandler(
         }
 
         var (banDays, reason) = ParseBanDurationAndReason(args);
+        var targetKey = args[0];
         var (error, sessionsClosed) = await moderationService.BanAsync(
             session.UserId,
-            args[0],
+            targetKey,
             banDays,
             reason,
             ct: ct
@@ -951,6 +967,9 @@ public class CmdExecHandler(
         string? successMessage = null;
         if (error == ModerationError.None)
         {
+            var targetName =
+                (await moderationService.ResolveTargetUserAsync(targetKey, ct))?.Username
+                ?? targetKey;
             var actor = await userRepo.GetById(session.UserId);
             var resolved = ModerationService.ResolveBanDuration(
                 actor?.Role ?? UserRole.User,
@@ -961,7 +980,7 @@ public class CmdExecHandler(
                 successMessage = localiser.Get(
                     session.Language,
                     L.Cmd.BanSuccessPermanent,
-                    args[0],
+                    targetName,
                     sessionsClosed
                 );
             }
@@ -976,7 +995,7 @@ public class CmdExecHandler(
                 successMessage = localiser.Get(
                     session.Language,
                     L.Cmd.BanSuccess,
-                    args[0],
+                    targetName,
                     displayDays,
                     sessionsClosed
                 );
@@ -984,6 +1003,136 @@ public class CmdExecHandler(
         }
 
         await SendModerationResultAsync(session, error, successMessage, ct);
+    }
+
+    private async Task HandleUserListCommandAsync(IPlayerSession session, CancellationToken ct)
+    {
+        var actorRole = session.User?.Role;
+        if (actorRole is null && session.UserId > 0)
+            actorRole = (await userRepo.GetById(session.UserId))?.Role;
+
+        if (actorRole?.CanKickOrBan() != true)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.PermissionDenied, ct);
+            return;
+        }
+
+        var onlineUsers = GetOnlineUsers();
+        if (onlineUsers.Count == 0)
+        {
+            await SendSystemNoticeAsync(
+                session,
+                localiser.Get(session.Language, L.Cmd.UserListEmpty),
+                ct
+            );
+            return;
+        }
+
+        var lines = onlineUsers
+            .OrderBy(user => user.UserId)
+            .Select(user =>
+                localiser.Get(session.Language, L.Cmd.UserListEntry, user.UserId, user.Username)
+            );
+        await SendSystemNoticeAsync(session, string.Join('\n', lines), ct);
+    }
+
+    private async Task HandleTeleportToUserCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        var actorRole = session.User?.Role;
+        if (actorRole is null && session.UserId > 0)
+            actorRole = (await userRepo.GetById(session.UserId))?.Role;
+
+        if (actorRole?.CanKickOrBan() != true)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.PermissionDenied, ct);
+            return;
+        }
+
+        if (args.Count == 0)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.TpuUsage, ct);
+            return;
+        }
+
+        var areaClient = ResolveAreaClient(session);
+        if (areaClient is null)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.TpuNotInMap, ct);
+            return;
+        }
+
+        var targetUser = await moderationService.ResolveTargetUserAsync(args[0], ct);
+        if (targetUser is null)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.TargetNotFound, ct);
+            return;
+        }
+
+        var targetArea = state.GetAreaSessionByUserId(targetUser.Id);
+        if (targetArea is null)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.TpuTargetOffline, ct);
+            return;
+        }
+
+        if (
+            !await directMapLinkTransitionService.TryTeleportNearPlayerAsync(
+                areaClient,
+                targetArea,
+                ct
+            )
+        )
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.TpuFailed, ct);
+            return;
+        }
+
+        logger.LogInformation(
+            "CmdExecHandler: user {ActorUserId} teleported to user {TargetUserId} on map {MapId}",
+            session.UserId,
+            targetUser.Id,
+            targetArea.MapId
+        );
+
+        await SendSystemNoticeAsync(
+            session,
+            localiser.Get(
+                session.Language,
+                L.Cmd.TpuSuccess,
+                targetUser.Username,
+                targetArea.MapId,
+                targetArea.ChannelId
+            ),
+            ct
+        );
+    }
+
+    private IReadOnlyList<(int UserId, string Username)> GetOnlineUsers()
+    {
+        var users = new Dictionary<int, string>();
+        foreach (
+            var client in state
+                .AuthClients.Concat(state.MsgClients)
+                .Concat(state.AreaClients)
+                .Where(client => client.IsAuthenticated)
+        )
+        {
+            var userId = client.UserId > 0 ? client.UserId : client.User?.Id ?? 0;
+            if (userId <= 0)
+                continue;
+
+            var username = client.User?.Username;
+            if (string.IsNullOrWhiteSpace(username))
+                username = userId.ToString();
+
+            users.TryAdd(userId, username);
+        }
+
+        return [.. users.Select(entry => (entry.Key, entry.Value))];
     }
 
     private async Task HandleModCommandAsync(

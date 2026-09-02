@@ -127,6 +127,13 @@ public static class L
         public static readonly LocKey ReportSuccess = new("cmd.report.success");
         public static readonly LocKey ReportFailed = new("cmd.report.failed");
         public static readonly LocKey ReportModeratorsNotice = new("cmd.report.moderators_notice");
+        public static readonly LocKey UserListEmpty = new("cmd.userlist.empty");
+        public static readonly LocKey UserListEntry = new("cmd.userlist.entry");
+        public static readonly LocKey TpuUsage = new("cmd.tpu.usage");
+        public static readonly LocKey TpuNotInMap = new("cmd.tpu.not_in_map");
+        public static readonly LocKey TpuTargetOffline = new("cmd.tpu.target_offline");
+        public static readonly LocKey TpuFailed = new("cmd.tpu.failed");
+        public static readonly LocKey TpuSuccess = new("cmd.tpu.success");
     }
 
     public static class Equipment

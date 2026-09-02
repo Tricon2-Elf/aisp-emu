@@ -162,16 +162,16 @@
     "zh-Hant": "已刪除房間 {0}。"
   },
   "cmd.kick.usage": {
-    "ja": "使い方: /kick <名前> [分] [理由]",
-    "en": "Usage: /kick <name> [minutes] [reason]",
-    "zh-Hans": "用法：/kick <名称> [分钟] [原因]",
-    "zh-Hant": "用法：/kick <名稱> [分鐘] [原因]"
+    "ja": "使い方: /kick <ユーザーID|名前> [分] [理由]",
+    "en": "Usage: /kick <userId|name> [minutes] [reason]",
+    "zh-Hans": "用法：/kick <用户ID|名称> [分钟] [原因]",
+    "zh-Hant": "用法：/kick <用戶ID|名稱> [分鐘] [原因]"
   },
   "cmd.ban.usage": {
-    "ja": "使い方: /ban <名前> [日数|perma] [理由]（モデレーターは最大30日、管理者はperma可）",
-    "en": "Usage: /ban <name> [days|perma] [reason] (moderators max 30 days; admins may use perma)",
-    "zh-Hans": "用法：/ban <名称> [天数|perma] [原因]（版主最多30天；管理员可用 perma）",
-    "zh-Hant": "用法：/ban <名稱> [天數|perma] [原因]（版主最多30天；管理員可用 perma）"
+    "ja": "使い方: /ban <ユーザーID|名前> [日数|perma] [理由]（モデレーターは最大30日、管理者はperma可）",
+    "en": "Usage: /ban <userId|name> [days|perma] [reason] (moderators max 30 days; admins may use perma)",
+    "zh-Hans": "用法：/ban <用户ID|名称> [天数|perma] [原因]（版主最多30天；管理员可用 perma）",
+    "zh-Hant": "用法：/ban <用戶ID|名稱> [天數|perma] [原因]（版主最多30天；管理員可用 perma）"
   },
   "cmd.mod.usage": {
     "ja": "使い方: /mod <名前>",
@@ -184,6 +184,48 @@
     "en": "Usage: /unmod <name>",
     "zh-Hans": "用法：/unmod <名称>",
     "zh-Hant": "用法：/unmod <名稱>"
+  },
+  "cmd.userlist.empty": {
+    "ja": "オンラインのユーザーはいません。",
+    "en": "No users are online.",
+    "zh-Hans": "当前没有在线用户。",
+    "zh-Hant": "目前沒有在線用戶。"
+  },
+  "cmd.userlist.entry": {
+    "ja": "{0}: {1}",
+    "en": "{0}: {1}",
+    "zh-Hans": "{0}: {1}",
+    "zh-Hant": "{0}: {1}"
+  },
+  "cmd.tpu.usage": {
+    "ja": "使い方: /tpu <ユーザーID|名前>",
+    "en": "Usage: /tpu <userId|name>",
+    "zh-Hans": "用法：/tpu <用户ID|名称>",
+    "zh-Hant": "用法：/tpu <用戶ID|名稱>"
+  },
+  "cmd.tpu.not_in_map": {
+    "ja": "マップにいないためテレポートできません。",
+    "en": "You must be in a map to teleport.",
+    "zh-Hans": "你必须在地图中才能传送。",
+    "zh-Hant": "你必須在地圖中才能傳送。"
+  },
+  "cmd.tpu.target_offline": {
+    "ja": "対象プレイヤーはマップにいません。",
+    "en": "That player is not currently in a map.",
+    "zh-Hans": "该玩家当前不在地图中。",
+    "zh-Hant": "該玩家目前不在地圖中。"
+  },
+  "cmd.tpu.failed": {
+    "ja": "テレポートに失敗しました。",
+    "en": "Teleport failed.",
+    "zh-Hans": "传送失败。",
+    "zh-Hant": "傳送失敗。"
+  },
+  "cmd.tpu.success": {
+    "ja": "{0} の位置へテレポートしました（マップ {1}、チャンネル {2}）。",
+    "en": "Teleported to {0} (map {1}, channel {2}).",
+    "zh-Hans": "已传送到 {0}（地图 {1}，频道 {2}）。",
+    "zh-Hant": "已傳送到 {0}（地圖 {1}，頻道 {2}）。"
   },
   "cmd.kick.success": {
     "ja": "{0} を {1} 分間キックしました（{2} セッション切断）。",

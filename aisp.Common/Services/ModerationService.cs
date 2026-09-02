@@ -84,11 +84,19 @@ public sealed class ModerationService(
         if (string.IsNullOrWhiteSpace(name))
             return null;
 
-        var character = await characterRepo.GetByNameAsync(name.Trim(), ct);
+        var trimmed = name.Trim();
+        if (int.TryParse(trimmed, out var userId) && userId > 0)
+        {
+            var user = await userRepo.GetById(userId);
+            if (user is not null)
+                return user;
+        }
+
+        var character = await characterRepo.GetByNameAsync(trimmed, ct);
         if (character is not null)
             return await userRepo.GetById(character.UserId);
 
-        return await userRepo.GetByUsernameAsync(name.Trim());
+        return await userRepo.GetByUsernameAsync(trimmed);
     }
 
     public async Task<(ModerationError Error, User? Actor, User? Target)> ValidateStaffActionAsync(
