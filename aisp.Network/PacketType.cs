@@ -225,7 +225,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_get_adventure_upload_rate",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUploadRateGetRequest = 0x71CF,
 

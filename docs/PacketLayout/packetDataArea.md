@@ -116,7 +116,7 @@
 - **Packet ID (hex):** 0xE30D
 - **Packet ID (int):** 58125
 - **Packet Size:** 0
-- **Description:** Request AI upload rate info.
+- **Description:** Sent unconditionally by the client after every area enter (post-map-enter init). Asks for the author revenue share the original service applied to user-made aiちゅーん (AI tune) sold in the shop.
 
 **Layout:**
 
@@ -131,12 +131,12 @@
 - **Packet ID (hex):** 0xB2BC
 - **Packet ID (int):** 45756
 - **Packet Size:** 4
-- **Description:** AI upload rate result.
+- **Description:** Not a result code. On the original service this was the author's revenue share in percent of the sale price in デレ (the in-game currency). The client stores it in its AI content manager and shows `sale price * RatePercent / 100` as 「1冊あたりの収益」 (revenue per copy) in the aiちゅーん upload window. Served from `Server.AiUploadRatePercent`.
 
 **Layout:**
 
 ```text
-    UInt {Result}
+    UInt {RatePercent}
 ```
 
 ## send_get_ai_download_list (AiDownloadListGetRequest)
@@ -1150,8 +1150,31 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Packet Size:** 4
 - **Description:** Result of closing the AI power window. The client reads a fixed 4 bytes. Not sent by the emulator. The packet table previously listed it as 0x6EE1, which the client dispatcher routes to recv_item_discard_sum_r.
 
+## send_get_adventure_upload_rate (AdventureUploadRateGetRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x71CF
+- **Packet Size:** 0
+- **Description:** Sent unconditionally by the client after every area enter (post-map-enter init), alongside send_get_ai_upload_rate. Asks for the author revenue share the original service applied to user-made drama (adventure) discs sold in the shop.
+
 **Layout:**
 
 ```text
     UInt {Result}
+    (empty)
+```
+
+## recv_get_adventure_upload_rate_r (AdventureUploadRateGetResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x9061
+- **Packet Size:** 4
+- **Description:** Not a result code. On the original service this was the author's revenue share in percent of the sale price in デレ (the in-game currency). The client reads a fixed 4 bytes, stores it in its drama content manager and shows `sale price * RatePercent / 100` as 「1冊あたりの収益」 (revenue per copy) in the drama upload window. Served from `Server.AdventureUploadRatePercent`.
+
+**Layout:**
+
+```text
+    UInt {RatePercent}
 ```

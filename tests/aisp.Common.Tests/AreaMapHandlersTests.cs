@@ -2954,6 +2954,38 @@ public class AreaMapHandlersTests
         }
     }
 
+    [Fact]
+    public async Task UploadRateHandlers_SendConfiguredPercent()
+    {
+        var options = Options.Create(
+            new ServerOptions { AiUploadRatePercent = 70, AdventureUploadRatePercent = 250 }
+        );
+        var session = new CapturingPlayerSession();
+
+        await new AreaAiUploadRateGetHandler(options).HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await new AreaAdventureUploadRateGetHandler(options).HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        // The client reads a fixed 4-byte percentage and computes price * rate / 100.
+        var ai = Assert.Single(session.Sent, p => p.Type == PacketType.AiUploadRateGetResponse);
+        Assert.Equal(4, ai.Payload.Length);
+        Assert.Equal(70u, new PacketReader(ai.Payload).ReadUInt());
+
+        var adventure = Assert.Single(
+            session.Sent,
+            p => p.Type == PacketType.AdventureUploadRateGetResponse
+        );
+        Assert.Equal(4, adventure.Payload.Length);
+        Assert.Equal(100u, new PacketReader(adventure.Payload).ReadUInt());
+    }
+
     private static User CreateUserWithCharacter(
         int userId,
         int characterId,
