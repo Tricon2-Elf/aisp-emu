@@ -126,6 +126,7 @@ public static class L
         public static readonly LocKey ReportNotInMap = new("cmd.report.not_in_map");
         public static readonly LocKey ReportSuccess = new("cmd.report.success");
         public static readonly LocKey ReportFailed = new("cmd.report.failed");
+        public static readonly LocKey ReportModeratorsNotice = new("cmd.report.moderators_notice");
     }
 
     public static class Equipment

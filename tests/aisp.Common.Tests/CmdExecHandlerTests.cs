@@ -1586,6 +1586,83 @@ public class CmdExecHandlerTests
         }
     }
 
+    [Fact]
+    public async Task ReportCommand_NotifiesModeratorsCircleChat()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var admin = CreateUserWithCharacter(1, 9001, "sysadmin", "AdminChar", 10990100);
+            admin.Role = UserRole.ServerAdmin;
+            var mod = CreateUserWithCharacter(2, 9002, "moduser", "ModChar", 10990100);
+            mod.Role = UserRole.Moderator;
+            var reporter = CreateUserWithCharacter(3, 8001, "reporter", "Reporter", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(admin, mod, reporter);
+                db.Maps.Add(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = 0,
+                        SpawnY = 0,
+                        SpawnZ = 0,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            await CreateModerationService(options, state)
+                .SyncAllStaffCirclesAsync(TestContext.Current.CancellationToken);
+
+            var modMsgSession = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 9002,
+            };
+            state.RegisterClient(ServerType.Msg, modMsgSession);
+
+            var areaSession = new CapturingPlayerSession
+            {
+                User = reporter,
+                UserId = reporter.Id,
+                Character = reporter.Characters.First(),
+                CharacterId = 8001,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = reporter, UserId = reporter.Id };
+            var handler = CreateReportHandler(options, state);
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report", "some", "problem"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notify = Assert.Single(
+                modMsgSession.Sent,
+                packet => packet.Type == PacketType.CircleChatForwardNotify
+            );
+            var reader = new PacketReader(notify.Payload);
+            Assert.Equal(9001u, reader.ReadUInt());
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("Reporter", text, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("some problem", text, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static CmdExecHandler CreateReportHandler(
         DbContextOptions<MainContext> options,
         SharedState state

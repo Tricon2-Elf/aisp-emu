@@ -1084,7 +1084,7 @@ public class CmdExecHandler(
 
         try
         {
-            await reportTicketRepository.CreateAsync(
+            var ticket = await reportTicketRepository.CreateAsync(
                 new ReportTicketCreateRequest(
                     user.Id,
                     user.Username,
@@ -1107,6 +1107,16 @@ public class CmdExecHandler(
                 ),
                 ct
             );
+            await NotifyModeratorsCircleOfReportAsync(
+                ticket.Id,
+                character.Name,
+                user.Username,
+                mapName,
+                areaClient.MapId,
+                areaClient.ChannelId,
+                reason,
+                ct
+            );
             await SendModerationNoticeAsync(session, L.Cmd.ReportSuccess, ct);
         }
         catch (Exception ex)
@@ -1114,6 +1124,45 @@ public class CmdExecHandler(
             logger.LogError(ex, "CmdExecHandler: failed to create report ticket for user {UserId}", user.Id);
             await SendModerationNoticeAsync(session, L.Cmd.ReportFailed, ct);
         }
+    }
+
+    private async Task NotifyModeratorsCircleOfReportAsync(
+        long ticketId,
+        string reporterCharacterName,
+        string reporterUsername,
+        string mapName,
+        uint mapId,
+        int channelId,
+        string reason,
+        CancellationToken ct
+    )
+    {
+        var moderatorsCircle = await circleRepository.GetByNameAsync(
+            ModerationService.ModeratorsCircleName,
+            ct
+        );
+        if (moderatorsCircle is null)
+            return;
+
+        var mapLabel = string.IsNullOrWhiteSpace(mapName) ? mapId.ToString() : mapName;
+        await CircleNotifyHelper.BroadcastCircleChatAsync(
+            circleRepository,
+            state,
+            moderatorsCircle.Id,
+            (uint)moderatorsCircle.LeaderCharacterId,
+            language =>
+                localiser.Get(
+                    language,
+                    L.Cmd.ReportModeratorsNotice,
+                    ticketId,
+                    reporterCharacterName,
+                    reporterUsername,
+                    mapLabel,
+                    channelId,
+                    reason
+                ),
+            ct: ct
+        );
     }
 
     private static (int? Duration, string? Reason) ParseDurationAndReason(

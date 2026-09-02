@@ -108,16 +108,14 @@ public class CircleChatPostHandler(
 
         await CircleNotifyHelper.SendRosterAsync(circles, state, circleId, ct);
 
-        var forward = new CircleChatForwardNotify(fromId, req.Message).ToBytes();
-        var members = await circles.GetMembersAsync(circleId, ct);
-        foreach (
-            var client in state.GetOnlineMsgClientsByCharacterIds(
-                members.Select(m => m.CharacterId)
-            )
-        )
-        {
-            if (client.ConnectionId != session.ConnectionId)
-                _ = client.SendAsync(PacketType.CircleChatForwardNotify, forward, ct);
-        }
+        await CircleNotifyHelper.BroadcastCircleChatAsync(
+            circles,
+            state,
+            circleId,
+            fromId,
+            _ => req.Message,
+            excludeCharacterId: (int)session.CharacterId,
+            ct
+        );
     }
 }
