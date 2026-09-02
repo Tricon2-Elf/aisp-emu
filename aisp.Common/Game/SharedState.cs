@@ -9,6 +9,8 @@ namespace aisp.Common.Game;
 
 public class SharedState
 {
+    private static readonly ServerType[] AuthAndMsgServerTypes = [ServerType.Auth, ServerType.Msg];
+
     private readonly ISessionStore _sessionStore;
     private readonly ISessionClientRegistry _sessionClientRegistry;
     private readonly IAreaPresenceIndex _areaPresenceIndex;
@@ -78,7 +80,7 @@ public class SharedState
             return;
 
         List<(ServerType Type, IPlayerSession Session)> stale = [];
-        foreach (var serverType in (ServerType[])[ServerType.Auth, ServerType.Msg])
+        foreach (var serverType in AuthAndMsgServerTypes)
         {
             foreach (var existing in GetServerClients(serverType))
             {
@@ -149,6 +151,15 @@ public class SharedState
                 .Where(session => session.IsAuthenticated && set.Contains(session.CharacterId)),
         ];
     }
+
+    public IReadOnlyList<IPlayerSession> GetOnlineMsgClientsByCharacterId(int characterId) =>
+        GetOnlineMsgClientsByCharacterId((uint)characterId);
+
+    public IReadOnlyList<IPlayerSession> GetOnlineMsgClientsByCharacterId(uint characterId) =>
+        [
+            .. GetServerClients(ServerType.Msg)
+                .Where(session => session.IsAuthenticated && session.CharacterId == characterId),
+        ];
 
     public void SetPendingAreaTransition(PendingMapTransfer transition)
     {

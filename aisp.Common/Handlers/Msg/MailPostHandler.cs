@@ -58,7 +58,7 @@ public class MailPostHandler(
         };
 
         var notify = new NotifyNewMail(mail).ToBytes();
-        foreach (var client in state.GetOnlineMsgClientsByCharacterIds(new[] { recipient.Id }))
+        foreach (var client in state.GetOnlineMsgClientsByCharacterId(recipient.Id))
         {
             if (client.ConnectionId == session.ConnectionId)
                 continue;

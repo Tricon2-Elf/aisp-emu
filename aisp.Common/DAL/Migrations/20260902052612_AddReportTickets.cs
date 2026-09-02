@@ -83,11 +83,6 @@ namespace aisp.Common.DAL.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChatMessages_MapId_ChannelId_CreatedAt",
-                table: "ChatMessages",
-                columns: new[] { "MapId", "ChannelId", "CreatedAt" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ReportTicketChatMessages_ReportTicketId",
                 table: "ReportTicketChatMessages",
                 column: "ReportTicketId");
@@ -124,10 +119,6 @@ namespace aisp.Common.DAL.Migrations
 
             migrationBuilder.DropTable(
                 name: "ReportTickets");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ChatMessages_MapId_ChannelId_CreatedAt",
-                table: "ChatMessages");
         }
     }
 }

@@ -238,6 +238,8 @@ namespace aisp.Common.DAL.Migrations
 
                     b.HasIndex("UserId", "CreatedAt");
 
+                    b.HasIndex("MapId", "ChannelId", "CreatedAt");
+
                     b.ToTable("ChatMessages", (string)null);
                 });
 

@@ -36,6 +36,13 @@ public sealed class ModerationService(
     public const int DefaultBanDays = 1;
     public const int MaxModeratorBanDays = 30;
 
+    private static readonly ServerType[] AllServerTypes =
+    [
+        ServerType.Auth,
+        ServerType.Msg,
+        ServerType.Area,
+    ];
+
     public readonly record struct BanDurationResult(DateTime? BannedUntil, ModerationError Error)
     {
         public bool IsPermanent => Error == ModerationError.None && BannedUntil is null;
@@ -390,10 +397,9 @@ public sealed class ModerationService(
 
     public async Task<int> DisconnectUserAsync(User user, CancellationToken ct = default)
     {
-        var serverTypes = new[] { ServerType.Auth, ServerType.Msg, ServerType.Area };
         var matchingSessions = new List<IPlayerSession>();
 
-        foreach (var serverType in serverTypes)
+        foreach (var serverType in AllServerTypes)
         {
             foreach (var session in state.GetServerClients(serverType))
             {

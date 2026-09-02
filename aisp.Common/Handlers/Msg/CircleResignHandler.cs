@@ -68,8 +68,8 @@ public class CircleResignHandler(ICircleRepository circles, SharedState state)
                     ct
                 );
                 foreach (
-                    var client in state.GetOnlineMsgClientsByCharacterIds(
-                        new[] { result.NewLeaderCharacterId.Value }
+                    var client in state.GetOnlineMsgClientsByCharacterId(
+                        result.NewLeaderCharacterId.Value
                     )
                 )
                 {

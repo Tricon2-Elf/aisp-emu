@@ -59,6 +59,11 @@ namespace aisp.Common.DAL.Migrations
                 name: "IX_ChatMessages_UserId_CreatedAt",
                 table: "ChatMessages",
                 columns: new[] { "UserId", "CreatedAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChatMessages_MapId_ChannelId_CreatedAt",
+                table: "ChatMessages",
+                columns: new[] { "MapId", "ChannelId", "CreatedAt" });
         }
 
         /// <inheritdoc />

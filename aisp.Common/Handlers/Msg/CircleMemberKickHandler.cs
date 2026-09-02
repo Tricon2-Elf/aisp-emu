@@ -32,7 +32,7 @@ public class CircleMemberKickHandler(ICircleRepository circles, SharedState stat
         var kickPayload = new CircleNotifyKick(request.CircleId).ToBytes();
         // Notify the kicked character specifically, then remaining members.
         foreach (
-            var client in state.GetOnlineMsgClientsByCharacterIds(new[] { (int)request.AvatarId })
+            var client in state.GetOnlineMsgClientsByCharacterId((int)request.AvatarId)
         )
         {
             await client.SendAsync(PacketType.CircleNotifyKick, kickPayload, ct);

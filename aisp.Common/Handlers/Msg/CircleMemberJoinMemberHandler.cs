@@ -33,8 +33,8 @@ public class CircleMemberJoinMemberHandler(ICircleRepository circles, SharedStat
             circles.ToCircleData(result.Circle)
         ).ToBytes();
         foreach (
-            var client in state.GetOnlineMsgClientsByCharacterIds(
-                new[] { result.JoinRequest.TargetCharacterId }
+            var client in state.GetOnlineMsgClientsByCharacterId(
+                result.JoinRequest.TargetCharacterId
             )
         )
             await client.SendAsync(PacketType.CircleNotifyJoinRequest, notify, ct);
