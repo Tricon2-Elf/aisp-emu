@@ -33,6 +33,7 @@ internal sealed class CapturingPlayerSession : IPlayerSession
     public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     public int? ActiveShopId { get; set; }
     public bool PendingEventEndAfterFade { get; set; }
+    public uint AdventureReturnMapId { get; set; }
     public string? ActiveEventKey { get; set; }
     public NpcEventKind ActiveEventKind { get; set; }
     public EventCompletionPolicy ActiveEventCompletionPolicy { get; set; }

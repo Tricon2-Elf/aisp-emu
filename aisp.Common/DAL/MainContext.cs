@@ -34,6 +34,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<CircleMember> CircleMembers => Set<CircleMember>();
     public DbSet<CircleJoinRequest> CircleJoinRequests => Set<CircleJoinRequest>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<AdventureWork> AdventureWorks => Set<AdventureWork>();
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
@@ -66,6 +67,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.NicoPoints).HasDefaultValue(0L);
             e.Property(x => x.StorageDeposit).HasDefaultValue(0L);
             e.Property(x => x.IsBanned).HasDefaultValue(false);
+            e.Property(x => x.AdventureSheetStock).HasDefaultValue(0);
+            e.Property(x => x.NextAdventureWorkId).HasDefaultValue(1);
             e.Property(x => x.BanReason).HasMaxLength(256);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.Language)
@@ -409,6 +412,18 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.TargetCharacterId,
                 x.Status,
             });
+        });
+
+        b.Entity<AdventureWork>(e =>
+        {
+            e.ToTable("AdventureWorks");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UserId, x.WorkId }).IsUnique();
         });
 
         b.Entity<Friendship>(e =>

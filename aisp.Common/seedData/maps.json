@@ -533,6 +533,19 @@
     "spawnRotation": 0
   },
   {
+    "mapId": 30000000,
+    "island": {
+      "ja": ""
+    },
+    "name": {
+      "ja": "Drama stage"
+    },
+    "spawnX": 0,
+    "spawnY": 0,
+    "spawnZ": 0,
+    "spawnRotation": 0
+  },
+  {
     "mapId": 90000000,
     "island": {
       "ja": ""

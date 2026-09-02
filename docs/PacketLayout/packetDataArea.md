@@ -116,7 +116,7 @@
 - **Packet ID (hex):** 0xE30D
 - **Packet ID (int):** 58125
 - **Packet Size:** 0
-- **Description:** Request AI upload rate info.
+- **Description:** Sent unconditionally by the client after every area enter (post-map-enter init). Asks for the author revenue share the original service applied to user-made aiちゅーん (AI tune) sold in the shop.
 
 **Layout:**
 
@@ -131,12 +131,12 @@
 - **Packet ID (hex):** 0xB2BC
 - **Packet ID (int):** 45756
 - **Packet Size:** 4
-- **Description:** AI upload rate result.
+- **Description:** Not a result code. On the original service this was the author's revenue share in percent of the sale price in デレ (the in-game currency). The client stores it in its AI content manager and shows `sale price * RatePercent / 100` as 「1冊あたりの収益」 (revenue per copy) in the aiちゅーん upload window. Served from `Server.AiUploadRatePercent`.
 
 **Layout:**
 
 ```text
-    UInt {Result}
+    UInt {RatePercent}
 ```
 
 ## send_get_ai_download_list (AiDownloadListGetRequest)
@@ -1149,6 +1149,386 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Packet ID (hex):** 0x6B53
 - **Packet Size:** 4
 - **Description:** Result of closing the AI power window. The client reads a fixed 4 bytes. Not sent by the emulator. The packet table previously listed it as 0x6EE1, which the client dispatcher routes to recv_item_discard_sum_r.
+
+## send_get_adventure_upload_rate (AdventureUploadRateGetRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x71CF
+- **Packet Size:** 0
+- **Description:** Sent unconditionally by the client after every area enter (post-map-enter init), alongside send_get_ai_upload_rate. Asks for the author revenue share the original service applied to user-made drama (adventure) discs sold in the shop.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    (empty)
+```
+
+## recv_get_adventure_upload_rate_r (AdventureUploadRateGetResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x9061
+- **Packet Size:** 4
+- **Description:** Not a result code. On the original service this was the author's revenue share in percent of the sale price in デレ (the in-game currency). The client reads a fixed 4 bytes, stores it in its drama content manager and shows `sale price * RatePercent / 100` as 「1冊あたりの収益」 (revenue per copy) in the drama upload window. Served from `Server.AdventureUploadRatePercent`.
+
+**Layout:**
+
+```text
+    UInt {RatePercent}
+```
+
+## recv_adventure_upload_started (AdventureUploadStartedNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x90BD
+- **Packet Size:** 8
+- **Description:** Pushed after the player talks to the drama disc shop's 買取担当 clerk. The client looks up the NPC object by NpcObjectId (name and position go on the window), opens the drama upload window (ドラマショップ) and then sends get_adventure_work_list and get_adventure_upload_list. Not sent by the emulator yet: the shop map and its clerk are not in the seed data.
+
+**Layout:**
+
+```text
+    UInt {NpcObjectId}
+    UInt {Value}  // second field, not read by the window
+```
+
+## send_get_adventure_upload_list (GetAdventureUploadListRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xB6EE
+- **Packet Size:** 0
+- **Description:** Sent by the drama upload window for the right-hand アップロードドラマ list.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_get_adventure_upload_list_r (GetAdventureUploadListResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x49B5
+- **Packet Size:** 8 + Count × 0x630
+- **Description:** Uploaded dramas of the account. Count is at most 100; each record is 0x630 bytes (a 64-bit id, a 37-byte name, a 121-byte intro, a 64-bit field, a 769-byte description, a byte, a UInt, a 64-bit field, a UInt, ten 61-byte tags and a UInt). The emulator answers an empty list.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UInt {Count}
+    Record[Count]  // 0x630 bytes each, see description
+```
+
+## send_get_adventure_work_list (GetAdventureWorkListRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x32C8
+- **Packet Size:** 0
+- **Description:** Sent by the drama editor (opened from the 鉛筆とノート furniture) and by the drama upload window.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_get_adventure_work_list_r (GetAdventureWorkListResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xEA66
+- **Packet Size:** 12 + Count × 13
+- **Description:** The account's drama works and its 原稿用紙 (manuscript sheet) stock. Records are packed, 13 bytes each, at most 100; the client merges them by WorkId with its local `user/<uid>/<slot>/work/drama/list.csv`. Manuscripts live only on the client; the server keeps the registry.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UInt {SheetStock}
+    UInt {Count}
+    Record[Count]:
+        UInt {WorkId}
+        UInt {Sheets}
+        UInt {Reserved}
+        Byte {Uploaded}
+```
+
+## send_adventure_work_create (AdventureWorkCreateRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xB1D9
+- **Packet Size:** 4
+- **Description:** 新規作成 in the drama editor. Sheets is the number of 原稿用紙 to spend on the new work (the editor sends 1).
+
+**Layout:**
+
+```text
+    UInt {Sheets}
+```
+
+## recv_adventure_work_create_r (AdventureWorkCreateResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x7CD2
+- **Packet Size:** 10
+- **Description:** On Result 0 the client creates the local files for WorkId (named 新規作成_NNN) and registers it in list.csv. WorkId is per account and must never be reused: the client overwrites whatever it already has under that id. Preceded by recv_adventure_updated_sheet_stack (stores CAdvMgr+0x1BC only; the editor caption does not paint on this recv).
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UInt {Sheets}
+    UShort {WorkId}
+```
+
+## send_adventure_work_delete (AdventureWorkDeleteRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x2DA5
+- **Packet Size:** 2
+- **Description:** 削除 in the drama editor.
+
+**Layout:**
+
+```text
+    UShort {WorkId}
+```
+
+## recv_adventure_work_delete_r (AdventureWorkDeleteResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x2083
+- **Packet Size:** 6
+- **Description:** Removes the work from the local list (CAdvMgr+0x4ACA50) and rebuilds the list. Does not write sheet stock or paint the 原稿用紙 caption. Preceded by recv_adventure_updated_sheet_stack so +0x1BC already has the returned pages.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UShort {WorkId}
+```
+
+## send_adventure_work_add_sheet (AdventureWorkAddSheetRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x2FFF
+- **Packet Size:** 6
+- **Description:** Adds Count sheets from the account stock to a work. The editor sends it on 編集 when the local work has more sheets than the server record.
+
+**Layout:**
+
+```text
+    UShort {WorkId}
+    UInt {Count}
+```
+
+## recv_adventure_work_add_sheet_r (AdventureWorkAddSheetResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xCEF4
+- **Packet Size:** 10
+- **Description:** Delta is the applied count: the client adds it to its local sheet count for WorkId rather than replacing it (`add [work+0x3C], delta` at 0x4A82F9). It does not touch CAdvMgr+0x1BC or +0x1C0 and does not paint the 原稿用紙 caption. Preceded by recv_adventure_updated_sheet_stack so +0x1BC is already the new stock. Adding a page in the editor increments +0x1C0 immediately (caption = 1BC−1C0) and redraws; deleting a page does not replenish stock until save, when sub_sheet returns pages and 0xABE0 writes +0x1BC. The caption stays stale across save and catches up on the next local add/remove. The editor sends add_sheet on save with the pages added since the last save, then sub_sheet with the pages deleted, never netted; the work-list window sends one of them before 編集 when its local page count differs from the server record.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UShort {WorkId}
+    UInt {Delta}
+```
+
+## send_adventure_work_sub_sheet (AdventureWorkSubSheetRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x4187
+- **Packet Size:** 6
+- **Description:** Returns Count sheets from a work to the account stock.
+
+**Layout:**
+
+```text
+    UShort {WorkId}
+    UInt {Count}
+```
+
+## recv_adventure_work_sub_sheet_r (AdventureWorkSubSheetResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x216E
+- **Packet Size:** 10
+- **Description:** Same shape as recv_adventure_work_add_sheet_r.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UShort {WorkId}
+    UInt {Delta}
+```
+
+## recv_adventure_updated_sheet_stack (AdventureUpdatedSheetStackNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xABE0
+- **Packet Size:** 4
+- **Description:** Writes the account's 原稿用紙 stock to CAdvMgr+0x1BC (`mov [ecx+0x1BC], arg` at 0x4A7B40). Does not paint. The editor caption is `+0x1BC − +0x1C0` (getter 0x4A7DA0), redrawn only on local add/remove sheet. +0x1C0 is the reservation for unsaved new pages.
+
+**Layout:**
+
+```text
+    UInt {SheetStock}
+```
+
+## send_sheet_shop_start (SheetShopStartRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x46EE
+- **Packet Size:** 0
+- **Description:** The drama editor's 通販 button (wrapper 0x7A8840). The editor stays open underneath, locked, until the sheet shop window closes.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_sheet_shop_start_r (SheetShopStartResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x6F5C
+- **Packet Size:** 12
+- **Description:** Result 0 opens the 原稿用紙 shop window with the unit price (case 0x7D3B93). The remaining-sheet label comes from the last recv_adventure_updated_sheet_stack and the デレ balance from the money manager, so nothing else is needed. Served from `Server:AdventureSheetPriceAi`.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    Long {SheetPriceAi}  // price of one sheet in デレ
+```
+
+## send_sheet_shop_buy (SheetShopBuyRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x1E92
+- **Packet Size:** 12
+- **Description:** The buy button after its confirm dialog (wrapper 0x7A8B00). The window clamps the count so the stock stays below 10000 and refuses a total above the デレ balance itself; the price field is the unit price it displayed, not the total.
+
+**Layout:**
+
+```text
+    UInt {SheetCount}
+    Long {SheetPriceAi}  // unit price echo
+```
+
+## recv_sheet_shop_buy_r (SheetShopBuyResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x92AB
+- **Packet Size:** 4
+- **Description:** Result only (case 0x7DD0D5). The window redraws its remaining-sheet label, the editor's and the work list's from the stock the last recv_adventure_updated_sheet_stack stored, in the tick this lands, so the emulator sends the stock push and recv_money_updated_aipoint first. Non-zero shows an error dialog (0xFFFFFF83 is the client's own "not enough デレ" code) and keeps the window open.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_sheet_shop_end (SheetShopEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xAF54
+- **Packet Size:** 0
+- **Description:** The sheet shop window's close button (wrapper 0x7A89A0).
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_sheet_shop_end_r (SheetShopEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xAE06
+- **Packet Size:** 4
+- **Description:** Result 0 closes the window and the editor resumes (case 0x7E272B); unlike the drama disc shop there is no ended push. Non-zero leaves it open.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_adventure_start (AdventureStartRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x2939
+- **Packet Size:** 0
+- **Description:** 再生 in the drama editor (or the shop). Nothing on the wire names the scenario's map: before sending, the client parses the scenario's first CHANGEMAP and caches the resolved field in its adventure manager.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_adventure_start_r (AdventureStartResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x7C69
+- **Packet Size:** 4
+- **Description:** Result 0 starts playback (HUD hidden, fade out). The server must then send recv_notify_change_map to the drama stage map 30000000: the client's transition code special-cases that id and loads its cached field in the visual-novel presentation, so the server never needs the scenario's map. Routing to the real map leaves the world scene under the VN layer and fails the CAM_SET preset check; a plain ack leaves the client waiting, because CHANGEMAP only builds the stage while the current map is 30000000. The client then sends send_enter_map for 30000000.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_adventure_end (AdventureEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x2125
+- **Packet Size:** 0
+- **Description:** Sent when the scenario finishes or is aborted.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_adventure_end_r (AdventureEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xC1D1
+- **Packet Size:** 4
+- **Description:** Acknowledges the end; the emulator then routes the player back to the map they started from.
 
 **Layout:**
 
