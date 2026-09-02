@@ -1031,7 +1031,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x6EE1
 - **Packet Size:** 4
-- **Description:** Declared in the client proto (`recv_item_discard_sum_r(result)`, RPC id 0x73) but the game handler only logs it and there is no matching send in this client build. Not sent by the emulator. Note: `PacketType.CloseAiPowerWindowResponse` currently claims 0x6EE1 too; the client dispatcher routes 0x6EE1 here.
+- **Description:** Declared in the client proto (`recv_item_discard_sum_r(result)`, RPC id 0x73) but the game handler only logs it and there is no matching send in this client build. Not sent by the emulator.
 
 **Layout:**
 
@@ -1136,6 +1136,19 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Packet ID (hex):** 0x9ABE
 - **Packet Size:** 4
 - **Description:** Tears the bin window down (0x495970); result is not inspected. The client dispatcher matches `cmp eax,0x9ABE` — the emulator previously sent 0x9A7E, which no client handler receives.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+## recv_close_aipower_window_r (CloseAiPowerWindowResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x6B53
+- **Packet Size:** 4
+- **Description:** Result of closing the AI power window. The client reads a fixed 4 bytes. Not sent by the emulator. The packet table previously listed it as 0x6EE1, which the client dispatcher routes to recv_item_discard_sum_r.
 
 **Layout:**
 
