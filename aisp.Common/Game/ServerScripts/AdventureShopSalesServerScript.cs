@@ -1,18 +1,24 @@
+using aisp.Common.Config;
 using aisp.Common.DAL.Entities;
+using aisp.Common.DAL.Repositories;
 using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Area;
+using Microsoft.Extensions.Options;
 
 namespace aisp.Common.Game.ServerScripts;
 
 /// <summary>
-/// Drama disc shop 売上担当 clerk. Sales payouts are not modelled, so this is a single dialogue line.
+/// Drama disc shop 売上担当 clerk. Pays out the settled sales balance in デレ (the in-game currency) on the spot; otherwise says how much
+/// is still waiting for the weekly settlement, or that nothing has sold yet.
 /// It has to run as an event: the client only renders recv_event_message between recv_event_start and
 /// recv_event_end, so a bare message from the NPC access handler is dropped.
 /// </summary>
 public sealed class AdventureShopSalesServerScript(
     ServerScriptSession serverScriptSession,
-    ITextLocaliser localiser
+    ITextLocaliser localiser,
+    IAdventureShopRepository shop,
+    IOptions<ServerOptions> serverOptions
 ) : IServerScript
 {
     private const string AwaitingDialogueSyncStep = "AwaitingDialogueSync";
@@ -29,13 +35,56 @@ public sealed class AdventureShopSalesServerScript(
     {
         session.ServerScriptState!.Step = AwaitingDialogueSyncStep;
 
+        var userId = session.User?.Id ?? session.UserId;
+        var balances = await shop.GetBalancesAsync(userId, ct);
+        string text;
+        if (balances is { Collectable: > 0 })
+        {
+            var paid = await shop.PayoutAsync(userId, ct);
+            if (paid is { Paid: > 0 })
+            {
+                if (session.User is not null)
+                    session.User.AiPoints = paid.Value.AiPoints;
+                await session.SendAsync(
+                    PacketType.MoneyUpdatedAipoint,
+                    new MoneyUpdatedAipointNotify(
+                        (ulong)Math.Max(0, paid.Value.AiPoints)
+                    ).ToBytes(),
+                    ct
+                );
+                text = localiser.Get(session, L.Adventure.ShopSalesPaid, paid.Value.Paid);
+            }
+            else
+            {
+                text = localiser.Get(session, L.Adventure.ShopSalesEmpty);
+            }
+        }
+        else if (balances is { Pending: > 0 })
+        {
+            var settlement = serverOptions.Value.AdventureSettlement;
+            var next = TimeZoneInfo.ConvertTimeFromUtc(
+                settlement.GetNextCutoffUtc(DateTime.UtcNow),
+                settlement.ResolveTimeZone()
+            );
+            text = localiser.Get(
+                session,
+                L.Adventure.ShopSalesPending,
+                balances.Pending,
+                next.ToString("M/d HH:mm")
+            );
+        }
+        else
+        {
+            text = localiser.Get(session, L.Adventure.ShopSalesEmpty);
+        }
+
         var npcObjectId = checked((uint)context.Npc.NpcObjectId);
         await session.SendAsync(
             PacketType.EventMessageNotify,
             new EventMessageNotify(
                 npcObjectId,
                 localiser.Get(session, L.Npc.Name(context.Npc.NpcObjectId)),
-                localiser.Get(session, L.Adventure.ShopSalesEmpty)
+                text
             ).ToBytes(),
             ct
         );

@@ -1,9 +1,21 @@
 {
   "adventure.shop.sales_empty": {
-    "ja": "まだお支払いできる売上はありません。販売が確定するとメールでお知らせします。",
-    "en": "There are no sales to collect yet. You will get mail when a copy sells.",
-    "zh-Hans": "目前没有可领取的销售额。售出后会发邮件通知。",
-    "zh-Hant": "目前沒有可領取的銷售額。售出後會發郵件通知。"
+    "ja": "まだお支払いできる売上はありません。",
+    "en": "There are no sales to pay out yet.",
+    "zh-Hans": "目前没有可领取的销售额。",
+    "zh-Hant": "目前沒有可領取的銷售額。"
+  },
+  "adventure.shop.sales_paid": {
+    "ja": "売上 {0} デレをお支払いしました。ありがとうございます！",
+    "en": "Here are your sales: {0} dere paid out. Thank you!",
+    "zh-Hans": "已支付销售额 {0} 德蕾。谢谢！",
+    "zh-Hant": "已支付銷售額 {0} 德蕾。謝謝！"
+  },
+  "adventure.shop.sales_pending": {
+    "ja": "{0} デレ分の売上が精算待ちです。次の精算は {1} です。",
+    "en": "{0} dere of sales are waiting for settlement. The next settlement is on {1}.",
+    "zh-Hans": "有 {0} 德蕾的销售额等待结算。下次结算时间为 {1}。",
+    "zh-Hant": "有 {0} 德蕾的銷售額等待結算。下次結算時間為 {1}。"
   },
   "item.no_description": {
     "ja": "N/A",

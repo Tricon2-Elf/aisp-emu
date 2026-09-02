@@ -78,6 +78,8 @@ internal class Program
         builder.Services.AddScoped<ICircleRepository, CircleRepository>();
         builder.Services.AddScoped<IFriendRepository, FriendRepository>();
         builder.Services.AddScoped<IAdventureWorkRepository, AdventureWorkRepository>();
+        builder.Services.AddScoped<IAdventureShopRepository, AdventureShopRepository>();
+        builder.Services.AddScoped<AdventureShopCatalog>();
         builder.Services.AddScoped<INicotvRepository, NicotvRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
@@ -301,6 +303,7 @@ internal class Program
 
         builder.Services.AddHostedService<GameServerSchedulerService>();
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
+        builder.Services.AddHostedService<AdventureSettlementService>();
 
         var app = builder.Build();
         var configuredApiKey = app
@@ -313,6 +316,7 @@ internal class Program
 
         app.UseApiKeyAuthForApiRoutes();
         app.MapAispEmuHttpEndpoints();
+        app.MapAdventureHttpEndpoints();
         if (portalEnabled)
         {
             app.UseStaticFiles();

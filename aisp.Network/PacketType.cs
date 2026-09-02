@@ -1898,7 +1898,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_download_delete_request_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureDownloadDeleteRequestResponse = 0x35CA,
 
@@ -1930,7 +1930,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_added_buy_history",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopAddedBuyHistoryNotify = 0xEEE8,
 
@@ -1946,7 +1946,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_buy_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopBuyResponse = 0xFAA8,
 
@@ -1962,7 +1962,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_download_request_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopDownloadRequestResponse = 0x46BC,
 
@@ -1986,7 +1986,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_genre_search_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopGenreSearchResponse = 0x6DC0,
 
@@ -1994,7 +1994,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_item",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopItemNotify = 0x9B08,
 
@@ -2010,7 +2010,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_remove_all_buy_history_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopRemoveAllBuyHistoryResponse = 0xB736,
 
@@ -2018,7 +2018,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_remove_buy_history_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopRemoveBuyHistoryResponse = 0x1915,
 
@@ -2026,7 +2026,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_shop_ranking_search_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopRankingSearchResponse = 0x9EA9,
 
@@ -2074,7 +2074,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_upload_delete_request_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUploadDeleteRequestResponse = 0xFEF7,
 
@@ -4682,7 +4682,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_adventure_download_delete_request",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureDownloadDeleteRequestRequest = 0x628C,
 
@@ -4690,7 +4690,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_adventure_shop_download_request",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopDownloadRequestRequest = 0x9F15,
 
@@ -4722,23 +4722,47 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_adventure_shop_ranking_search",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureShopRankingSearchRequest = 0xD861,
 
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
-        "send_adventure_shop_remove_all_buy_history",
-        ImplementationState.NotImplemented
+        "send_adventure_shop_remove_buy_history",
+        ImplementationState.Implemented
     )]
-    AdventureShopRemoveAllBuyHistoryRequest = 0x454B,
+    AdventureShopRemoveBuyHistoryRequest = 0x454B,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_shop_remove_all_buy_history",
+        ImplementationState.Implemented
+    )]
+    AdventureShopRemoveAllBuyHistoryRequest = 0xB7A0,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_shop_buy",
+        ImplementationState.Implemented
+    )]
+    AdventureShopBuyRequest = 0x0289,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_shop_genre_search",
+        ImplementationState.Implemented
+    )]
+    AdventureShopGenreSearchRequest = 0x157F,
 
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_adventure_upload_delete_request",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUploadDeleteRequestRequest = 0xCB22,
 

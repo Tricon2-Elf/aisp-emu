@@ -4,6 +4,7 @@ using aisp.Common.DAL.Repositories;
 using aisp.Common.Handlers.Area;
 using aisp.Common.Tests.Support;
 using aisp.Network;
+using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace aisp.Common.Tests;
@@ -289,56 +290,224 @@ public class AdventureWorkHandlersTests
         Assert.True(session.Sent.IndexOf(shop) < session.Sent.IndexOf(ended));
     }
 
-    [Fact]
-    public async Task UploadRequestHandler_RefusesWithFixedSizeReply()
+    private static byte[] UploadRequestBytes(ushort workId, long contentSize = 20348)
     {
-        var session = new CapturingPlayerSession { UserId = 2 };
         var writer = new PacketWriter();
-        writer.Write((ushort)7);
+        writer.Write(workId);
         writer.Write("Thimbleglow");
         writer.Write(2u);
         writer.Write("");
         writer.Write("Yomogi");
         writer.Write(1000ul);
         writer.Write((byte)1);
-        writer.Write(0ul);
-
-        await new AreaAdventureUploadRequestHandler(
-            NullLogger<AreaAdventureUploadRequestHandler>.Instance
-        ).HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
-
-        // The client reads a fixed 55-byte body: result, workId, scriptId, 41-byte ticket.
-        var reply = Assert.Single(
-            session.Sent,
-            p => p.Type == PacketType.AdventureUploadRequestResponse
-        );
-        Assert.Equal(55, reply.Payload.Length);
-        var reader = new PacketReader(reply.Payload);
-        Assert.Equal(AreaAdventureUploadRequestHandler.UploadUnavailableResult, reader.ReadUInt());
-        Assert.Equal(7, reader.ReadUShort());
-        Assert.Equal(0ul, reader.ReadULong());
+        writer.Write((ulong)contentSize);
+        return writer.ToBytes();
     }
 
     [Fact]
-    public async Task UploadRequestReportHandler_AcknowledgesWithScriptId()
+    public async Task UploadRequestHandler_RefusesUnknownWorkWithFixedSizeReply()
     {
-        var session = new CapturingPlayerSession { UserId = 2 };
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            var user = await SeedUserAsync(db);
+            var session = new CapturingPlayerSession { UserId = user.Id, CharacterId = 1 };
+
+            await new AreaAdventureUploadRequestHandler(
+                new AdventureShopRepository(db),
+                NullLogger<AreaAdventureUploadRequestHandler>.Instance
+            ).HandleAsync(UploadRequestBytes(7), session, TestContext.Current.CancellationToken);
+
+            // The client reads a fixed 55-byte body: result, workId, scriptId, 41-byte ticket.
+            var reply = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.AdventureUploadRequestResponse
+            );
+            Assert.Equal(55, reply.Payload.Length);
+            var reader = new PacketReader(reply.Payload);
+            Assert.Equal(AreaAdventureUploadRequestHandler.RefusedResult, reader.ReadUInt());
+            Assert.Equal(7, reader.ReadUShort());
+            Assert.Equal(0ul, reader.ReadULong());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UploadRequestThenReport_ListsTheWorkOnceTheManuscriptIsStored()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            var user = await SeedUserAsync(db);
+            var session = new CapturingPlayerSession { UserId = user.Id, CharacterId = 1 };
+            var works = new AdventureWorkRepository(db);
+            var shop = new AdventureShopRepository(db);
+            await new AreaAdventureWorkCreateHandler(works).HandleAsync(
+                new byte[] { 1, 0, 0, 0 },
+                session,
+                TestContext.Current.CancellationToken
+            );
+            session.Sent.Clear();
+
+            await new AreaAdventureUploadRequestHandler(
+                shop,
+                NullLogger<AreaAdventureUploadRequestHandler>.Instance
+            ).HandleAsync(UploadRequestBytes(1), session, TestContext.Current.CancellationToken);
+
+            var reply = Assert.Single(session.Sent);
+            Assert.Equal(55, reply.Payload.Length);
+            var reader = new PacketReader(reply.Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal(1, reader.ReadUShort());
+            var scriptId = (long)reader.ReadULong();
+            Assert.Equal(AdventureListing.FirstScriptId, scriptId);
+            var ticket = reader.ReadFixedString(AdventureUploadRequestResponse.TicketLength);
+            Assert.Equal(AdventureShopRepository.TicketLength, ticket.Length);
+
+            // Reporting success before upload.php stored anything must not list the work.
+            var report = new AreaAdventureUploadRequestReportHandler(
+                shop,
+                NullLogger<AreaAdventureUploadRequestReportHandler>.Instance
+            );
+            session.Sent.Clear();
+            await report.HandleAsync(
+                ReportBytes(1, 1, scriptId),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            var early = new PacketReader(Assert.Single(session.Sent).Payload);
+            Assert.Equal(AreaAdventureUploadRequestReportHandler.NotListedResult, early.ReadUInt());
+            Assert.Equal((ulong)scriptId, early.ReadULong());
+
+            // upload.php: the ticket is single-use and yields the pending listing.
+            var pending = await shop.RedeemUploadTicketAsync(
+                ticket,
+                TestContext.Current.CancellationToken
+            );
+            Assert.NotNull(pending);
+            Assert.Equal(scriptId, pending.ScriptId);
+            Assert.Null(
+                await shop.RedeemUploadTicketAsync(ticket, TestContext.Current.CancellationToken)
+            );
+            Assert.True(
+                await shop.StoreContentAsync(
+                    scriptId,
+                    "ADV0..."u8.ToArray(),
+                    "list"u8.ToArray(),
+                    ct: TestContext.Current.CancellationToken
+                )
+            );
+
+            session.Sent.Clear();
+            await report.HandleAsync(
+                ReportBytes(1, 1, scriptId),
+                session,
+                TestContext.Current.CancellationToken
+            );
+            var ok = new PacketReader(Assert.Single(session.Sent).Payload);
+            Assert.Equal(0u, ok.ReadUInt());
+            Assert.Equal((ulong)scriptId, ok.ReadULong());
+
+            var (_, listedWorks) = await works.GetWorksAsync(
+                user.Id,
+                TestContext.Current.CancellationToken
+            );
+            Assert.True(Assert.Single(listedWorks).Uploaded);
+            var uploads = await shop.GetUploadListAsync(
+                user.Id,
+                TestContext.Current.CancellationToken
+            );
+            var listing = Assert.Single(uploads);
+            Assert.Equal(AdventureListingState.Listed, listing.State);
+            Assert.Equal("Thimbleglow", listing.Title);
+            Assert.Equal(1000, listing.Price);
+
+            // Taking it down frees the work for another upload, which gets a fresh id.
+            Assert.True(
+                await shop.DelistAsync(user.Id, scriptId, TestContext.Current.CancellationToken)
+            );
+            (_, listedWorks) = await works.GetWorksAsync(
+                user.Id,
+                TestContext.Current.CancellationToken
+            );
+            Assert.False(Assert.Single(listedWorks).Uploaded);
+            var again = await shop.BeginUploadAsync(
+                user.Id,
+                1,
+                1,
+                new AdventureListingDraft("Again", "Yomogi", 2, "", 500, true, 100),
+                TestContext.Current.CancellationToken
+            );
+            Assert.NotNull(again);
+            Assert.Equal(scriptId + 1, again.Value.Listing.ScriptId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    private static byte[] ReportBytes(uint report, ushort workId, long scriptId)
+    {
         var writer = new PacketWriter();
-        writer.Write(1u);
-        writer.Write((ushort)7);
-        writer.Write(1729ul);
+        writer.Write(report);
+        writer.Write(workId);
+        writer.Write((ulong)scriptId);
+        return writer.ToBytes();
+    }
 
-        await new AreaAdventureUploadRequestReportHandler(
-            NullLogger<AreaAdventureUploadRequestReportHandler>.Instance
-        ).HandleAsync(writer.ToBytes(), session, TestContext.Current.CancellationToken);
+    [Fact]
+    public async Task UploadRequestReportHandler_FailureDropsThePendingListing()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            var user = await SeedUserAsync(db);
+            var session = new CapturingPlayerSession { UserId = user.Id, CharacterId = 1 };
+            var shop = new AdventureShopRepository(db);
+            await new AreaAdventureWorkCreateHandler(new AdventureWorkRepository(db)).HandleAsync(
+                new byte[] { 1, 0, 0, 0 },
+                session,
+                TestContext.Current.CancellationToken
+            );
+            var started = await shop.BeginUploadAsync(
+                user.Id,
+                1,
+                1,
+                new AdventureListingDraft("T", "A", 0, "", 10, true, 1),
+                TestContext.Current.CancellationToken
+            );
+            Assert.NotNull(started);
+            session.Sent.Clear();
 
-        var reply = Assert.Single(
-            session.Sent,
-            p => p.Type == PacketType.AdventureUploadRequestReportResponse
-        );
-        Assert.Equal(12, reply.Payload.Length);
-        var reader = new PacketReader(reply.Payload);
-        Assert.Equal(0u, reader.ReadUInt());
-        Assert.Equal(1729ul, reader.ReadULong());
+            await new AreaAdventureUploadRequestReportHandler(
+                shop,
+                NullLogger<AreaAdventureUploadRequestReportHandler>.Instance
+            ).HandleAsync(
+                ReportBytes(0, 1, started.Value.Listing.ScriptId),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var reply = Assert.Single(
+                session.Sent,
+                p => p.Type == PacketType.AdventureUploadRequestReportResponse
+            );
+            Assert.Equal(12, reply.Payload.Length);
+            var reader = new PacketReader(reply.Payload);
+            Assert.Equal(0u, reader.ReadUInt());
+            Assert.Equal((ulong)started.Value.Listing.ScriptId, reader.ReadULong());
+            Assert.Empty(db.AdventureListings);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 }

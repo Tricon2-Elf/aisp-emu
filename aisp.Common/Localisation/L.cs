@@ -23,6 +23,8 @@ public static class L
     public static class Adventure
     {
         public static readonly LocKey ShopSalesEmpty = new("adventure.shop.sales_empty");
+        public static readonly LocKey ShopSalesPaid = new("adventure.shop.sales_paid");
+        public static readonly LocKey ShopSalesPending = new("adventure.shop.sales_pending");
     }
 
     public static class Shop

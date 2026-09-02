@@ -150,6 +150,7 @@ public class AreaMyRoomSystemActorTests
                 new NpcRepository(db),
                 new ShopRepository(db),
                 dispatcher,
+                new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
@@ -320,6 +321,7 @@ public class AreaMyRoomSystemActorTests
                 new NpcRepository(db),
                 new ShopRepository(db),
                 dispatcher,
+                new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
@@ -466,6 +468,7 @@ public class AreaMyRoomSystemActorTests
                 new NpcRepository(db),
                 new ShopRepository(db),
                 dispatcher,
+                new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
@@ -505,9 +508,7 @@ public class AreaMyRoomSystemActorTests
                 packet => packet.Type == PacketType.NotifyRoomListOpenEnd
             );
 
-            var pack = session.Sent.Single(packet =>
-                packet.Type == PacketType.NotifyRoomListPack
-            );
+            var pack = session.Sent.Single(packet => packet.Type == PacketType.NotifyRoomListPack);
             var reader = new PacketReader(pack.Payload);
             Assert.Equal(1u, reader.ReadUInt());
             Assert.Equal((uint)db.Rooms.Single().Id, reader.ReadUInt());
@@ -536,6 +537,7 @@ public class AreaMyRoomSystemActorTests
                 new NpcRepository(db),
                 new ShopRepository(db),
                 dispatcher,
+                new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );

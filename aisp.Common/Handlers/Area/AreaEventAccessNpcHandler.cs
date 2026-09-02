@@ -14,6 +14,7 @@ public class AreaEventAccessNpcHandler(
     INpcRepository npcRepository,
     IShopRepository shopRepository,
     ServerScriptDispatcher serverScriptDispatcher,
+    AdventureShopCatalog adventureShopCatalog,
     ITextLocaliser localiser,
     ILogger<AreaEventAccessNpcHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
@@ -172,10 +173,14 @@ public class AreaEventAccessNpcHandler(
             switch (npc.InteractionType)
             {
                 case NpcInteractionType.AdventureShopBuy:
-                    // The client wants the catalog snapshot, not the NPC id; empty until listings exist.
+                    // The client wants the catalog snapshot, not the NPC id.
+                    var snapshot = await adventureShopCatalog.BuildSnapshotAsync(
+                        session.User?.Id ?? session.UserId,
+                        ct
+                    );
                     await session.SendAsync(
                         PacketType.AdventureShopStartedNotify,
-                        new AdventureShopStartedNotify().ToBytes(),
+                        snapshot.ToBytes(),
                         ct
                     );
                     return;

@@ -1,3 +1,4 @@
+using aisp.Common.Config;
 using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
@@ -7,6 +8,7 @@ using aisp.Common.Handlers.Area;
 using aisp.Common.Tests.Support;
 using aisp.Network;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace aisp.Common.Tests;
 
@@ -97,7 +99,9 @@ public sealed class AdventureShopSalesServerScriptTests
         );
         var script = new AdventureShopSalesServerScript(
             serverScriptSession,
-            TestTextLocaliser.English
+            TestTextLocaliser.English,
+            new AdventureShopRepository(db),
+            Options.Create(new ServerOptions())
         );
         return new ServerScriptDispatcher(
             [script],

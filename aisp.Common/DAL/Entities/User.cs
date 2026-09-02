@@ -25,6 +25,9 @@ public class User
     /// <summary>Next drama work id handed out by recv_adventure_work_create_r. Monotonic; ids are never reused.</summary>
     public int NextAdventureWorkId { get; set; } = 1;
 
+    /// <summary>Settled drama disc sales, in デレ (the in-game currency, same unit as <see cref="AiPoints"/>), waiting to be collected from the drama shop's 売上担当 clerk.</summary>
+    public long AdventureSalesBalance { get; set; }
+
     public ICollection<Character> Characters { get; set; } = new List<Character>();
     public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
     public ICollection<UserStorageItem> StorageItems { get; set; } = new List<UserStorageItem>();

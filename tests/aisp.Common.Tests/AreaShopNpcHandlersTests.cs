@@ -889,6 +889,7 @@ public class AreaShopNpcHandlersTests
                 new NpcRepository(runDb),
                 new ShopRepository(runDb),
                 dispatcher,
+                new AdventureShopCatalog(new AdventureShopRepository(runDb)),
                 TestTextLocaliser.English,
                 NullLogger<AreaEventAccessNpcHandler>.Instance
             );
@@ -1069,6 +1070,7 @@ public class AreaShopNpcHandlersTests
             new NpcRepository(db),
             new ShopRepository(db),
             CreateServerScriptDispatcher(db),
+            new AdventureShopCatalog(new AdventureShopRepository(db)),
             TestTextLocaliser.English,
             NullLogger<AreaEventAccessNpcHandler>.Instance
         );
