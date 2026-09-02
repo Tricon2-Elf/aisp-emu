@@ -11,7 +11,12 @@ public sealed class AdventureShopRepositoryTests
 {
     private static async Task<User> SeedUserAsync(MainContext db, string name, long aiPoints = 0)
     {
-        var user = new User { Username = name, AiPoints = aiPoints };
+        var user = new User
+        {
+            Username = name,
+            AiPoints = aiPoints,
+            AdventureSheetStock = 100,
+        };
         user.SetPassword("secret");
         db.Users.Add(user);
         await db.SaveChangesAsync();

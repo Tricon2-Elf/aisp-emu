@@ -546,6 +546,7 @@ public class CmdExecHandler(
         {
             // /advwork <workId> [sheets]: register a drama work the client already has locally, e.g. restored from a
             // backup of user/<uid>/<slot>/work/drama, so it shows up in the editor and 新規作成 can never reuse its id.
+            // The sheets come out of the account's stock like any other work, so this cannot mint any.
             var areaClient = ResolveAreaClient(session);
             if (areaClient == null || areaClient.CharacterId == 0)
             {
@@ -568,18 +569,30 @@ public class CmdExecHandler(
                 && parsedSheets >= 0
             )
                 sheets = parsedSheets;
-            var registered = await adventureWorks.RegisterAsync(
+            var (registered, stock) = await adventureWorks.RegisterAsync(
                 session.User?.Id ?? session.UserId,
                 (int)areaClient.CharacterId,
                 workId,
                 sheets,
                 ct
             );
+            if (registered is null)
+            {
+                await SendSystemNoticeAsync(
+                    session,
+                    $"advwork: could not register work {workId} (stock {stock} sheets)",
+                    ct
+                );
+                return;
+            }
+            await areaClient.SendAsync(
+                PacketType.AdventureUpdatedSheetStackNotify,
+                new AdventureUpdatedSheetStackNotify((uint)stock).ToBytes(),
+                ct
+            );
             await SendSystemNoticeAsync(
                 session,
-                registered is null
-                    ? $"advwork: could not register work {workId}"
-                    : $"advwork: registered work {registered.WorkId} with {registered.Sheets} sheets",
+                $"advwork: registered work {registered.WorkId} with {registered.Sheets} sheets, stock {stock}",
                 ct
             );
             return;

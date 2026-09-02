@@ -18,7 +18,7 @@ public sealed class AdventureShopBuyHandlersTests
         MainContext db
     )
     {
-        var author = new User { Username = "author" };
+        var author = new User { Username = "author", AdventureSheetStock = 100 };
         author.SetPassword("pw");
         var buyer = new User { Username = "buyer", AiPoints = 250 };
         buyer.SetPassword("pw");

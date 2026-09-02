@@ -71,7 +71,7 @@ public sealed class AdventureHttpEndpointsTests
         try
         {
             await using var db = new MainContext(options);
-            var user = new User { Username = "author" };
+            var user = new User { Username = "author", AdventureSheetStock = 100 };
             user.SetPassword("pw");
             db.Users.Add(user);
             await db.SaveChangesAsync();

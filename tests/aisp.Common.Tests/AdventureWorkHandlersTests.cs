@@ -186,7 +186,8 @@ public class AdventureWorkHandlersTests
             var user = await SeedUserAsync(db);
             var repo = new AdventureWorkRepository(db);
 
-            var restored = await repo.RegisterAsync(
+            // The restored work's sheets come out of the stock (20 -> 9).
+            var (restored, afterRestore) = await repo.RegisterAsync(
                 user.Id,
                 1,
                 7,
@@ -196,6 +197,27 @@ public class AdventureWorkHandlersTests
             Assert.NotNull(restored);
             Assert.Equal(7, restored.WorkId);
             Assert.Equal(11, restored.Sheets);
+            Assert.Equal(9, afterRestore);
+
+            // Re-registering with fewer sheets refunds the difference; more than the stock holds is refused.
+            var (shrunk, afterShrink) = await repo.RegisterAsync(
+                user.Id,
+                1,
+                7,
+                5,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal(5, shrunk!.Sheets);
+            Assert.Equal(15, afterShrink);
+            var (refused, unchanged) = await repo.RegisterAsync(
+                user.Id,
+                1,
+                9,
+                16,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(refused);
+            Assert.Equal(15, unchanged);
 
             var (created, stock) = await repo.CreateAsync(
                 user.Id,
@@ -205,7 +227,7 @@ public class AdventureWorkHandlersTests
             );
             Assert.NotNull(created);
             Assert.Equal(8, created.WorkId);
-            Assert.Equal(19, stock);
+            Assert.Equal(14, stock);
         }
         finally
         {

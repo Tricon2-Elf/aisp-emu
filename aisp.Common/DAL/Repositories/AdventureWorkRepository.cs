@@ -36,10 +36,11 @@ public interface IAdventureWorkRepository
 
     /// <summary>
     /// Registers (or updates) a work id the client already holds locally, e.g. a manuscript restored from a backup,
-    /// and moves the id counter past it so recv_adventure_work_create_r can never hand that id out again. Does not
-    /// touch the sheet stock.
+    /// and moves the id counter past it so recv_adventure_work_create_r can never hand that id out again. The
+    /// sheets are accounted like the editor's own moves: the difference to the work's current count is taken from
+    /// the stock (or returned to it), and the call fails when the stock is short. Returns the work and the stock.
     /// </summary>
-    Task<AdventureWork?> RegisterAsync(
+    Task<(AdventureWork? Work, int SheetStock)> RegisterAsync(
         int userId,
         int characterId,
         int workId,
@@ -172,7 +173,7 @@ public sealed class AdventureWorkRepository(MainContext db) : IAdventureWorkRepo
         return (user.AdventureSheetStock, user.AiPoints);
     }
 
-    public async Task<AdventureWork?> RegisterAsync(
+    public async Task<(AdventureWork? Work, int SheetStock)> RegisterAsync(
         int userId,
         int characterId,
         int workId,
@@ -181,14 +182,14 @@ public sealed class AdventureWorkRepository(MainContext db) : IAdventureWorkRepo
     )
     {
         if (workId <= 0 || workId >= ushort.MaxValue || sheets < 0)
-            return null;
+            return (null, 0);
         await using var transaction = await db.Database.BeginTransactionAsync(
             IsolationLevel.Serializable,
             ct
         );
         var user = await db.Users.SingleOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null)
-            return null;
+            return (null, 0);
         var work = await db.AdventureWorks.SingleOrDefaultAsync(
             w => w.UserId == userId && w.WorkId == workId,
             ct
@@ -196,7 +197,7 @@ public sealed class AdventureWorkRepository(MainContext db) : IAdventureWorkRepo
         if (work is null)
         {
             if (await db.AdventureWorks.CountAsync(w => w.UserId == userId, ct) >= MaxWorksPerUser)
-                return null;
+                return (null, user.AdventureSheetStock);
             work = new AdventureWork
             {
                 UserId = userId,
@@ -206,12 +207,16 @@ public sealed class AdventureWorkRepository(MainContext db) : IAdventureWorkRepo
             };
             db.AdventureWorks.Add(work);
         }
+        var delta = sheets - work.Sheets;
+        if (user.AdventureSheetStock - delta < 0)
+            return (null, user.AdventureSheetStock);
         work.Sheets = sheets;
+        user.AdventureSheetStock -= delta;
         if (user.NextAdventureWorkId <= workId)
             user.NextAdventureWorkId = workId + 1;
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
-        return work;
+        return (work, user.AdventureSheetStock);
     }
 
     public async Task<(AdventureWork? Work, int SheetStock)> AdjustSheetsAsync(
