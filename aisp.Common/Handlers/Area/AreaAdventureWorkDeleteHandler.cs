@@ -25,8 +25,8 @@ public sealed class AreaAdventureWorkDeleteHandler(IAdventureWorkRepository work
             request.WorkId,
             ct
         );
-        // The stock push goes first: the client's only stock display reads its stored stock in the tick the
-        // reply releases the window, so a push after the reply races that refresh (verified in the client).
+        // Stock push first: recv_adventure_updated_sheet_stack only writes CAdvMgr+0x1BC. Delete_r rebuilds
+        // the work list and does not paint the 原稿用紙 caption.
         if (removed)
             await session.SendAsync(
                 PacketType.AdventureUpdatedSheetStackNotify,

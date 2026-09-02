@@ -640,9 +640,6 @@ recv_hair_shop_end_r
 recv_hair_shop_ended
 recv_hair_shop_item
 recv_hair_shop_started
-recv_sheet_shop_buy_r
-recv_sheet_shop_end_r
-recv_sheet_shop_start_r
 recv_shop_buy_r
 recv_shop_chara_equip
 recv_shop_end_r
@@ -657,9 +654,6 @@ send_ai_shop_genre_search
 send_ai_shop_ranking_search
 send_ai_shop_remove_all_buy_history
 send_ai_shop_remove_buy_history
-send_sheet_shop_buy
-send_sheet_shop_end
-send_sheet_shop_start
 send_shop_buy
 send_shop_end
 recv_get_obtained_skill_list_r

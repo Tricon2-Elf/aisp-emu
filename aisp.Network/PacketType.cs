@@ -4368,9 +4368,33 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_sheet_shop_start",
+        ImplementationState.Implemented
+    )]
+    SheetShopStartRequest = 0x46EE,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_sheet_shop_buy",
+        ImplementationState.Implemented
+    )]
+    SheetShopBuyRequest = 0x1E92,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_sheet_shop_end",
+        ImplementationState.Implemented
+    )]
+    SheetShopEndRequest = 0xAF54,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_sheet_shop_buy_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     SheetShopBuyResponse = 0x92AB,
 
@@ -4378,7 +4402,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_sheet_shop_end_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     SheetShopEndResponse = 0xAE06,
 
@@ -4386,7 +4410,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_sheet_shop_start_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     SheetShopStartResponse = 0x6F5C,
 

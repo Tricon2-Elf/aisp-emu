@@ -37,7 +37,8 @@ public sealed class AreaAdventureWorkSubSheetHandler(IAdventureWorkRepository wo
             );
             return;
         }
-        // Stock push before the reply: the client refreshes its stock display in the tick the reply arrives.
+        // Stock push before the reply: recv only stores CAdvMgr+0x1BC. Deleted pages replenish stock here;
+        // the caption stays stale until the next local add/remove sheet.
         await session.SendAsync(
             PacketType.AdventureUpdatedSheetStackNotify,
             new AdventureUpdatedSheetStackNotify((uint)stock).ToBytes(),

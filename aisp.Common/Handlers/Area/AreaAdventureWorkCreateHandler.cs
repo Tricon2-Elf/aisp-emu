@@ -36,7 +36,7 @@ public sealed class AreaAdventureWorkCreateHandler(IAdventureWorkRepository work
             );
             return;
         }
-        // Stock push before the reply: the client refreshes its stock display in the tick the reply arrives.
+        // Stock push before the reply: recv only stores CAdvMgr+0x1BC; the caption paints later.
         await session.SendAsync(
             PacketType.AdventureUpdatedSheetStackNotify,
             new AdventureUpdatedSheetStackNotify((uint)stock).ToBytes(),

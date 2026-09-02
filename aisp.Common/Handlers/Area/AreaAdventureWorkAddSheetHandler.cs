@@ -37,7 +37,8 @@ public sealed class AreaAdventureWorkAddSheetHandler(IAdventureWorkRepository wo
             );
             return;
         }
-        // Stock push before the reply: the client refreshes its stock display in the tick the reply arrives.
+        // Stock push before the reply: recv only stores CAdvMgr+0x1BC. The editor caption is 1BC-1C0 and
+        // paints on the next local add/remove sheet, not on this recv.
         await session.SendAsync(
             PacketType.AdventureUpdatedSheetStackNotify,
             new AdventureUpdatedSheetStackNotify((uint)stock).ToBytes(),

@@ -49,6 +49,14 @@ public interface IAdventureWorkRepository
 
     /// <summary>Adds sheets to the account's stock (the shop-bought 原稿用紙). Returns the new stock, or null when the user is unknown.</summary>
     Task<int?> AddSheetsAsync(int userId, int count, CancellationToken ct = default);
+
+    /// <summary>Buys sheets for デレ at the sheet shop. Null when the user is unknown, the count is not positive, the stock would pass <see cref="AdventureWorkRepository.MaxSheetStock"/>, or the purse is short.</summary>
+    Task<(int SheetStock, long AiPoints)?> BuySheetsAsync(
+        int userId,
+        int count,
+        long unitPrice,
+        CancellationToken ct = default
+    );
 }
 
 public sealed class AdventureWorkRepository(MainContext db) : IAdventureWorkRepository
@@ -136,6 +144,35 @@ public sealed class AdventureWorkRepository(MainContext db) : IAdventureWorkRepo
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return (true, user.AdventureSheetStock);
+    }
+
+    /// <summary>The sheet shop window clamps a purchase so the stock stays below 10000.</summary>
+    public const int MaxSheetStock = 9999;
+
+    public async Task<(int SheetStock, long AiPoints)?> BuySheetsAsync(
+        int userId,
+        int count,
+        long unitPrice,
+        CancellationToken ct = default
+    )
+    {
+        if (count <= 0 || unitPrice < 0)
+            return null;
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+        var user = await db.Users.SingleOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return null;
+        var total = checked(unitPrice * count);
+        if (user.AdventureSheetStock + count > MaxSheetStock || user.AiPoints < total)
+            return null;
+        user.AdventureSheetStock += count;
+        user.AiPoints -= total;
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return (user.AdventureSheetStock, user.AiPoints);
     }
 
     public async Task<int?> AddSheetsAsync(int userId, int count, CancellationToken ct = default)

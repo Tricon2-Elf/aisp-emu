@@ -1279,7 +1279,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x7CD2
 - **Packet Size:** 10
-- **Description:** On Result 0 the client creates the local files for WorkId (named 新規作成_NNN) and registers it in list.csv. WorkId is per account and must never be reused: the client overwrites whatever it already has under that id. Preceded by recv_adventure_updated_sheet_stack: the client refreshes its stock display in the tick the reply lands, so the push has to be there first.
+- **Description:** On Result 0 the client creates the local files for WorkId (named 新規作成_NNN) and registers it in list.csv. WorkId is per account and must never be reused: the client overwrites whatever it already has under that id. Preceded by recv_adventure_updated_sheet_stack (stores CAdvMgr+0x1BC only; the editor caption does not paint on this recv).
 
 **Layout:**
 
@@ -1309,7 +1309,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x2083
 - **Packet Size:** 6
-- **Description:** The work's sheets return to the stock; preceded by recv_adventure_updated_sheet_stack.
+- **Description:** Removes the work from the local list (CAdvMgr+0x4ACA50) and rebuilds the list. Does not write sheet stock or paint the 原稿用紙 caption. Preceded by recv_adventure_updated_sheet_stack so +0x1BC already has the returned pages.
 
 **Layout:**
 
@@ -1339,7 +1339,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0xCEF4
 - **Packet Size:** 10
-- **Description:** Delta is the applied count: the client adds it to its local sheet count for WorkId rather than replacing it (verified in the client: the reply handler does `count += sheet`, nothing else). Preceded by recv_adventure_updated_sheet_stack, because the client refreshes its stock display in the tick the reply lands. The editor sends add_sheet on save with the pages added since the last save, then sub_sheet with the pages deleted, never netted; the work-list window sends one of them before 編集 when its local page count differs from the server record.
+- **Description:** Delta is the applied count: the client adds it to its local sheet count for WorkId rather than replacing it (`add [work+0x3C], delta` at 0x4A82F9). It does not touch CAdvMgr+0x1BC or +0x1C0 and does not paint the 原稿用紙 caption. Preceded by recv_adventure_updated_sheet_stack so +0x1BC is already the new stock. Adding a page in the editor increments +0x1C0 immediately (caption = 1BC−1C0) and redraws; deleting a page does not replenish stock until save, when sub_sheet returns pages and 0xABE0 writes +0x1BC. The caption stays stale across save and catches up on the next local add/remove. The editor sends add_sheet on save with the pages added since the last save, then sub_sheet with the pages deleted, never netted; the work-list window sends one of them before 編集 when its local page count differs from the server record.
 
 **Layout:**
 
@@ -1386,12 +1386,98 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0xABE0
 - **Packet Size:** 4
-- **Description:** The account's current 原稿用紙 stock, shown in the drama editor.
+- **Description:** Writes the account's 原稿用紙 stock to CAdvMgr+0x1BC (`mov [ecx+0x1BC], arg` at 0x4A7B40). Does not paint. The editor caption is `+0x1BC − +0x1C0` (getter 0x4A7DA0), redrawn only on local add/remove sheet. +0x1C0 is the reservation for unsaved new pages.
 
 **Layout:**
 
 ```text
     UInt {SheetStock}
+```
+
+## send_sheet_shop_start (SheetShopStartRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x46EE
+- **Packet Size:** 0
+- **Description:** The drama editor's 通販 button (wrapper 0x7A8840). The editor stays open underneath, locked, until the sheet shop window closes.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_sheet_shop_start_r (SheetShopStartResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x6F5C
+- **Packet Size:** 12
+- **Description:** Result 0 opens the 原稿用紙 shop window with the unit price (case 0x7D3B93). The remaining-sheet label comes from the last recv_adventure_updated_sheet_stack and the デレ balance from the money manager, so nothing else is needed. Served from `Server:AdventureSheetPriceAi`.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    Long {SheetPriceAi}  // price of one sheet in デレ
+```
+
+## send_sheet_shop_buy (SheetShopBuyRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x1E92
+- **Packet Size:** 12
+- **Description:** The buy button after its confirm dialog (wrapper 0x7A8B00). The window clamps the count so the stock stays below 10000 and refuses a total above the デレ balance itself; the price field is the unit price it displayed, not the total.
+
+**Layout:**
+
+```text
+    UInt {SheetCount}
+    Long {SheetPriceAi}  // unit price echo
+```
+
+## recv_sheet_shop_buy_r (SheetShopBuyResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x92AB
+- **Packet Size:** 4
+- **Description:** Result only (case 0x7DD0D5). The window redraws its remaining-sheet label, the editor's and the work list's from the stock the last recv_adventure_updated_sheet_stack stored, in the tick this lands, so the emulator sends the stock push and recv_money_updated_aipoint first. Non-zero shows an error dialog (0xFFFFFF83 is the client's own "not enough デレ" code) and keeps the window open.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_sheet_shop_end (SheetShopEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xAF54
+- **Packet Size:** 0
+- **Description:** The sheet shop window's close button (wrapper 0x7A89A0).
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_sheet_shop_end_r (SheetShopEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xAE06
+- **Packet Size:** 4
+- **Description:** Result 0 closes the window and the editor resumes (case 0x7E272B); unlike the drama disc shop there is no ended push. Non-zero leaves it open.
+
+**Layout:**
+
+```text
+    UInt {Result}
 ```
 
 ## send_adventure_start (AdventureStartRequest)
