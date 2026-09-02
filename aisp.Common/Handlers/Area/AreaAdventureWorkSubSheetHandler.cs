@@ -37,14 +37,15 @@ public sealed class AreaAdventureWorkSubSheetHandler(IAdventureWorkRepository wo
             );
             return;
         }
-        await session.SendAsync(
-            ResponseType,
-            new AdventureWorkSheetResponse(0, (ushort)work.WorkId, (uint)delta).ToBytes(),
-            ct
-        );
+        // Stock push before the reply: the client refreshes its stock display in the tick the reply arrives.
         await session.SendAsync(
             PacketType.AdventureUpdatedSheetStackNotify,
             new AdventureUpdatedSheetStackNotify((uint)stock).ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            ResponseType,
+            new AdventureWorkSheetResponse(0, (ushort)work.WorkId, (uint)delta).ToBytes(),
             ct
         );
     }

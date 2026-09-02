@@ -25,16 +25,18 @@ public sealed class AreaAdventureWorkDeleteHandler(IAdventureWorkRepository work
             request.WorkId,
             ct
         );
-        await session.SendAsync(
-            ResponseType,
-            new AdventureWorkDeleteResponse(removed ? 0u : 1u, request.WorkId).ToBytes(),
-            ct
-        );
+        // The stock push goes first: the client's only stock display reads its stored stock in the tick the
+        // reply releases the window, so a push after the reply races that refresh (verified in the client).
         if (removed)
             await session.SendAsync(
                 PacketType.AdventureUpdatedSheetStackNotify,
                 new AdventureUpdatedSheetStackNotify((uint)stock).ToBytes(),
                 ct
             );
+        await session.SendAsync(
+            ResponseType,
+            new AdventureWorkDeleteResponse(removed ? 0u : 1u, request.WorkId).ToBytes(),
+            ct
+        );
     }
 }

@@ -72,18 +72,19 @@ public class AdventureWorkHandlersTests
                 TestContext.Current.CancellationToken
             );
 
-            // recv_adventure_work_create_r: u32 result, u32 sheets, u16 work id; then the stock push.
-            var first = session.Sent[0];
+            // The stock push first (the client refreshes its display when the reply lands), then
+            // recv_adventure_work_create_r: u32 result, u32 sheets, u16 work id.
+            Assert.Equal(PacketType.AdventureUpdatedSheetStackNotify, session.Sent[0].Type);
+            Assert.Equal(19u, new PacketReader(session.Sent[0].Payload).ReadUInt());
+            var first = session.Sent[1];
             Assert.Equal(PacketType.AdventureWorkCreateResponse, first.Type);
             Assert.Equal(10, first.Payload.Length);
             var r = new PacketReader(first.Payload);
             Assert.Equal(0u, r.ReadUInt());
             Assert.Equal(1u, r.ReadUInt());
             Assert.Equal((ushort)1, r.ReadUShort());
-            Assert.Equal(PacketType.AdventureUpdatedSheetStackNotify, session.Sent[1].Type);
-            Assert.Equal(19u, new PacketReader(session.Sent[1].Payload).ReadUInt());
 
-            var second = new PacketReader(session.Sent[2].Payload);
+            var second = new PacketReader(session.Sent[3].Payload);
             second.ReadUInt();
             Assert.Equal(2u, second.ReadUInt());
             Assert.Equal((ushort)2, second.ReadUShort());
@@ -99,7 +100,7 @@ public class AdventureWorkHandlersTests
                 session,
                 TestContext.Current.CancellationToken
             );
-            var third = new PacketReader(session.Sent[^2].Payload);
+            var third = new PacketReader(session.Sent[^1].Payload);
             third.ReadUInt();
             third.ReadUInt();
             Assert.Equal((ushort)3, third.ReadUShort());
@@ -149,12 +150,14 @@ public class AdventureWorkHandlersTests
                 TestContext.Current.CancellationToken
             );
 
-            // recv_adventure_work_add_sheet_r: u32 result, u16 work id, u32 delta (the client adds it, so not the total).
-            var reply = new PacketReader(session.Sent[0].Payload);
+            // Stock push first, then recv_adventure_work_add_sheet_r: u32 result, u16 work id, u32 delta
+            // (the client adds it to its local count, so not the total).
+            Assert.Equal(PacketType.AdventureUpdatedSheetStackNotify, session.Sent[0].Type);
+            Assert.Equal(9u, new PacketReader(session.Sent[0].Payload).ReadUInt());
+            var reply = new PacketReader(session.Sent[1].Payload);
             Assert.Equal(0u, reply.ReadUInt());
             Assert.Equal((ushort)1, reply.ReadUShort());
             Assert.Equal(10u, reply.ReadUInt());
-            Assert.Equal(9u, new PacketReader(session.Sent[1].Payload).ReadUInt());
 
             session.Sent.Clear();
             await add.HandleAsync(

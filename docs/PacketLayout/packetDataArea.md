@@ -1279,7 +1279,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x7CD2
 - **Packet Size:** 10
-- **Description:** On Result 0 the client creates the local files for WorkId (named 新規作成_NNN) and registers it in list.csv. WorkId is per account and must never be reused: the client overwrites whatever it already has under that id. Followed by recv_adventure_updated_sheet_stack.
+- **Description:** On Result 0 the client creates the local files for WorkId (named 新規作成_NNN) and registers it in list.csv. WorkId is per account and must never be reused: the client overwrites whatever it already has under that id. Preceded by recv_adventure_updated_sheet_stack: the client refreshes its stock display in the tick the reply lands, so the push has to be there first.
 
 **Layout:**
 
@@ -1309,7 +1309,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x2083
 - **Packet Size:** 6
-- **Description:** The work's sheets return to the stock; followed by recv_adventure_updated_sheet_stack.
+- **Description:** The work's sheets return to the stock; preceded by recv_adventure_updated_sheet_stack.
 
 **Layout:**
 
@@ -1339,7 +1339,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0xCEF4
 - **Packet Size:** 10
-- **Description:** Delta is the applied count: the client adds it to its local sheet count for WorkId rather than replacing it. Followed by recv_adventure_updated_sheet_stack.
+- **Description:** Delta is the applied count: the client adds it to its local sheet count for WorkId rather than replacing it (verified in the client: the reply handler does `count += sheet`, nothing else). Preceded by recv_adventure_updated_sheet_stack, because the client refreshes its stock display in the tick the reply lands. The editor sends add_sheet on save with the pages added since the last save, then sub_sheet with the pages deleted, never netted; the work-list window sends one of them before 編集 when its local page count differs from the server record.
 
 **Layout:**
 
