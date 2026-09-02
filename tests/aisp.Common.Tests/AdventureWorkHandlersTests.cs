@@ -212,13 +212,13 @@ public class AdventureWorkHandlersTests
     }
 
     [Fact]
-    public async Task Stock_StartsAtZero_AndAddSheetsRaisesIt()
+    public async Task Stock_StartsAtZero_AndBuyingSheetsRaisesIt()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
             await using var db = new MainContext(options);
-            var user = new User { Username = "fresh" };
+            var user = new User { Username = "fresh", AiPoints = 50 };
             user.SetPassword("secret");
             db.Users.Add(user);
             await db.SaveChangesAsync();
@@ -234,8 +234,11 @@ public class AdventureWorkHandlersTests
             Assert.Equal(0, stock);
 
             Assert.Equal(
-                5,
-                await repo.AddSheetsAsync(user.Id, 5, TestContext.Current.CancellationToken)
+                (5, 0L),
+                await repo.BuySheetsAsync(user.Id, 5, 10, TestContext.Current.CancellationToken)
+            );
+            Assert.Null(
+                await repo.BuySheetsAsync(user.Id, 1, 10, TestContext.Current.CancellationToken)
             );
             var (created, after) = await repo.CreateAsync(
                 user.Id,

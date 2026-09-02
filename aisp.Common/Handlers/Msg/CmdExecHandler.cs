@@ -542,44 +542,6 @@ public class CmdExecHandler(
             return;
         }
 
-        if (cmd is "advsheets")
-        {
-            // /advsheets <count>: add 原稿用紙 (manuscript sheets) to the account's stock for the drama editor. On the
-            // original service they were bought in the shop; until that purchase path exists the stock starts at 0.
-            var areaClient = ResolveAreaClient(session);
-            if (areaClient == null || areaClient.CharacterId == 0)
-            {
-                logger.LogWarning("CmdExecHandler: advsheets requires an active area session");
-                return;
-            }
-            if (
-                request.Arguments.Count == 0
-                || !int.TryParse(request.Arguments[0], out var sheetCount)
-                || sheetCount <= 0
-            )
-            {
-                await SendSystemNoticeAsync(session, "usage: /advsheets <count>", ct);
-                return;
-            }
-            var newStock = await adventureWorks.AddSheetsAsync(
-                session.User?.Id ?? session.UserId,
-                Math.Min(sheetCount, 10_000),
-                ct
-            );
-            if (newStock is null)
-            {
-                await SendSystemNoticeAsync(session, "advsheets: no account", ct);
-                return;
-            }
-            await areaClient.SendAsync(
-                PacketType.AdventureUpdatedSheetStackNotify,
-                new AdventureUpdatedSheetStackNotify((uint)newStock.Value).ToBytes(),
-                ct
-            );
-            await SendSystemNoticeAsync(session, $"advsheets: stock is now {newStock.Value}", ct);
-            return;
-        }
-
         if (cmd is "advwork")
         {
             // /advwork <workId> [sheets]: register a drama work the client already has locally, e.g. restored from a
