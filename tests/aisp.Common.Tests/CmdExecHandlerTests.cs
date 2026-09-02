@@ -91,6 +91,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -198,6 +200,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -296,6 +300,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -436,6 +442,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms(["faggot"]),
@@ -667,6 +675,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -743,6 +753,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -821,6 +833,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -891,6 +905,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -979,6 +995,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -1070,6 +1088,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache([itemId]),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -1157,6 +1177,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -1228,6 +1250,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -1355,6 +1379,8 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
@@ -1390,6 +1416,199 @@ public class CmdExecHandlerTests
             await connection.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task ReportCommand_WithNoArgs_SendsUsageNotice()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8001, "report-user", "Reporter", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = CreateReportHandler(options, new SharedState());
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("/report", text, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ReportCommand_WithoutAreaSession_SendsNotInMapNotice()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8001, "report-user", "Reporter", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = CreateReportHandler(options, new SharedState());
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report", "some", "reason"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("map", text, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ReportCommand_WithAreaSession_PersistsTicketWithSnapshots()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var reporter = CreateUserWithCharacter(1, 8001, "reporter", "Reporter", 10990100);
+            var other = CreateUserWithCharacter(2, 8002, "other", "Other", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(reporter, other);
+                db.Maps.Add(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = 0,
+                        SpawnY = 0,
+                        SpawnZ = 0,
+                    }
+                );
+                db.ChatMessages.Add(
+                    new ChatMessage
+                    {
+                        Kind = ChatLogKind.Public,
+                        UserId = other.Id,
+                        CharacterId = 8002,
+                        CharacterName = "Other",
+                        Message = "offensive chat",
+                        MapId = 10990100,
+                        ChannelId = 1,
+                        CreatedAt = DateTime.UtcNow.AddMinutes(-1),
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = reporter,
+                UserId = reporter.Id,
+                Character = reporter.Characters.First(),
+                CharacterId = 8001,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            var otherAreaSession = new CapturingPlayerSession
+            {
+                User = other,
+                UserId = other.Id,
+                Character = other.Characters.First(),
+                CharacterId = 8002,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+            state.RegisterClient(ServerType.Area, otherAreaSession);
+
+            var msgSession = new CapturingPlayerSession { User = reporter, UserId = reporter.Id };
+            var handler = CreateReportHandler(options, state);
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report", "Bob", "is", "being", "racist"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("submitted", text, StringComparison.OrdinalIgnoreCase);
+
+            await using var verifyDb = new MainContext(options);
+            var ticket = Assert.Single(verifyDb.ReportTickets);
+            Assert.Equal("Bob is being racist", ticket.Reason);
+            Assert.Equal("Akihabara", ticket.MapName);
+            Assert.Equal(2, verifyDb.ReportTicketPlayers.Count(x => x.ReportTicketId == ticket.Id));
+            Assert.Single(
+                verifyDb.ReportTicketChatMessages.Where(x => x.ReportTicketId == ticket.Id)
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    private static CmdExecHandler CreateReportHandler(
+        DbContextOptions<MainContext> options,
+        SharedState state
+    ) =>
+        new(
+            state,
+            new MapRepository(new MainContext(options)),
+            new UserRepository(new MainContext(options)),
+            new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            ),
+            new MyRoomRepository(new MainContext(options)),
+            new CircleRepository(new MainContext(options)),
+            new StubItemBaseListCache(),
+            CreateDirectMapLinkTransitionService(options, state),
+            CreateModerationService(options, state),
+            new ChatLogRepository(new MainContext(options)),
+            new ReportTicketRepository(new MainContext(options)),
+            TestTextLocaliser.English,
+            WordFilter.FromTerms([]),
+            NullLogger<CmdExecHandler>.Instance
+        );
 
     private static byte[] BuildCmdExecPayload(string command, params string[] args)
     {

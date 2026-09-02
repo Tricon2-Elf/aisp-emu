@@ -257,6 +257,30 @@
     "zh-Hans": "管理操作失败。",
     "zh-Hant": "管理操作失敗。"
   },
+  "cmd.report.usage": {
+    "ja": "使い方: /report <メッセージ>",
+    "en": "Usage: /report <message>",
+    "zh-Hans": "用法：/report <消息>",
+    "zh-Hant": "用法：/report <訊息>"
+  },
+  "cmd.report.not_in_map": {
+    "ja": "マップ内にいる必要があります。",
+    "en": "You must be in a map to file a report.",
+    "zh-Hans": "你必须在地图内才能提交举报。",
+    "zh-Hant": "你必須在地圖內才能提交檢舉。"
+  },
+  "cmd.report.success": {
+    "ja": "通報を送信しました。スタッフが確認します。",
+    "en": "Your report has been submitted. Staff will review it.",
+    "zh-Hans": "举报已提交，工作人员将进行审核。",
+    "zh-Hant": "檢舉已提交，工作人員將進行審核。"
+  },
+  "cmd.report.failed": {
+    "ja": "通報の送信に失敗しました。",
+    "en": "Failed to submit your report.",
+    "zh-Hans": "举报提交失败。",
+    "zh-Hant": "檢舉提交失敗。"
+  },
   "map.island_title_format": {
     "ja": "{0}島 {1}",
     "en": "{0} Island {1}",

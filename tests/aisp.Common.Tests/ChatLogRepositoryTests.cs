@@ -163,4 +163,81 @@ public sealed class ChatLogRepositoryTests
         Assert.Equal(1, total);
         Assert.Equal("kept", Assert.Single(items).Message);
     }
+
+    [Fact]
+    public async Task ListRecentOnMapAsync_ReturnsOnlyPublicChatOnMapSinceCutoff()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await using var db = new MainContext(options);
+        var repo = new ChatLogRepository(db);
+        var now = DateTime.UtcNow;
+
+        await repo.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Public,
+                UserId = 1,
+                CharacterId = 1,
+                CharacterName = "a",
+                Message = "recent",
+                MapId = 10990100,
+                ChannelId = 1,
+                CreatedAt = now.AddMinutes(-2),
+            },
+            TestContext.Current.CancellationToken
+        );
+        await repo.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Public,
+                UserId = 1,
+                CharacterId = 1,
+                CharacterName = "a",
+                Message = "old",
+                MapId = 10990100,
+                ChannelId = 1,
+                CreatedAt = now.AddMinutes(-10),
+            },
+            TestContext.Current.CancellationToken
+        );
+        await repo.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Circle,
+                UserId = 1,
+                CharacterId = 1,
+                CharacterName = "a",
+                Message = "circle",
+                CircleId = 3,
+                MapId = 10990100,
+                ChannelId = 1,
+                CreatedAt = now.AddMinutes(-1),
+            },
+            TestContext.Current.CancellationToken
+        );
+        await repo.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Public,
+                UserId = 2,
+                CharacterId = 2,
+                CharacterName = "b",
+                Message = "other channel",
+                MapId = 10990100,
+                ChannelId = 2,
+                CreatedAt = now.AddMinutes(-1),
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        var items = await repo.ListRecentOnMapAsync(
+            10990100,
+            1,
+            now.AddMinutes(-5),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Single(items);
+        Assert.Equal("recent", Assert.Single(items).Message);
+    }
 }

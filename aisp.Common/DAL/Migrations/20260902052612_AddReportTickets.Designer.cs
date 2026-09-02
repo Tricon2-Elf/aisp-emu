@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aisp.Common.DAL;
 
@@ -10,46 +11,14 @@ using aisp.Common.DAL;
 namespace aisp.Common.DAL.Migrations
 {
     [DbContext(typeof(MainContext))]
-    partial class MainContextModelSnapshot : ModelSnapshot
+    [Migration("20260902052612_AddReportTickets")]
+    partial class AddReportTickets
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureWork", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("Sheets")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("Uploaded")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("WorkId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "WorkId")
-                        .IsUnique();
-
-                    b.ToTable("AdventureWorks", (string)null);
-                });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Character", b =>
                 {
@@ -916,10 +885,6 @@ namespace aisp.Common.DAL.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ResolutionAction")
-                        .HasMaxLength(1024)
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime?>("ResolvedAt")
                         .HasColumnType("TEXT");
 
@@ -1523,11 +1488,6 @@ namespace aisp.Common.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("AdventureSheetStock")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(0);
-
                     b.Property<long>("AiPoints")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -1564,11 +1524,6 @@ namespace aisp.Common.DAL.Migrations
 
                     b.Property<DateTime?>("LastLoggedInAt")
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("NextAdventureWorkId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(1);
 
                     b.Property<long>("NicoPoints")
                         .ValueGeneratedOnAdd()
@@ -1673,17 +1628,6 @@ namespace aisp.Common.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Worlds");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureWork", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Character", b =>

@@ -47,6 +47,9 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
     public DbSet<LocalisedText> LocalisedTexts => Set<LocalisedText>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<ReportTicket> ReportTickets => Set<ReportTicket>();
+    public DbSet<ReportTicketPlayer> ReportTicketPlayers => Set<ReportTicketPlayer>();
+    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages => Set<ReportTicketChatMessage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -588,6 +591,49 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasIndex(x => new { x.UserId, x.CreatedAt });
             e.HasIndex(x => new { x.Kind, x.CreatedAt });
             e.HasIndex(x => new { x.CircleId, x.CreatedAt });
+            e.HasIndex(x => new { x.MapId, x.ChannelId, x.CreatedAt });
+        });
+
+        b.Entity<ReportTicket>(e =>
+        {
+            e.ToTable("ReportTickets");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ReporterUsername).HasMaxLength(64).IsRequired();
+            e.Property(x => x.ReporterCharacterName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Reason).HasMaxLength(1024).IsRequired();
+            e.Property(x => x.MapName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.ResolutionAction).HasMaxLength(1024);
+            e.Property(x => x.Status).HasConversion<byte>().HasDefaultValue(ReportTicketStatus.Open);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.Status, x.CreatedAt });
+        });
+
+        b.Entity<ReportTicketPlayer>(e =>
+        {
+            e.ToTable("ReportTicketPlayers");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Username).HasMaxLength(64).IsRequired();
+            e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
+            e.HasOne(x => x.ReportTicket)
+                .WithMany(x => x.Players)
+                .HasForeignKey(x => x.ReportTicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ReportTicketId);
+        });
+
+        b.Entity<ReportTicketChatMessage>(e =>
+        {
+            e.ToTable("ReportTicketChatMessages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
+            e.HasOne(x => x.ReportTicket)
+                .WithMany(x => x.ChatMessages)
+                .HasForeignKey(x => x.ReportTicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ReportTicketId);
+            e.HasIndex(x => new { x.ReportTicketId, x.CreatedAt });
         });
     }
 }

@@ -52,4 +52,24 @@ internal sealed class CapturingChatLog : IChatLogRepository
         var removed = Entries.RemoveAll(x => x.CreatedAt < cutoffUtc);
         return Task.FromResult(removed);
     }
+
+    public Task<IReadOnlyList<ChatMessage>> ListRecentOnMapAsync(
+        uint mapId,
+        int channelId,
+        DateTime sinceUtc,
+        CancellationToken ct = default
+    )
+    {
+        var items = Entries
+            .Where(x =>
+                x.Kind == ChatLogKind.Public
+                && x.MapId == mapId
+                && x.ChannelId == channelId
+                && x.CreatedAt >= sinceUtc
+            )
+            .OrderBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<ChatMessage>>(items);
+    }
 }

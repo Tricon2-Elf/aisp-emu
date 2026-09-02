@@ -122,6 +122,10 @@ public static class L
             "cmd.moderation.invalid_ban_duration"
         );
         public static readonly LocKey ModerationFailed = new("cmd.moderation.failed");
+        public static readonly LocKey ReportUsage = new("cmd.report.usage");
+        public static readonly LocKey ReportNotInMap = new("cmd.report.not_in_map");
+        public static readonly LocKey ReportSuccess = new("cmd.report.success");
+        public static readonly LocKey ReportFailed = new("cmd.report.failed");
     }
 
     public static class Equipment

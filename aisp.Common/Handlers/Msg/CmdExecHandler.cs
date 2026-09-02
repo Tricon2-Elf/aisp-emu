@@ -23,6 +23,8 @@ public class CmdExecHandler(
     IItemBaseListCache itemBaseListCache,
     DirectMapLinkTransitionService directMapLinkTransitionService,
     ModerationService moderationService,
+    IChatLogRepository chatLogRepository,
+    IReportTicketRepository reportTicketRepository,
     ITextLocaliser localiser,
     IAdventureWorkRepository adventureWorks,
     IWordFilter wordFilter,
@@ -787,6 +789,12 @@ public class CmdExecHandler(
             return;
         }
 
+        if (cmd is "report")
+        {
+            await HandleReportCommandAsync(session, request.Arguments, ct);
+            return;
+        }
+
         if (cmd is "escape" or "reset")
         {
             var areaClient = ResolveAreaClient(session);
@@ -1022,6 +1030,90 @@ public class CmdExecHandler(
                 : null,
             ct
         );
+    }
+
+    private async Task HandleReportCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (args.Count == 0 || string.IsNullOrWhiteSpace(string.Join(' ', args)))
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.ReportUsage, ct);
+            return;
+        }
+
+        var areaClient = ResolveAreaClient(session);
+        if (areaClient is null)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.ReportNotInMap, ct);
+            return;
+        }
+
+        var reason = string.Join(' ', args).Trim();
+        if (reason.Length > 1024)
+            reason = reason[..1024];
+
+        var user = session.User ?? areaClient.User;
+        var character = areaClient.Character ?? user?.Characters.FirstOrDefault();
+        if (user is null || character is null)
+        {
+            await SendModerationNoticeAsync(session, L.Cmd.ReportFailed, ct);
+            return;
+        }
+
+        var map = await mapRepo.GetByMapIdAsync(areaClient.MapId, ct);
+        var mapName = map?.Name ?? string.Empty;
+        var sinceUtc = DateTime.UtcNow.AddMinutes(-5);
+        var recentChat = await chatLogRepository.ListRecentOnMapAsync(
+            areaClient.MapId,
+            areaClient.ChannelId,
+            sinceUtc,
+            ct
+        );
+        var players = state
+            .GetAreaPeers(areaClient, includeSelf: true)
+            .Select(peer => new ReportTicketPlayerSnapshot(
+                peer.User?.Id ?? peer.UserId,
+                peer.User?.Username ?? string.Empty,
+                (int)peer.CharacterId,
+                peer.Character?.Name ?? string.Empty
+            ))
+            .ToArray();
+
+        try
+        {
+            await reportTicketRepository.CreateAsync(
+                new ReportTicketCreateRequest(
+                    user.Id,
+                    user.Username,
+                    character.Id,
+                    character.Name,
+                    reason,
+                    areaClient.MapId,
+                    areaClient.ChannelId,
+                    mapName,
+                    players,
+                    recentChat
+                        .Select(chat => new ReportTicketChatSnapshot(
+                            chat.CreatedAt,
+                            chat.CharacterId,
+                            chat.CharacterName,
+                            chat.Message,
+                            chat.Rejected
+                        ))
+                        .ToArray()
+                ),
+                ct
+            );
+            await SendModerationNoticeAsync(session, L.Cmd.ReportSuccess, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "CmdExecHandler: failed to create report ticket for user {UserId}", user.Id);
+            await SendModerationNoticeAsync(session, L.Cmd.ReportFailed, ct);
+        }
     }
 
     private static (int? Duration, string? Reason) ParseDurationAndReason(

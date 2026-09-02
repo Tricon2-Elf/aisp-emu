@@ -51,6 +51,9 @@ internal static class PortalApiEndpointsExtensions
                 DisconnectAsync(userId, ServerType.Msg, sessions, ct)
         );
         msg.MapGet("/users/{userId:int}/chat", GetUserChatAsync);
+        msg.MapGet("/reports", ListReportsAsync);
+        msg.MapGet("/reports/{id:long}", GetReportAsync);
+        msg.MapPost("/reports/{id:long}/resolve", ResolveReportAsync);
         area.MapGet("/users/{userId:int}/account", GetAccountAsync);
         area.MapPost("/users/{userId:int}/language", SetPreferredLanguageAsync);
         area.MapPost(
@@ -620,6 +623,125 @@ internal static class PortalApiEndpointsExtensions
             row.ChannelId,
             row.Rejected,
             row.CreatedAt
+        );
+
+    private static async Task<IResult> ListReportsAsync(
+        string? status,
+        int? skip,
+        int? take,
+        IReportTicketRepository reports,
+        CancellationToken ct
+    )
+    {
+        ReportTicketStatus? filter = null;
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            if (!Enum.TryParse<ReportTicketStatus>(status, ignoreCase: true, out var parsed))
+                return TypedResults.BadRequest(new PortalErrorDto("Invalid report status."));
+            filter = parsed;
+        }
+        else
+        {
+            filter = ReportTicketStatus.Open;
+        }
+
+        var pageSize = Math.Clamp(take ?? 50, 1, ReportTicketRepository.MaxPageSize);
+        var offset = Math.Max(skip ?? 0, 0);
+        var (items, total) = await reports.ListAsync(filter, offset, pageSize, ct);
+        return TypedResults.Ok(
+            new PortalReportPageDto(items.Select(MapReportSummary).ToArray(), total)
+        );
+    }
+
+    private static async Task<IResult> GetReportAsync(
+        long id,
+        IReportTicketRepository reports,
+        CancellationToken ct
+    )
+    {
+        var ticket = await reports.GetByIdAsync(id, ct);
+        return ticket is null
+            ? TypedResults.NotFound(new PortalErrorDto("Report not found."))
+            : TypedResults.Ok(MapReportDetail(ticket));
+    }
+
+    private static async Task<IResult> ResolveReportAsync(
+        long id,
+        PortalResolveReportRequest request,
+        IReportTicketRepository reports,
+        CancellationToken ct
+    )
+    {
+        if (request.ActorUserId <= 0)
+            return TypedResults.BadRequest(new PortalErrorDto("Invalid actor user id."));
+
+        var action = request.Action.Trim();
+        if (string.IsNullOrWhiteSpace(action))
+            return TypedResults.BadRequest(new PortalErrorDto("Resolution action is required."));
+        if (action.Length > 1024)
+            return TypedResults.BadRequest(new PortalErrorDto("Resolution action is too long."));
+
+        var resolved = await reports.ResolveAsync(id, request.ActorUserId, action, ct);
+        return resolved
+            ? TypedResults.Ok()
+            : TypedResults.NotFound(new PortalErrorDto("Report not found or already resolved."));
+    }
+
+    private static PortalReportSummaryDto MapReportSummary(ReportTicket ticket)
+    {
+        var preview =
+            ticket.Reason.Length <= 120 ? ticket.Reason : $"{ticket.Reason[..117]}...";
+        return new(
+            ticket.Id,
+            ticket.CreatedAt,
+            ticket.ReporterUserId,
+            ticket.ReporterUsername,
+            ticket.ReporterCharacterId,
+            ticket.ReporterCharacterName,
+            preview,
+            ticket.MapId,
+            ticket.ChannelId,
+            ticket.MapName,
+            ticket.Players.Count,
+            ticket.Status.ToString()
+        );
+    }
+
+    private static PortalReportDetailDto MapReportDetail(ReportTicket ticket) =>
+        new(
+            ticket.Id,
+            ticket.CreatedAt,
+            ticket.Status.ToString(),
+            ticket.ReporterUserId,
+            ticket.ReporterUsername,
+            ticket.ReporterCharacterId,
+            ticket.ReporterCharacterName,
+            ticket.Reason,
+            ticket.MapId,
+            ticket.ChannelId,
+            ticket.MapName,
+            ticket.ResolvedAt,
+            ticket.ResolvedByUserId,
+            ticket.ResolutionAction,
+            ticket
+                .Players.Select(player => new PortalReportPlayerDto(
+                    player.UserId,
+                    player.Username,
+                    player.CharacterId,
+                    player.CharacterName
+                ))
+                .ToArray(),
+            ticket
+                .ChatMessages.OrderByDescending(chat => chat.CreatedAt)
+                .ThenByDescending(chat => chat.Id)
+                .Select(chat => new PortalReportChatMessageDto(
+                    chat.CreatedAt,
+                    chat.CharacterId,
+                    chat.CharacterName,
+                    chat.Message,
+                    chat.Rejected
+                ))
+                .ToArray()
         );
 
     private static PortalAccountDataDto MapAccount(

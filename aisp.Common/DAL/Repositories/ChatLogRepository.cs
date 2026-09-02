@@ -19,6 +19,13 @@ public interface IChatLogRepository
     );
 
     Task<int> PruneOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
+
+    Task<IReadOnlyList<ChatMessage>> ListRecentOnMapAsync(
+        uint mapId,
+        int channelId,
+        DateTime sinceUtc,
+        CancellationToken ct = default
+    );
 }
 
 public sealed class ChatLogRepository(MainContext db) : IChatLogRepository
@@ -70,4 +77,22 @@ public sealed class ChatLogRepository(MainContext db) : IChatLogRepository
 
     public Task<int> PruneOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default) =>
         db.ChatMessages.Where(x => x.CreatedAt < cutoffUtc).ExecuteDeleteAsync(ct);
+
+    public async Task<IReadOnlyList<ChatMessage>> ListRecentOnMapAsync(
+        uint mapId,
+        int channelId,
+        DateTime sinceUtc,
+        CancellationToken ct = default
+    ) =>
+        await db.ChatMessages
+            .AsNoTracking()
+            .Where(x =>
+                x.Kind == ChatLogKind.Public
+                && x.MapId == mapId
+                && x.ChannelId == channelId
+                && x.CreatedAt >= sinceUtc
+            )
+            .OrderBy(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .ToListAsync(ct);
 }

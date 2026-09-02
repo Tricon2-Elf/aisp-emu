@@ -58,6 +58,11 @@ public sealed record PortalSetRoleRequest(int ActorUserId, UserRole Role);
 
 public sealed record PortalActorRequest(int ActorUserId);
 
+public sealed record PortalResolveReportRequest(
+    int ActorUserId,
+    [property: Required, StringLength(1024, MinimumLength = 1)] string Action
+);
+
 public sealed record PortalSetPasswordRequest(
     int ActorUserId,
     [property: Required, StringLength(128, MinimumLength = 8)] string NewPassword,
@@ -185,3 +190,57 @@ public sealed record PortalChatMessageDto(
 );
 
 public sealed record PortalChatPageDto(IReadOnlyList<PortalChatMessageDto> Messages, int Total);
+
+public sealed record PortalReportSummaryDto(
+    long Id,
+    DateTime CreatedAt,
+    int ReporterUserId,
+    string ReporterUsername,
+    int ReporterCharacterId,
+    string ReporterCharacterName,
+    string ReasonPreview,
+    uint MapId,
+    int ChannelId,
+    string MapName,
+    int PlayerCount,
+    string Status
+);
+
+public sealed record PortalReportPageDto(
+    IReadOnlyList<PortalReportSummaryDto> Reports,
+    int Total
+);
+
+public sealed record PortalReportPlayerDto(
+    int UserId,
+    string Username,
+    int CharacterId,
+    string CharacterName
+);
+
+public sealed record PortalReportChatMessageDto(
+    DateTime CreatedAt,
+    int CharacterId,
+    string CharacterName,
+    string Message,
+    bool Rejected
+);
+
+public sealed record PortalReportDetailDto(
+    long Id,
+    DateTime CreatedAt,
+    string Status,
+    int ReporterUserId,
+    string ReporterUsername,
+    int ReporterCharacterId,
+    string ReporterCharacterName,
+    string Reason,
+    uint MapId,
+    int ChannelId,
+    string MapName,
+    DateTime? ResolvedAt,
+    int? ResolvedByUserId,
+    string? ResolutionAction,
+    IReadOnlyList<PortalReportPlayerDto> Players,
+    IReadOnlyList<PortalReportChatMessageDto> ChatMessages
+);

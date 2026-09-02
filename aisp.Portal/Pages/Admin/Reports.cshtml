@@ -1,0 +1,73 @@
+@page "/admin/reports"
+@model aisp.Portal.Pages.Admin.ReportsModel
+@{
+    ViewData["Title"] = "Reports";
+    Layout = "/Pages/Shared/_Layout.cshtml";
+}
+<header class="account-hero gap-3 mb-4">
+    <div>
+        <span class="eyebrow">Administration</span>
+        <h1 class="portal-title mb-1">Player reports</h1>
+        <p class="portal-subtitle mb-0">Review in-game /report tickets submitted by players.</p>
+    </div>
+    <form method="get" class="search-form" role="search">
+        <label class="visually-hidden" for="report-status">Report status</label>
+        <select id="report-status" class="form-select" name="status" aria-label="Report status">
+            <option value="Open" selected="@(Model.Status == "Open" ? "selected" : null)">Open</option>
+            <option value="Resolved" selected="@(Model.Status == "Resolved" ? "selected" : null)">Resolved</option>
+        </select>
+        <button class="btn btn-primary px-3" type="submit">Filter</button>
+    </form>
+</header>
+@if (Model.Reports.Count == 0)
+{
+    <section class="character-card">
+        <p class="empty-state">No @Model.Status.ToLowerInvariant() reports.</p>
+    </section>
+}
+else
+{
+    <section class="data-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Time (UTC)</th>
+                        <th>Reporter</th>
+                        <th>Reason</th>
+                        <th>Map</th>
+                        <th class="pe-4">Players</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var report in Model.Reports)
+                    {
+                        <tr>
+                            <td class="ps-4 text-secondary">@report.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>
+                                <a class="user-link" href="/admin/users/@report.ReporterUserId">@report.ReporterUsername</a>
+                                <span class="text-secondary"> / @report.ReporterCharacterName</span>
+                            </td>
+                            <td><a class="user-link" href="/admin/reports/@report.Id">@report.ReasonPreview</a></td>
+                            <td class="text-secondary">@(string.IsNullOrWhiteSpace(report.MapName) ? $"Map {report.MapId}" : report.MapName) (ch @report.ChannelId)</td>
+                            <td class="pe-4">@report.PlayerCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+<nav class="pagination-bar" aria-label="Report list pagination">
+    <span class="page-indicator">Page @Model.PageNumber · @Model.Total total</span>
+    <div class="d-flex gap-2">
+        @if (Model.PageNumber > 1)
+        {
+            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Reports" asp-route-status="@Model.Status" asp-route-pageNumber="@(Model.PageNumber - 1)">Previous</a>
+        }
+        @if (Model.HasNextPage)
+        {
+            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Reports" asp-route-status="@Model.Status" asp-route-pageNumber="@(Model.PageNumber + 1)">Next</a>
+        }
+    </div>
+</nav>

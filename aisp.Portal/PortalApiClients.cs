@@ -303,6 +303,58 @@ public sealed class MsgPortalApiClient(
                 "The backend returned an empty response."
             );
     }
+
+    public async Task<PortalReportPageDto> GetReportsAsync(
+        string? status,
+        int page,
+        int pageSize,
+        CancellationToken ct
+    )
+    {
+        var skip = Math.Max(page - 1, 0) * pageSize;
+        var statusQuery = string.IsNullOrWhiteSpace(status)
+            ? string.Empty
+            : $"&status={Uri.EscapeDataString(status)}";
+        using var response = await httpClient.GetAsync(
+            $"api/msg/portal/reports?skip={skip}&take={pageSize}{statusQuery}",
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PortalReportPageDto>(cancellationToken: ct)
+            ?? throw new PortalApiException(
+                response.StatusCode,
+                "The backend returned an empty response."
+            );
+    }
+
+    public async Task<PortalReportDetailDto> GetReportAsync(long id, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync($"api/msg/portal/reports/{id}", ct);
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PortalReportDetailDto>(cancellationToken: ct)
+            ?? throw new PortalApiException(
+                response.StatusCode,
+                "The backend returned an empty response."
+            );
+    }
+
+    public async Task ResolveReportAsync(
+        long id,
+        int actorUserId,
+        string action,
+        CancellationToken ct
+    )
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/msg/portal/reports/{id}/resolve",
+            new PortalResolveReportRequest(actorUserId, action),
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+    }
 }
 
 internal static class AuthPortalApiClientError
