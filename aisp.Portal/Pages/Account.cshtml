@@ -243,13 +243,18 @@ else
             </div>
             @foreach (var robo in character.Robos)
             {
+                var resetModalId = $"reset-robo-{character.CharacterId}-{robo.RoboId}";
+                var selectedPersonality = character.CharadollPersonality == "Quiet" ? "Quiet" : "Active";
                 <section class="robo-panel">
                     <div class="section-heading">
                         <div>
                             <span class="eyebrow">Robo</span>
                             <h3>@robo.Name</h3>
                         </div>
-                        <span class="section-count">@robo.Equipment.Count equipped</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="section-count">@robo.Equipment.Count equipped</span>
+                            <button class="btn btn-ghost btn-sm" type="button" data-modal-target="@resetModalId">Reset doll</button>
+                        </div>
                     </div>
                     <p class="robo-stats">Level @robo.Level <span class="px-1">·</span> @robo.Experience.ToString("N0") / @robo.ExperienceToNextLevel.ToString("N0") XP <span class="px-1">·</span> @robo.Personality</p>
                     @if (robo.Equipment.Count == 0)
@@ -270,6 +275,45 @@ else
                         </div>
                     }
                 </section>
+                <dialog id="@resetModalId" class="moderation-modal" aria-labelledby="@(resetModalId)-title">
+                    <form method="post" asp-page-handler="ResetRobo">
+                        <input type="hidden" name="characterId" value="@character.CharacterId" />
+                        <input type="hidden" name="roboId" value="@robo.RoboId" />
+                        <header class="modal-heading">
+                            <div>
+                                <span class="eyebrow">Doll reset</span>
+                                <h2 id="@(resetModalId)-title">Reset @robo.Name?</h2>
+                            </div>
+                            <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
+                        </header>
+                        <div class="modal-content vstack gap-3">
+                            <p class="mb-0">Equipped items return to this character's inventory, starter clothes are reapplied, and the doll's look follows the personality you choose. You will be disconnected from all game servers.</p>
+                            <div>
+                                <label class="form-label" for="@(resetModalId)-name">Doll name</label>
+                                <input id="@(resetModalId)-name" class="form-control" type="text" name="name" value="@robo.Name" maxlength="37" required autocomplete="off" />
+                            </div>
+                            <div>
+                                <label class="form-label" for="@(resetModalId)-personality">Personality</label>
+                                <select id="@(resetModalId)-personality" class="form-select" name="personality" required>
+                                    @if (selectedPersonality == "Active")
+                                    {
+                                        <option value="Active" selected>Active</option>
+                                        <option value="Quiet">Quiet</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="Active">Active</option>
+                                        <option value="Quiet" selected>Quiet</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <footer class="modal-actions">
+                            <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
+                            <button class="btn btn-primary" type="submit">Reset doll</button>
+                        </footer>
+                    </form>
+                </dialog>
             }
         </section>
     }

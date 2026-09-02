@@ -111,6 +111,57 @@ public class AuthenticateHandlerTests
     }
 
     [Fact]
+    public async Task SuccessfulAuth_DropsExistingConnectionsForSameUser()
+    {
+        var user = new User { Id = 3, Username = "alice" };
+        user.SetPassword("ok");
+        user.Language = GameLanguage.English;
+
+        var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
+        userRepo.Setup(r => r.GetByUsernameAsync("alice")).ReturnsAsync(user);
+        userRepo
+            .Setup(r => r.TouchLastLoggedInAsync(3, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var state = new SharedState();
+        var staleAuth = new CapturingPlayerSession { UserId = 3, User = user };
+        var staleMsg = new CapturingPlayerSession { UserId = 3, User = user };
+        var staleArea = new CapturingPlayerSession
+        {
+            UserId = 3,
+            User = user,
+            CharacterId = 30,
+        };
+        state.RegisterClient(ServerType.Auth, staleAuth);
+        state.RegisterClient(ServerType.Msg, staleMsg);
+        state.RegisterClient(ServerType.Area, staleArea);
+
+        var handler = new AuthenticateHandler(
+            userRepo.Object,
+            state,
+            NullLogger<AuthenticateHandler>.Instance
+        );
+        IPacketHandler wire = handler;
+        var session = new CapturingPlayerSession();
+        var w = new PacketWriter();
+        w.Write("alice");
+        w.Write("ok");
+
+        await wire.HandleAsync(w.ToBytes(), session, TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain(
+            state.AuthClients,
+            client => client.ConnectionId == staleAuth.ConnectionId
+        );
+        Assert.DoesNotContain(
+            state.MsgClients,
+            client => client.ConnectionId == staleMsg.ConnectionId
+        );
+        Assert.Contains(state.AreaClients, client => client.ConnectionId == staleArea.ConnectionId);
+        Assert.Contains(state.AuthClients, client => client.ConnectionId == session.ConnectionId);
+    }
+
+    [Fact]
     public async Task BannedUser_SendsAccountBanned_DoesNotSetUser()
     {
         var user = new User

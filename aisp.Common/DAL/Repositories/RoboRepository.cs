@@ -23,6 +23,18 @@ public interface IRoboRepository
         CancellationToken ct = default
     );
     Task UpsertAsync(int characterId, RoboData robo, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns equipped items to character inventory, applies starter clothing, renames the doll,
+    /// and updates character personality plus this doll's model/hairstyle. Returns false if missing.
+    /// </summary>
+    Task<bool> ResetEquipmentAndRenameAsync(
+        int characterId,
+        uint roboId,
+        string name,
+        CharadollPersonality personality,
+        CancellationToken ct = default
+    );
 }
 
 public sealed class RoboRepository(MainContext db) : IRoboRepository
@@ -134,7 +146,10 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             )
                 continue;
 
-            var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                (int)equip.ItemId,
+                storedSocket: (int)equip.SocketBit
+            );
             newBySlot[slotIndex] = socket == 0 ? equip : new ItemEquipEntry(equip.ItemId, socket);
         }
 
@@ -156,7 +171,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
                 new EquippedItemChange(
                     (int)row.ItemId,
                     ItemName: null,
-                    ItemEntityMapper.ResolveBodyspot(row.ItemId)
+                    ItemEntityMapper.ResolveBodyspot((int)row.ItemId, storedSocket: (int)row.Socket)
                 )
             );
         }
@@ -180,7 +195,11 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         {
             var equipItemId = (int)equip.ItemId;
             addedItemsById.TryGetValue(equipItemId, out var item);
-            var socket = ItemEntityMapper.ResolveBodyspot(equipItemId, name: item?.Name);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                equipItemId,
+                storedSocket: item?.Socket ?? (int)equip.SocketBit,
+                name: item?.Name
+            );
             if (socket == 0)
                 socket = equip.SocketBit;
             added.Add(new EquippedItemChange(equipItemId, item?.Name, socket));
@@ -197,12 +216,19 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             )
             .ToDictionaryAsync(i => i.ItemId, ct);
 
-        // Newly equipped pieces must come from inventory (or from pieces removed from this
-        // Robo in the same replace). Unequipped pieces return to the owner's inventory.
+        // Shared wardrobe: pieces may come from bag, from this Robo's removed slots, or from the
+        // owner's currently worn avatar equipment. Client wardrobe UI treats all three as owned.
+        var avatarEquipment = await db
+            .CharacterEquipments.Include(e => e.Item)
+            .Where(e => e.CharacterId == characterId)
+            .ToListAsync(ct);
+
         var availableByItemId = inventoryByItemId.ToDictionary(x => x.Key, x => x.Value.Quantity);
         foreach (var change in removed)
             availableByItemId[change.ItemId] =
                 availableByItemId.GetValueOrDefault(change.ItemId) + 1;
+        foreach (var row in avatarEquipment.Where(e => e.ItemId > 0))
+            availableByItemId[row.ItemId] = availableByItemId.GetValueOrDefault(row.ItemId) + 1;
 
         var requiredByItemId = pendingAdds
             .GroupBy(x => (int)x.Equip.ItemId)
@@ -235,14 +261,44 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             }
         }
 
+        var avatarRemoved = new List<EquippedItemChange>();
         foreach (var (itemId, required) in requiredByItemId)
         {
-            var inventory = inventoryByItemId[itemId];
-            inventory.Quantity -= required;
-            if (inventory.Quantity <= 0)
+            var stillNeeded = required;
+            if (inventoryByItemId.TryGetValue(itemId, out var inventory))
             {
-                db.CharacterInventories.Remove(inventory);
-                inventoryByItemId.Remove(itemId);
+                var take = Math.Min(inventory.Quantity, stillNeeded);
+                inventory.Quantity -= take;
+                stillNeeded -= take;
+                if (inventory.Quantity <= 0)
+                {
+                    db.CharacterInventories.Remove(inventory);
+                    inventoryByItemId.Remove(itemId);
+                }
+            }
+
+            while (stillNeeded > 0)
+            {
+                var avatarRow = avatarEquipment.FirstOrDefault(e => e.ItemId == itemId);
+                if (avatarRow is null)
+                    throw new InvalidOperationException(
+                        $"Character {characterId} does not own required quantity of item {itemId} for Robo {roboId}."
+                    );
+
+                avatarRemoved.Add(
+                    new EquippedItemChange(
+                        avatarRow.ItemId,
+                        avatarRow.Item?.Name,
+                        ItemEntityMapper.ResolveBodyspot(
+                            avatarRow.ItemId,
+                            storedSocket: avatarRow.Item?.Socket ?? 0,
+                            name: avatarRow.Item?.Name
+                        )
+                    )
+                );
+                db.CharacterEquipments.Remove(avatarRow);
+                avatarEquipment.Remove(avatarRow);
+                stillNeeded--;
             }
         }
 
@@ -277,7 +333,8 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
 
         return new RoboEquipReplaceResult(
             ToRoboData(entity),
-            new EquipReplaceResult(removed, added, countsByItemId)
+            new EquipReplaceResult(removed, added, countsByItemId),
+            avatarRemoved
         );
     }
 
@@ -352,6 +409,73 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         entity.UpdatedAt = now;
 
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> ResetEquipmentAndRenameAsync(
+        int characterId,
+        uint roboId,
+        string name,
+        CharadollPersonality personality,
+        CancellationToken ct = default
+    )
+    {
+        if (personality is not (CharadollPersonality.Active or CharadollPersonality.Quiet))
+            throw new ArgumentOutOfRangeException(
+                nameof(personality),
+                personality,
+                "Portal doll reset requires Active or Quiet personality."
+            );
+
+        var entity = await WithDetails(db.Robos)
+            .Include(x => x.Character)
+            .SingleOrDefaultAsync(x => x.CharacterId == characterId && x.RoboId == roboId, ct);
+        if (entity is null)
+            return false;
+
+        var unequippedItemIds = entity
+            .Equipment.Where(row => row.ItemId != 0)
+            .Select(row => (int)row.ItemId)
+            .ToList();
+
+        var inventoryByItemId = await db
+            .CharacterInventories.Where(i =>
+                i.CharacterId == characterId && unequippedItemIds.Contains(i.ItemId)
+            )
+            .ToDictionaryAsync(i => i.ItemId, ct);
+
+        foreach (var itemId in unequippedItemIds)
+        {
+            if (inventoryByItemId.TryGetValue(itemId, out var existingInventory))
+            {
+                existingInventory.Quantity += 1;
+            }
+            else
+            {
+                existingInventory = new CharacterInventory
+                {
+                    CharacterId = characterId,
+                    ItemId = itemId,
+                    Quantity = 1,
+                };
+                db.CharacterInventories.Add(existingInventory);
+                inventoryByItemId[itemId] = existingInventory;
+            }
+        }
+
+        SynchronizeEquipment(
+            entity,
+            DefaultClothingItems.Female.Select(itemId => new ItemSlotInfo((uint)itemId, 0)).ToList()
+        );
+
+        var appearance = CharadollAppearance.Resolve(entity.Character.HomeIslandId, personality);
+        entity.Name = name;
+        entity.ModelId = appearance.ModelId;
+        entity.Hairstyle = appearance.Hairstyle;
+        entity.Character.CharadollPersonality = personality;
+        entity.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     private static IQueryable<Robo> WithDetails(IQueryable<Robo> query)

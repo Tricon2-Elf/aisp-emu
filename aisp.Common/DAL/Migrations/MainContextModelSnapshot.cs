@@ -293,6 +293,58 @@ namespace aisp.Common.DAL.Migrations
                     b.ToTable("CircleMembers", (string)null);
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("RequesterCharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TargetCharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequesterCharacterId", "Status");
+
+                    b.HasIndex("TargetCharacterId", "Status");
+
+                    b.ToTable("FriendRequests", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
+                {
+                    b.Property<int>("CharacterIdLow")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterIdHigh")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("CharacterIdLow", "CharacterIdHigh");
+
+                    b.HasIndex("CharacterIdHigh");
+
+                    b.ToTable("Friendships", (string)null);
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>
                 {
                     b.Property<int>("ItemId")
@@ -1256,6 +1308,12 @@ namespace aisp.Common.DAL.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<byte>("Language")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("PreferredLanguage");
+
                     b.Property<DateTime?>("LastLoggedInAt")
                         .HasColumnType("TEXT");
 
@@ -1269,12 +1327,6 @@ namespace aisp.Common.DAL.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("TEXT")
                         .HasColumnName("PasswordHash");
-
-                    b.Property<byte>("Language")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue((byte)0)
-                        .HasColumnName("PreferredLanguage");
 
                     b.Property<long>("StorageDeposit")
                         .ValueGeneratedOnAdd()
@@ -1493,6 +1545,44 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("Character");
 
                     b.Navigation("Circle");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendRequest", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "RequesterCharacter")
+                        .WithMany()
+                        .HasForeignKey("RequesterCharacterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "TargetCharacter")
+                        .WithMany()
+                        .HasForeignKey("TargetCharacterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RequesterCharacter");
+
+                    b.Navigation("TargetCharacter");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "CharacterHigh")
+                        .WithMany()
+                        .HasForeignKey("CharacterIdHigh")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "CharacterLow")
+                        .WithMany()
+                        .HasForeignKey("CharacterIdLow")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CharacterHigh");
+
+                    b.Navigation("CharacterLow");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>

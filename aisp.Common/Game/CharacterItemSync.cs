@@ -75,6 +75,39 @@ internal static class CharacterItemSync
         }
     }
 
+    /// <summary>
+    /// Pushes a changed bag stack count, e.g. after discard/consume,
+    /// recv_item_update_num while copies remain, recv_item_delete once the stack is gone.
+    /// </summary>
+    public static async Task SendInventoryQuantityAsync(
+        IPlayerSession session,
+        int itemId,
+        int remaining,
+        CancellationToken ct
+    )
+    {
+        var serialId = ResolveSerialId(itemId);
+        if (remaining <= 0)
+        {
+            await session.SendAsync(
+                PacketType.ItemDeleteNotify,
+                new ItemDeleteNotify(PrimaryItemTablePlace, serialId).ToBytes(),
+                ct
+            );
+            return;
+        }
+
+        await session.SendAsync(
+            PacketType.ItemUpdateNumNotify,
+            new ItemUpdateNumNotify(
+                PrimaryItemTablePlace,
+                serialId,
+                (ushort)Math.Min(remaining, ushort.MaxValue)
+            ).ToBytes(),
+            ct
+        );
+    }
+
     public static async Task SyncItemTableQuantityAsync(
         IPlayerSession session,
         uint place,
@@ -126,7 +159,11 @@ internal static class CharacterItemSync
                 continue;
 
             var serialId = ResolveSerialId(equip.ItemId);
-            var socket = ItemEntityMapper.ResolveBodyspot(equip.ItemId, name: equip.Item?.Name);
+            var socket = ItemEntityMapper.ResolveBodyspot(
+                equip.ItemId,
+                storedSocket: equip.Item?.Socket ?? 0,
+                name: equip.Item?.Name
+            );
 
             await session.SendAsync(
                 PacketType.ItemEquippedNotify,

@@ -1,4 +1,5 @@
 using aisp.Common.DAL.Entities;
+using aisp.Network;
 using aisp.Network.Data;
 
 namespace aisp.Common.Game;
@@ -18,6 +19,32 @@ internal enum WardrobeSocketBit : uint
     ShoesPrimary = 512,
     Bra = 1024,
     LowerUnderwear = 2048,
+
+    /// <summary>
+    /// Seed JSON stores accessory attach IDs / window slots, not bitmasks. The client unequips by
+    /// bitwise AND, so those IDs collide with clothing (11 = hat|coat|shirt, 16 = skirt, 51 = hat|coat|skirt|pants).
+    /// </summary>
+    Headband = 1u << 25,
+    Glasses = 1u << 12,
+    Wig = 1u << 13,
+    Necklace = 1u << 14,
+    HairRibbonRight = 1u << 15,
+    HairRibbon = 1u << 16,
+    RightEarring = 1u << 17,
+    LeftEarring = 1u << 18,
+    RightHandbag = 1u << 19,
+    Handheld = 1u << 19,
+    WristPrimary = 1u << 20,
+    WristRibbon = 1u << 21,
+    Armband = 1u << 22,
+    Bracelet = 1u << 23,
+    LeftShoulderBand = 1u << 24,
+    Wings = 1u << 26,
+    LeftShoulderBag = 1u << 26,
+    Tail = 1u << 27,
+    CostumeHead = 1u << 25,
+    HeldItem = 1u << 19,
+    KigurumiHead = 1u << 28,
 }
 
 internal enum WardrobeCategoryId : uint
@@ -51,6 +78,10 @@ internal static class ItemEntityMapper
             var derived = DeriveClothingBodyspot(itemId, name);
             if (derived != (uint)WardrobeSocketBit.None)
                 return derived;
+
+            var accessory = DeriveAccessoryBodyspot(itemId, storedSocket);
+            if (accessory != (uint)WardrobeSocketBit.None)
+                return accessory;
         }
 
         if (storedSocket != 0)
@@ -64,15 +95,24 @@ internal static class ItemEntityMapper
 
     public static uint ResolveBodyspot(uint itemId) => ResolveBodyspot((int)itemId);
 
-    public static uint ResolveEquipSocket(CharacterEquipSlot slot) =>
-        slot.ItemId is >= 10_000_000 and < 200_000_000 ? 0 : ResolveBodyspot((int)slot.ItemId);
+    public static uint ResolveEquipSocket(CharacterEquipSlot slot)
+    {
+        if (slot.ItemId is < 10_000_000 or >= 200_000_000)
+            return ResolveBodyspot((int)slot.ItemId);
+
+        var prefix = slot.ItemId / 100_000;
+        if (prefix is >= 100 and <= 107)
+            return 0;
+
+        return ResolveBodyspot((int)slot.ItemId);
+    }
 
     private static uint DeriveClothingBodyspot(int itemId, string? name)
     {
         return (itemId / 100_000) switch
         {
             100 => (uint)WardrobeSocketBit.Head,
-            101 => (uint)WardrobeSocketBit.UpperBodyLayer3,
+            101 => ResolveUpperBodyBodyspot(name),
             102 => ResolveLowerBodyBodyspot(itemId, name),
             103 => (uint)WardrobeSocketBit.Hands,
             104 => (uint)WardrobeSocketBit.Socks,
@@ -81,6 +121,41 @@ internal static class ItemEntityMapper
             107 => (uint)WardrobeSocketBit.LowerUnderwear,
             _ => (uint)WardrobeSocketBit.None,
         };
+    }
+
+    private static uint DeriveAccessoryBodyspot(int itemId, int storedSocket)
+    {
+        var prefix = itemId / 100_000;
+        if (prefix is >= 100 and <= 107)
+            return (uint)WardrobeSocketBit.None;
+
+        return AccessoryAttachMap.ToSocketBit(itemId, (uint)storedSocket);
+    }
+
+    private static uint ResolveUpperBodyBodyspot(string? name)
+    {
+        // Wiki: 衣装/洋服上１コート, 上２ジャケット, 上３シャツ. Prefix 101 covers all three layers.
+        // Aprons are not on the shirt page; they go over a shirt (coat layer).
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (
+                name.Contains("エプロン", StringComparison.Ordinal)
+                || name.Contains("コート", StringComparison.Ordinal)
+                || name.Contains("白衣", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeSocketBit.UpperBodyLayer1;
+            if (
+                name.Contains("ジャケット", StringComparison.Ordinal)
+                || name.Contains("カーディガン", StringComparison.Ordinal)
+                || name.Contains("ブレザー", StringComparison.Ordinal)
+                || name.Contains("学ラン", StringComparison.Ordinal)
+                || name.Contains("パーカー", StringComparison.Ordinal)
+                || name.Contains("スーツ", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeSocketBit.UpperBodyLayer2;
+        }
+
+        return (uint)WardrobeSocketBit.UpperBodyLayer3;
     }
 
     private static uint ResolveLowerBodyBodyspot(int itemId, string? name)
@@ -165,8 +240,10 @@ internal static class ItemEntityMapper
         if (itemId is < 10_000_000 or >= 200_000_000)
             return (uint)WardrobeCategoryId.None;
 
-        // Furniture catalog IDs are 11xxxxxx; without a Furniture row they still must
-        // not fall into clothing category 0 (hat), or the wardrobe furniture tab stays empty.
+        // Furniture catalog IDs are 11xxxxxx except wardrobe accessory prefixes 112-118 / 122-124.
+        if (IsWardrobeAccessoryPrefix(itemId / 100_000))
+            return (uint)WardrobeCategoryId.Accessory;
+
         if (itemId / 100_000 >= 110)
             return (uint)WardrobeCategoryId.FurnitureFloor;
 
@@ -248,6 +325,9 @@ internal static class ItemEntityMapper
         return (socket, 0);
     }
 
+    private static bool IsWardrobeAccessoryPrefix(int prefix) =>
+        prefix is 108 or 109 or 112 or >= 114 and <= 118 or >= 122 and <= 124;
+
     private static uint ResolveLimitMapKey(int itemId)
     {
         if (itemId is < 10_000_000 or >= 200_000_000)
@@ -256,7 +336,14 @@ internal static class ItemEntityMapper
         var prefix = itemId / 100_000;
         return prefix switch
         {
-            101 or 102 or 103 or 104 or 105 or 106 or 107 => (uint)prefix,
+            100 or 101 or 102 or 103 or 104 or 105 or 106 or 107 or 108 or 109 or 112 or 114
+                or 115
+                or 116
+                or 117
+                or 118
+                or 122
+                or 123
+                or 124 => (uint)prefix,
             _ => 200u,
         };
     }

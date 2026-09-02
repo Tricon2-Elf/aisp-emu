@@ -2,6 +2,9 @@
 
 AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MMO **AISp@ce**. The goal of this project is to recreate the original experience for educational purposes and to keep the game playable after its shutdown.
 
+Test server running at https://aisp.moe/
+Instructions on connecting are on the site
+
 ## Project scope
 
 - Provides a replacement server stack for AISp@ce, implemented in .NET 10.0 with Entity Framework Core and NLog for persistence and logging.

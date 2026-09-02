@@ -7,6 +7,7 @@ using aisp.Common.Tests.Support;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Msg;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace aisp.Common.Tests;
@@ -47,7 +48,8 @@ public class AvatarCreationFlowTests
             );
             var createHandler = new AvatarCreateHandler(
                 NullLogger<AvatarCreateHandler>.Instance,
-                characterRepository
+                characterRepository,
+                WordFilter.FromTerms(Array.Empty<string>())
             );
             var createResponse = await createHandler.HandleAsync(
                 new AvatarCreateRequest
@@ -121,5 +123,143 @@ public class AvatarCreationFlowTests
         Assert.Equal(1u, visual.VisualId);
         Assert.Equal(4, visual.Face);
         Assert.Equal(2_002_031u, visual.Hairstyle);
+    }
+
+    [Fact]
+    public async Task AvatarCreate_RejectsBlockedName_WithoutPersisting()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var user = new User { Username = "blocked-name-user" };
+            user.SetPassword("pw");
+
+            await using (var seedDb = new MainContext(options))
+            {
+                seedDb.Users.Add(user);
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var session = new CapturingPlayerSession
+            {
+                UserId = user.Id,
+                User = new User { Id = user.Id, Username = user.Username },
+            };
+
+            await using var runDb = new MainContext(options);
+            var characterRepository = new CharacterRepository(
+                runDb,
+                NullLogger<CharacterRepository>.Instance
+            );
+            var createHandler = new AvatarCreateHandler(
+                NullLogger<AvatarCreateHandler>.Instance,
+                characterRepository,
+                WordFilter.FromTerms(["faggot"])
+            );
+            var createResponse = await createHandler.HandleAsync(
+                new AvatarCreateRequest
+                {
+                    AvatarName = "Faggot",
+                    modelId = 1_002_011,
+                    visual = new CharaVisual(BloodType.A, 1, 1, 1, 0, 1, 1),
+                    slotId = 0,
+                },
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.NotNull(createResponse);
+            Assert.Equal(1u, new PacketReader(createResponse.ToBytes()).ReadUInt());
+            Assert.Empty(session.User.Characters);
+            Assert.Empty(session.Sent);
+
+            await using var verifyDb = new MainContext(options);
+            Assert.False(
+                await verifyDb.Characters.AnyAsync(
+                    c => c.UserId == user.Id,
+                    TestContext.Current.CancellationToken
+                )
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AvatarCreate_RejectsDuplicateName_WithoutPersisting()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var owner = new User { Username = "name-owner" };
+            owner.SetPassword("pw");
+            var creator = new User { Username = "name-creator" };
+            creator.SetPassword("pw");
+
+            await using (var seedDb = new MainContext(options))
+            {
+                seedDb.Users.Add(owner);
+                seedDb.Users.Add(creator);
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+                seedDb.Characters.Add(new Character { UserId = owner.Id, Name = "Taken Name" });
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var session = new CapturingPlayerSession
+            {
+                UserId = creator.Id,
+                User = new User { Id = creator.Id, Username = creator.Username },
+            };
+
+            await using var runDb = new MainContext(options);
+            var characterRepository = new CharacterRepository(
+                runDb,
+                NullLogger<CharacterRepository>.Instance
+            );
+            var createHandler = new AvatarCreateHandler(
+                NullLogger<AvatarCreateHandler>.Instance,
+                characterRepository,
+                WordFilter.FromTerms(Array.Empty<string>())
+            );
+            var createResponse = await createHandler.HandleAsync(
+                new AvatarCreateRequest
+                {
+                    AvatarName = "Taken Name",
+                    modelId = 1_002_011,
+                    visual = new CharaVisual(BloodType.A, 1, 1, 1, 0, 1, 1),
+                    slotId = 0,
+                },
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.NotNull(createResponse);
+            Assert.Equal(1u, new PacketReader(createResponse.ToBytes()).ReadUInt());
+            Assert.Empty(session.User.Characters);
+            Assert.Empty(session.Sent);
+
+            await using var verifyDb = new MainContext(options);
+            Assert.Equal(
+                1,
+                await verifyDb.Characters.CountAsync(
+                    c => c.Name == "Taken Name",
+                    TestContext.Current.CancellationToken
+                )
+            );
+            Assert.False(
+                await verifyDb.Characters.AnyAsync(
+                    c => c.UserId == creator.Id,
+                    TestContext.Current.CancellationToken
+                )
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
     }
 }

@@ -4,7 +4,7 @@ using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class AvatarSelectHandler : IPacketHandler, IRequiresAuthenticatedSession
+public class AvatarSelectHandler(SharedState state) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarSelectRequest;
     public PacketType ResponseType => PacketType.AvatarSelectResponse;
@@ -16,9 +16,17 @@ public class AvatarSelectHandler : IPacketHandler, IRequiresAuthenticatedSession
         CancellationToken ct = default
     )
     {
-        var cha = session.User!.Characters.FirstOrDefault();
+        var request = AvatarSelectRequest.FromBytes(payload.Span);
+        var characters = session.User!.Characters.OrderBy(c => c.Id).ToList();
+        if (request.SlotId < characters.Count)
+        {
+            var character = characters[(int)request.SlotId];
+            session.CharacterId = (uint)character.Id;
+            session.Character = character;
+            // Refresh presence so circle online lookups see the selected CharacterId.
+            state.RegisterClient(ServerType.Msg, session);
+        }
 
-        var response = new AvatarSelectResponse(0);
-        await session.SendAsync(ResponseType, response.ToBytes(), ct);
+        await session.SendAsync(ResponseType, new AvatarSelectResponse(0).ToBytes(), ct);
     }
 }

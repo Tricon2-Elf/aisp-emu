@@ -91,4 +91,39 @@ public sealed class AccountModel(
 
         return RedirectToPage();
     }
+
+    public async Task<IActionResult> OnPostResetRoboAsync(
+        int characterId,
+        uint roboId,
+        string name,
+        string personality,
+        CancellationToken ct
+    )
+    {
+        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        try
+        {
+            await areaApi.ResetRoboAsync(
+                userId,
+                characterId,
+                roboId,
+                new PortalResetRoboRequest(name, personality),
+                ct
+            );
+            await Task.WhenAll(
+                authApi.DisconnectAsync(userId, ct),
+                msgApi.DisconnectAsync(userId, ct),
+                areaApi.DisconnectAsync(userId, ct)
+            );
+            StatusMessage =
+                "Your doll has been reset. Equipped items were returned to inventory, starter clothes were applied, and you have been disconnected from the game.";
+        }
+        catch (PortalApiException exception)
+        {
+            StatusMessage = exception.Message;
+            StatusIsError = true;
+        }
+
+        return RedirectToPage();
+    }
 }

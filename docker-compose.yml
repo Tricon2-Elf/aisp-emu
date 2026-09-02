@@ -18,6 +18,12 @@ services:
       - Server__PacketChannelCapacity=512
       - Server__MaxReceiveFrameSize=4096
       - Server__ClientReadTimeoutSeconds=300
+      - Server__ClientSendTimeoutSeconds=30
+      - Server__TcpNoDelay=true
+      - Server__TcpKeepAlive=true
+      - Server__TcpKeepAliveIdleSeconds=45
+      - Server__TcpKeepAliveIntervalSeconds=10
+      - Server__TcpKeepAliveRetryCount=3
       - Server__UseDistributedSessionPresence=false
       - IP_OVERRIDE=host.docker.internal
       - Server__DbOptions__ConnectionString=Data Source=/data/main.db;Cache=Shared;Default Timeout=5

@@ -61,10 +61,14 @@ public class LoginHandler(
         session.UserId = userSession.User.Id;
         session.Language = userSession.User.Language;
 
-        var character = userSession.User.Characters.FirstOrDefault();
+        var character = userSession.User.Characters.OrderBy(c => c.Id).FirstOrDefault();
         if (character != null)
+        {
             session.CharacterId = (uint)character.Id;
+            session.Character = character;
+        }
 
+        state.DisconnectOtherConnectionsForUser(session.UserId, session.ConnectionId);
         state.RegisterClient(ServerType.Msg, session);
         if (session.CharacterId != 0)
         {
@@ -92,7 +96,7 @@ public class LoginHandler(
             session.ConnectionId,
             request._userId,
             otp,
-            session.User!.Username
+            session.Character?.Name ?? session.User!.Username
         );
         return new LoginResponse(AuthResponseResult.Success);
     }

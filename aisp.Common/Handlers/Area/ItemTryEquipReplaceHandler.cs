@@ -42,36 +42,107 @@ public class ItemTryEquipReplaceHandler(
         var characterId = checked((int)session.CharacterId);
         var character = await characterRepo.GetByIdAsync(characterId, ct);
 
-        if (request.ObjId == session.CharacterId)
+        try
         {
-            var resolvedEquips = ResolveEquipsForPersistence(request.Equips, character);
-            var normalizedEquips = NormalizeEquips(resolvedEquips);
-            var replaceResult = await characterRepo.ReplaceEquipmentAsync(
-                characterId,
-                resolvedEquips,
-                ct
-            );
-            session.Character = await characterRepo.GetByIdAsync(characterId, ct);
-
-            await SendReplaceSuccessAsync(session, request.ObjId, normalizedEquips, ct);
-            await CharacterItemSync.SendReplaceChangesAsync(session, replaceResult, ct);
-
-            if (session.Character is not null)
+            if (request.ObjId == session.CharacterId)
             {
-                var appearanceNotify = BuildAppearanceNotify(session, session.Character);
-                foreach (var peer in state.GetAreaPeers(session))
-                    await peer.SendAsync(PacketType.AvatarNotifyData, appearanceNotify, ct);
+                var ownedRobos = await roboRepository.GetAllAsync(characterId, ct);
+                await HandleAvatarReplaceAsync(
+                    session,
+                    characterId,
+                    character,
+                    request,
+                    ownedRobos,
+                    ct
+                );
+                return;
             }
 
-            return;
-        }
+            if (!RoboRepository.TryGetRoboId(session.CharacterId, request.ObjId, out var roboId))
+            {
+                await session.SendAsync(
+                    ResponseType,
+                    new ItemTryEquipReplaceResponse(1).ToBytes(),
+                    ct
+                );
+                return;
+            }
 
-        if (!RoboRepository.TryGetRoboId(session.CharacterId, request.ObjId, out var roboId))
+            await HandleRoboReplaceAsync(session, characterId, character, request, roboId, ct);
+        }
+        catch (InvalidOperationException ex)
         {
+            logger.LogWarning(
+                ex,
+                "ItemTryEquipReplace rejected for client {ConnectionId} objId={ObjId}",
+                session.ConnectionId,
+                request.ObjId
+            );
             await session.SendAsync(ResponseType, new ItemTryEquipReplaceResponse(1).ToBytes(), ct);
-            return;
+        }
+    }
+
+    private async Task HandleAvatarReplaceAsync(
+        IPlayerSession session,
+        int characterId,
+        Character? character,
+        ItemTryEquipReplaceRequest request,
+        IReadOnlyList<RoboData> ownedRobos,
+        CancellationToken ct
+    )
+    {
+        var resolvedEquips = ResolveEquipsForPersistence(
+            request.Equips,
+            character,
+            extraOwnedItemIds: ownedRobos
+                .SelectMany(r => r.Character.Equips)
+                .Select(e => (int)e.ItemId)
+                .Where(id => id > 0)
+        );
+        var normalizedEquips = NormalizeEquips(resolvedEquips);
+        var replaceResult = await characterRepo.ReplaceEquipmentAsync(
+            characterId,
+            resolvedEquips,
+            ct
+        );
+        session.Character = await characterRepo.GetByIdAsync(characterId, ct);
+
+        await SendReplaceSuccessAsync(session, request.ObjId, normalizedEquips, ct);
+        await CharacterItemSync.SendReplaceChangesAsync(session, replaceResult, ct);
+
+        if (session.Character is not null)
+        {
+            var appearanceNotify = BuildAppearanceNotify(session, session.Character);
+            foreach (var peer in state.GetAreaPeers(session))
+                await peer.SendAsync(PacketType.AvatarNotifyData, appearanceNotify, ct);
         }
 
+        foreach (var updatedRoboId in replaceResult.RoboIdsWithEquipmentChanges)
+        {
+            var updatedRobo = await roboRepository.GetAsync(characterId, updatedRoboId, ct);
+            if (updatedRobo is null)
+                continue;
+
+            var objectId = RoboRepository.GetObjectId(session.CharacterId, updatedRoboId);
+            var update = new NotifyUpdateRoboEquip(
+                updatedRoboId,
+                objectId,
+                TryEquipNotifyBuilder.FromRobo(updatedRobo)
+            ).ToBytes();
+            foreach (var peer in state.GetAreaPeers(session, includeSelf: true))
+                await peer.SendAsync(PacketType.NotifyUpdateRoboEquip, update, ct);
+        }
+    }
+
+    private async Task HandleRoboReplaceAsync(
+        IPlayerSession session,
+        int characterId,
+        Character? character,
+        ItemTryEquipReplaceRequest request,
+        uint roboId,
+        CancellationToken ct
+    )
+    {
         var existingRobo = await roboRepository.GetAsync(characterId, roboId, ct);
         if (existingRobo is null)
         {
@@ -104,6 +175,31 @@ public class ItemTryEquipReplaceHandler(
             ct
         );
 
+        if (roboReplace.AvatarRemoved.Count > 0)
+        {
+            // Pieces moved avatar → doll: strip from avatar UI without bumping bag counts.
+            foreach (var removed in roboReplace.AvatarRemoved)
+            {
+                await session.SendAsync(
+                    PacketType.ItemRemovedNotify,
+                    new ItemRemovedNotify(
+                        session.CharacterId,
+                        CharacterItemSync.ResolveSerialId(removed.ItemId),
+                        removed.SocketBit
+                    ).ToBytes(),
+                    ct
+                );
+            }
+
+            session.Character = await characterRepo.GetByIdAsync(characterId, ct);
+            if (session.Character is not null)
+            {
+                var appearanceNotify = BuildAppearanceNotify(session, session.Character);
+                foreach (var peer in state.GetAreaPeers(session, includeSelf: true))
+                    await peer.SendAsync(PacketType.AvatarNotifyData, appearanceNotify, ct);
+            }
+        }
+
         var update = new NotifyUpdateRoboEquip(
             roboId,
             request.ObjId,
@@ -118,7 +214,10 @@ public class ItemTryEquipReplaceHandler(
         return equips
             .Select(e =>
             {
-                var socket = ItemEntityMapper.ResolveBodyspot((int)e.ItemId);
+                var socket = ItemEntityMapper.ResolveBodyspot(
+                    (int)e.ItemId,
+                    storedSocket: (int)e.SocketBit
+                );
                 if (socket == 0)
                     socket = e.SocketBit;
                 return new ItemEquipEntry(e.ItemId, socket);
@@ -148,7 +247,8 @@ public class ItemTryEquipReplaceHandler(
     private static IReadOnlyList<ItemEquipEntry> ResolveEquipsForPersistence(
         IReadOnlyList<ItemEquipEntry> equips,
         Character? character,
-        RoboData? robo = null
+        RoboData? robo = null,
+        IEnumerable<int>? extraOwnedItemIds = null
     )
     {
         if (equips.Count == 0)
@@ -167,6 +267,9 @@ public class ItemTryEquipReplaceHandler(
                 robo.Character.Equips.Select(x => (int)x.ItemId).Where(id => id > 0)
             );
         }
+
+        if (extraOwnedItemIds is not null)
+            ownedItemIds.AddRange(extraOwnedItemIds);
 
         ownedItemIds = ownedItemIds.Where(x => x > 0).Distinct().ToList();
         if (ownedItemIds.Count == 0)

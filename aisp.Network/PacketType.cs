@@ -1089,7 +1089,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_open_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailOpenRequest = 0x1292,
 
@@ -1097,7 +1097,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_open_mail_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailOpenResponse = 0xDF76,
 
@@ -1105,7 +1105,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_post_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailPostRequest = 0x34BC,
 
@@ -1113,7 +1113,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_post_mail_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailPostResponse = 0x2306,
 
@@ -1707,13 +1707,13 @@ public enum PacketType : ushort
         "recv_trashbox_close_r",
         ImplementationState.Implemented
     )]
-    TrashboxCloseResponse = 0x9A7E,
+    TrashboxCloseResponse = 0x9ABE,
 
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_trashbox_discard_item",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     TrashboxDiscardItemRequest = 0xB18E,
 
@@ -1721,7 +1721,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_trashbox_discard_item_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     TrashboxDiscardItemResponse = 0xBBEB,
 
@@ -1776,10 +1776,26 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
-        "send_friend_link_tag_get_other",
+        "send_request_add_friend_list",
         ImplementationState.Implemented
     )]
-    FriendLinkTagGetOtherRequest = 0xC9D8,
+    RequestAddFriendListRequest = 0xC9D8,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_request_add_friend_list_r",
+        ImplementationState.Implemented
+    )]
+    RequestAddFriendListResponse = 0x24D8,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_request_add_friend_list_cancel",
+        ImplementationState.Implemented
+    )]
+    RequestAddFriendListCancelRequest = 0x6827,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2316,7 +2332,7 @@ public enum PacketType : ushort
         "recv_close_aipower_window_r",
         ImplementationState.NotImplemented
     )]
-    CloseAiPowerWindowResponse = 0x6EE1,
+    CloseAiPowerWindowResponse = 0x6B53,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2856,6 +2872,22 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_item_discard",
+        ImplementationState.Implemented
+    )]
+    ItemDiscardRequest = 0xED61,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_item_discard_r",
+        ImplementationState.Implemented
+    )]
+    ItemDiscardResponse = 0x2546,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_item_delete",
         ImplementationState.Implemented
@@ -2954,7 +2986,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_item_update_num",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     ItemUpdateNumNotify = 0x05F8,
 
@@ -3234,9 +3266,25 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_add_friend_list_result",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyAddFriendListResult = 0xE04C,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_friend_list_avatar_login",
+        ImplementationState.Implemented
+    )]
+    NotifyFriendListAvatarLogin = 0xECF5,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_friend_list_avatar_logout",
+        ImplementationState.Implemented
+    )]
+    NotifyFriendListAvatarLogout = 0xE672,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -3698,7 +3746,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_new_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyNewMail = 0x61A8,
 
@@ -3810,7 +3858,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_request_friend_list",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRequestFriendList = 0xABE6,
 
@@ -3818,7 +3866,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_request_friend_list_cancel",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRequestFriendListCancel = 0x54D6,
 
@@ -3858,7 +3906,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_room_list_open_start",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoomListOpenStart = 0xA5BA,
 
@@ -3866,7 +3914,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_room_list_open_end",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoomListOpenEnd = 0xDC32,
 
@@ -3874,7 +3922,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_room_list_pack",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyRoomListPack = 0xC0B2,
 
@@ -5154,7 +5202,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_request_friend_list_answer",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     RequestFriendListAnswerRequest = 0xC42A,
 

@@ -521,6 +521,206 @@ public class ItemTryEquipReplaceHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_RoboTargetCanEquipItemCurrentlyWornByAvatar()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            const int characterId = 12005;
+            const int avatarTopId = 10100220;
+            var roboObjectId = RoboRepository.GetObjectId(characterId, 1);
+
+            await TestDb.SeedCharacterAsync(
+                options,
+                characterId,
+                TestContext.Current.CancellationToken
+            );
+            await using (var db = new MainContext(options))
+            {
+                db.Items.Add(
+                    new Item
+                    {
+                        Id = avatarTopId,
+                        Name = "Shared Top",
+                        Socket = 8,
+                    }
+                );
+                db.CharacterEquipments.Add(
+                    new CharacterEquipment
+                    {
+                        CharacterId = characterId,
+                        SlotIndex = 0,
+                        ItemId = avatarTopId,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+                var roboCharacter = new CharaData(roboObjectId, 1002011, "Shared Wardrobe Robo");
+                await new RoboRepository(db).UpsertAsync(
+                    characterId,
+                    new RoboData(1, roboCharacter) { OwnerAvatarId = characterId },
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            var state = new SharedState();
+            var actor = new CapturingPlayerSession
+            {
+                CharacterId = characterId,
+                MapId = 20000000,
+                MyRoomId = characterId,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, actor);
+
+            var handler = new ItemTryEquipReplaceHandler(
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new RoboRepository(new MainContext(options)),
+                state,
+                NullLogger<ItemTryEquipReplaceHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildReplaceRequestPayload(roboObjectId, [new ItemEquipEntry(avatarTopId, 8)]),
+                actor,
+                TestContext.Current.CancellationToken
+            );
+
+            await using (var verificationDb = new MainContext(options))
+            {
+                Assert.False(
+                    await verificationDb.CharacterEquipments.AnyAsync(
+                        e => e.CharacterId == characterId,
+                        TestContext.Current.CancellationToken
+                    )
+                );
+
+                var storedRobo = await new RoboRepository(verificationDb).GetAsync(
+                    characterId,
+                    1,
+                    TestContext.Current.CancellationToken
+                );
+                Assert.NotNull(storedRobo);
+                Assert.Equal((uint)avatarTopId, storedRobo.Character.Equips[0].ItemId);
+
+                Assert.False(
+                    await verificationDb.CharacterInventories.AnyAsync(
+                        i => i.CharacterId == characterId && i.ItemId == avatarTopId,
+                        TestContext.Current.CancellationToken
+                    )
+                );
+            }
+
+            Assert.Contains(
+                actor.Sent,
+                packet => packet.Type == PacketType.ItemTryEquipReplaceResponse
+            );
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemRemovedNotify);
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.AvatarNotifyData);
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.NotifyUpdateRoboEquip);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task HandleAsync_AvatarTargetCanEquipItemCurrentlyWornByRobo()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            const int characterId = 12006;
+            const int roboTopId = 10100220;
+            var roboObjectId = RoboRepository.GetObjectId(characterId, 1);
+
+            await TestDb.SeedCharacterAsync(
+                options,
+                characterId,
+                TestContext.Current.CancellationToken
+            );
+            await using (var db = new MainContext(options))
+            {
+                db.Items.Add(
+                    new Item
+                    {
+                        Id = roboTopId,
+                        Name = "Robo Shared Top",
+                        Socket = 8,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+                var roboCharacter = new CharaData(roboObjectId, 1002011, "Donor Robo");
+                roboCharacter.AddEquip((uint)roboTopId, 8);
+                await new RoboRepository(db).UpsertAsync(
+                    characterId,
+                    new RoboData(1, roboCharacter) { OwnerAvatarId = characterId },
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            var state = new SharedState();
+            var actor = new CapturingPlayerSession
+            {
+                CharacterId = characterId,
+                MapId = 20000000,
+                MyRoomId = characterId,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, actor);
+
+            var handler = new ItemTryEquipReplaceHandler(
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new RoboRepository(new MainContext(options)),
+                state,
+                NullLogger<ItemTryEquipReplaceHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildReplaceRequestPayload(
+                    (uint)characterId,
+                    [new ItemEquipEntry((uint)roboTopId, 8)]
+                ),
+                actor,
+                TestContext.Current.CancellationToken
+            );
+
+            await using (var verificationDb = new MainContext(options))
+            {
+                Assert.Equal(
+                    roboTopId,
+                    await verificationDb
+                        .CharacterEquipments.Where(e => e.CharacterId == characterId)
+                        .Select(e => e.ItemId)
+                        .SingleAsync(TestContext.Current.CancellationToken)
+                );
+
+                var storedRobo = await new RoboRepository(verificationDb).GetAsync(
+                    characterId,
+                    1,
+                    TestContext.Current.CancellationToken
+                );
+                Assert.NotNull(storedRobo);
+                Assert.All(storedRobo.Character.Equips, equip => Assert.Equal(0u, equip.ItemId));
+            }
+
+            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.NotifyUpdateRoboEquip);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task Reset_RoboTargetRestoresPersistedRoboEquipment()
     {
         const uint characterId = 42;

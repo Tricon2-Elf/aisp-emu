@@ -46,10 +46,13 @@ public sealed class AuthPortalApiClient(
         string? search,
         int page,
         int pageSize,
+        bool all,
         CancellationToken ct
     )
     {
-        var query = $"api/auth/portal/users?skip={(page - 1) * pageSize}&take={pageSize}";
+        var query = all
+            ? "api/auth/portal/users?all=true"
+            : $"api/auth/portal/users?skip={(page - 1) * pageSize}&take={pageSize}";
         if (!string.IsNullOrWhiteSpace(search))
             query += $"&search={Uri.EscapeDataString(search)}";
         return await GetAsync<PortalUserPageDto>(query, ct);
@@ -161,17 +164,41 @@ public sealed class AreaPortalApiClient(
             throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
     }
 
+    public async Task ResetRoboAsync(
+        int userId,
+        int characterId,
+        uint roboId,
+        PortalResetRoboRequest request,
+        CancellationToken ct
+    )
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/area/portal/users/{userId}/characters/{characterId}/robos/{roboId}/reset",
+            request,
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+    }
+
     public async Task<IReadOnlyList<PortalCharacterRoboSummaryDto>> GetSummariesAsync(
         IReadOnlyList<int> userIds,
         CancellationToken ct
     )
     {
-        using var response = await httpClient.PostAsJsonAsync(
-            "api/area/portal/users/summaries",
-            new PortalUserIdsRequest(userIds),
-            ct
-        );
-        return await ReadAsync<IReadOnlyList<PortalCharacterRoboSummaryDto>>(response, ct);
+        var summaries = new List<PortalCharacterRoboSummaryDto>(userIds.Count);
+        foreach (var batch in userIds.Distinct().Chunk(100))
+        {
+            using var response = await httpClient.PostAsJsonAsync(
+                "api/area/portal/users/summaries",
+                new PortalUserIdsRequest(batch),
+                ct
+            );
+            summaries.AddRange(
+                await ReadAsync<IReadOnlyList<PortalCharacterRoboSummaryDto>>(response, ct)
+            );
+        }
+        return summaries;
     }
 
     public async Task<PortalDisconnectResultDto> DisconnectAsync(int userId, CancellationToken ct)

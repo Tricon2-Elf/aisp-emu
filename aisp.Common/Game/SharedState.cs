@@ -68,6 +68,32 @@ public class SharedState
     public bool TryGetSession(Guid connectionId, out IPlayerSession? session) =>
         _sessionStore.TryGetSession(connectionId, out session);
 
+    /// <summary>
+    /// Drops every Auth/Msg/Area socket for this user except <paramref name="exceptConnectionId"/>.
+    /// Used on relogin so a half-open connection cannot keep a client-handler slot.
+    /// </summary>
+    public void DisconnectOtherConnectionsForUser(int userId, Guid exceptConnectionId)
+    {
+        if (userId <= 0)
+            return;
+
+        List<(ServerType Type, IPlayerSession Session)> stale = [];
+        foreach (var serverType in (ServerType[])[ServerType.Auth, ServerType.Msg])
+        {
+            foreach (var existing in GetServerClients(serverType))
+            {
+                if (existing.ConnectionId == exceptConnectionId)
+                    continue;
+                if (!BelongsToUser(existing, userId))
+                    continue;
+                stale.Add((serverType, existing));
+            }
+        }
+
+        foreach (var (serverType, existing) in stale)
+            CloseAndUnregister(serverType, existing);
+    }
+
     public void RegisterClient(ServerType serverType, IPlayerSession session)
     {
         CloseSupersededClients(serverType, session);
@@ -235,6 +261,15 @@ public class SharedState
         if (peers.Count == 0)
             return;
 
+        await NotifyDisappearToPeersAsync(session, peers, ct);
+    }
+
+    private static async Task NotifyDisappearToPeersAsync(
+        IPlayerSession session,
+        IReadOnlyList<IPlayerSession> peers,
+        CancellationToken ct = default
+    )
+    {
         var payload = new NotifyDisappearChara(session.CharacterId).ToBytes();
         foreach (var peer in peers)
         {
@@ -350,13 +385,31 @@ public class SharedState
             if (!ShouldSupersede(serverType, existing, session))
                 continue;
 
-            if (existing is PlayerSession playerSession)
-            {
-                UnregisterClient(serverType, playerSession.ConnectionId);
-                playerSession.ClientConnection.Dispose();
-            }
+            CloseAndUnregister(serverType, existing);
         }
     }
+
+    private void CloseAndUnregister(ServerType serverType, IPlayerSession existing)
+    {
+        IReadOnlyList<IPlayerSession>? disappearPeers = null;
+        if (serverType == ServerType.Area && existing.CharacterId != 0)
+            disappearPeers = GetAreaPeers(existing);
+
+        UnregisterClient(serverType, existing.ConnectionId);
+        if (existing is PlayerSession playerSession)
+            playerSession.ClientConnection.Dispose();
+
+        if (disappearPeers is { Count: > 0 })
+            _ = NotifyDisappearToPeersAsync(existing, disappearPeers);
+    }
+
+    private static bool BelongsToUser(IPlayerSession session, int userId) =>
+        userId > 0
+        && (
+            session.UserId == userId
+            || session.User?.Id == userId
+            || session.Character?.UserId == userId
+        );
 
     private static bool ShouldSupersede(
         ServerType serverType,

@@ -30,9 +30,9 @@ public class CircleGetDataHandler(ICircleRepository circles, SharedState state)
             .. memberships.Select(m => (circles.ToCircleData(m.Circle), m.AuthLevel)),
         ];
 
+        await session.SendAsync(ResponseType, new CircleGetDataResponse(0, list).ToBytes(), ct);
+
         foreach (var (circle, _) in memberships)
             await CircleNotifyHelper.SendRosterAsync(circles, state, circle.Id, ct);
-
-        await session.SendAsync(ResponseType, new CircleGetDataResponse(0, list).ToBytes(), ct);
     }
 }

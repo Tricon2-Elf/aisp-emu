@@ -42,7 +42,7 @@ public static class CircleNotifyHelper
                 members.Select(m => m.CharacterId)
             )
         )
-            await client.SendAsync(PacketType.CircleNotifyMember, payload, ct);
+            _ = client.SendAsync(PacketType.CircleNotifyMember, payload, ct);
     }
 
     public static async Task NotifyMembersAsync(
@@ -60,7 +60,7 @@ public static class CircleNotifyHelper
             .Select(m => m.CharacterId)
             .Where(id => excludeCharacterId is null || id != excludeCharacterId.Value);
         foreach (var client in state.GetOnlineMsgClientsByCharacterIds(ids))
-            await client.SendAsync(type, payload, ct);
+            _ = client.SendAsync(type, payload, ct);
     }
 
     public static async Task NotifyMemberLoginAsync(
@@ -86,6 +86,9 @@ public static class CircleNotifyHelper
                 ct,
                 excludeCharacterId: characterId
             );
+            // Refresh roster (names + already_login) for every online member, including the
+            // logging-in client who otherwise only learns about peers via later GetData.
+            await SendRosterAsync(circles, state, circle.Id, ct);
         }
     }
 

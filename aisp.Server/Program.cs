@@ -76,6 +76,7 @@ internal class Program
         builder.Services.AddScoped<IRoboRepository, RoboRepository>();
         builder.Services.AddScoped<IMyRoomRepository, MyRoomRepository>();
         builder.Services.AddScoped<ICircleRepository, CircleRepository>();
+        builder.Services.AddScoped<IFriendRepository, FriendRepository>();
         builder.Services.AddScoped<INicotvRepository, NicotvRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
@@ -89,6 +90,7 @@ internal class Program
             PendingMapTransferRepository
         >();
         builder.Services.AddScoped<DirectMapLinkTransitionService>();
+        builder.Services.AddScoped<RoomListService>();
         builder.Services.AddScoped<ClientScriptSegmentRunner>();
         builder.Services.AddScoped<ServerScriptSession>();
         builder.Services.Scan(scan =>
@@ -100,6 +102,7 @@ internal class Program
         );
         builder.Services.AddScoped<ServerScriptDispatcher>();
         builder.Services.AddSingleton<ITextLocaliser, TextLocaliser>();
+        builder.Services.AddSingleton<IWordFilter, WordFilter>();
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
         builder.Services.AddSingleton<SharedState>(sp =>
         {
@@ -262,7 +265,9 @@ internal class Program
                 o.MaxConcurrentClients,
                 o.PacketChannelCapacity,
                 o.MaxReceiveFrameSize,
-                o.ClientReadTimeoutSeconds
+                o.ClientReadTimeoutSeconds,
+                o.ClientSendTimeoutSeconds,
+                o.ToTcpSocketOptions()
             );
         }
 

@@ -1,5 +1,6 @@
 using aisp.Common;
 using aisp.Common.Game;
+using aisp.Network;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -14,7 +15,9 @@ public sealed record GameServerContext(
     int MaxConcurrentClients,
     int PacketChannelCapacity,
     int MaxReceiveFrameSize,
-    int ClientReadTimeoutSeconds
+    int ClientReadTimeoutSeconds,
+    int ClientSendTimeoutSeconds,
+    TcpSocketOptions TcpSocketOptions
 )
 {
     public static GameServerContext Create(
@@ -22,7 +25,9 @@ public sealed record GameServerContext(
         int maxConcurrentClients,
         int packetChannelCapacity,
         int maxReceiveFrameSize,
-        int clientReadTimeoutSeconds
+        int clientReadTimeoutSeconds,
+        int clientSendTimeoutSeconds,
+        TcpSocketOptions? tcpSocketOptions = null
     ) =>
         new(
             services.GetRequiredService<ILoggerFactory>(),
@@ -33,6 +38,8 @@ public sealed record GameServerContext(
             maxConcurrentClients,
             packetChannelCapacity,
             maxReceiveFrameSize,
-            clientReadTimeoutSeconds
+            clientReadTimeoutSeconds,
+            clientSendTimeoutSeconds,
+            tcpSocketOptions ?? TcpSocketOptions.Default
         );
 }

@@ -16,6 +16,7 @@ public class AreasvEnterHandler(
     ICharacterRepository characterRepo,
     IMyRoomRepository myRoomRepository,
     ICircleRepository circleRepository,
+    IFriendRepository friendRepository,
     SharedState state,
     ILogger<AreasvEnterHandler> logger
 ) : IPacketHandler
@@ -38,9 +39,11 @@ public class AreasvEnterHandler(
 
         if (userSession is null || userSession.UserId != loginReq.UserID)
         {
+            // recv_enter_areasv_r is a fixed 8-byte read on the client (result + objId);
+            // a 4-byte body desyncs the record parser.
             await session.SendAsync(
                 ResponseType,
-                new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(),
+                new AreasvEnterResponse((uint)AuthResponseResult.InvalidCredentials, 0).ToBytes(),
                 ct
             );
             return;
@@ -50,13 +53,14 @@ public class AreasvEnterHandler(
         {
             await session.SendAsync(
                 ResponseType,
-                new LoginResponse(AuthResponseResult.AccountBanned).ToBytes(),
+                new AreasvEnterResponse((uint)AuthResponseResult.AccountBanned, 0).ToBytes(),
                 ct
             );
             return;
         }
 
         session.User = userSession.User;
+        session.UserId = userSession.User.Id;
         session.Language = userSession.User.Language;
         var chara = await characterRepo.GetByIdAsync(session.User.Characters.First().Id, ct);
 
@@ -100,7 +104,10 @@ public class AreasvEnterHandler(
                 var sharesCircle =
                     owner is not null
                     && await circleRepository.SharesAnyCircleAsync(chara.Id, owner.Id, ct);
-                if (!MyRoomAccess.CanEnter(room, chara.Id, sharesCircle))
+                var isFriend =
+                    owner is not null
+                    && await myRoomRepository.AreFriendsAsync(chara.Id, owner.Id, ct);
+                if (!MyRoomAccess.CanEnter(room, chara.Id, sharesCircle, isFriend))
                 {
                     logger.LogWarning(
                         "AreasvEnter denied My Room {RoomId} for character {CharacterId} (security {Security}); falling back to owner room",
@@ -211,6 +218,19 @@ public class AreasvEnterHandler(
         chara.LastLoggedInAt = DateTime.UtcNow;
 
         await session.SendAsync(ResponseType, new AreasvEnterResponse(0, charId).ToBytes(), ct);
+        try
+        {
+            await FriendNotifyHelper.NotifyLoginAsync(friendRepository, state, chara.Id, ct);
+        }
+        catch (Exception ex)
+        {
+            // Presence notifications are best-effort and must never abort Area login.
+            logger.LogWarning(
+                ex,
+                "Failed broadcasting friend login for character {CharacterId}",
+                chara.Id
+            );
+        }
         // Self avatar: AvatarGetData / MapDataEnterEnd. Peers: MapEnter (post-load).
     }
 

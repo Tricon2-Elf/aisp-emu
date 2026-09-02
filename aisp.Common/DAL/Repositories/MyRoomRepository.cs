@@ -10,16 +10,40 @@ using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.DAL.Repositories;
 
+public enum RemoveRoomResult
+{
+    Removed,
+    NotOwned,
+    DefaultRoom,
+    NotEmpty,
+}
+
 public interface IMyRoomRepository
 {
     Task<Room?> GetRoomAsync(int roomId, CancellationToken ct = default);
     Task<Room?> GetDefaultRoomAsync(int ownerCharacterId, CancellationToken ct = default);
     Task<Room?> GetOrCreateDefaultRoomAsync(int ownerCharacterId, CancellationToken ct = default);
     Task<IReadOnlyList<Room>> GetRoomsAsync(int ownerCharacterId, CancellationToken ct = default);
+    Task<bool> AreFriendsAsync(int characterIdA, int characterIdB, CancellationToken ct = default);
+    Task<IReadOnlyList<Room>> GetCandidateVisitRoomsAsync(
+        int excludeOwnerCharacterId,
+        int take,
+        CancellationToken ct = default
+    );
     Task<Room?> CreateRoomAsync(
         int ownerCharacterId,
         MyRoomStage stage,
         string name,
+        CancellationToken ct = default
+    );
+    Task<bool> SetDefaultRoomAsync(
+        int roomId,
+        int ownerCharacterId,
+        CancellationToken ct = default
+    );
+    Task<RemoveRoomResult> RemoveRoomAsync(
+        int roomId,
+        int ownerCharacterId,
         CancellationToken ct = default
     );
     Task<bool> IsOwnerAsync(int roomId, int characterId, CancellationToken ct = default);
@@ -133,6 +157,55 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
             .ThenBy(x => x.Id)
             .ToListAsync(ct);
 
+    public Task<bool> AreFriendsAsync(
+        int characterIdA,
+        int characterIdB,
+        CancellationToken ct = default
+    )
+    {
+        var low = Math.Min(characterIdA, characterIdB);
+        var high = Math.Max(characterIdA, characterIdB);
+        return db.Friendships.AnyAsync(
+            friendship => friendship.CharacterIdLow == low && friendship.CharacterIdHigh == high,
+            ct
+        );
+    }
+
+    public async Task<IReadOnlyList<Room>> GetCandidateVisitRoomsAsync(
+        int excludeOwnerCharacterId,
+        int take,
+        CancellationToken ct = default
+    )
+    {
+        if (take <= 0)
+            return [];
+
+        return await db
+            .Rooms.AsNoTracking()
+            .Include(x => x.OwnerCharacter)
+            .Where(x =>
+                x.OwnerCharacterId != excludeOwnerCharacterId
+                && x.Security != MyRoomSecurity.Private
+                && (
+                    x.Security != MyRoomSecurity.FriendsOnly
+                    || db.Friendships.Any(friendship =>
+                        (
+                            friendship.CharacterIdLow == excludeOwnerCharacterId
+                            && friendship.CharacterIdHigh == x.OwnerCharacterId
+                        )
+                        || (
+                            friendship.CharacterIdHigh == excludeOwnerCharacterId
+                            && friendship.CharacterIdLow == x.OwnerCharacterId
+                        )
+                    )
+                )
+            )
+            .OrderByDescending(x => x.IsDefault)
+            .ThenBy(x => x.Id)
+            .Take(take)
+            .ToListAsync(ct);
+    }
+
     public async Task<Room?> CreateRoomAsync(
         int ownerCharacterId,
         MyRoomStage stage,
@@ -157,6 +230,62 @@ public sealed class MyRoomRepository(MainContext db) : IMyRoomRepository
         db.Rooms.Add(room);
         await db.SaveChangesAsync(ct);
         return await GetRoomAsync(room.Id, ct);
+    }
+
+    public async Task<bool> SetDefaultRoomAsync(
+        int roomId,
+        int ownerCharacterId,
+        CancellationToken ct = default
+    )
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+        var rooms = await db
+            .Rooms.Where(room => room.OwnerCharacterId == ownerCharacterId)
+            .ToListAsync(ct);
+        var selected = rooms.SingleOrDefault(room => room.Id == roomId);
+        if (selected is null)
+            return false;
+
+        var now = DateTime.UtcNow;
+        foreach (var room in rooms)
+        {
+            room.IsDefault = room.Id == roomId;
+            room.UpdatedAt = now;
+        }
+
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return true;
+    }
+
+    public async Task<RemoveRoomResult> RemoveRoomAsync(
+        int roomId,
+        int ownerCharacterId,
+        CancellationToken ct = default
+    )
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+        var room = await db.Rooms.SingleOrDefaultAsync(
+            candidate => candidate.Id == roomId && candidate.OwnerCharacterId == ownerCharacterId,
+            ct
+        );
+        if (room is null)
+            return RemoveRoomResult.NotOwned;
+        if (room.IsDefault)
+            return RemoveRoomResult.DefaultRoom;
+        if (await db.MyRoomFurniture.AnyAsync(furniture => furniture.RoomId == roomId, ct))
+            return RemoveRoomResult.NotEmpty;
+
+        db.Rooms.Remove(room);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return RemoveRoomResult.Removed;
     }
 
     public Task<bool> IsOwnerAsync(int roomId, int characterId, CancellationToken ct = default) =>

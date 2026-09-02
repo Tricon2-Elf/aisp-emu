@@ -88,6 +88,17 @@ public static class L
         public static readonly LocKey RoomNotFound = new("cmd.room.not_found");
         public static readonly LocKey RoomPrivate = new("cmd.room.private");
         public static readonly LocKey RoomDenied = new("cmd.room.denied");
+        public static readonly LocKey RoomSetNotOwned = new("cmd.room.set_not_owned");
+        public static readonly LocKey RoomSetSuccess = new("cmd.room.set_success");
+        public static readonly LocKey RoomListEmpty = new("cmd.room.list_empty");
+        public static readonly LocKey RoomListHeader = new("cmd.room.list_header");
+        public static readonly LocKey RoomListEntry = new("cmd.room.list_entry");
+        public static readonly LocKey RoomListDefault = new("cmd.room.list_default");
+        public static readonly LocKey RoomRemoveNotOwned = new("cmd.room.remove_not_owned");
+        public static readonly LocKey RoomRemoveDefault = new("cmd.room.remove_default");
+        public static readonly LocKey RoomRemoveNotEmpty = new("cmd.room.remove_not_empty");
+        public static readonly LocKey RoomRemoveCurrent = new("cmd.room.remove_current");
+        public static readonly LocKey RoomRemoveSuccess = new("cmd.room.remove_success");
     }
 
     public static class Equipment
@@ -131,6 +142,7 @@ public static class L
             public static readonly LocKey RegisterFirst = new(
                 "script.station_staff.register_first"
             );
+            public static readonly LocKey ChooseIsland = new("script.station_staff.choose_island");
             public static readonly LocKey ReturnToAkihabara = new(
                 "script.station_staff.return_akihabara"
             );
@@ -145,10 +157,9 @@ public static class L
 
         public static class MyRoom
         {
-            public static readonly LocKey DoorReturnShopping = new(
-                "script.myroom.door.return_shopping"
-            );
-            public static readonly LocKey DoorClose = new("script.myroom.door.close");
+            public static readonly LocKey DoorGoOutside = new("script.myroom.door.go_outside");
+            public static readonly LocKey DoorGoOtherRoom = new("script.myroom.door.go_other_room");
+            public static readonly LocKey DoorStayIn = new("script.myroom.door.stay_in");
             public static readonly LocKey DoorLeavePrompt = new("script.myroom.door.leave_prompt");
             public static readonly LocKey WardrobeUse = new("script.myroom.wardrobe.use");
             public static readonly LocKey WardrobeSkip = new("script.myroom.wardrobe.skip");

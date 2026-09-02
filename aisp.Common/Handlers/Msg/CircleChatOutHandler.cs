@@ -12,7 +12,7 @@ public class CircleChatOutHandler(SharedState state)
     public override PacketType ResponseType => PacketType.CircleChatOutResponse;
     public override ServerType ServerType => ServerType.Msg;
 
-    public override async Task<CircleChatOutResponse?> HandleAsync(
+    public override Task<CircleChatOutResponse?> HandleAsync(
         CircleChatOutRequest request,
         IPlayerSession session,
         CancellationToken ct = default
@@ -23,9 +23,9 @@ public class CircleChatOutHandler(SharedState state)
             state.LeaveCircleChat(session.ConnectionId);
             var notify = new CircleNotifyChatOut((ulong)circleId, session.CharacterId).ToBytes();
             foreach (var client in state.GetCircleChatClients(circleId))
-                await client.SendAsync(PacketType.CircleNotifyChatOut, notify, ct);
+                _ = client.SendAsync(PacketType.CircleNotifyChatOut, notify, ct);
         }
 
-        return new CircleChatOutResponse(0);
+        return Task.FromResult<CircleChatOutResponse?>(new CircleChatOutResponse(0));
     }
 }

@@ -356,6 +356,23 @@ public class CmdExecHandlerTests
                         Stage = MyRoomStage.TwelveTatami,
                         Security = MyRoomSecurity.Public,
                         IsDefault = true,
+                    },
+                    new Room
+                    {
+                        Id = 9002,
+                        OwnerCharacterId = 8101,
+                        Name = "Furnished Room",
+                        Stage = MyRoomStage.TenTatami,
+                    }
+                );
+                db.Items.Add(new Item { Id = 7001, Name = "Test Furniture" });
+                db.Furniture.Add(new Furniture { ItemId = 7001 });
+                db.MyRoomFurniture.Add(
+                    new MyRoomFurniture
+                    {
+                        RoomId = 9002,
+                        FurnitureId = 1,
+                        ItemId = 7001,
                     }
                 );
                 db.Channels.Add(
@@ -447,11 +464,98 @@ public class CmdExecHandlerTests
             Assert.Equal(MyRoomInfo.EightTatamiMapId, areaSession.MapId);
             var createdRoom = await verifyDb
                 .Rooms.AsNoTracking()
-                .Where(room => room.OwnerCharacterId == 8101 && !room.IsDefault)
+                .Where(room => room.OwnerCharacterId == 8101 && room.Name == "Second Room")
                 .SingleAsync(TestContext.Current.CancellationToken);
             Assert.Equal("Second Room", createdRoom.Name);
             Assert.Equal(MyRoomStage.EightTatami, createdRoom.Stage);
             Assert.Equal(checked((uint)createdRoom.Id), areaSession.MyRoomId);
+
+            msgSession.Sent.Clear();
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "set"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var ownedRooms = await verifyDb
+                .Rooms.AsNoTracking()
+                .Where(room => room.OwnerCharacterId == 8101)
+                .ToListAsync(TestContext.Current.CancellationToken);
+            Assert.True(ownedRooms.Single(room => room.Id == createdRoom.Id).IsDefault);
+            Assert.False(ownedRooms.Single(room => room.Id == 9000).IsDefault);
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var noticeReader = new PacketReader(notice.Payload);
+            Assert.Equal(0u, noticeReader.ReadUInt());
+            Assert.Equal(unchecked((uint)-5), noticeReader.ReadUInt());
+            Assert.Contains(
+                "default room",
+                noticeReader.ReadString("utf-8"),
+                StringComparison.Ordinal
+            );
+
+            msgSession.Sent.Clear();
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "list"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+            var listNotice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var listReader = new PacketReader(listNotice.Payload);
+            listReader.ReadUInt();
+            listReader.ReadUInt();
+            var listText = listReader.ReadString("utf-8");
+            Assert.Contains("9000: Visitor's Default Room", listText, StringComparison.Ordinal);
+            Assert.Contains(
+                $"{createdRoom.Id}: Second Room (8 tatami) [default]",
+                listText,
+                StringComparison.Ordinal
+            );
+
+            msgSession.Sent.Clear();
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "remove", "9000"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.False(
+                await verifyDb
+                    .Rooms.AsNoTracking()
+                    .AnyAsync(room => room.Id == 9000, TestContext.Current.CancellationToken)
+            );
+            var removeNotice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var removeReader = new PacketReader(removeNotice.Payload);
+            removeReader.ReadUInt();
+            removeReader.ReadUInt();
+            Assert.Contains("was removed", removeReader.ReadString("utf-8"));
+
+            msgSession.Sent.Clear();
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "remove", "9002"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.True(
+                await verifyDb
+                    .Rooms.AsNoTracking()
+                    .AnyAsync(room => room.Id == 9002, TestContext.Current.CancellationToken)
+            );
+            var notEmptyNotice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var notEmptyReader = new PacketReader(notEmptyNotice.Payload);
+            notEmptyReader.ReadUInt();
+            notEmptyReader.ReadUInt();
+            Assert.Contains("containing furniture", notEmptyReader.ReadString("utf-8"));
         }
         finally
         {

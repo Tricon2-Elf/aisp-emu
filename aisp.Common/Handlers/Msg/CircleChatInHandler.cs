@@ -25,7 +25,8 @@ public class CircleChatInHandler(ICircleRepository circles, SharedState state)
             return new CircleChatInResponse((uint)CircleResult.NotMember);
 
         state.EnterCircleChat(session.ConnectionId, circleId);
-        var members = await circles.GetMembersAsync(circleId, ct);
+        await CircleNotifyHelper.SendRosterAsync(circles, state, circleId, ct);
+
         uint[] onlineInChat =
         [
             .. state.GetCircleChatClients(circleId).Select(s => s.CharacterId).Distinct(),
@@ -35,7 +36,7 @@ public class CircleChatInHandler(ICircleRepository circles, SharedState state)
         foreach (var client in state.GetCircleChatClients(circleId))
         {
             if (client.ConnectionId != session.ConnectionId)
-                await client.SendAsync(PacketType.CircleNotifyChatIn, notify, ct);
+                _ = client.SendAsync(PacketType.CircleNotifyChatIn, notify, ct);
         }
 
         return new CircleChatInResponse(0, 1, onlineInChat);

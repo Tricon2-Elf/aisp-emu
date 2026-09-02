@@ -89,6 +89,72 @@
     "zh-Hans": "无法加入该房间。",
     "zh-Hant": "無法加入該房間。"
   },
+  "cmd.room.set_not_owned": {
+    "ja": "自分が所有する部屋にいる時だけ、その部屋をデフォルトに設定できます。",
+    "en": "You can only set a room you own as your default room.",
+    "zh-Hans": "只能将自己拥有的房间设为默认房间。",
+    "zh-Hant": "只能將自己擁有的房間設為預設房間。"
+  },
+  "cmd.room.set_success": {
+    "ja": "部屋 {0} をデフォルトの部屋に設定しました。",
+    "en": "Room {0} is now your default room.",
+    "zh-Hans": "房间 {0} 现已设为默认房间。",
+    "zh-Hant": "房間 {0} 現已設為預設房間。"
+  },
+  "cmd.room.list_empty": {
+    "ja": "所有している部屋はありません。",
+    "en": "You do not own any rooms.",
+    "zh-Hans": "你没有拥有任何房间。",
+    "zh-Hant": "你沒有擁有任何房間。"
+  },
+  "cmd.room.list_header": {
+    "ja": "所有している部屋：",
+    "en": "Rooms you own:",
+    "zh-Hans": "你拥有的房间：",
+    "zh-Hant": "你擁有的房間："
+  },
+  "cmd.room.list_entry": {
+    "ja": "{0}: {1}（{2}畳）{3}",
+    "en": "{0}: {1} ({2} tatami){3}",
+    "zh-Hans": "{0}：{1}（{2}榻榻米）{3}",
+    "zh-Hant": "{0}：{1}（{2}榻榻米）{3}"
+  },
+  "cmd.room.list_default": {
+    "ja": " [デフォルト]",
+    "en": " [default]",
+    "zh-Hans": " [默认]",
+    "zh-Hant": " [預設]"
+  },
+  "cmd.room.remove_not_owned": {
+    "ja": "その部屋は存在しないか、あなたの所有ではありません。",
+    "en": "That room does not exist or is not owned by you.",
+    "zh-Hans": "该房间不存在或不属于你。",
+    "zh-Hant": "該房間不存在或不屬於你。"
+  },
+  "cmd.room.remove_default": {
+    "ja": "デフォルトの部屋は削除できません。先に /room set で別の部屋を設定してください。",
+    "en": "The default room cannot be removed. Set another one first with /room set.",
+    "zh-Hans": "无法删除默认房间。请先使用 /room set 设置另一个房间。",
+    "zh-Hant": "無法刪除預設房間。請先使用 /room set 設定另一個房間。"
+  },
+  "cmd.room.remove_not_empty": {
+    "ja": "家具が置かれている部屋は削除できません。",
+    "en": "A room containing furniture cannot be removed.",
+    "zh-Hans": "无法删除放有家具的房间。",
+    "zh-Hant": "無法刪除放有家具的房間。"
+  },
+  "cmd.room.remove_current": {
+    "ja": "現在いる部屋は削除できません。先に別の場所へ移動してください。",
+    "en": "You cannot remove the room you are currently in. Leave it first.",
+    "zh-Hans": "无法删除你当前所在的房间。请先离开。",
+    "zh-Hant": "無法刪除你目前所在的房間。請先離開。"
+  },
+  "cmd.room.remove_success": {
+    "ja": "部屋 {0} を削除しました。",
+    "en": "Room {0} was removed.",
+    "zh-Hans": "已删除房间 {0}。",
+    "zh-Hant": "已刪除房間 {0}。"
+  },
   "map.island_title_format": {
     "ja": "{0}島 {1}",
     "en": "{0} Island {1}",
@@ -211,6 +277,12 @@
     "zh-Hans": "请先到外神田大楼登记。",
     "zh-Hant": "請先到外神田大樓登記。"
   },
+  "script.station_staff.choose_island": {
+    "ja": "どの島へ行きますか？",
+    "en": "Which island would you like to visit?",
+    "zh-Hans": "你想去哪座岛？",
+    "zh-Hant": "你想去哪座島？"
+  },
   "script.station_staff.return_akihabara": {
     "ja": "秋葉原までお連れします",
     "en": "I'll take you to Akihabara",
@@ -223,17 +295,23 @@
     "zh-Hans": "你好",
     "zh-Hant": "你好"
   },
-  "script.myroom.door.return_shopping": {
-    "ja": "ショッピングエリアへ戻る",
-    "en": "Return to Shopping Area",
-    "zh-Hans": "返回购物区",
-    "zh-Hant": "返回購物區"
+  "script.myroom.door.go_outside": {
+    "ja": "外に出かける",
+    "en": "Go outside",
+    "zh-Hans": "外出",
+    "zh-Hant": "外出"
   },
-  "script.myroom.door.close": {
-    "ja": "閉じる",
-    "en": "Close",
-    "zh-Hans": "关闭",
-    "zh-Hant": "關閉"
+  "script.myroom.door.go_other_room": {
+    "ja": "他の部屋に行く",
+    "en": "Go to another room",
+    "zh-Hans": "去其他房间",
+    "zh-Hant": "去其他房間"
+  },
+  "script.myroom.door.stay_in": {
+    "ja": "今日は出かける気分じゃない",
+    "en": "Don't feel like going out today",
+    "zh-Hans": "今天不想出门",
+    "zh-Hant": "今天不想出門"
   },
   "script.myroom.door.leave_prompt": {
     "ja": "マイルームを出ますか？",

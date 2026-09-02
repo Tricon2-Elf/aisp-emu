@@ -23,7 +23,9 @@ public abstract class GameServerBase<T> : BackgroundService
     private readonly int _maxConcurrentClients;
     private readonly int _maxReceiveFrameSize;
     private readonly int _clientReadTimeoutSeconds;
+    private readonly int _clientSendTimeoutSeconds;
     private readonly int _packetChannelCapacity;
+    private readonly TcpSocketOptions _tcpSocketOptions;
     private bool _initialized;
 
     protected GameServerBase(ILogger<T> logger, GameServerContext ctx, int port)
@@ -38,7 +40,9 @@ public abstract class GameServerBase<T> : BackgroundService
         _maxConcurrentClients = ctx.MaxConcurrentClients;
         _maxReceiveFrameSize = ctx.MaxReceiveFrameSize;
         _clientReadTimeoutSeconds = ctx.ClientReadTimeoutSeconds;
+        _clientSendTimeoutSeconds = ctx.ClientSendTimeoutSeconds;
         _packetChannelCapacity = ctx.PacketChannelCapacity;
+        _tcpSocketOptions = ctx.TcpSocketOptions;
         HealthRegistry.AddServer(ActiveServerType, _port);
     }
 
@@ -69,6 +73,11 @@ public abstract class GameServerBase<T> : BackgroundService
             };
             var channel = System.Threading.Channels.Channel.CreateBounded<Packet>(channelOpts);
 
+            await using var scheduler = new SessionWorkScheduler<(
+                Packet Packet,
+                IPlayerSession Session
+            )>(_packetChannelCapacity, DispatchScheduledPacketAsync, runToken, Logger);
+
             var listener = new VceListener(
                 _loggerFactory.CreateLogger<VceListener>(),
                 channel,
@@ -77,6 +86,7 @@ public abstract class GameServerBase<T> : BackgroundService
                 _loggerFactory,
                 id =>
                 {
+                    scheduler.CompleteSession(id);
                     if (
                         State.TryGetSession(id, out var disconnectedSession)
                         && disconnectedSession is not null
@@ -98,6 +108,35 @@ public abstract class GameServerBase<T> : BackgroundService
                                     "Failed broadcasting area disconnect disappear for client {ClientId}",
                                     id
                                 );
+                            }
+
+                            if (
+                                disconnectedSession.CharacterId != 0
+                                && disconnectedSession.CharacterId <= int.MaxValue
+                            )
+                            {
+                                try
+                                {
+                                    using var scope = ScopeFactory.CreateScope();
+                                    var friends =
+                                        scope.ServiceProvider.GetRequiredService<aisp.Common.DAL.Repositories.IFriendRepository>();
+                                    aisp.Common.Handlers.Area.FriendNotifyHelper.NotifyLogoutAsync(
+                                            friends,
+                                            State,
+                                            (int)disconnectedSession.CharacterId,
+                                            CancellationToken.None
+                                        )
+                                        .GetAwaiter()
+                                        .GetResult();
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.LogWarning(
+                                        ex,
+                                        "Failed broadcasting friend logout for client {ClientId}",
+                                        id
+                                    );
+                                }
                             }
                         }
 
@@ -137,6 +176,7 @@ public abstract class GameServerBase<T> : BackgroundService
                 _maxConcurrentClients,
                 _maxReceiveFrameSize,
                 _clientReadTimeoutSeconds,
+                _clientSendTimeoutSeconds,
                 id =>
                 {
                     if (!State.TryGetSession(id, out var session) || session is null)
@@ -144,22 +184,18 @@ public abstract class GameServerBase<T> : BackgroundService
 
                     var userId = session.User?.Id ?? session.UserId;
                     return userId > 0 ? userId : null;
-                }
+                },
+                _tcpSocketOptions,
+                (packet, ct) => RouteInboundPacketAsync(packet, scheduler, ct)
             );
             HealthRegistry.SetAcceptCheck(ActiveServerType, () => listener.IsListening);
             HealthRegistry.SetClientLoadCheck(ActiveServerType, () => listener.GetClientLoad());
 
             var acceptLoop = listener.RunAsync(runToken);
-            var packetLoop = RunPacketLoop(channel.Reader, runToken);
             var heartbeatLoop = RunHeartbeatLoop(runToken);
             var additionalLoops = GetAdditionalLoops(runToken).ToArray();
 
-            var allLoops = new List<Task>(3 + additionalLoops.Length)
-            {
-                acceptLoop,
-                packetLoop,
-                heartbeatLoop,
-            };
+            var allLoops = new List<Task>(2 + additionalLoops.Length) { acceptLoop, heartbeatLoop };
             allLoops.AddRange(additionalLoops);
 
             var completed = await Task.WhenAny(allLoops);
@@ -170,14 +206,6 @@ public abstract class GameServerBase<T> : BackgroundService
                     ActiveServerType
                 );
                 HealthRegistry.MarkUnhealthy(ActiveServerType, "tcp listener stopped");
-            }
-            else if (completed == packetLoop)
-            {
-                Logger.LogWarning(
-                    "{ServerType} packet loop stopped unexpectedly; restarting listener",
-                    ActiveServerType
-                );
-                HealthRegistry.MarkUnhealthy(ActiveServerType, "packet loop stopped");
             }
             else if (completed == heartbeatLoop)
             {
@@ -226,73 +254,90 @@ public abstract class GameServerBase<T> : BackgroundService
         }
     }
 
-    private async Task RunPacketLoop(ChannelReader<Packet> channel, CancellationToken ct)
+    /// <summary>
+    /// Called on the receiving client's I/O task. Waits if that session's handler queue is full so
+    /// only this connection applies TCP backpressure.
+    /// </summary>
+    private async ValueTask RouteInboundPacketAsync(
+        Packet packet,
+        SessionWorkScheduler<(Packet Packet, IPlayerSession Session)> scheduler,
+        CancellationToken ct
+    )
     {
+        if (packet.Client.IsClosed)
+        {
+            Logger.LogDebug(
+                "Dropping packet {Type} for closed client {ClientId} on {ServerType}",
+                packet.Type,
+                packet.Client.Id,
+                ActiveServerType
+            );
+            return;
+        }
+
+        IPlayerSession? session;
+        if (!State.TryGetSession(packet.Client.Id, out session) || session is null)
+        {
+            // Do not resurrect sessions for clients that disconnected while packets were still queued.
+            if (packet.Client.IsClosed)
+            {
+                Logger.LogDebug(
+                    "Skipping stale queued packet {Type} after disconnect for client {ClientId} on {ServerType}",
+                    packet.Type,
+                    packet.Client.Id,
+                    ActiveServerType
+                );
+                return;
+            }
+
+            session = State.GetOrAddSession(
+                packet.Client.Id,
+                () => new PlayerSession(packet.Client.Id, packet.Client)
+            );
+        }
+
+        await scheduler.EnqueueAsync(packet.Client.Id, (packet, session), ct);
+    }
+
+    private async Task DispatchScheduledPacketAsync(
+        (Packet Packet, IPlayerSession Session) work,
+        CancellationToken ct
+    )
+    {
+        if (work.Packet.Client.IsClosed)
+        {
+            Logger.LogDebug(
+                "Dropping packet {Type} for closed client {ClientId} on {ServerType}",
+                work.Packet.Type,
+                work.Packet.Client.Id,
+                ActiveServerType
+            );
+            return;
+        }
+
         try
         {
-            await foreach (var packet in channel.ReadAllAsync(ct))
-            {
-                try
-                {
-                    if (packet.Client.IsClosed)
-                    {
-                        Logger.LogDebug(
-                            "Dropping packet {Type} for closed client {ClientId} on {ServerType}",
-                            packet.Type,
-                            packet.Client.Id,
-                            ActiveServerType
-                        );
-                        continue;
-                    }
-
-                    IPlayerSession? session;
-                    if (!State.TryGetSession(packet.Client.Id, out session) || session is null)
-                    {
-                        // Do not resurrect sessions for clients that disconnected while packets were still queued.
-                        if (packet.Client.IsClosed)
-                        {
-                            Logger.LogDebug(
-                                "Skipping stale queued packet {Type} after disconnect for client {ClientId} on {ServerType}",
-                                packet.Type,
-                                packet.Client.Id,
-                                ActiveServerType
-                            );
-                            continue;
-                        }
-
-                        session = State.GetOrAddSession(
-                            packet.Client.Id,
-                            () => new PlayerSession(packet.Client.Id, packet.Client)
-                        );
-                    }
-
-                    await Dispatcher.DispatchAsync(
-                        ActiveServerType,
-                        packet.Type,
-                        packet.Data,
-                        session,
-                        ct
-                    );
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(
-                        ex,
-                        "Packet dispatch failed (ServerType={ServerType}, type={Type}): {Message}",
-                        ActiveServerType,
-                        packet.Type,
-                        ex.Message
-                    );
-                }
-            }
+            await Dispatcher.DispatchAsync(
+                ActiveServerType,
+                work.Packet.Type,
+                work.Packet.Data,
+                work.Session,
+                ct
+            );
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            // expected during listener restart
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(
+                ex,
+                "Packet dispatch failed (ServerType={ServerType}, type={Type}): {Message}",
+                ActiveServerType,
+                work.Packet.Type,
+                ex.Message
+            );
         }
     }
 }

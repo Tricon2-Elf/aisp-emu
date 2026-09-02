@@ -1,4 +1,5 @@
 using aisp.Common.DAL.Entities;
+using aisp.Network;
 using aisp.Network.Data;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,12 +1,5 @@
 ﻿namespace aisp.Network.Data;
 
-public enum BloodType : uint
-{
-    A = 1,
-    B = 2,
-    AB = 3,
-    O = 4,
-}
 
 public class CharaVisual(
     BloodType bloodType,
@@ -18,7 +11,7 @@ public class CharaVisual(
     uint hairStyle
 )
 {
-    public BloodType BloodType = bloodType; //1=A, 2=B
+    public BloodType BloodType = bloodType;
     public byte Month = month;
     public byte Day = day;
     public uint Gender = gender;

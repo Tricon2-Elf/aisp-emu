@@ -2,14 +2,6 @@ using aisp.Network;
 
 namespace aisp.Network.Data;
 
-public enum EmotionCategory : byte
-{
-    Passion = 0,
-    Action = 1,
-    Voice = 2,
-    Etc = 3,
-}
-
 public class EmotionData
 {
     public uint Id { get; set; }
