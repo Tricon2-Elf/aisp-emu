@@ -317,6 +317,7 @@ internal class Program
         app.UseApiKeyAuthForApiRoutes();
         app.MapAispEmuHttpEndpoints();
         app.MapAdventureHttpEndpoints();
+        app.MapAdventureAdminEndpoints();
         if (portalEnabled)
         {
             app.UseStaticFiles();

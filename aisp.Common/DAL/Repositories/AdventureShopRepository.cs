@@ -31,6 +31,19 @@ public static class AdventureShopSort
     public const uint MostBought = 2;
 }
 
+public enum AdventureImportOutcome
+{
+    Imported = 0,
+
+    /// <summary>The id is in the range the emulator hands out itself (FirstScriptId and up).</summary>
+    IdReserved = 1,
+    IdTaken = 2,
+    UnknownOwner = 3,
+
+    /// <summary>An existing listing was updated in place (metadata and content); purchases and counters kept.</summary>
+    Replaced = 4,
+}
+
 public enum AdventureBuyOutcome
 {
     Bought = 0,
@@ -93,6 +106,31 @@ public interface IAdventureShopRepository
         int userId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Registers a disc recovered from a legacy download cache under its original script id (below
+    /// FirstScriptId), already on sale, with the two texts in the stored UTF-8 form. WorkId 0 marks it as not
+    /// backed by a work in the editor. With <paramref name="replace"/> an existing listing under that id is
+    /// updated in place and put back on sale, keeping its purchases and counters.
+    /// </summary>
+    Task<AdventureImportOutcome> ImportListingAsync(
+        int ownerUserId,
+        long scriptId,
+        AdventureListingDraft draft,
+        byte[] script,
+        byte[] datalist,
+        int pages,
+        DateTime? listedAtUtc,
+        bool official,
+        bool replace = false,
+        CancellationToken ct = default
+    );
+
+    /// <summary>Every listing regardless of owner or state, for administration.</summary>
+    Task<IReadOnlyList<AdventureListing>> GetAllListingsAsync(CancellationToken ct = default);
+
+    /// <summary>Takes any listing off sale, whoever owns it. False when it is not Listed.</summary>
+    Task<bool> DelistAnyAsync(long scriptId, CancellationToken ct = default);
 
     Task<long> CountListedAsync(CancellationToken ct = default);
 
@@ -442,6 +480,104 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
             .OrderBy(l => l.ScriptId)
             .AsNoTracking()
             .ToListAsync(ct);
+
+    public async Task<AdventureImportOutcome> ImportListingAsync(
+        int ownerUserId,
+        long scriptId,
+        AdventureListingDraft draft,
+        byte[] script,
+        byte[] datalist,
+        int pages,
+        DateTime? listedAtUtc,
+        bool official,
+        bool replace = false,
+        CancellationToken ct = default
+    )
+    {
+        if (scriptId <= 0 || scriptId >= AdventureListing.FirstScriptId)
+            return AdventureImportOutcome.IdReserved;
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+        if (!await db.Users.AnyAsync(u => u.Id == ownerUserId, ct))
+            return AdventureImportOutcome.UnknownOwner;
+        var now = DateTime.UtcNow;
+        var existing = await db
+            .AdventureListings.Include(l => l.Content)
+            .SingleOrDefaultAsync(l => l.ScriptId == scriptId, ct);
+        if (existing is not null)
+        {
+            if (!replace)
+                return AdventureImportOutcome.IdTaken;
+            existing.UserId = ownerUserId;
+            existing.Title = draft.Title;
+            existing.AuthorName = draft.AuthorName;
+            existing.Genre = draft.Genre;
+            existing.Comment = draft.Comment;
+            existing.Price = Math.Max(0, draft.Price);
+            existing.ContentsPublic = draft.ContentsPublic;
+            existing.Official = official;
+            existing.ContentSize = Math.Max(0, draft.ContentSize);
+            existing.Pages = Math.Max(0, pages);
+            existing.State = AdventureListingState.Listed;
+            existing.DelistedAt = null;
+            if (listedAtUtc is not null)
+                existing.ListedAt = listedAtUtc;
+            existing.Content ??= new AdventureListingContent { ScriptId = scriptId };
+            existing.Content.Script = script;
+            existing.Content.Datalist = datalist;
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return AdventureImportOutcome.Replaced;
+        }
+        var listedAt = listedAtUtc ?? now;
+        db.AdventureListings.Add(
+            new AdventureListing
+            {
+                ScriptId = scriptId,
+                UserId = ownerUserId,
+                CharacterId = 0,
+                WorkId = 0,
+                Title = draft.Title,
+                AuthorName = draft.AuthorName,
+                Genre = draft.Genre,
+                Comment = draft.Comment,
+                Price = Math.Max(0, draft.Price),
+                ContentsPublic = draft.ContentsPublic,
+                Official = official,
+                ContentSize = Math.Max(0, draft.ContentSize),
+                Pages = Math.Max(0, pages),
+                State = AdventureListingState.Listed,
+                CreatedAt = listedAt,
+                ListedAt = listedAt,
+                Content = new AdventureListingContent
+                {
+                    ScriptId = scriptId,
+                    Script = script,
+                    Datalist = datalist,
+                },
+            }
+        );
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return AdventureImportOutcome.Imported;
+    }
+
+    public async Task<IReadOnlyList<AdventureListing>> GetAllListingsAsync(
+        CancellationToken ct = default
+    ) => await db.AdventureListings.OrderBy(l => l.ScriptId).AsNoTracking().ToListAsync(ct);
+
+    public async Task<bool> DelistAnyAsync(long scriptId, CancellationToken ct = default)
+    {
+        var listing = await db.AdventureListings.SingleOrDefaultAsync(
+            l => l.ScriptId == scriptId,
+            ct
+        );
+        if (listing is null)
+            return false;
+        return await DelistAsync(listing.UserId, scriptId, ct);
+    }
 
     // ContentsPublic only decides whether buyers may read the manuscript; sealed discs are still for sale.
     private IQueryable<AdventureListing> Listed() =>

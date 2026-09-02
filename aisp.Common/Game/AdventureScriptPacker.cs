@@ -52,23 +52,27 @@ public static class AdventureScriptPacker
     /// <summary>Reverses <see cref="Pack"/>; returns the two payloads as UTF-16LE text without BOM. Null when the blob is not a drama pack.</summary>
     public static (byte[] Script, byte[] Datalist)? Unpack(byte[] blob)
     {
-        if (blob.Length < 4 + HeaderSize + JammerLength)
+        if (
+            blob.Length < 4 + HeaderSize + JammerLength
+            || !blob.AsSpan(0, 4).SequenceEqual(Signature)
+        )
             return null;
-        var chardefSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(blob.AsSpan(12));
-        var dramaSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(blob.AsSpan(16));
-        var headerSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(blob.AsSpan(20));
+        long chardefSize = BinaryPrimitives.ReadUInt32LittleEndian(blob.AsSpan(12));
+        long dramaSize = BinaryPrimitives.ReadUInt32LittleEndian(blob.AsSpan(16));
+        long headerSize = BinaryPrimitives.ReadUInt32LittleEndian(blob.AsSpan(20));
         var chardefStart = 4 + headerSize;
         var dramaStart = chardefStart + chardefSize;
         if (
-            chardefSize < TrailerLength
+            headerSize < HeaderSize
+            || chardefSize < TrailerLength
             || dramaSize < TrailerLength
             || dramaStart + dramaSize + JammerLength > blob.Length
         )
             return null;
         var jammer = blob.AsSpan(blob.Length - JammerLength);
         return (
-            Deobfuscate(blob, dramaStart, dramaSize - TrailerLength, jammer),
-            Deobfuscate(blob, chardefStart, chardefSize - TrailerLength, jammer)
+            Deobfuscate(blob, (int)dramaStart, (int)(dramaSize - TrailerLength), jammer),
+            Deobfuscate(blob, (int)chardefStart, (int)(chardefSize - TrailerLength), jammer)
         );
     }
 
@@ -78,6 +82,14 @@ public static class AdventureScriptPacker
         if (text.Length >= 2 && text[0] == 0xFF && text[1] == 0xFE)
             return text[2..];
         return Encoding.Unicode.GetBytes(Encoding.UTF8.GetString(StripUtf8Bom(text)));
+    }
+
+    /// <summary>UTF-16LE (with or without BOM) in; UTF-8 without BOM out, the form every listing stores.</summary>
+    public static byte[] ToUtf8(byte[] utf16)
+    {
+        var body =
+            utf16.Length >= 2 && utf16[0] == 0xFF && utf16[1] == 0xFE ? utf16.AsSpan(2) : utf16;
+        return Encoding.UTF8.GetBytes(Encoding.Unicode.GetString(body));
     }
 
     public static ReadOnlySpan<byte> StripUtf8Bom(byte[] text) =>
