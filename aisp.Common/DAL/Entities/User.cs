@@ -19,6 +19,12 @@ public class User
     public DateTime? BannedAt { get; set; }
     public GameLanguage Language { get; set; } = GameLanguage.Japanese;
 
+    /// <summary>原稿用紙 (manuscript sheets) the account holds for the drama editor; shared across its characters.</summary>
+    public int AdventureSheetStock { get; set; }
+
+    /// <summary>Next drama work id handed out by recv_adventure_work_create_r. Monotonic; ids are never reused.</summary>
+    public int NextAdventureWorkId { get; set; } = 1;
+
     public ICollection<Character> Characters { get; set; } = new List<Character>();
     public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
     public ICollection<UserStorageItem> StorageItems { get; set; } = new List<UserStorageItem>();

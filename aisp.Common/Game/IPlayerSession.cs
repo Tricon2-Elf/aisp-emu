@@ -33,6 +33,9 @@ public interface IPlayerSession
     PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     int? ActiveShopId { get; set; }
     bool PendingEventEndAfterFade { get; set; }
+
+    /// <summary>Map to route back to when drama playback ends (0 = none). See AreaAdventureStartHandler.</summary>
+    uint AdventureReturnMapId { get; set; }
     string? ActiveEventKey { get; set; }
     NpcEventKind ActiveEventKind { get; set; }
     EventCompletionPolicy ActiveEventCompletionPolicy { get; set; }

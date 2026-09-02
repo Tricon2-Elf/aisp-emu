@@ -1904,9 +1904,17 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_end",
+        ImplementationState.Implemented
+    )]
+    AdventureEndRequest = 0x2125,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_end_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureEndResponse = 0xC1D1,
 
@@ -2032,9 +2040,17 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_start",
+        ImplementationState.Implemented
+    )]
+    AdventureStartRequest = 0x2939,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_start_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureStartResponse = 0x7C69,
 
@@ -2042,7 +2058,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_updated_sheet_stack",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureUpdatedSheetStackNotify = 0xABE0,
 
@@ -2088,9 +2104,17 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_work_add_sheet",
+        ImplementationState.Implemented
+    )]
+    AdventureWorkAddSheetRequest = 0x2FFF,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_work_add_sheet_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureWorkAddSheetResponse = 0xCEF4,
 
@@ -2098,23 +2122,39 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_work_create_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureWorkCreateResponse = 0x7CD2,
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_work_delete",
+        ImplementationState.Implemented
+    )]
+    AdventureWorkDeleteRequest = 0x2DA5,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_work_delete_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureWorkDeleteResponse = 0x2083,
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_adventure_work_sub_sheet",
+        ImplementationState.Implemented
+    )]
+    AdventureWorkSubSheetRequest = 0x4187,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_adventure_work_sub_sheet_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureWorkSubSheetResponse = 0x216E,
 
@@ -2744,9 +2784,17 @@ public enum PacketType : ushort
 
     [PacketMetadata(
         PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_get_adventure_upload_list",
+        ImplementationState.Implemented
+    )]
+    GetAdventureUploadListRequest = 0xB6EE,
+
+    [PacketMetadata(
+        PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_get_adventure_upload_list_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     GetAdventureUploadListResponse = 0x49B5,
 
@@ -4666,7 +4714,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_adventure_work_create",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     AdventureWorkCreateRequest = 0xB1D9,
 

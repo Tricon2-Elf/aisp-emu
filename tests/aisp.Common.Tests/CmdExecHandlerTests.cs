@@ -91,6 +91,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -195,6 +196,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -290,6 +292,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -427,6 +430,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -641,6 +645,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -714,6 +719,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -789,6 +795,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -856,6 +863,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -941,6 +949,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1029,6 +1038,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache([itemId]),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1113,6 +1123,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1181,6 +1192,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1305,6 +1317,7 @@ public class CmdExecHandlerTests
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 NullLogger<CmdExecHandler>.Instance
             );
 

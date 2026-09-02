@@ -23,6 +23,7 @@ public class CmdExecHandler(
     IItemBaseListCache itemBaseListCache,
     DirectMapLinkTransitionService directMapLinkTransitionService,
     ITextLocaliser localiser,
+    IAdventureWorkRepository adventureWorks,
     ILogger<CmdExecHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -537,6 +538,87 @@ public class CmdExecHandler(
                 "CmdExecHandler: added default outfit ({Count} wardrobe items) to inventory for character {CharacterId} and synced to area client",
                 itemIds.Count,
                 characterId
+            );
+            return;
+        }
+
+        if (cmd is "advsheets")
+        {
+            // /advsheets <count>: add 原稿用紙 (manuscript sheets) to the account's stock for the drama editor. On the
+            // original service they were bought in the shop; until that purchase path exists the stock starts at 0.
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.CharacterId == 0)
+            {
+                logger.LogWarning("CmdExecHandler: advsheets requires an active area session");
+                return;
+            }
+            if (
+                request.Arguments.Count == 0
+                || !int.TryParse(request.Arguments[0], out var sheetCount)
+                || sheetCount <= 0
+            )
+            {
+                await SendSystemNoticeAsync(session, "usage: /advsheets <count>", ct);
+                return;
+            }
+            var newStock = await adventureWorks.AddSheetsAsync(
+                session.User?.Id ?? session.UserId,
+                Math.Min(sheetCount, 10_000),
+                ct
+            );
+            if (newStock is null)
+            {
+                await SendSystemNoticeAsync(session, "advsheets: no account", ct);
+                return;
+            }
+            await areaClient.SendAsync(
+                PacketType.AdventureUpdatedSheetStackNotify,
+                new AdventureUpdatedSheetStackNotify((uint)newStock.Value).ToBytes(),
+                ct
+            );
+            await SendSystemNoticeAsync(session, $"advsheets: stock is now {newStock.Value}", ct);
+            return;
+        }
+
+        if (cmd is "advwork")
+        {
+            // /advwork <workId> [sheets]: register a drama work the client already has locally, e.g. restored from a
+            // backup of user/<uid>/<slot>/work/drama, so it shows up in the editor and 新規作成 can never reuse its id.
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.CharacterId == 0)
+            {
+                logger.LogWarning("CmdExecHandler: advwork requires an active area session");
+                return;
+            }
+            if (
+                request.Arguments.Count == 0
+                || !int.TryParse(request.Arguments[0], out var workId)
+                || workId <= 0
+            )
+            {
+                await SendSystemNoticeAsync(session, "usage: /advwork <workId> [sheets]", ct);
+                return;
+            }
+            var sheets = 1;
+            if (
+                request.Arguments.Count > 1
+                && int.TryParse(request.Arguments[1], out var parsedSheets)
+                && parsedSheets >= 0
+            )
+                sheets = parsedSheets;
+            var registered = await adventureWorks.RegisterAsync(
+                session.User?.Id ?? session.UserId,
+                (int)areaClient.CharacterId,
+                workId,
+                sheets,
+                ct
+            );
+            await SendSystemNoticeAsync(
+                session,
+                registered is null
+                    ? $"advwork: could not register work {workId}"
+                    : $"advwork: registered work {registered.WorkId} with {registered.Sheets} sheets",
+                ct
             );
             return;
         }
