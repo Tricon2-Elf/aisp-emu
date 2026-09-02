@@ -371,6 +371,46 @@ body {
     height: 100%;
 }
 
+.collection-panel > summary {
+    cursor: pointer;
+    gap: 0.75rem;
+    list-style: none;
+    margin-bottom: 0;
+    user-select: none;
+}
+
+.collection-panel > summary::-webkit-details-marker,
+.collection-panel > summary::marker {
+    content: "";
+    display: none;
+}
+
+.collection-panel[open] > summary {
+    margin-bottom: 0.85rem;
+}
+
+.collection-panel > summary h3 {
+    align-items: center;
+    display: inline-flex;
+}
+
+.collection-panel > summary h3::before {
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    content: "";
+    display: inline-block;
+    flex-shrink: 0;
+    height: 0.42rem;
+    margin-right: 0.55rem;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+    width: 0.42rem;
+}
+
+.collection-panel[open] > summary h3::before {
+    transform: rotate(45deg);
+}
+
 .section-heading {
     align-items: center;
     display: flex;
@@ -479,6 +519,11 @@ body {
 
 .robo-panel h3 {
     font-size: 1.05rem;
+}
+
+.robo-panel .collection-panel {
+    height: auto;
+    margin-top: 0.85rem;
 }
 
 .robo-stats {
