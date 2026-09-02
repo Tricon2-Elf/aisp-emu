@@ -2916,6 +2916,44 @@ public class AreaMapHandlersTests
         };
     }
 
+    [Fact]
+    public async Task AreasvEnterHandler_InvalidOtp_SendsEightByteEnterResponse()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var session = new CapturingPlayerSession();
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreasvEnterHandler(
+                new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new MapRepository(handlerDb),
+                new ChannelRepository(handlerDb),
+                new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
+                new MyRoomRepository(handlerDb),
+                new CircleRepository(handlerDb),
+                new FriendRepository(handlerDb),
+                new SharedState(),
+                NullLogger<AreasvEnterHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildAreasvEnterPayload(1, "unknown-otp-12345678"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            // recv_enter_areasv_r is a fixed 8-byte read on the client (result + objId).
+            var reply = Assert.Single(session.Sent, p => p.Type == PacketType.AreasvEnterResponse);
+            Assert.Equal(8, reply.Payload.Length);
+            Assert.NotEqual(0u, new PacketReader(reply.Payload).ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static User CreateUserWithCharacter(
         int userId,
         int characterId,
