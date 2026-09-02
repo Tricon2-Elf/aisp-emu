@@ -1,8 +1,10 @@
+using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Packets.Common;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Services;
@@ -22,10 +24,13 @@ public enum ModerationError
 public sealed class ModerationService(
     IUserRepository userRepo,
     ICharacterRepository characterRepo,
+    ICircleRepository circles,
+    MainContext db,
     SharedState state,
     ILogger<ModerationService> logger
 )
 {
+    public const string ModeratorsCircleName = "Moderators";
     public const int DefaultKickMinutes = 5;
     public const int MaxKickMinutes = 15;
     public const int DefaultBanDays = 1;
@@ -276,6 +281,7 @@ public sealed class ModerationService(
             return ModerationError.AlreadyModerator;
 
         await userRepo.SetRoleAsync(target.Id, UserRole.Moderator, ct);
+        await SyncModeratorsCircleForUserAsync(target.Id, ct);
         logger.LogInformation(
             "User {TargetUsername} promoted to Moderator by actor {ActorUserId}",
             target.Username,
@@ -303,6 +309,7 @@ public sealed class ModerationService(
             return ModerationError.NotModerator;
 
         await userRepo.SetRoleAsync(target.Id, UserRole.User, ct);
+        await SyncModeratorsCircleForUserAsync(target.Id, ct);
         logger.LogInformation(
             "User {TargetUsername} demoted from Moderator by actor {ActorUserId}",
             target.Username,
@@ -363,6 +370,7 @@ public sealed class ModerationService(
             return ModerationError.InvalidRoleChange;
 
         await userRepo.SetRoleAsync(target.Id, newRole, ct);
+        await SyncModeratorsCircleForUserAsync(target.Id, ct);
         logger.LogInformation(
             "User {TargetUsername} role changed to {NewRole} by actor {ActorUserId}",
             target.Username,
@@ -421,6 +429,80 @@ public sealed class ModerationService(
         return await DisconnectUserAsync(user, ct);
     }
 
+    public static bool IsModeratorsCircle(string? name) =>
+        string.Equals(name, ModeratorsCircleName, StringComparison.Ordinal);
+
+    public async Task SyncAllStaffCirclesAsync(CancellationToken ct = default)
+    {
+        var circle = await EnsureModeratorsCircleExistsAsync(ct);
+        if (circle is null)
+            return;
+
+        var staffUsers = await db
+            .Users.AsNoTracking()
+            .Where(user => user.Role >= UserRole.Moderator)
+            .Select(user => user.Id)
+            .ToListAsync(ct);
+
+        foreach (var userId in staffUsers)
+            await EnsureUserInModeratorsCircleAsync(userId, circle.Id, ct);
+
+        var memberCharacterIds = await db
+            .CircleMembers.AsNoTracking()
+            .Where(member => member.CircleId == circle.Id)
+            .Select(member => member.CharacterId)
+            .ToListAsync(ct);
+
+        foreach (var characterId in memberCharacterIds)
+        {
+            var role = await db
+                .Characters.AsNoTracking()
+                .Where(character => character.Id == characterId)
+                .Join(
+                    db.Users.AsNoTracking(),
+                    character => character.UserId,
+                    user => user.Id,
+                    (_, user) => user.Role
+                )
+                .FirstOrDefaultAsync(ct);
+
+            if (role >= UserRole.Moderator)
+                continue;
+
+            await RemoveCharacterFromModeratorsCircleAsync(circle, characterId, ct);
+        }
+    }
+
+    public async Task SyncModeratorsCircleForUserAsync(int userId, CancellationToken ct = default)
+    {
+        var role = await db
+            .Users.AsNoTracking()
+            .Where(user => user.Id == userId)
+            .Select(user => user.Role)
+            .FirstOrDefaultAsync(ct);
+
+        if (role >= UserRole.Moderator)
+        {
+            var circle = await EnsureModeratorsCircleExistsAsync(ct);
+            if (circle is not null)
+                await EnsureUserInModeratorsCircleAsync(userId, circle.Id, ct);
+            return;
+        }
+
+        var moderatorsCircle = await circles.GetByNameAsync(ModeratorsCircleName, ct);
+        if (moderatorsCircle is null)
+            return;
+
+        var characterIds = await db
+            .Characters.AsNoTracking()
+            .Where(character => character.UserId == userId)
+            .Select(character => character.Id)
+            .ToListAsync(ct);
+
+        foreach (var characterId in characterIds)
+            await RemoveCharacterFromModeratorsCircleAsync(moderatorsCircle, characterId, ct);
+    }
+
     public static int ClampKickMinutes(int minutes) => Math.Clamp(minutes, 1, MaxKickMinutes);
 
     public static int ClampModeratorBanDays(int days) =>
@@ -430,4 +512,193 @@ public sealed class ModerationService(
         token.Equals("perma", StringComparison.OrdinalIgnoreCase)
         || token.Equals("permanent", StringComparison.OrdinalIgnoreCase)
         || token == "0";
+
+    private async Task<Circle?> EnsureModeratorsCircleExistsAsync(CancellationToken ct = default)
+    {
+        var existing = await circles.GetByNameAsync(ModeratorsCircleName, ct);
+        if (existing is not null)
+            return existing;
+
+        var leaderCharacterId = await FindFirstSystemAdminCharacterIdAsync(ct);
+        if (leaderCharacterId is null)
+        {
+            logger.LogDebug(
+                "Moderators circle not created yet: no system admin with a character exists"
+            );
+            return null;
+        }
+
+        var result = await circles.CreateAsync(leaderCharacterId.Value, ModeratorsCircleName, 0, ct);
+        if (result.Result != CircleResult.Ok || result.Circle is null)
+        {
+            logger.LogWarning(
+                "Failed to create Moderators circle for leader character {CharacterId}: {Result}",
+                leaderCharacterId.Value,
+                result.Result
+            );
+            return null;
+        }
+
+        logger.LogInformation(
+            "Created Moderators circle {CircleId} with leader character {CharacterId}",
+            result.Circle.Id,
+            leaderCharacterId.Value
+        );
+        return result.Circle;
+    }
+
+    private async Task<int?> FindFirstSystemAdminCharacterIdAsync(CancellationToken ct = default)
+    {
+        var userId = await db
+            .Users.AsNoTracking()
+            .Where(user => user.Role >= UserRole.ServerAdmin)
+            .OrderBy(user => user.Id)
+            .Select(user => (int?)user.Id)
+            .FirstOrDefaultAsync(ct);
+
+        if (userId is null)
+        {
+            userId = await db
+                .Users.AsNoTracking()
+                .Where(user => user.Role >= UserRole.Admin)
+                .OrderBy(user => user.Id)
+                .Select(user => (int?)user.Id)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        if (userId is null)
+            return null;
+
+        return await db
+            .Characters.AsNoTracking()
+            .Where(character => character.UserId == userId.Value)
+            .OrderBy(character => character.Id)
+            .Select(character => (int?)character.Id)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    private async Task EnsureUserInModeratorsCircleAsync(
+        int userId,
+        int circleId,
+        CancellationToken ct
+    )
+    {
+        var characterIds = await db
+            .Characters.AsNoTracking()
+            .Where(character => character.UserId == userId)
+            .Select(character => character.Id)
+            .ToListAsync(ct);
+
+        foreach (var characterId in characterIds)
+        {
+            var result = await circles.EnsureMemberDirectAsync(
+                circleId,
+                characterId,
+                bypassMembershipLimit: true,
+                ct: ct
+            );
+            if (result.Result != CircleResult.Ok)
+            {
+                logger.LogWarning(
+                    "Failed to add character {CharacterId} to Moderators circle: {Result}",
+                    characterId,
+                    result.Result
+                );
+            }
+        }
+    }
+
+    private async Task RemoveCharacterFromModeratorsCircleAsync(
+        Circle circle,
+        int characterId,
+        CancellationToken ct
+    )
+    {
+        if (circle.LeaderCharacterId == characterId)
+        {
+            var successorId = await FindModeratorsCircleLeadershipSuccessorAsync(
+                circle.Id,
+                characterId,
+                ct
+            );
+            if (successorId is null)
+            {
+                logger.LogWarning(
+                    "Cannot remove character {CharacterId} from Moderators circle: no successor leader",
+                    characterId
+                );
+                return;
+            }
+
+            var transfer = await circles.TransferLeadershipAsync(circle.Id, successorId.Value, ct);
+            if (transfer.Result != CircleResult.Ok)
+            {
+                logger.LogWarning(
+                    "Failed to transfer Moderators circle leadership to {CharacterId}: {Result}",
+                    successorId.Value,
+                    transfer.Result
+                );
+                return;
+            }
+        }
+
+        var result = await circles.RemoveMemberDirectAsync(circle.Id, characterId, ct);
+        if (result.Result != CircleResult.Ok)
+        {
+            logger.LogWarning(
+                "Failed to remove character {CharacterId} from Moderators circle: {Result}",
+                characterId,
+                result.Result
+            );
+        }
+    }
+
+    private async Task<int?> FindModeratorsCircleLeadershipSuccessorAsync(
+        int circleId,
+        int currentLeaderCharacterId,
+        CancellationToken ct
+    )
+    {
+        var preferredLeader = await FindFirstSystemAdminCharacterIdAsync(ct);
+        if (
+            preferredLeader is not null
+            && preferredLeader.Value != currentLeaderCharacterId
+            && await db.CircleMembers.AnyAsync(
+                member =>
+                    member.CircleId == circleId && member.CharacterId == preferredLeader.Value,
+                ct
+            )
+        )
+            return preferredLeader;
+
+        return await db
+            .CircleMembers.AsNoTracking()
+            .Where(member =>
+                member.CircleId == circleId && member.CharacterId != currentLeaderCharacterId
+            )
+            .Join(
+                db.Characters.AsNoTracking(),
+                member => member.CharacterId,
+                character => character.Id,
+                (member, character) => new { member, character.UserId }
+            )
+            .Join(
+                db.Users.AsNoTracking(),
+                row => row.UserId,
+                user => user.Id,
+                (row, user) =>
+                    new
+                    {
+                        row.member.CharacterId,
+                        row.member.JoinedAt,
+                        user.Role,
+                    }
+            )
+            .Where(row => row.Role >= UserRole.Moderator)
+            .OrderByDescending(row => row.Role)
+            .ThenBy(row => row.JoinedAt)
+            .ThenBy(row => row.CharacterId)
+            .Select(row => (int?)row.CharacterId)
+            .FirstOrDefaultAsync(ct);
+    }
 }

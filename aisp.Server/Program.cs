@@ -400,6 +400,10 @@ internal class Program
                     portalOptions.AdminUsernames
                 );
             }
+
+            await scope
+                .ServiceProvider.GetRequiredService<ModerationService>()
+                .SyncAllStaffCirclesAsync();
         }
 
         await app.RunAsync();

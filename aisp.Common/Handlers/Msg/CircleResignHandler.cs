@@ -1,5 +1,6 @@
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Services;
 using aisp.Network;
 using aisp.Network.Packets.Msg;
 
@@ -20,6 +21,14 @@ public class CircleResignHandler(ICircleRepository circles, SharedState state)
     )
     {
         var circleId = checked((int)request.CircleId);
+        var circle = await circles.GetByIdAsync(circleId, ct);
+        if (
+            circle is not null
+            && ModerationService.IsModeratorsCircle(circle.Name)
+            && session.User?.Role.HasPortalAccess() == true
+        )
+            return new CircleResignResponse((uint)CircleResult.NotAuthorized);
+
         var result = await circles.ResignAsync((int)session.CharacterId, circleId, ct);
         if (result.Result != CircleResult.Ok)
             return new CircleResignResponse((uint)result.Result);

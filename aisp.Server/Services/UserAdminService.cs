@@ -171,6 +171,7 @@ public class UserAdminService
             return (false, "user not found");
 
         await _userRepo.SetRoleAsync(user.Id, role, ct);
+        await _moderation.SyncModeratorsCircleForUserAsync(user.Id, ct);
         _logger.LogInformation("API set role for {Username} to {Role}", username, role);
         return (true, null);
     }

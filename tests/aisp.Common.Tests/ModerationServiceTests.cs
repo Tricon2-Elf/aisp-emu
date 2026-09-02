@@ -3,6 +3,7 @@ using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Services;
+using aisp.Network;
 using aisp.Common.Tests.Support;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -242,8 +243,95 @@ public class ModerationServiceTests
         return new ModerationService(
             new UserRepository(new MainContext(options)),
             new CharacterRepository(new MainContext(options), NullLogger<CharacterRepository>.Instance),
+            new CircleRepository(new MainContext(options)),
+            new MainContext(options),
             state,
             NullLogger<ModerationService>.Instance
         );
     }
+
+    [Fact]
+    public async Task SyncAllStaffCirclesAsync_CreatesCircleLedByFirstServerAdmin()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var admin = CreateUser(1, "sysadmin", UserRole.ServerAdmin);
+            var mod = CreateUser(2, "mod", UserRole.Moderator);
+            admin.Characters.Add(CreateCharacter(100, admin.Id, "AdminChar"));
+            mod.Characters.Add(CreateCharacter(200, mod.Id, "ModChar"));
+            await SeedUsersAsync(options, admin, mod);
+
+            var service = CreateService(options);
+            await service.SyncAllStaffCirclesAsync(TestContext.Current.CancellationToken);
+
+            await using var db = new MainContext(options);
+            var circle = Assert.Single(db.Circles.Where(c => c.Name == ModerationService.ModeratorsCircleName));
+            Assert.Equal(100, circle.LeaderCharacterId);
+            var members = db.CircleMembers.Where(member => member.CircleId == circle.Id).ToList();
+            Assert.Equal(2, members.Count);
+            Assert.Contains(members, member => member.CharacterId == 100);
+            Assert.Contains(members, member => member.CharacterId == 200);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SyncModeratorsCircleForUserAsync_RemovesDemotedModeratorFromCircle()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var admin = CreateUser(1, "sysadmin", UserRole.ServerAdmin);
+            var mod = CreateUser(2, "mod", UserRole.Moderator);
+            admin.Characters.Add(CreateCharacter(100, admin.Id, "AdminChar"));
+            mod.Characters.Add(CreateCharacter(200, mod.Id, "ModChar"));
+            await SeedUsersAsync(options, admin, mod);
+
+            var service = CreateService(options);
+            await service.SyncAllStaffCirclesAsync(TestContext.Current.CancellationToken);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Single(user => user.Id == 2).Role = UserRole.User;
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await service.SyncModeratorsCircleForUserAsync(2, TestContext.Current.CancellationToken);
+
+            await using var verifyDb = new MainContext(options);
+            var circle = verifyDb.Circles.Single(c => c.Name == ModerationService.ModeratorsCircleName);
+            Assert.False(
+                verifyDb.CircleMembers.Any(member =>
+                    member.CircleId == circle.Id && member.CharacterId == 200
+                )
+            );
+            Assert.True(
+                verifyDb.CircleMembers.Any(member =>
+                    member.CircleId == circle.Id && member.CharacterId == 100
+                )
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    private static Character CreateCharacter(int id, int userId, string name) =>
+        new()
+        {
+            Id = id,
+            UserId = userId,
+            Name = name,
+            ModelId = 100,
+            Birthdate = new DateTime(2000, 1, 1),
+            BloodType = BloodType.A,
+            Gender = 1,
+            FaceType = 1,
+            Hairstyle = 1,
+        };
 }

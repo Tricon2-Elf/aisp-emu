@@ -1631,6 +1631,8 @@ public class CmdExecHandlerTests
                 new MainContext(options),
                 NullLogger<CharacterRepository>.Instance
             ),
+            new CircleRepository(new MainContext(options)),
+            new MainContext(options),
             state,
             NullLogger<ModerationService>.Instance
         );

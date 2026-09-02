@@ -1,13 +1,15 @@
 using aisp.Common;
 using aisp.Common.Config;
+using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Services;
 using aisp.Network;
 using aisp.Network.Packets.Common;
-using aisp.Common.Services;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -143,9 +145,14 @@ public class UserAdminServiceTests
     {
         state ??= new SharedState();
         var charRepo = new Mock<ICharacterRepository>();
+        var options = new DbContextOptionsBuilder<MainContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
         var moderation = new ModerationService(
             userRepo,
             charRepo.Object,
+            new CircleRepository(new MainContext(options)),
+            new MainContext(options),
             state,
             NullLogger<ModerationService>.Instance
         );
