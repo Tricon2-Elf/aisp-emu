@@ -93,6 +93,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -199,6 +200,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -296,6 +298,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -435,6 +438,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms(["faggot"]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -477,6 +481,20 @@ public class CmdExecHandlerTests
             Assert.Equal("Second Room", createdRoom.Name);
             Assert.Equal(MyRoomStage.EightTatami, createdRoom.Stage);
             Assert.Equal(checked((uint)createdRoom.Id), areaSession.MyRoomId);
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "create", "8", "Faggot"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.False(
+                await verifyDb
+                    .Rooms.AsNoTracking()
+                    .AnyAsync(
+                        room => room.OwnerCharacterId == 8101 && room.Name == "Faggot",
+                        TestContext.Current.CancellationToken
+                    )
+            );
 
             msgSession.Sent.Clear();
             await handler.HandleAsync(
@@ -651,6 +669,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -726,6 +745,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -803,6 +823,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -872,6 +893,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -959,6 +981,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1049,6 +1072,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1135,6 +1159,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1205,6 +1230,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1331,6 +1357,7 @@ public class CmdExecHandlerTests
                 CreateModerationService(options, state),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 

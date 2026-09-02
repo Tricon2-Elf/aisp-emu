@@ -49,11 +49,8 @@ public class LoginHandler(
         }
 
         var user =
-            await UserModerationState.PrepareUserForGameLoginAsync(
-                userRepo,
-                userSession.UserId,
-                ct
-            ) ?? userSession.User;
+            await UserModerationState.PrepareUserForGameLoginAsync(userRepo, userSession.UserId, ct)
+            ?? userSession.User;
 
         if (UserModerationState.IsCurrentlyBanned(user))
         {

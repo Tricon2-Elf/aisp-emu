@@ -27,7 +27,7 @@ public sealed class CircleHandlerTests
         var session = new CapturingPlayerSession { CharacterId = 1, User = db.Users.First() };
         state.RegisterClient(ServerType.Msg, session);
 
-        var handler = new CircleCreateHandler(circles, state);
+        var handler = new CircleCreateHandler(circles, state, WordFilter.FromTerms([]));
         var response = await handler.HandleAsync(
             new CircleCreateRequest("Alpha", 3),
             session,
@@ -159,7 +159,9 @@ public sealed class CircleHandlerTests
         var handler = new CircleChatPostHandler(
             NullLogger<CircleChatPostHandler>.Instance,
             circles,
-            state
+            state,
+            WordFilter.FromTerms([]),
+            TestTextLocaliser.English
         );
         var writer = new PacketWriter();
         writer.Write(9u);
@@ -526,7 +528,11 @@ public sealed class CircleHandlerTests
 
         Assert.DoesNotContain(leader.Sent, p => p.Type == PacketType.CircleNotifyAddMember);
         Assert.Null(
-            await circles.GetMembershipAsync(created.Circle!.Id, 2, TestContext.Current.CancellationToken)
+            await circles.GetMembershipAsync(
+                created.Circle!.Id,
+                2,
+                TestContext.Current.CancellationToken
+            )
         );
     }
 
@@ -582,5 +588,190 @@ public sealed class CircleHandlerTests
         Assert.Equal(2u, reader.ReadUInt()); // login flag count
         Assert.Equal(1, reader.ReadByte()); // member 1 online
         Assert.Equal(1, reader.ReadByte()); // member 2 online
+    }
+
+    [Fact]
+    public async Task Create_RejectsBlockedCircleName()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var session = new CapturingPlayerSession { CharacterId = 1, User = db.Users.First() };
+
+        var handler = new CircleCreateHandler(
+            circles,
+            new SharedState(),
+            WordFilter.FromTerms(["faggot"])
+        );
+        var response = await handler.HandleAsync(
+            new CircleCreateRequest("Faggot", 3),
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.NotNull(response);
+        Assert.Equal((uint)CircleResult.Failed, response!.Result);
+        Assert.False(await db.Circles.AnyAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ChatPost_RejectsBlockedMessage()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+        await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "Chat",
+            0,
+            TestContext.Current.CancellationToken
+        );
+        await circles.InviteAsync(1, 2, created.Circle!.Id, TestContext.Current.CancellationToken);
+        await circles.AnswerInviteAsync(2, true, TestContext.Current.CancellationToken);
+
+        var state = new SharedState();
+        var leader = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            Character = db.Characters.First(c => c.Id == 1),
+            User = db.Users.First(u => u.Id == 1),
+        };
+        var member = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            Character = db.Characters.First(c => c.Id == 2),
+            User = db.Users.First(u => u.Id == 2),
+        };
+        state.RegisterClient(ServerType.Msg, leader);
+        state.RegisterClient(ServerType.Msg, member);
+        state.EnterCircleChat(leader.ConnectionId, created.Circle.Id);
+        state.EnterCircleChat(member.ConnectionId, created.Circle.Id);
+
+        var handler = new CircleChatPostHandler(
+            NullLogger<CircleChatPostHandler>.Instance,
+            circles,
+            state,
+            WordFilter.FromTerms(["faggot"]),
+            TestTextLocaliser.English
+        );
+        var writer = new PacketWriter();
+        writer.Write(9u);
+        writer.Write("Faggot", "utf-8");
+        await handler.HandleAsync(writer.ToBytes(), leader, TestContext.Current.CancellationToken);
+
+        var response = leader.Sent.Single(p => p.Type == PacketType.CircleChatPostResponse);
+        var reader = new PacketReader(response.Payload);
+        Assert.Equal(9u, reader.ReadUInt());
+        Assert.Equal((uint)CircleResult.Failed, reader.ReadUInt());
+        var notice = leader.Sent.Single(p => p.Type == PacketType.TalkForwardNotify);
+        var noticeReader = new PacketReader(notice.Payload);
+        Assert.Equal(0u, noticeReader.ReadUInt());
+        Assert.Equal(SystemNotice.DistId, noticeReader.ReadUInt());
+        Assert.Contains(
+            "Please don't use slurs.",
+            noticeReader.ReadString("utf-8"),
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain(member.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
+    }
+
+    [Fact]
+    public async Task ChatPost_AllowsSwearsThatAreNotSlurs()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+        await TestDb.SeedCharacterAsync(options, 2, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "Chat",
+            0,
+            TestContext.Current.CancellationToken
+        );
+        await circles.InviteAsync(1, 2, created.Circle!.Id, TestContext.Current.CancellationToken);
+        await circles.AnswerInviteAsync(2, true, TestContext.Current.CancellationToken);
+
+        var state = new SharedState();
+        var leader = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            Character = db.Characters.First(c => c.Id == 1),
+            User = db.Users.First(u => u.Id == 1),
+        };
+        var member = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            Character = db.Characters.First(c => c.Id == 2),
+            User = db.Users.First(u => u.Id == 2),
+        };
+        state.RegisterClient(ServerType.Msg, leader);
+        state.RegisterClient(ServerType.Msg, member);
+        state.EnterCircleChat(leader.ConnectionId, created.Circle.Id);
+        state.EnterCircleChat(member.ConnectionId, created.Circle.Id);
+
+        var handler = new CircleChatPostHandler(
+            NullLogger<CircleChatPostHandler>.Instance,
+            circles,
+            state,
+            WordFilter.FromTerms(["fuck", "faggot"], ["faggot"]),
+            TestTextLocaliser.English
+        );
+        var writer = new PacketWriter();
+        writer.Write(9u);
+        writer.Write("this is fucked", "utf-8");
+        await handler.HandleAsync(writer.ToBytes(), leader, TestContext.Current.CancellationToken);
+
+        Assert.Contains(leader.Sent, p => p.Type == PacketType.CircleChatPostResponse);
+        Assert.Contains(member.Sent, p => p.Type == PacketType.CircleChatForwardNotify);
+    }
+
+    [Fact]
+    public async Task MessageChange_RejectsBlockedMessage()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(
+            1,
+            "Alpha",
+            1,
+            TestContext.Current.CancellationToken
+        );
+        var session = new CapturingPlayerSession { CharacterId = 1, User = db.Users.First() };
+        var handler = new CircleMessageChangeHandler(
+            circles,
+            new SharedState(),
+            WordFilter.FromTerms(["faggot"])
+        );
+
+        var response = await handler.HandleAsync(
+            new CircleMessageChangeRequest
+            {
+                CircleId = (ulong)created.Circle!.Id,
+                Message = "Faggot",
+            },
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.NotNull(response);
+        Assert.Equal((uint)CircleResult.Failed, new PacketReader(response!.ToBytes()).ReadUInt());
+
+        await using var verify = new MainContext(options);
+        var stored = await verify.Circles.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(string.Empty, stored.Message);
     }
 }

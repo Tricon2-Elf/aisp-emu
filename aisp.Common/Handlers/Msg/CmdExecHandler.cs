@@ -25,6 +25,7 @@ public class CmdExecHandler(
     ModerationService moderationService,
     ITextLocaliser localiser,
     IAdventureWorkRepository adventureWorks,
+    IWordFilter wordFilter,
     ILogger<CmdExecHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -331,6 +332,15 @@ public class CmdExecHandler(
                 {
                     logger.LogWarning(
                         "CmdExecHandler: room create name is longer than 45 characters for character {CharacterId}",
+                        areaClient.CharacterId
+                    );
+                    return;
+                }
+
+                if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, roomName))
+                {
+                    logger.LogWarning(
+                        "CmdExecHandler: room create name is blocked for character {CharacterId}",
                         areaClient.CharacterId
                     );
                     return;
@@ -934,7 +944,10 @@ public class CmdExecHandler(
         if (error == ModerationError.None)
         {
             var actor = await userRepo.GetById(session.UserId);
-            var resolved = ModerationService.ResolveBanDuration(actor?.Role ?? UserRole.User, banDays);
+            var resolved = ModerationService.ResolveBanDuration(
+                actor?.Role ?? UserRole.User,
+                banDays
+            );
             if (resolved.IsPermanent)
             {
                 successMessage = localiser.Get(

@@ -50,8 +50,8 @@ public class AuthenticateHandler(
             return null;
         }
 
-        user = await UserModerationState.PrepareUserForGameLoginAsync(userRepo, user.Id, ct)
-            ?? user;
+        user =
+            await UserModerationState.PrepareUserForGameLoginAsync(userRepo, user.Id, ct) ?? user;
 
         if (UserModerationState.IsCurrentlyBanned(user))
         {

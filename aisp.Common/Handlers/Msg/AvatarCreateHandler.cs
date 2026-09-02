@@ -28,7 +28,7 @@ public class AvatarCreateHandler(
     {
         _logger.LogInformation("createRequest: {request}", request.ToString());
 
-        if (wordFilter.ContainsBlockedWord(request.AvatarName))
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.AvatarName))
         {
             _logger.LogWarning(
                 "Rejecting avatar create for user {UserId}: blocked name",

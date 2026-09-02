@@ -195,7 +195,7 @@ public class AreaMyRoomEditingHandlerTests
                 TestContext.Current.CancellationToken
             );
 
-            var nameHandler = new AreaMyRoomUpdateNameHandler(repository);
+            var nameHandler = new AreaMyRoomUpdateNameHandler(repository, WordFilter.FromTerms([]));
             var state = new SharedState();
             state.RegisterClient(ServerType.Area, session);
             var securityHandler = CreateSecurityHandler(options, repository, state);
@@ -253,6 +253,47 @@ public class AreaMyRoomEditingHandlerTests
                 TestContext.Current.CancellationToken
             );
             Assert.Equal(MyRoomSecurity.CircleMembersOnly, stored.Security);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UpdateName_RejectsBlockedRoomName()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+
+            await using var db = new MainContext(options);
+            var repository = new MyRoomRepository(db);
+            var session = CreateSession();
+            var handler = new AreaMyRoomUpdateNameHandler(
+                repository,
+                WordFilter.FromTerms(["faggot"])
+            );
+
+            await ((IPacketHandler)handler).HandleAsync(
+                BuildNamePayload(42, "Faggot"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var response = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.MyRoomUpdateNameResponse
+            );
+            Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
+
+            db.ChangeTracker.Clear();
+            var stored = await db.Rooms.SingleAsync(
+                room => room.Id == 42,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal("My Room", stored.Name);
         }
         finally
         {

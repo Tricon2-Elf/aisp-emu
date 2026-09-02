@@ -1,5 +1,6 @@
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Msg;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,9 @@ namespace aisp.Common.Handlers.Msg;
 public class CircleChatPostHandler(
     ILogger<CircleChatPostHandler> logger,
     ICircleRepository circles,
-    SharedState state
+    SharedState state,
+    IWordFilter wordFilter,
+    ITextLocaliser localiser
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.CircleChatPostRequest;
@@ -41,6 +44,22 @@ public class CircleChatPostHandler(
                 new CircleChatPostResponse(req.MessageId, (uint)CircleResult.NotMember).ToBytes(),
                 ct
             );
+            return;
+        }
+
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.NoSlurs, req.Message))
+        {
+            logger.LogWarning(
+                "Rejecting circle chat from character {CharacterId} in circle {CircleId}: blocked message",
+                session.CharacterId,
+                circleId
+            );
+            await session.SendAsync(
+                ResponseType,
+                new CircleChatPostResponse(req.MessageId, (uint)CircleResult.Failed).ToBytes(),
+                ct
+            );
+            await SystemNotice.SendAsync(session, localiser.Get(session, L.Chat.SlurRejected), ct);
             return;
         }
 

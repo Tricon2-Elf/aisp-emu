@@ -17,6 +17,12 @@
     "zh-Hans": "系统",
     "zh-Hant": "系統"
   },
+  "chat.slur_rejected": {
+    "ja": "そのメッセージは送信されませんでした。差別用語は使用しないでください。",
+    "en": "That message was not sent. Please don't use slurs.",
+    "zh-Hans": "该消息未发送。请不要使用歧视性用语。",
+    "zh-Hant": "該訊息未發送。請不要使用歧視性用語。"
+  },
   "maintenance.warning": {
     "ja": "サーバーメンテナンスまであと{0}分です。切断されます。",
     "en": "Server maintenance in {0} minute(s). You will be disconnected.",

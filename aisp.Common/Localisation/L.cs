@@ -66,6 +66,11 @@ public static class L
         public static readonly LocKey Name = new("system.name");
     }
 
+    public static class Chat
+    {
+        public static readonly LocKey SlurRejected = new("chat.slur_rejected");
+    }
+
     public static class Maintenance
     {
         public static readonly LocKey Warning = new("maintenance.warning");
@@ -113,7 +118,9 @@ public static class L
         public static readonly LocKey CannotTargetSelf = new("cmd.moderation.cannot_target_self");
         public static readonly LocKey AlreadyModerator = new("cmd.moderation.already_moderator");
         public static readonly LocKey NotModerator = new("cmd.moderation.not_moderator");
-        public static readonly LocKey InvalidBanDuration = new("cmd.moderation.invalid_ban_duration");
+        public static readonly LocKey InvalidBanDuration = new(
+            "cmd.moderation.invalid_ban_duration"
+        );
         public static readonly LocKey ModerationFailed = new("cmd.moderation.failed");
     }
 

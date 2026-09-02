@@ -4,8 +4,8 @@ using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Localisation;
-using aisp.Network;
 using aisp.Common.Services;
+using aisp.Network;
 using aisp.Portal;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Builder;
@@ -69,6 +69,7 @@ internal static class PortalApiEndpointsExtensions
         RegisterPortalAccountRequest request,
         IUserRepository users,
         IOptions<PortalOptions> portalOptions,
+        IWordFilter wordFilter,
         CancellationToken ct
     )
     {
@@ -83,6 +84,8 @@ internal static class PortalApiEndpointsExtensions
             || request.Password.Length is < 8 or > 128
         )
             return TypedResults.BadRequest(new PortalErrorDto("Invalid registration details."));
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, username))
+            return TypedResults.BadRequest(new PortalErrorDto("That username is not allowed."));
         if (await users.GetByUsernameAsync(username) is not null)
             return TypedResults.Conflict(new PortalErrorDto("Username already exists."));
 
@@ -126,8 +129,7 @@ internal static class PortalApiEndpointsExtensions
             return TypedResults.Unauthorized();
         }
 
-        user =
-            await UserModerationState.PrepareUserForGameLoginAsync(users, user.Id, ct) ?? user;
+        user = await UserModerationState.PrepareUserForGameLoginAsync(users, user.Id, ct) ?? user;
 
         if (UserModerationState.IsCurrentlyBanned(user))
         {
@@ -252,12 +254,7 @@ internal static class PortalApiEndpointsExtensions
         if (await users.GetById(userId) is null)
             return TypedResults.NotFound(new PortalErrorDto("User not found."));
 
-        var error = await moderation.SetRoleAsync(
-            request.ActorUserId,
-            userId,
-            request.Role,
-            ct
-        );
+        var error = await moderation.SetRoleAsync(request.ActorUserId, userId, request.Role, ct);
         return MapModerationResult(error);
     }
 
@@ -430,7 +427,7 @@ internal static class PortalApiEndpointsExtensions
             return TypedResults.BadRequest(
                 new PortalErrorDto("Doll name must be between 1 and 37 characters.")
             );
-        if (wordFilter.ContainsBlockedWord(name))
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, name))
             return TypedResults.BadRequest(new PortalErrorDto("That doll name is not allowed."));
 
         if (
