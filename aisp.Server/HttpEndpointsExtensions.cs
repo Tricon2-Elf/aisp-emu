@@ -1,4 +1,6 @@
 using aisp.Common;
+using aisp.Common.DAL.Entities;
+using aisp.Common.DAL.Repositories;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -247,6 +249,52 @@ internal static class HttpEndpointsExtensions
             {
                 var stats = await service.GetStatsAsync(ct);
                 return Results.Ok(stats);
+            }
+        );
+
+        app.MapGet(
+            "/api/chat",
+            async (
+                ChatLogKind? kind,
+                int? userId,
+                int? characterId,
+                int? circleId,
+                bool? rejected,
+                int? skip,
+                int? take,
+                IChatLogRepository chatLog,
+                CancellationToken ct
+            ) =>
+            {
+                var (items, total) = await chatLog.ListAsync(
+                    kind,
+                    userId,
+                    characterId,
+                    circleId,
+                    rejected,
+                    skip ?? 0,
+                    take ?? 100,
+                    ct
+                );
+                var messages = items
+                    .Select(row => new ChatLogEntryDto
+                    {
+                        Id = row.Id,
+                        Kind = row.Kind.ToString(),
+                        UserId = row.UserId,
+                        CharacterId = row.CharacterId,
+                        CharacterName = row.CharacterName,
+                        Message = row.Message,
+                        DistId = row.DistId,
+                        BalloonId = row.BalloonId,
+                        CircleId = row.CircleId,
+                        MapId = row.MapId,
+                        ChannelId = row.ChannelId,
+                        Rejected = row.Rejected,
+                        CreatedAt = row.CreatedAt,
+                    })
+                    .ToList();
+                return Results.Ok(new { messages, total });
             }
         );
 

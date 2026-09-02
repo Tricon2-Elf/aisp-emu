@@ -24,6 +24,12 @@ public sealed class UserDetailModel(
     public bool CanModerateTargetUser { get; private set; }
     public bool CanChangeRole { get; private set; }
     public IReadOnlyList<UserRole> AssignableRoles { get; private set; } = [];
+    public IReadOnlyList<PortalChatMessageDto> ChatMessages { get; private set; } = [];
+    public int ChatPage { get; private set; } = 1;
+    public int ChatTotal { get; private set; }
+    public int ChatPageCount { get; private set; } = 1;
+    public bool ChatHasNextPage => ChatPage < ChatPageCount;
+    public const int ChatPageSize = 50;
 
     [TempData]
     public string? StatusMessage { get; set; }
@@ -31,7 +37,8 @@ public sealed class UserDetailModel(
     [TempData]
     public bool StatusIsError { get; set; }
 
-    public async Task OnGetAsync(int userId, CancellationToken ct) => await LoadAsync(userId, ct);
+    public async Task OnGetAsync(int userId, int? chatPage, CancellationToken ct) =>
+        await LoadAsync(userId, ct, chatPage, includeChat: true);
 
     public async Task<IActionResult> OnPostSetPasswordAsync(
         int userId,
@@ -184,7 +191,12 @@ public sealed class UserDetailModel(
         return RedirectToPage(new { userId });
     }
 
-    private async Task LoadAsync(int userId, CancellationToken ct)
+    private async Task LoadAsync(
+        int userId,
+        CancellationToken ct,
+        int? chatPage = null,
+        bool includeChat = false
+    )
     {
         ActorUserId = PortalAuthClaims.GetUserId(User);
         var actorUser = await authApi.GetUserAsync(ActorUserId, ct);
@@ -199,6 +211,20 @@ public sealed class UserDetailModel(
         );
         CanChangeRole = CanModerateTargetUser && ActorRole >= UserRole.Admin;
         AssignableRoles = BuildAssignableRoles(ActorRole, TargetUser.Role);
+        if (!includeChat)
+            return;
+
+        ChatPage = Math.Max(chatPage ?? 1, 1);
+        var chat = await msgApi.GetUserChatAsync(userId, ChatPage, ChatPageSize, ct);
+        ChatMessages = chat.Messages.Take(ChatPageSize).ToArray();
+        ChatTotal = chat.Total;
+        ChatPageCount = Math.Max(1, (int)Math.Ceiling(ChatTotal / (double)ChatPageSize));
+        if (ChatPage > ChatPageCount)
+        {
+            ChatPage = ChatPageCount;
+            chat = await msgApi.GetUserChatAsync(userId, ChatPage, ChatPageSize, ct);
+            ChatMessages = chat.Messages.Take(ChatPageSize).ToArray();
+        }
     }
 
     private static IReadOnlyList<UserRole> BuildAssignableRoles(

@@ -95,12 +95,7 @@ public sealed class AuthPortalApiClient(
             ct
         );
 
-    public Task SetRoleAsync(
-        int userId,
-        int actorUserId,
-        UserRole role,
-        CancellationToken ct
-    ) =>
+    public Task SetRoleAsync(int userId, int actorUserId, UserRole role, CancellationToken ct) =>
         PostNoContentAsync(
             $"api/auth/portal/users/{userId}/role",
             new PortalSetRoleRequest(actorUserId, role),
@@ -282,6 +277,27 @@ public sealed class MsgPortalApiClient(
         return await response.Content.ReadFromJsonAsync<PortalDisconnectResultDto>(
                 cancellationToken: ct
             )
+            ?? throw new PortalApiException(
+                response.StatusCode,
+                "The backend returned an empty response."
+            );
+    }
+
+    public async Task<PortalChatPageDto> GetUserChatAsync(
+        int userId,
+        int page,
+        int pageSize,
+        CancellationToken ct
+    )
+    {
+        var skip = Math.Max(page - 1, 0) * pageSize;
+        using var response = await httpClient.GetAsync(
+            $"api/msg/portal/users/{userId}/chat?skip={skip}&take={pageSize}",
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PortalChatPageDto>(cancellationToken: ct)
             ?? throw new PortalApiException(
                 response.StatusCode,
                 "The backend returned an empty response."

@@ -50,6 +50,7 @@ internal static class PortalApiEndpointsExtensions
             (int userId, ServerTypeSessionService sessions, CancellationToken ct) =>
                 DisconnectAsync(userId, ServerType.Msg, sessions, ct)
         );
+        msg.MapGet("/users/{userId:int}/chat", GetUserChatAsync);
         area.MapGet("/users/{userId:int}/account", GetAccountAsync);
         area.MapPost("/users/{userId:int}/language", SetPreferredLanguageAsync);
         area.MapPost(
@@ -582,6 +583,43 @@ internal static class PortalApiEndpointsExtensions
             user.BannedAt,
             user.BannedUntil,
             user.KickedUntil
+        );
+
+    private static async Task<IResult> GetUserChatAsync(
+        int userId,
+        int? skip,
+        int? take,
+        IUserRepository users,
+        IChatLogRepository chatLog,
+        CancellationToken ct
+    )
+    {
+        if (await users.GetById(userId) is null)
+            return TypedResults.NotFound(new PortalErrorDto("User not found."));
+
+        var pageSize = Math.Clamp(take ?? 50, 1, 50);
+        var offset = Math.Max(skip ?? 0, 0);
+        var (items, total) = await chatLog.ListAsync(
+            userId: userId,
+            skip: offset,
+            take: pageSize,
+            ct: ct
+        );
+        return TypedResults.Ok(new PortalChatPageDto(items.Select(MapChat).ToArray(), total));
+    }
+
+    private static PortalChatMessageDto MapChat(ChatMessage row) =>
+        new(
+            row.Id,
+            row.Kind.ToString(),
+            row.CharacterId,
+            row.CharacterName,
+            row.Message,
+            row.CircleId,
+            row.MapId,
+            row.ChannelId,
+            row.Rejected,
+            row.CreatedAt
         );
 
     private static PortalAccountDataDto MapAccount(

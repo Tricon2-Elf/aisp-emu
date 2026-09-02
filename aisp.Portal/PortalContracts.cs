@@ -170,3 +170,18 @@ public sealed record PortalUserIdsRequest(
 );
 
 public sealed record PortalErrorDto(string Error);
+
+public sealed record PortalChatMessageDto(
+    long Id,
+    string Kind,
+    int CharacterId,
+    string CharacterName,
+    string Message,
+    int? CircleId,
+    uint? MapId,
+    int? ChannelId,
+    bool Rejected,
+    DateTime CreatedAt
+);
+
+public sealed record PortalChatPageDto(IReadOnlyList<PortalChatMessageDto> Messages, int Total);

@@ -358,3 +358,72 @@ else
         </section>
     }
 }
+<section class="character-card">
+    <div class="section-heading">
+        <div>
+            <span class="eyebrow">Moderation</span>
+            <h2>Chat history</h2>
+        </div>
+        <span class="section-count">@Model.ChatTotal message@(Model.ChatTotal == 1 ? "" : "s")</span>
+    </div>
+    @if (Model.ChatMessages.Count == 0)
+    {
+        <p class="empty-state">No chat messages from this account.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 chat-log-table">
+                <thead>
+                    <tr>
+                        <th class="chat-log-time">Time (UTC)</th>
+                        <th class="chat-log-channel">Channel</th>
+                        <th>Message</th>
+                        <th class="chat-log-status">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var message in Model.ChatMessages)
+                    {
+                        <tr class="@(message.Rejected ? "chat-log-rejected" : null)">
+                            <td class="chat-log-time text-secondary">@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="chat-log-channel text-secondary">@(message.Kind == "Circle" ? (message.CircleId is int circleId ? $"Circle {circleId}" : "Circle") : "Public")</td>
+                            <td class="chat-log-message">@message.Message</td>
+                            <td class="chat-log-status">
+                                @if (message.Rejected)
+                                {
+                                    <span class="status-pill status-banned">Rejected</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill status-active">Sent</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <nav class="pagination-bar" aria-label="Chat history pagination">
+            <span class="page-indicator">Page @Model.ChatPage of @Model.ChatPageCount</span>
+            <div class="d-flex gap-2">
+                @if (Model.ChatPage > 1)
+                {
+                    <a class="btn btn-sm btn-ghost" asp-page="/Admin/UserDetail" asp-route-userId="@Model.TargetUser.UserId" asp-route-chatPage="@(Model.ChatPage - 1)">Previous</a>
+                }
+                else
+                {
+                    <button class="btn btn-sm btn-ghost" type="button" disabled>Previous</button>
+                }
+                @if (Model.ChatHasNextPage)
+                {
+                    <a class="btn btn-sm btn-ghost" asp-page="/Admin/UserDetail" asp-route-userId="@Model.TargetUser.UserId" asp-route-chatPage="@(Model.ChatPage + 1)">Next</a>
+                }
+                else
+                {
+                    <button class="btn btn-sm btn-ghost" type="button" disabled>Next</button>
+                }
+            </div>
+        </nav>
+    }
+</section>

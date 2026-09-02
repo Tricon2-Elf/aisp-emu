@@ -84,3 +84,20 @@ public record StatsResponse
     public long UptimeSeconds { get; init; }
     public Dictionary<string, int> ClientsPerServer { get; init; } = [];
 }
+
+public record ChatLogEntryDto
+{
+    public long Id { get; init; }
+    public string Kind { get; init; } = "";
+    public int UserId { get; init; }
+    public int CharacterId { get; init; }
+    public string CharacterName { get; init; } = "";
+    public string Message { get; init; } = "";
+    public uint DistId { get; init; }
+    public uint BalloonId { get; init; }
+    public int? CircleId { get; init; }
+    public uint? MapId { get; init; }
+    public int? ChannelId { get; init; }
+    public bool Rejected { get; init; }
+    public DateTime CreatedAt { get; init; }
+}
