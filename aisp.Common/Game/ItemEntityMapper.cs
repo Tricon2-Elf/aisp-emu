@@ -112,7 +112,7 @@ internal static class ItemEntityMapper
         return (itemId / 100_000) switch
         {
             100 => (uint)WardrobeSocketBit.Head,
-            101 => (uint)WardrobeSocketBit.UpperBodyLayer3,
+            101 => ResolveUpperBodyBodyspot(name),
             102 => ResolveLowerBodyBodyspot(itemId, name),
             103 => (uint)WardrobeSocketBit.Hands,
             104 => (uint)WardrobeSocketBit.Socks,
@@ -130,6 +130,32 @@ internal static class ItemEntityMapper
             return (uint)WardrobeSocketBit.None;
 
         return AccessoryAttachMap.ToSocketBit(itemId, (uint)storedSocket);
+    }
+
+    private static uint ResolveUpperBodyBodyspot(string? name)
+    {
+        // Wiki: 衣装/洋服上１コート, 上２ジャケット, 上３シャツ. Prefix 101 covers all three layers.
+        // Aprons are not on the shirt page; they go over a shirt (coat layer).
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (
+                name.Contains("エプロン", StringComparison.Ordinal)
+                || name.Contains("コート", StringComparison.Ordinal)
+                || name.Contains("白衣", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeSocketBit.UpperBodyLayer1;
+            if (
+                name.Contains("ジャケット", StringComparison.Ordinal)
+                || name.Contains("カーディガン", StringComparison.Ordinal)
+                || name.Contains("ブレザー", StringComparison.Ordinal)
+                || name.Contains("学ラン", StringComparison.Ordinal)
+                || name.Contains("パーカー", StringComparison.Ordinal)
+                || name.Contains("スーツ", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeSocketBit.UpperBodyLayer2;
+        }
+
+        return (uint)WardrobeSocketBit.UpperBodyLayer3;
     }
 
     private static uint ResolveLowerBodyBodyspot(int itemId, string? name)
