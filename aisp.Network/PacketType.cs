@@ -2332,7 +2332,7 @@ public enum PacketType : ushort
         "recv_close_aipower_window_r",
         ImplementationState.NotImplemented
     )]
-    CloseAiPowerWindowResponse = 0x6EE1,
+    CloseAiPowerWindowResponse = 0x6B53,
 
     [PacketMetadata(
         PacketServerType.Area,

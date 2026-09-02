@@ -752,7 +752,6 @@ recv_check_version_r
 recv_aipower_data
 recv_cam_set_relative_avatar
 recv_catalog_list
-recv_close_aipower_window_r
 send_ai_download_delete_request
 send_ai_upload_delete_request
 send_ai_upload_end
