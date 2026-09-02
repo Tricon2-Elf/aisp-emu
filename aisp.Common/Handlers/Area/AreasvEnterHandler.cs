@@ -39,9 +39,11 @@ public class AreasvEnterHandler(
 
         if (userSession is null || userSession.UserId != loginReq.UserID)
         {
+            // recv_enter_areasv_r is a fixed 8-byte read on the client (result + objId);
+            // a 4-byte body desyncs the record parser.
             await session.SendAsync(
                 ResponseType,
-                new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(),
+                new AreasvEnterResponse((uint)AuthResponseResult.InvalidCredentials, 0).ToBytes(),
                 ct
             );
             return;
@@ -51,7 +53,7 @@ public class AreasvEnterHandler(
         {
             await session.SendAsync(
                 ResponseType,
-                new LoginResponse(AuthResponseResult.AccountBanned).ToBytes(),
+                new AreasvEnterResponse((uint)AuthResponseResult.AccountBanned, 0).ToBytes(),
                 ct
             );
             return;
