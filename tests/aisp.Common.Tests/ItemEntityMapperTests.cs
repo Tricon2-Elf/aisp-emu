@@ -19,6 +19,27 @@ public class ItemEntityMapperTests
         Assert.Equal(expected, ItemEntityMapper.ResolveBodyspot(itemId));
     }
 
+    [Theory]
+    [InlineData(10100320, "女性用シャツ紫色", 8)]
+    [InlineData(10100340, "外神田ショップエプロン", 2)]
+    [InlineData(10100341, "調理部のエプロン(ひよこ)", 2)]
+    [InlineData(10100310, "黒コート♂", 2)]
+    [InlineData(10100260, "風見学園本校・女子ジャケット♀", 4)]
+    public void ResolveBodyspot_splits_101_prefix_by_wiki_upper_layer(
+        int itemId,
+        string name,
+        uint expected
+    )
+    {
+        var item = new Item
+        {
+            Id = itemId,
+            Socket = 8,
+            Name = name,
+        };
+        Assert.Equal(expected, ItemEntityMapper.ResolveBodyspot(item));
+    }
+
     [Fact]
     public void ResolveBodyspot_ignores_stored_socket_for_clothing()
     {
