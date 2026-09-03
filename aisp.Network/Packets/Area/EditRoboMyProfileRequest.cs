@@ -5,7 +5,9 @@ namespace aisp.Network.Packets.Area;
 /// <summary>
 /// send_edit_robo_myprofile (0x99B4): roboid + AvatarProfileDesc + jobid.
 /// Profile layout matches avatar myprofile (play duration, two opaque DWORDs, likes,
-/// like descriptions, and description).
+/// like descriptions, and description). "jobid" is the client logger's own label for the
+/// trailing u32, but nothing in the client ever writes that window field (CMyStatusWindow+0x444C):
+/// it is uninitialised memory, not the name plate or any robo attribute, so it is read and ignored.
 /// </summary>
 public sealed class EditRoboMyProfileRequest(
     uint roboId,

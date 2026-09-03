@@ -22,7 +22,7 @@ public class AvatarDataTests
             TpsActionReferenceX = 4.25f,
             TpsActionReferenceY = 5.5f,
             ClientReserved = 88,
-            JobId = 99,
+            NamePlate = 99,
             TpsActionProfileId = 111,
             CollisionRadius = 12.5f,
             TpsActionVerticalRange = 13.5f,
@@ -128,7 +128,7 @@ public class AvatarDataTests
         var parsed = AvatarData.FromBytes(bytes);
         Assert.Equal(123u, parsed.AvatarId);
         Assert.Equal(55u, parsed.Character.Map.MapId);
-        Assert.Equal(99u, parsed.Character.JobId);
+        Assert.Equal(99u, parsed.Character.NamePlate);
         Assert.Equal(100u, parsed.Character.Battle.HitPoints.Current);
         Assert.Equal(14.5f, parsed.Character.Battle.Stamina.Current);
         Assert.Equal(30u, parsed.Character.Battle.Tank.Current);

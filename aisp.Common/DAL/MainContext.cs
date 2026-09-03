@@ -584,6 +584,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Npcs");
             e.HasKey(x => x.Id);
+            e.Property(x => x.NamePlate).HasDefaultValue(Npc.DefaultNamePlate);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.Property(x => x.ChannelId).HasDefaultValue(-1);
             e.Property(x => x.DayPhase).HasDefaultValue(-1);

@@ -14,7 +14,9 @@ public class CharaData(uint slotId, uint modelId, string name)
     public float TpsActionReferenceX { get; set; }
     public float TpsActionReferenceY { get; set; }
     public uint ClientReserved { get; set; }
-    public uint JobId { get; set; }
+
+    /// <summary>Name plate variant (client CChara::SetNamePlate), a role the client's layout names: 0 none, 1 celebrity (pink), 2 GM (dark purple), 3 penalised user (red), 4 ordinary NPC (purple, the original's NPC plate), 5 official NPC (blue), 6 event user (orange with a yellow border), 0xFFFFFFFF creator/staff NPC (green); anything else draws no plate. Not a job id.</summary>
+    public uint NamePlate { get; set; }
     public uint TpsActionProfileId { get; set; }
     public float CollisionRadius { get; set; }
     public float TpsActionVerticalRange { get; set; }
@@ -63,7 +65,7 @@ public class CharaData(uint slotId, uint modelId, string name)
         for (var i = 0; i < EquipmentSlotCount; i++)
             writer.Write(Equips[i].ToBytes());
         writer.Write(ClientReserved);
-        writer.Write(JobId);
+        writer.Write(NamePlate);
         writer.Write(TpsActionProfileId);
         writer.Write(CollisionRadius);
         writer.Write(TpsActionVerticalRange);
@@ -94,7 +96,7 @@ public class CharaData(uint slotId, uint modelId, string name)
             result.Equips.Add(new ItemSlotInfo(reader.ReadUInt(), reader.ReadUInt()));
 
         result.ClientReserved = reader.ReadUInt();
-        result.JobId = reader.ReadUInt();
+        result.NamePlate = reader.ReadUInt();
         result.TpsActionProfileId = reader.ReadUInt();
         result.CollisionRadius = reader.ReadFloat();
         result.TpsActionVerticalRange = reader.ReadFloat();

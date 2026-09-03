@@ -1150,6 +1150,21 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Packet Size:** 4
 - **Description:** Result of closing the AI power window. The client reads a fixed 4 bytes. Not sent by the emulator. The packet table previously listed it as 0x6EE1, which the client dispatcher routes to recv_item_discard_sum_r.
 
+## recv_notify_update_nameplate (NotifyUpdateNameplate)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x64AD
+- **Packet Size:** 8
+- **Description:** Changes a character's name plate live (case 0x7D11CF → CChara::SetNamePlate). The same value travels in every CharaData at offset 0x168, the field previously labelled JobId. The world draw path (0x6D2700) adds one and jumps through an eight-entry table, so only these values draw a plate, each a role the client's own layout (packed UI resource 0x3AFC, `settings/PAS/common_name00.xml`, texture `main/name00.dds`) names in its comments: 0 no plate; 1 有名人 (celebrity, frame 110, pink); 2 GM (120, dark purple); 3 GM罰する人 (a penalised user, 130, red); 4 通常NPC (ordinary NPC, 140, purple); 5 公式NPC (official NPC, 150, blue); 6 イベントユーザー用 (event users, 160, orange with a yellow border, the only one that colours the border); 0xFFFFFFFF 製作者NPC (creator or staff NPC, frame 100, green). Anything else hides the plate; the high bits are not flags. NPCs have no default plate at all, so the value in their record is the only source of theirs: 4 is the plate the original drew behind NPC names, which the emulator seeds for every NPC unless the seed row's `namePlate` says otherwise. Avatars get no default either: 0 hides their plate too. Frame 150 is also forced by a flag bit on the character (CChara+0x90 bit 0x10, set during setup), which is unrelated to this field. This live update packet only takes effect on avatars; an NPC's plate is read when its record is created.
+
+**Layout:**
+
+```text
+    UInt {ObjectId}
+    UInt {NamePlate}
+```
+
 ## send_user_status_update (UserStatusUpdateRequest)
 
 - **Server:** Area

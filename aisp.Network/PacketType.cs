@@ -4137,6 +4137,14 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_notify_update_nameplate",
+        ImplementationState.Implemented
+    )]
+    NotifyUpdateNameplate = 0x64AD,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_notify_user_status_update",
         ImplementationState.Implemented
     )]
