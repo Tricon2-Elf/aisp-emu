@@ -329,17 +329,21 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
         if (string.IsNullOrEmpty(token) || token.Length > TicketLength)
             return null;
         var now = DateTime.UtcNow;
-        var ticket = await db.AdventureTickets.SingleOrDefaultAsync(t => t.Token == token, ct);
-        if (
-            ticket is null
-            || ticket.Purpose != purpose
-            || ticket.ConsumedAt != null
-            || ticket.ExpiresAt < now
-        )
+        // Consume with one conditional update so two requests presenting the same token cannot
+        // both pass a check made before either of them saved: exactly one of them changes the row.
+        var consumed = await db
+            .AdventureTickets.Where(t =>
+                t.Token == token
+                && t.Purpose == purpose
+                && t.ConsumedAt == null
+                && t.ExpiresAt >= now
+            )
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.ConsumedAt, now), ct);
+        if (consumed != 1)
             return null;
-        ticket.ConsumedAt = now;
-        await db.SaveChangesAsync(ct);
-        return ticket;
+        return await db
+            .AdventureTickets.AsNoTracking()
+            .SingleOrDefaultAsync(t => t.Token == token, ct);
     }
 
     public async Task<AdventureListing?> RedeemUploadTicketAsync(
