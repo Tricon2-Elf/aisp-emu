@@ -14,7 +14,7 @@ public class AdventureWorkHandlersTests
         var user = new User { Username = "drama", AdventureSheetStock = 20 };
         user.SetPassword("secret");
         db.Users.Add(user);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         return user;
     }
 
@@ -221,7 +221,7 @@ public class AdventureWorkHandlersTests
             var user = new User { Username = "fresh", AiPoints = 50 };
             user.SetPassword("secret");
             db.Users.Add(user);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             var repo = new AdventureWorkRepository(db);
 
             var (none, stock) = await repo.CreateAsync(
