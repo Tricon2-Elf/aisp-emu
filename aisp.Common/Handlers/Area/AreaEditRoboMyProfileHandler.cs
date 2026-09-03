@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.Handlers.Area;
 
-public sealed class AreaEditRoboMyProfileHandler(MainContext db)
+public sealed class AreaEditRoboMyProfileHandler(MainContext db, IWordFilter wordFilter)
     : IPacketHandler,
         IRequiresAuthenticatedSession
 {
@@ -21,6 +21,23 @@ public sealed class AreaEditRoboMyProfileHandler(MainContext db)
     )
     {
         var request = EditRoboMyProfileRequest.FromBytes(payload.Span);
+        if (
+            wordFilter.ContainsBlockedWord(
+                WordFilterLevel.Complete,
+                request.Profile.Like1,
+                request.Profile.Like2,
+                request.Profile.Like3,
+                request.Profile.LikeDesc1,
+                request.Profile.LikeDesc2,
+                request.Profile.LikeDesc3,
+                request.Profile.AvatarDesc
+            )
+        )
+        {
+            await session.SendAsync(ResponseType, new EditRoboMyProfileResponse(1).ToBytes(), ct);
+            return;
+        }
+
         var robo = await db.Robos.SingleOrDefaultAsync(
             x => x.CharacterId == checked((int)session.CharacterId) && x.RoboId == request.RoboId,
             ct

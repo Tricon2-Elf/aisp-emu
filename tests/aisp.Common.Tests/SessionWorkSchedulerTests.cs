@@ -37,10 +37,22 @@ public class SessionWorkSchedulerTests
 
         try
         {
-            Assert.True(await scheduler.EnqueueAsync(slowId, (slowId, "slow")));
+            Assert.True(
+                await scheduler.EnqueueAsync(
+                    slowId,
+                    (slowId, "slow"),
+                    TestContext.Current.CancellationToken
+                )
+            );
             await slowStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
 
-            Assert.True(await scheduler.EnqueueAsync(fastId, (fastId, "fast")));
+            Assert.True(
+                await scheduler.EnqueueAsync(
+                    fastId,
+                    (fastId, "fast"),
+                    TestContext.Current.CancellationToken
+                )
+            );
             var completed = await Task.WhenAny(
                 fastDone.Task,
                 Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken)
@@ -93,9 +105,13 @@ public class SessionWorkSchedulerTests
 
         try
         {
-            Assert.True(await scheduler.EnqueueAsync(sessionId, 1));
+            Assert.True(
+                await scheduler.EnqueueAsync(sessionId, 1, TestContext.Current.CancellationToken)
+            );
             await firstStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
-            Assert.True(await scheduler.EnqueueAsync(sessionId, 2));
+            Assert.True(
+                await scheduler.EnqueueAsync(sessionId, 2, TestContext.Current.CancellationToken)
+            );
             firstRelease.TrySetResult();
             await secondDone.Task.WaitAsync(TestContext.Current.CancellationToken);
 
@@ -135,11 +151,17 @@ public class SessionWorkSchedulerTests
 
         try
         {
-            Assert.True(await scheduler.EnqueueAsync(sessionId, 1));
+            Assert.True(
+                await scheduler.EnqueueAsync(sessionId, 1, TestContext.Current.CancellationToken)
+            );
             await firstStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
-            Assert.True(await scheduler.EnqueueAsync(sessionId, 2));
+            Assert.True(
+                await scheduler.EnqueueAsync(sessionId, 2, TestContext.Current.CancellationToken)
+            );
 
-            var waiting = scheduler.EnqueueAsync(sessionId, 3).AsTask();
+            var waiting = scheduler
+                .EnqueueAsync(sessionId, 3, TestContext.Current.CancellationToken)
+                .AsTask();
             var raced = await Task.WhenAny(
                 waiting,
                 Task.Delay(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken)
@@ -178,8 +200,12 @@ public class SessionWorkSchedulerTests
             NullLogger.Instance
         );
 
-        Assert.True(await scheduler.EnqueueAsync(sessionId, 1));
-        Assert.True(await scheduler.EnqueueAsync(sessionId, 2));
+        Assert.True(
+            await scheduler.EnqueueAsync(sessionId, 1, TestContext.Current.CancellationToken)
+        );
+        Assert.True(
+            await scheduler.EnqueueAsync(sessionId, 2, TestContext.Current.CancellationToken)
+        );
         await secondDone.Task.WaitAsync(TestContext.Current.CancellationToken);
         Assert.True(secondDone.Task.IsCompletedSuccessfully);
     }
@@ -206,10 +232,14 @@ public class SessionWorkSchedulerTests
 
         try
         {
-            Assert.True(await scheduler.EnqueueAsync(sessionId, 1));
+            Assert.True(
+                await scheduler.EnqueueAsync(sessionId, 1, TestContext.Current.CancellationToken)
+            );
             await started.Task.WaitAsync(TestContext.Current.CancellationToken);
             scheduler.CompleteSession(sessionId);
-            Assert.False(await scheduler.EnqueueAsync(sessionId, 2));
+            Assert.False(
+                await scheduler.EnqueueAsync(sessionId, 2, TestContext.Current.CancellationToken)
+            );
         }
         finally
         {
@@ -254,12 +284,16 @@ public class SessionWorkSchedulerTests
             NullLogger.Instance
         );
 
-        Assert.True(await scheduler.EnqueueAsync(sessionId, 1));
+        Assert.True(
+            await scheduler.EnqueueAsync(sessionId, 1, TestContext.Current.CancellationToken)
+        );
         await started.Task.WaitAsync(TestContext.Current.CancellationToken);
         Assert.Equal(1, scheduler.TrackedSessionCount);
 
         scheduler.CompleteSession(sessionId);
-        Assert.False(await scheduler.EnqueueAsync(sessionId, 2));
+        Assert.False(
+            await scheduler.EnqueueAsync(sessionId, 2, TestContext.Current.CancellationToken)
+        );
         release.TrySetResult();
 
         await WaitUntilAsync(

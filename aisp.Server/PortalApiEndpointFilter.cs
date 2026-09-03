@@ -24,7 +24,7 @@ internal sealed class PortalApiEndpointFilter(
         {
             logger.LogWarning(
                 "Rejected portal API request to {Path}: portal service token is missing",
-                context.HttpContext.Request.Path
+                (context.HttpContext.Request.Path.Value ?? string.Empty).Replace(Environment.NewLine, string.Empty)
             );
             return ValueTask.FromResult<object?>(TypedResults.Unauthorized());
         }
@@ -35,7 +35,7 @@ internal sealed class PortalApiEndpointFilter(
         {
             logger.LogWarning(
                 "Rejected portal API request to {Path}: portal service token is invalid",
-                context.HttpContext.Request.Path
+                (context.HttpContext.Request.Path.Value ?? string.Empty).Replace(Environment.NewLine, string.Empty)
             );
             return ValueTask.FromResult<object?>(TypedResults.Unauthorized());
         }

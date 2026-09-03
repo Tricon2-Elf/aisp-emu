@@ -9,6 +9,7 @@ namespace aisp.Common.Handlers.Msg;
 
 public class LoginHandler(
     IUserSessionRepository sessionRepo,
+    IUserRepository userRepo,
     ICircleRepository circles,
     SharedState state,
     ILogger<LoginHandler> logger
@@ -47,7 +48,11 @@ public class LoginHandler(
             return new LoginResponse(AuthResponseResult.InvalidCredentials);
         }
 
-        if (userSession.User.IsBanned)
+        var user =
+            await UserModerationState.PrepareUserForGameLoginAsync(userRepo, userSession.UserId, ct)
+            ?? userSession.User;
+
+        if (UserModerationState.IsCurrentlyBanned(user))
         {
             _logger.LogWarning(
                 "Client: {ClientId} Login rejected: user {UserID} is banned",
@@ -57,11 +62,22 @@ public class LoginHandler(
             return new LoginResponse(AuthResponseResult.AccountBanned);
         }
 
-        session.User = userSession.User;
-        session.UserId = userSession.User.Id;
-        session.Language = userSession.User.Language;
+        if (UserModerationState.IsCurrentlyKicked(user))
+        {
+            _logger.LogWarning(
+                "Client: {ClientId} Login rejected: user {UserID} is kicked until {KickedUntil}",
+                session.ConnectionId,
+                request._userId,
+                user.KickedUntil
+            );
+            return new LoginResponse(AuthResponseResult.Failure);
+        }
 
-        var character = userSession.User.Characters.OrderBy(c => c.Id).FirstOrDefault();
+        session.User = user;
+        session.UserId = user.Id;
+        session.Language = user.Language;
+
+        var character = user.Characters.OrderBy(c => c.Id).FirstOrDefault();
         if (character != null)
         {
             session.CharacterId = (uint)character.Id;

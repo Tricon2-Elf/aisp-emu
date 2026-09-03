@@ -1,0 +1,8 @@
+{
+  "chat": {
+    "description": "Public and circle chat allow swearing. Only slurs are blocked: entries whose tags are listed here, plus extraSlurIds (ableist / other slurs that the source list does not tag as racial or lgbtq). allowedIds are identity or community words that share the lgbtq tag but are not slurs, so they stay allowed in chat. Names, rooms, profiles, and mail still use every term in the blocked-words list.",
+    "slurTags": ["racial", "lgbtq"],
+    "extraSlurIds": ["retard", "spastic", "raghead"],
+    "allowedIds": ["enby", "cishet", "twink", "t-girl", "transbian", "gaysian", "bicon", "futanari"]
+  }
+}

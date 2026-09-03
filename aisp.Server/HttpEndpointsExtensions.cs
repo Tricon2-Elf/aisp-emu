@@ -1,4 +1,6 @@
 using aisp.Common;
+using aisp.Common.DAL.Entities;
+using aisp.Common.DAL.Repositories;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -153,6 +155,7 @@ internal static class HttpEndpointsExtensions
                 var (success, error, sessionsKicked) = await service.BanUserAsync(
                     username,
                     body?.Reason,
+                    body?.Days,
                     ct
                 );
                 if (!success)
@@ -183,9 +186,19 @@ internal static class HttpEndpointsExtensions
 
         app.MapPost(
             "/api/users/{username}/kick",
-            async (string username, UserAdminService service, CancellationToken ct) =>
+            async (
+                string username,
+                HttpRequest request,
+                UserAdminService service,
+                CancellationToken ct
+            ) =>
             {
-                var (success, error, sessionsClosed) = await service.KickUserAsync(username, ct);
+                var body = await request.ReadFromJsonAsync<KickRequest>(ct);
+                var (success, error, sessionsClosed) = await service.KickUserAsync(
+                    username,
+                    body?.Minutes,
+                    ct
+                );
                 if (!success)
                     return Results.NotFound(new { error });
 
@@ -197,6 +210,27 @@ internal static class HttpEndpointsExtensions
                         sessionsClosed,
                     }
                 );
+            }
+        );
+
+        app.MapPost(
+            "/api/users/{username}/role",
+            async (
+                string username,
+                HttpRequest request,
+                UserAdminService service,
+                CancellationToken ct
+            ) =>
+            {
+                var body = await request.ReadFromJsonAsync<SetRoleRequest>(ct);
+                if (body is null)
+                    return Results.BadRequest(new { error = "role is required" });
+
+                var (success, error) = await service.SetRoleAsync(username, body.Role, ct);
+                if (!success)
+                    return Results.NotFound(new { error });
+
+                return Results.Ok(new { username, role = body.Role.ToString() });
             }
         );
 
@@ -215,6 +249,52 @@ internal static class HttpEndpointsExtensions
             {
                 var stats = await service.GetStatsAsync(ct);
                 return Results.Ok(stats);
+            }
+        );
+
+        app.MapGet(
+            "/api/chat",
+            async (
+                ChatLogKind? kind,
+                int? userId,
+                int? characterId,
+                int? circleId,
+                bool? rejected,
+                int? skip,
+                int? take,
+                IChatLogRepository chatLog,
+                CancellationToken ct
+            ) =>
+            {
+                var (items, total) = await chatLog.ListAsync(
+                    kind,
+                    userId,
+                    characterId,
+                    circleId,
+                    rejected,
+                    skip ?? 0,
+                    take ?? 100,
+                    ct
+                );
+                var messages = items
+                    .Select(row => new ChatLogEntryDto
+                    {
+                        Id = row.Id,
+                        Kind = row.Kind.ToString(),
+                        UserId = row.UserId,
+                        CharacterId = row.CharacterId,
+                        CharacterName = row.CharacterName,
+                        Message = row.Message,
+                        DistId = row.DistId,
+                        BalloonId = row.BalloonId,
+                        CircleId = row.CircleId,
+                        MapId = row.MapId,
+                        ChannelId = row.ChannelId,
+                        Rejected = row.Rejected,
+                        CreatedAt = row.CreatedAt,
+                    })
+                    .ToList();
+                return Results.Ok(new { messages, total });
             }
         );
 

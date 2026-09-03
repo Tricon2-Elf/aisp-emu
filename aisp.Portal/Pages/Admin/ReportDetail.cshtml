@@ -1,0 +1,147 @@
+@page "/admin/reports/{id:long}"
+@model aisp.Portal.Pages.Admin.ReportDetailModel
+@{
+    ViewData["Title"] = $"Report #{Model.Report.Id}";
+    Layout = "/Pages/Shared/_Layout.cshtml";
+    var report = Model.Report;
+}
+<a class="d-inline-block mb-3 text-decoration-none small" href="/admin/reports">← Back to reports</a>
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert @(Model.StatusIsError ? "alert-danger" : "alert-success")" role="status">@Model.StatusMessage</div>
+}
+<header class="account-hero gap-3 mb-4">
+    <div>
+        <span class="eyebrow">Report #@report.Id</span>
+        <h1 class="portal-title mb-1">@(string.IsNullOrWhiteSpace(report.MapName) ? $"Map {report.MapId}" : report.MapName)</h1>
+        <p class="portal-subtitle mb-0">
+            <span class="status-pill @(report.Status == "Open" ? "status-active" : "status-offline")">@report.Status</span>
+            <span class="text-secondary ms-2">Submitted @report.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC</span>
+            @if (report.ResolvedAt is not null)
+            {
+                <span class="text-secondary ms-2">· Resolved @report.ResolvedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") UTC</span>
+            }
+        </p>
+    </div>
+    @if (report.Status == "Open")
+    {
+        <button class="btn btn-primary" type="button" data-modal-target="resolve-report-modal">Mark resolved</button>
+    }
+</header>
+@if (report.Status == "Open")
+{
+    <dialog id="resolve-report-modal" class="moderation-modal" aria-labelledby="resolve-report-title">
+        <form method="post" asp-page-handler="Resolve">
+            <header class="modal-heading">
+                <div>
+                    <span class="eyebrow">Moderation action</span>
+                    <h2 id="resolve-report-title">Resolve report #@report.Id?</h2>
+                </div>
+                <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
+            </header>
+            <div class="modal-content">
+                <p>Describe what action was taken or why this report is being closed.</p>
+                <label class="form-label" for="resolution-action">Reason / action</label>
+                <textarea id="resolution-action" class="form-control" name="action" maxlength="1024" rows="4" required placeholder="e.g. Warned the reported player, no further action needed"></textarea>
+            </div>
+            <footer class="modal-actions">
+                <button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
+                <button class="btn btn-primary" type="submit">Mark resolved</button>
+            </footer>
+        </form>
+    </dialog>
+}
+@if (!string.IsNullOrWhiteSpace(report.ResolutionAction))
+{
+    <section class="character-card mb-4">
+        <div class="section-heading">
+            <h2>Resolution</h2>
+        </div>
+        <p class="mb-0">@report.ResolutionAction</p>
+    </section>
+}
+<section class="character-card mb-4">
+    <div class="section-heading">
+        <h2>Reason</h2>
+    </div>
+    <p class="mb-0">@report.Reason</p>
+</section>
+<section class="data-card mb-4">
+    <div class="section-heading px-4 pt-4">
+        <h2>Players on map</h2>
+        <span class="section-count">@report.Players.Count player@(report.Players.Count == 1 ? "" : "s") · Map @report.MapId, channel @report.ChannelId</span>
+    </div>
+    @if (report.Players.Count == 0)
+    {
+        <p class="empty-state px-4 pb-4">No players were recorded.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">User</th>
+                        <th class="pe-4">Character</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in report.Players)
+                    {
+                        var isReporter = player.UserId == report.ReporterUserId
+                            && player.CharacterId == report.ReporterCharacterId;
+                        <tr>
+                            <td class="ps-4"><a class="user-link" href="/admin/users/@player.UserId">@player.Username</a></td>
+                            <td class="pe-4">@player.CharacterName@(isReporter ? " (Reporter)" : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+<section class="data-card">
+    <div class="section-heading px-4 pt-4">
+        <h2>Chat snapshot</h2>
+        <span class="section-count">@report.ChatMessages.Count message@(report.ChatMessages.Count == 1 ? "" : "s")</span>
+    </div>
+    @if (report.ChatMessages.Count == 0)
+    {
+        <p class="empty-state px-4 pb-4">No public chat in the last five minutes.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 chat-log-table">
+                <thead>
+                    <tr>
+                        <th class="chat-log-time">Time (UTC)</th>
+                        <th>Character</th>
+                        <th>Message</th>
+                        <th class="chat-log-status">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var message in report.ChatMessages)
+                    {
+                        <tr class="@(message.Rejected ? "chat-log-rejected" : null)">
+                            <td class="chat-log-time text-secondary">@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="text-secondary">@message.CharacterName</td>
+                            <td class="chat-log-message">@message.Message</td>
+                            <td class="chat-log-status">
+                                @if (message.Rejected)
+                                {
+                                    <span class="status-pill status-banned">Rejected</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill status-active">Sent</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

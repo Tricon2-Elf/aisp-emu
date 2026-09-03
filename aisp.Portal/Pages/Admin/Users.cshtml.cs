@@ -1,3 +1,4 @@
+using aisp.Common.Game;
 using aisp.Portal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -64,6 +65,7 @@ public sealed class UsersModel(AuthPortalApiClient authApi, AreaPortalApiClient 
             .Users.Select(user => new UserRow(
                 user.UserId,
                 user.Username,
+                user.Role,
                 user.IsBanned,
                 user.CharacterNames,
                 roboCounts.GetValueOrDefault(user.UserId),
@@ -77,6 +79,7 @@ public sealed class UsersModel(AuthPortalApiClient authApi, AreaPortalApiClient 
     public sealed record UserRow(
         int UserId,
         string Username,
+        UserRole Role,
         bool IsBanned,
         IReadOnlyList<string> CharacterNames,
         int RoboCount,

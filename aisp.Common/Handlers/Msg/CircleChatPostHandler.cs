@@ -1,5 +1,7 @@
+using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Msg;
 using Microsoft.Extensions.Logging;
@@ -9,7 +11,10 @@ namespace aisp.Common.Handlers.Msg;
 public class CircleChatPostHandler(
     ILogger<CircleChatPostHandler> logger,
     ICircleRepository circles,
-    SharedState state
+    SharedState state,
+    IWordFilter wordFilter,
+    ITextLocaliser localiser,
+    IChatLogRepository chatLog
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.CircleChatPostRequest;
@@ -44,6 +49,33 @@ public class CircleChatPostHandler(
             return;
         }
 
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.NoSlurs, req.Message))
+        {
+            logger.LogWarning(
+                "Rejecting circle chat from character {CharacterId} in circle {CircleId}: blocked message",
+                session.CharacterId,
+                circleId
+            );
+            await session.SendAsync(
+                ResponseType,
+                new CircleChatPostResponse(req.MessageId, (uint)CircleResult.Failed).ToBytes(),
+                ct
+            );
+            await chatLog.AddAsync(
+                ChatLogCapture.FromSession(
+                    session,
+                    state,
+                    ChatLogKind.Circle,
+                    req.Message,
+                    circleId: circleId,
+                    rejected: true
+                ),
+                ct
+            );
+            await SystemNotice.SendAsync(session, localiser.Get(session, L.Chat.SlurRejected), ct);
+            return;
+        }
+
         var fromId = session.CharacterId;
         if (fromId == 0)
         {
@@ -51,11 +83,21 @@ public class CircleChatPostHandler(
             fromId = areaSession?.CharacterId ?? 0;
         }
 
-        logger.LogInformation(
-            "[CIRCLE CHAT] From:{CharacterId} Circle:{CircleId}: {Message}",
+        logger.LogDebug(
+            "Circle chat from character {CharacterId} in circle {CircleId}",
             fromId,
-            circleId,
-            req.Message
+            circleId
+        );
+
+        await chatLog.AddAsync(
+            ChatLogCapture.FromSession(
+                session,
+                state,
+                ChatLogKind.Circle,
+                req.Message,
+                circleId: circleId
+            ),
+            ct
         );
 
         await session.SendAsync(
@@ -66,16 +108,14 @@ public class CircleChatPostHandler(
 
         await CircleNotifyHelper.SendRosterAsync(circles, state, circleId, ct);
 
-        var forward = new CircleChatForwardNotify(fromId, req.Message).ToBytes();
-        var members = await circles.GetMembersAsync(circleId, ct);
-        foreach (
-            var client in state.GetOnlineMsgClientsByCharacterIds(
-                members.Select(m => m.CharacterId)
-            )
-        )
-        {
-            if (client.ConnectionId != session.ConnectionId)
-                _ = client.SendAsync(PacketType.CircleChatForwardNotify, forward, ct);
-        }
+        await CircleNotifyHelper.BroadcastCircleChatAsync(
+            circles,
+            state,
+            circleId,
+            fromId,
+            _ => req.Message,
+            excludeCharacterId: (int)session.CharacterId,
+            ct
+        );
     }
 }

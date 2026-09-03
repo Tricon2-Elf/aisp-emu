@@ -5,7 +5,11 @@ using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class CircleMessageChangeHandler(ICircleRepository circles, SharedState state)
+public class CircleMessageChangeHandler(
+    ICircleRepository circles,
+    SharedState state,
+    IWordFilter wordFilter
+)
     : PacketHandlerBase<CircleMessageChangeRequest, CircleMessageChangeResponse>,
         IRequiresAuthenticatedSession
 {
@@ -19,6 +23,9 @@ public class CircleMessageChangeHandler(ICircleRepository circles, SharedState s
         CancellationToken ct = default
     )
     {
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.Message))
+            return new CircleMessageChangeResponse((uint)CircleResult.Failed);
+
         var circleId = checked((int)request.CircleId);
         var result = await circles.UpdateMessageAsync(
             (int)session.CharacterId,

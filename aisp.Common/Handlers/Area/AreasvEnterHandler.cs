@@ -4,13 +4,13 @@ using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
-using aisp.Network.Packets.Common;
 using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Area;
 
 public class AreasvEnterHandler(
     IUserSessionRepository _sessionRepo,
+    IUserRepository userRepo,
     IMapRepository mapRepo,
     IChannelRepository channelRepo,
     ICharacterRepository characterRepo,
@@ -49,7 +49,11 @@ public class AreasvEnterHandler(
             return;
         }
 
-        if (userSession.User.IsBanned)
+        var user =
+            await UserModerationState.PrepareUserForGameLoginAsync(userRepo, userSession.UserId, ct)
+            ?? userSession.User;
+
+        if (UserModerationState.IsCurrentlyBanned(user))
         {
             await session.SendAsync(
                 ResponseType,
@@ -59,9 +63,19 @@ public class AreasvEnterHandler(
             return;
         }
 
-        session.User = userSession.User;
-        session.UserId = userSession.User.Id;
-        session.Language = userSession.User.Language;
+        if (UserModerationState.IsCurrentlyKicked(user))
+        {
+            await session.SendAsync(
+                ResponseType,
+                new AreasvEnterResponse((uint)AuthResponseResult.Failure, 0).ToBytes(),
+                ct
+            );
+            return;
+        }
+
+        session.User = user;
+        session.UserId = user.Id;
+        session.Language = user.Language;
         var chara = await characterRepo.GetByIdAsync(session.User.Characters.First().Id, ct);
 
         if (chara is null)

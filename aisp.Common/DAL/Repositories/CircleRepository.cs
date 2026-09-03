@@ -128,6 +128,24 @@ public interface ICircleRepository
         string message,
         CancellationToken ct = default
     );
+    Task<Circle?> GetByNameAsync(string name, CancellationToken ct = default);
+    Task<CircleOperationResult> EnsureMemberDirectAsync(
+        int circleId,
+        int characterId,
+        uint authLevel = CircleMemberData.RoleMember,
+        bool bypassMembershipLimit = false,
+        CancellationToken ct = default
+    );
+    Task<CircleOperationResult> RemoveMemberDirectAsync(
+        int circleId,
+        int characterId,
+        CancellationToken ct = default
+    );
+    Task<CircleOperationResult> TransferLeadershipAsync(
+        int circleId,
+        int newLeaderCharacterId,
+        CancellationToken ct = default
+    );
     CircleData ToCircleData(Circle circle);
 }
 
@@ -651,6 +669,148 @@ public sealed class CircleRepository(MainContext db) : ICircleRepository
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return CircleOperationResult.Success(circle);
+    }
+
+    public Task<Circle?> GetByNameAsync(string name, CancellationToken ct = default) =>
+        db.Circles.AsNoTracking().FirstOrDefaultAsync(x => x.Name == name, ct);
+
+    public async Task<CircleOperationResult> EnsureMemberDirectAsync(
+        int circleId,
+        int characterId,
+        uint authLevel = CircleMemberData.RoleMember,
+        bool bypassMembershipLimit = false,
+        CancellationToken ct = default
+    )
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+
+        var circle = await db.Circles.FirstOrDefaultAsync(x => x.Id == circleId, ct);
+        if (circle is null)
+            return CircleOperationResult.Fail(CircleResult.NotFound);
+
+        if (
+            await db.CircleMembers.AnyAsync(
+                x => x.CircleId == circleId && x.CharacterId == characterId,
+                ct
+            )
+        )
+            return CircleOperationResult.Success(circle);
+
+        if (!await db.Characters.AnyAsync(x => x.Id == characterId, ct))
+            return CircleOperationResult.Fail(CircleResult.InvalidTarget);
+
+        var memberCount = await db.CircleMembers.CountAsync(x => x.CircleId == circleId, ct);
+        if (memberCount >= MaxMembersPerCircle)
+            return CircleOperationResult.Fail(CircleResult.LimitReached);
+
+        if (!bypassMembershipLimit)
+        {
+            var targetCount = await db.CircleMembers.CountAsync(
+                x => x.CharacterId == characterId,
+                ct
+            );
+            if (targetCount >= MaxMembershipsPerCharacter)
+                return CircleOperationResult.Fail(CircleResult.LimitReached);
+        }
+
+        var now = DateTime.UtcNow;
+        var member = new CircleMember
+        {
+            CircleId = circleId,
+            CharacterId = characterId,
+            AuthLevel = authLevel,
+            JoinedAt = now,
+        };
+        db.CircleMembers.Add(member);
+
+        var character = await db.Characters.FirstOrDefaultAsync(x => x.Id == characterId, ct);
+        if (character is not null && character.CircleId is null)
+            character.CircleId = circleId;
+
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return CircleOperationResult.Success(circle, member);
+    }
+
+    public async Task<CircleOperationResult> RemoveMemberDirectAsync(
+        int circleId,
+        int characterId,
+        CancellationToken ct = default
+    )
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+
+        var circle = await db.Circles.FirstOrDefaultAsync(x => x.Id == circleId, ct);
+        if (circle is null)
+            return CircleOperationResult.Fail(CircleResult.NotFound);
+
+        var member = await db.CircleMembers.FirstOrDefaultAsync(
+            x => x.CircleId == circleId && x.CharacterId == characterId,
+            ct
+        );
+        if (member is null)
+            return CircleOperationResult.Success(circle);
+
+        if (circle.LeaderCharacterId == characterId)
+            return CircleOperationResult.Fail(CircleResult.NotAuthorized);
+
+        db.CircleMembers.Remove(member);
+        await ClearLegacyCircleIdIfNeededAsync(characterId, circleId, ct);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return CircleOperationResult.Success(circle, member);
+    }
+
+    public async Task<CircleOperationResult> TransferLeadershipAsync(
+        int circleId,
+        int newLeaderCharacterId,
+        CancellationToken ct = default
+    )
+    {
+        await using var tx = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            ct
+        );
+
+        var circle = await db.Circles.FirstOrDefaultAsync(x => x.Id == circleId, ct);
+        if (circle is null)
+            return CircleOperationResult.Fail(CircleResult.NotFound);
+
+        var newLeader = await db.CircleMembers.FirstOrDefaultAsync(
+            x => x.CircleId == circleId && x.CharacterId == newLeaderCharacterId,
+            ct
+        );
+        if (newLeader is null)
+            return CircleOperationResult.Fail(CircleResult.InvalidTarget);
+
+        var previousLeaderId = circle.LeaderCharacterId;
+        if (previousLeaderId == newLeaderCharacterId)
+            return CircleOperationResult.Success(circle, newLeader);
+
+        var previousLeader = await db.CircleMembers.FirstOrDefaultAsync(
+            x => x.CircleId == circleId && x.CharacterId == previousLeaderId,
+            ct
+        );
+        if (previousLeader is not null)
+            previousLeader.AuthLevel = CircleMemberData.RoleMember;
+
+        newLeader.AuthLevel = CircleMemberData.RoleLeader;
+        circle.LeaderCharacterId = newLeaderCharacterId;
+        circle.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return CircleOperationResult.Success(
+            circle,
+            newLeader,
+            previousLeaderCharacterId: previousLeaderId,
+            newLeaderCharacterId: newLeaderCharacterId
+        );
     }
 
     public CircleData ToCircleData(Circle circle)
