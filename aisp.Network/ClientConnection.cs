@@ -15,7 +15,7 @@ public class ClientConnection(
     TcpClient? _tcpClient = null,
     string? _serverType = null,
     Func<Guid, int?>? _userIdResolver = null,
-    int sendQueueCapacity = 128,
+    int sendQueueCapacity = 1024,
     int sendTimeoutSeconds = 30
 ) : IDisposable
 {
