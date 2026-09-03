@@ -104,7 +104,24 @@ internal static class AdventureHttpEndpointsExtensions
             return Fail(6, "invalid manuscript: " + check.Error);
         }
 
-        await shop.StoreContentAsync(listing.ScriptId, script, datalist ?? [], check.Pages, ct);
+        var stored = await shop.StoreContentAsync(
+            listing.ScriptId,
+            script,
+            datalist ?? [],
+            check.Pages,
+            ct
+        );
+        if (stored == AdventureStoreOutcome.TooManyPages)
+        {
+            log.LogWarning(
+                "upload.php: refused manuscript for script {ScriptId}: {Pages} page(s) exceed the work's sheets",
+                listing.ScriptId,
+                check.Pages
+            );
+            return Fail(7, "more pages than the work has sheets");
+        }
+        if (stored != AdventureStoreOutcome.Stored)
+            return Fail(2, "invalid ticket");
         log.LogInformation(
             "upload.php: stored script {ScriptId} for user {UserId} work {WorkId}: {ScriptBytes} script bytes, {DatalistBytes} datalist bytes, {Pages} sheet(s) (announced {ContentSize})",
             listing.ScriptId,

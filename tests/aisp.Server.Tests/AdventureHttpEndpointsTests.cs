@@ -65,6 +65,68 @@ public sealed class AdventureHttpEndpointsTests
     }
 
     [Fact]
+    public async Task Upload_WithMorePagesThanTheWorkHasSheets_IsRefused()
+    {
+        var (connection, options) = CreateDb();
+        try
+        {
+            await using var db = new MainContext(options);
+            var user = new User { Username = "author", AdventureSheetStock = 100 };
+            user.SetPassword("pw");
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+            // One sheet bought; the manuscript below has two PAGEHEADERs.
+            await new AdventureWorkRepository(db).RegisterAsync(user.Id, 1, 3, 1);
+            var shop = new AdventureShopRepository(db);
+            var started = await shop.BeginUploadAsync(
+                user.Id,
+                1,
+                3,
+                new AdventureListingDraft("T", "A", 0, "", 100, true, 8)
+            );
+            Assert.NotNull(started);
+            var scriptId = started.Value.Listing.ScriptId;
+
+            var context = MultipartRequest(
+                new()
+                {
+                    ["userid"] = user.Id.ToString(),
+                    ["scriptid"] = scriptId.ToString(),
+                    ["ticket"] = started.Value.Ticket,
+                },
+                ("uccadv", ScriptText),
+                ("datalist", DatalistText)
+            );
+            var body = await ExecuteAsync(
+                await AdventureHttpEndpointsExtensions.UploadAsync(
+                    context.Request,
+                    shop,
+                    NullLoggerFactory.Instance,
+                    TestContext.Current.CancellationToken
+                ),
+                context
+            );
+
+            Assert.Contains("status=\"fail\"", body);
+            Assert.Contains("<code>7</code>", body);
+            Assert.False(await db.AdventureListingContents.AnyAsync(c => c.ScriptId == scriptId));
+            // The listing keeps the page count it was given from the work.
+            Assert.Equal(
+                1,
+                await db
+                    .AdventureListings.AsNoTracking()
+                    .Where(l => l.ScriptId == scriptId)
+                    .Select(l => l.Pages)
+                    .SingleAsync()
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task Upload_WithTicket_StoresBothParts_AndAnswersOkXml()
     {
         var (connection, options) = CreateDb();
@@ -75,7 +137,7 @@ public sealed class AdventureHttpEndpointsTests
             user.SetPassword("pw");
             db.Users.Add(user);
             await db.SaveChangesAsync();
-            await new AdventureWorkRepository(db).RegisterAsync(user.Id, 1, 3, 1);
+            await new AdventureWorkRepository(db).RegisterAsync(user.Id, 1, 3, 2);
             var shop = new AdventureShopRepository(db);
             var started = await shop.BeginUploadAsync(
                 user.Id,

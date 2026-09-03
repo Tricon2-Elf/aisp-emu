@@ -416,7 +416,8 @@ public class AdventureWorkHandlersTests
             Assert.Null(
                 await shop.RedeemUploadTicketAsync(ticket, TestContext.Current.CancellationToken)
             );
-            Assert.True(
+            Assert.Equal(
+                AdventureStoreOutcome.Stored,
                 await shop.StoreContentAsync(
                     scriptId,
                     "ADV0..."u8.ToArray(),

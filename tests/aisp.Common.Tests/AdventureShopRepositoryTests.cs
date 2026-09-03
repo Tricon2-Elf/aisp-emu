@@ -42,7 +42,10 @@ public sealed class AdventureShopRepositoryTests
         Assert.NotNull(started);
         var scriptId = started.Value.Listing.ScriptId;
         Assert.NotNull(await shop.RedeemUploadTicketAsync(started.Value.Ticket));
-        Assert.True(await shop.StoreContentAsync(scriptId, "ADV0"u8.ToArray(), []));
+        Assert.Equal(
+            AdventureStoreOutcome.Stored,
+            await shop.StoreContentAsync(scriptId, "ADV0"u8.ToArray(), [])
+        );
         var listing = await shop.ConfirmUploadAsync(author.Id, scriptId);
         Assert.NotNull(listing);
         return listing;

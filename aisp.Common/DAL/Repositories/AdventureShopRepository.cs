@@ -44,6 +44,15 @@ public enum AdventureImportOutcome
     Replaced = 4,
 }
 
+public enum AdventureStoreOutcome
+{
+    Stored = 0,
+    MissingListing = 1,
+
+    /// <summary>The manuscript has more pages than the work has sheets.</summary>
+    TooManyPages = 2,
+}
+
 public enum AdventureBuyOutcome
 {
     Bought = 0,
@@ -77,8 +86,12 @@ public interface IAdventureShopRepository
     /// <summary>Consumes an unexpired upload ticket and returns the Pending listing it was issued for.</summary>
     Task<AdventureListing?> RedeemUploadTicketAsync(string token, CancellationToken ct = default);
 
-    /// <summary>Stores the two uploaded texts; a positive <paramref name="pages"/> (sheets counted in the script) replaces the page count taken from the work.</summary>
-    Task<bool> StoreContentAsync(
+    /// <summary>
+    /// Stores the two uploaded texts; a positive <paramref name="pages"/> (sheets counted in the script) replaces
+    /// the page count taken from the work, but may not exceed the sheets the work was given (the client cannot
+    /// write more, so a larger count is a tampered upload trying to skip the sheet shop).
+    /// </summary>
+    Task<AdventureStoreOutcome> StoreContentAsync(
         long scriptId,
         byte[] script,
         byte[] datalist,
@@ -346,7 +359,7 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
         );
     }
 
-    public async Task<bool> StoreContentAsync(
+    public async Task<AdventureStoreOutcome> StoreContentAsync(
         long scriptId,
         byte[] script,
         byte[] datalist,
@@ -358,15 +371,24 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
             .AdventureListings.Include(l => l.Content)
             .SingleOrDefaultAsync(l => l.ScriptId == scriptId, ct);
         if (listing is null)
-            return false;
+            return AdventureStoreOutcome.MissingListing;
         if (pages > 0)
+        {
+            // Imported listings have no work row; a player's listing always does.
+            var sheets = await db
+                .AdventureWorks.Where(w => w.UserId == listing.UserId && w.WorkId == listing.WorkId)
+                .Select(w => (int?)w.Sheets)
+                .SingleOrDefaultAsync(ct);
+            if (sheets is { } allocated && pages > allocated)
+                return AdventureStoreOutcome.TooManyPages;
             listing.Pages = pages;
+        }
         if (listing.Content is null)
             listing.Content = new AdventureListingContent { ScriptId = scriptId };
         listing.Content.Script = script;
         listing.Content.Datalist = datalist;
         await db.SaveChangesAsync(ct);
-        return true;
+        return AdventureStoreOutcome.Stored;
     }
 
     public async Task<AdventureListing?> ConfirmUploadAsync(
