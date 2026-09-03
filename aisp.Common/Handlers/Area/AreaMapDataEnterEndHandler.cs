@@ -26,6 +26,24 @@ public class AreaMapDataEnterEndHandler(
         session.IsMapTransitionPending = false;
         await session.SendAsync(ResponseType, new MapDataEnterEndResponse().ToBytes(), ct);
 
+        // Prime the client's money manager: balance widgets (the sheet shop, the drama shop) replay its cached
+        // values on open, and nothing fills that cache until some window asks for money data.
+        if (session.User is not null)
+        {
+            await session.SendAsync(
+                PacketType.MoneyUpdatedAipoint,
+                new MoneyUpdatedAipointNotify((ulong)Math.Max(0, session.User.AiPoints)).ToBytes(),
+                ct
+            );
+            await session.SendAsync(
+                PacketType.MoneyUpdatedNicopoint,
+                new MoneyUpdatedNicopointNotify(
+                    (ulong)Math.Max(0, session.User.NicoPoints)
+                ).ToBytes(),
+                ct
+            );
+        }
+
         // Self avatar only here. Peer/robo presence waits for MapEnter so the client
         // finishes map load before remote avatars arrive (room-functions 2-player crash).
         var myChar = session.Character ?? session.User!.Characters.FirstOrDefault();
