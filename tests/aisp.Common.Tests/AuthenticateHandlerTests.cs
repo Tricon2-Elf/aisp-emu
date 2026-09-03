@@ -84,6 +84,7 @@ public class AuthenticateHandlerTests
 
         var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("alice")).ReturnsAsync(user);
+        SetupLoginModerationMocks(userRepo, user);
 
         var state = new SharedState();
         var handler = new AuthenticateHandler(
@@ -119,9 +120,7 @@ public class AuthenticateHandlerTests
 
         var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("alice")).ReturnsAsync(user);
-        userRepo
-            .Setup(r => r.TouchLastLoggedInAsync(3, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+        SetupLoginModerationMocks(userRepo, user);
 
         var state = new SharedState();
         var staleAuth = new CapturingPlayerSession { UserId = 3, User = user };
@@ -175,6 +174,7 @@ public class AuthenticateHandlerTests
 
         var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("banned")).ReturnsAsync(user);
+        SetupLoginModerationMocks(userRepo, user);
 
         var handler = new AuthenticateHandler(
             userRepo.Object,
@@ -194,5 +194,97 @@ public class AuthenticateHandlerTests
             (uint)AuthResponseResult.AccountBanned,
             BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
         );
+    }
+
+    [Fact]
+    public async Task KickedUser_SendsFailure_DoesNotSetUser()
+    {
+        var user = new User
+        {
+            Id = 6,
+            Username = "kicked",
+            KickedUntil = DateTime.UtcNow.AddMinutes(10),
+        };
+        user.SetPassword("pw");
+
+        var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
+        userRepo.Setup(r => r.GetByUsernameAsync("kicked")).ReturnsAsync(user);
+        SetupLoginModerationMocks(userRepo, user);
+
+        var handler = new AuthenticateHandler(
+            userRepo.Object,
+            new SharedState(),
+            NullLogger<AuthenticateHandler>.Instance
+        );
+        var session = new CapturingPlayerSession();
+        var req = new AuthenticateRequest("kicked", "pw");
+
+        var resp = await handler.HandleAsync(req, session, TestContext.Current.CancellationToken);
+
+        Assert.Null(resp);
+        Assert.Null(session.User);
+        Assert.Equal(
+            (uint)AuthResponseResult.Failure,
+            BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
+    }
+
+    [Fact]
+    public async Task ExpiredBan_AllowsLogin()
+    {
+        var user = new User
+        {
+            Id = 7,
+            Username = "expired",
+            IsBanned = true,
+            BannedUntil = DateTime.UtcNow.AddMinutes(-5),
+        };
+        user.SetPassword("pw");
+
+        var refreshed = new User
+        {
+            Id = 7,
+            Username = "expired",
+            IsBanned = false,
+        };
+        refreshed.SetPassword("pw");
+
+        var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
+        userRepo.Setup(r => r.GetByUsernameAsync("expired")).ReturnsAsync(user);
+        userRepo
+            .Setup(r => r.ClearExpiredBanAsync(7, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        userRepo.Setup(r => r.GetById(7)).ReturnsAsync(refreshed);
+        userRepo
+            .Setup(r => r.TouchLastLoggedInAsync(7, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new AuthenticateHandler(
+            userRepo.Object,
+            new SharedState(),
+            NullLogger<AuthenticateHandler>.Instance
+        );
+        var session = new CapturingPlayerSession();
+        var req = new AuthenticateRequest("expired", "pw");
+
+        var resp = await handler.HandleAsync(req, session, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(resp);
+        Assert.Equal(7, session.UserId);
+        Assert.NotNull(session.User);
+    }
+
+    private static void SetupLoginModerationMocks(
+        Mock<aisp.Common.DAL.Repositories.IUserRepository> userRepo,
+        User user
+    )
+    {
+        userRepo
+            .Setup(r => r.ClearExpiredBanAsync(user.Id, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        userRepo.Setup(r => r.GetById(user.Id)).ReturnsAsync(user);
+        userRepo
+            .Setup(r => r.TouchLastLoggedInAsync(user.Id, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
     }
 }

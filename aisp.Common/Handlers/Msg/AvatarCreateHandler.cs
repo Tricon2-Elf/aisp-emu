@@ -1,6 +1,7 @@
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Services;
 using aisp.Network;
 using aisp.Network.Packets.Msg;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,8 @@ namespace aisp.Common.Handlers.Msg;
 public class AvatarCreateHandler(
     ILogger<AvatarCreateHandler> logger,
     ICharacterRepository charRepo,
-    IWordFilter wordFilter
+    IWordFilter wordFilter,
+    ModerationService moderationService
 ) : PacketHandlerBase<AvatarCreateRequest, AvatarCreateResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.AvatarCreateRequest;
@@ -28,7 +30,7 @@ public class AvatarCreateHandler(
     {
         _logger.LogInformation("createRequest: {request}", request.ToString());
 
-        if (wordFilter.ContainsBlockedWord(request.AvatarName))
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.AvatarName))
         {
             _logger.LogWarning(
                 "Rejecting avatar create for user {UserId}: blocked name",
@@ -108,6 +110,8 @@ public class AvatarCreateHandler(
         if (staleCharacter is not null)
             session.User.Characters.Remove(staleCharacter);
         session.User.Characters.Add(hydratedCharacter);
+
+        await moderationService.SyncModeratorsCircleForUserAsync(session.User.Id, ct);
 
         // The new-character client flow does not issue another AvatarGetDataRequest.
         // Populate its selected slot before Enquete completion leads directly to select_avatar.

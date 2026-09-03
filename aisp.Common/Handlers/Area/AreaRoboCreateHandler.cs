@@ -41,7 +41,7 @@ public class AreaRoboCreateHandler(
             objectId
         );
 
-        if (wordFilter.ContainsBlockedWord(request.Name))
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.Name))
         {
             logger.LogWarning(
                 "Rejecting Robo create for character {CharacterId}: blocked name",

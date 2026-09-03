@@ -6,9 +6,11 @@ using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class MailPostHandler(ICharacterRepository characters, SharedState state)
-    : PacketHandlerBase<MailPostRequest, MailPostResponse>,
-        IRequiresAuthenticatedSession
+public class MailPostHandler(
+    ICharacterRepository characters,
+    SharedState state,
+    IWordFilter wordFilter
+) : PacketHandlerBase<MailPostRequest, MailPostResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.MailPostRequest;
     public override PacketType ResponseType => PacketType.MailPostResponse;
@@ -21,6 +23,9 @@ public class MailPostHandler(ICharacterRepository characters, SharedState state)
     )
     {
         if (session.CharacterId == 0)
+            return new MailPostResponse(1, new MailData());
+
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.Subject, request.Body))
             return new MailPostResponse(1, new MailData());
 
         var recipient = await ResolveRecipientAsync(request, ct);
@@ -53,7 +58,7 @@ public class MailPostHandler(ICharacterRepository characters, SharedState state)
         };
 
         var notify = new NotifyNewMail(mail).ToBytes();
-        foreach (var client in state.GetOnlineMsgClientsByCharacterIds(new[] { recipient.Id }))
+        foreach (var client in state.GetOnlineMsgClientsByCharacterId(recipient.Id))
         {
             if (client.ConnectionId == session.ConnectionId)
                 continue;

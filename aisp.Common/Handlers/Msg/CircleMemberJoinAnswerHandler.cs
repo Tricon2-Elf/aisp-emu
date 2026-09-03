@@ -37,8 +37,8 @@ public class CircleMemberJoinAnswerHandler(ICircleRepository circles, SharedStat
 
         // Also notify the inviter of the answer.
         foreach (
-            var client in state.GetOnlineMsgClientsByCharacterIds(
-                new[] { result.JoinRequest.RequesterCharacterId }
+            var client in state.GetOnlineMsgClientsByCharacterId(
+                result.JoinRequest.RequesterCharacterId
             )
         )
         {

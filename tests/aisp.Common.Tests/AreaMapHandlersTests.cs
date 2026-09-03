@@ -1962,6 +1962,7 @@ public class AreaMapHandlersTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(
                 new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
                 new MapRepository(handlerDb),
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
@@ -2047,6 +2048,7 @@ public class AreaMapHandlersTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(
                 new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
                 new MapRepository(handlerDb),
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
@@ -2931,6 +2933,7 @@ public class AreaMapHandlersTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(
                 new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
                 new MapRepository(handlerDb),
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
@@ -2951,6 +2954,64 @@ public class AreaMapHandlersTests
             var reply = Assert.Single(session.Sent, p => p.Type == PacketType.AreasvEnterResponse);
             Assert.Equal(8, reply.Payload.Length);
             Assert.NotEqual(0u, new PacketReader(reply.Payload).ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AreasvEnterHandler_KickedUser_SendsEightByteEnterResponse()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            const string otp = "kicked-otp-12345678";
+            var user = CreateUserWithCharacter(1, 3061, "kicked-user", "Kicked User", 10990100);
+            user.KickedUntil = DateTime.UtcNow.AddMinutes(10);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.UserSessions.Add(
+                    new UserSession
+                    {
+                        UserId = user.Id,
+                        OTP = otp,
+                        ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var session = new CapturingPlayerSession();
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreasvEnterHandler(
+                new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
+                new MapRepository(handlerDb),
+                new ChannelRepository(handlerDb),
+                new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
+                new MyRoomRepository(handlerDb),
+                new CircleRepository(handlerDb),
+                new FriendRepository(handlerDb),
+                new SharedState(),
+                NullLogger<AreasvEnterHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildAreasvEnterPayload((uint)user.Id, otp),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var reply = Assert.Single(session.Sent, p => p.Type == PacketType.AreasvEnterResponse);
+            Assert.Equal(8, reply.Payload.Length);
+            var reader = new PacketReader(reply.Payload);
+            Assert.Equal((uint)AuthResponseResult.Failure, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
         }
         finally
         {

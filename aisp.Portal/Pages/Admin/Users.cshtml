@@ -41,6 +41,7 @@ else
                         <th>Dolls</th>
                         <th>Online</th>
                         <th>Location</th>
+                        <th>Role</th>
                         <th class="pe-4">Account</th>
                     </tr>
                 </thead>
@@ -53,6 +54,7 @@ else
                             <td>@user.RoboCount</td>
                             <td><span class="status-pill @(user.IsOnline ? "status-active" : "status-offline")">@(user.IsOnline ? "Online" : "Offline")</span></td>
                             <td class="text-secondary">@user.Location</td>
+                            <td>@user.Role</td>
                             <td class="pe-4"><span class="status-pill @(user.IsBanned ? "status-banned" : "status-active")">@(user.IsBanned ? "Banned" : "Active")</span></td>
                         </tr>
                     }

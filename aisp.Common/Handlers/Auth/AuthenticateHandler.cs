@@ -50,13 +50,28 @@ public class AuthenticateHandler(
             return null;
         }
 
-        if (user.IsBanned)
+        user =
+            await UserModerationState.PrepareUserForGameLoginAsync(userRepo, user.Id, ct) ?? user;
+
+        if (UserModerationState.IsCurrentlyBanned(user))
         {
             _logger.LogWarning(
                 $"Auth rejected: User '{user.Username}' is banned. Reason: {user.BanReason}"
             );
             var banResp = new AuthenticateFailureResponse(AuthResponseResult.AccountBanned);
             await session.SendAsync(PacketType.AuthenticateFailureResponse, banResp.ToBytes(), ct);
+            return null;
+        }
+
+        if (UserModerationState.IsCurrentlyKicked(user))
+        {
+            _logger.LogWarning(
+                "Auth rejected: User '{Username}' is kicked until {KickedUntil}",
+                user.Username,
+                user.KickedUntil
+            );
+            var kickResp = new AuthenticateFailureResponse(AuthResponseResult.Failure);
+            await session.SendAsync(PacketType.AuthenticateFailureResponse, kickResp.ToBytes(), ct);
             return null;
         }
 

@@ -90,8 +90,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -115,6 +119,140 @@ public class CmdExecHandlerTests
                 TestContext.Current.CancellationToken
             );
             Assert.Equal(10990110u, persisted.CurrentMapId);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task TpuCommand_TeleportsModeratorToTargetPlayerLocation()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var mod = CreateUserWithCharacter(1, 9001, "moduser", "ModChar", 10990100);
+            mod.Role = UserRole.Moderator;
+            var target = CreateUserWithCharacter(2, 8001, "target", "TargetChar", 10990110);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(mod, target);
+                db.Channels.Add(
+                    new GameChannel
+                    {
+                        ChannelNum = 1,
+                        IP = "localhost",
+                        Port = 50054,
+                        MapId = 10990100,
+                    }
+                );
+                db.Maps.AddRange(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = -9100f,
+                        SpawnY = 2f,
+                        SpawnZ = -18000f,
+                        SpawnRotation = 180,
+                    },
+                    new Map
+                    {
+                        MapId = 10990110,
+                        Name = "Akihabara 2",
+                        SpawnX = -11000f,
+                        SpawnY = 0.1f,
+                        SpawnZ = -19200f,
+                        SpawnRotation = 0,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var modAreaSession = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 9001,
+                MapId = 10990100,
+                ChannelId = 1,
+                X = -9100f,
+                Y = 2f,
+                Z = -18000f,
+            };
+            var targetAreaSession = new CapturingPlayerSession
+            {
+                User = target,
+                UserId = target.Id,
+                Character = target.Characters.First(),
+                CharacterId = 8001,
+                MapId = 10990110,
+                ChannelId = 1,
+                X = 123.5f,
+                Y = 4.2f,
+                Z = 456.7f,
+                Rotation = 90,
+            };
+            state.RegisterClient(ServerType.Area, modAreaSession);
+            state.RegisterClient(ServerType.Area, targetAreaSession);
+
+            var modMsgSession = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 9001,
+            };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
+                TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/tpu", "2"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.Equal(10990110u, modAreaSession.MapId);
+            Assert.Equal(123.5f, modAreaSession.X);
+            Assert.Equal(4.2f, modAreaSession.Y);
+            Assert.Equal(456.7f, modAreaSession.Z);
+            Assert.Equal(90, modAreaSession.Rotation);
+            Assert.Contains(
+                modAreaSession.Sent,
+                packet => packet.Type == PacketType.NotifyChangeMap
+            );
+            var notice = Assert.Single(
+                modMsgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            Assert.Contains("target", reader.ReadString("utf-8"), StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
@@ -195,8 +333,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -291,8 +433,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -429,8 +575,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms(["faggot"]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -473,6 +623,20 @@ public class CmdExecHandlerTests
             Assert.Equal("Second Room", createdRoom.Name);
             Assert.Equal(MyRoomStage.EightTatami, createdRoom.Stage);
             Assert.Equal(checked((uint)createdRoom.Id), areaSession.MyRoomId);
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("room", "create", "8", "Faggot"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.False(
+                await verifyDb
+                    .Rooms.AsNoTracking()
+                    .AnyAsync(
+                        room => room.OwnerCharacterId == 8101 && room.Name == "Faggot",
+                        TestContext.Current.CancellationToken
+                    )
+            );
 
             msgSession.Sent.Clear();
             await handler.HandleAsync(
@@ -644,8 +808,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -718,8 +886,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -794,8 +966,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -862,8 +1038,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -948,8 +1128,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(DefaultClothingItems.Male),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1037,8 +1221,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache([itemId]),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1122,8 +1310,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1191,8 +1383,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1316,8 +1512,12 @@ public class CmdExecHandlerTests
                 new CircleRepository(new MainContext(options)),
                 new StubItemBaseListCache(),
                 CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1351,6 +1551,519 @@ public class CmdExecHandlerTests
         }
     }
 
+    [Fact]
+    public async Task ReportCommand_WithNoArgs_SendsUsageNotice()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8001, "report-user", "Reporter", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = CreateReportHandler(options, new SharedState());
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("/report", text, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ReportCommand_WithoutAreaSession_SendsNotInMapNotice()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var user = CreateUserWithCharacter(1, 8001, "report-user", "Reporter", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = CreateReportHandler(options, new SharedState());
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report", "some", "reason"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("map", text, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ReportCommand_WithAreaSession_PersistsTicketWithSnapshots()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var reporter = CreateUserWithCharacter(1, 8001, "reporter", "Reporter", 10990100);
+            var other = CreateUserWithCharacter(2, 8002, "other", "Other", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(reporter, other);
+                db.Maps.Add(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = 0,
+                        SpawnY = 0,
+                        SpawnZ = 0,
+                    }
+                );
+                db.ChatMessages.Add(
+                    new ChatMessage
+                    {
+                        Kind = ChatLogKind.Public,
+                        UserId = other.Id,
+                        CharacterId = 8002,
+                        CharacterName = "Other",
+                        Message = "offensive chat",
+                        MapId = 10990100,
+                        ChannelId = 1,
+                        CreatedAt = DateTime.UtcNow.AddMinutes(-1),
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = reporter,
+                UserId = reporter.Id,
+                Character = reporter.Characters.First(),
+                CharacterId = 8001,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            var otherAreaSession = new CapturingPlayerSession
+            {
+                User = other,
+                UserId = other.Id,
+                Character = other.Characters.First(),
+                CharacterId = 8002,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+            state.RegisterClient(ServerType.Area, otherAreaSession);
+
+            var msgSession = new CapturingPlayerSession { User = reporter, UserId = reporter.Id };
+            var handler = CreateReportHandler(options, state);
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report", "Bob", "is", "being", "racist"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                msgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("submitted", text, StringComparison.OrdinalIgnoreCase);
+
+            await using var verifyDb = new MainContext(options);
+            var ticket = Assert.Single(verifyDb.ReportTickets);
+            Assert.Equal("Bob is being racist", ticket.Reason);
+            Assert.Equal("Akihabara", ticket.MapName);
+            Assert.Equal(2, verifyDb.ReportTicketPlayers.Count(x => x.ReportTicketId == ticket.Id));
+            Assert.Single(
+                verifyDb.ReportTicketChatMessages.Where(x => x.ReportTicketId == ticket.Id)
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ReportCommand_NotifiesModeratorsCircleChat()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var admin = CreateUserWithCharacter(1, 9001, "sysadmin", "AdminChar", 10990100);
+            admin.Role = UserRole.ServerAdmin;
+            var mod = CreateUserWithCharacter(2, 9002, "moduser", "ModChar", 10990100);
+            mod.Role = UserRole.Moderator;
+            var reporter = CreateUserWithCharacter(3, 8001, "reporter", "Reporter", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(admin, mod, reporter);
+                db.Maps.Add(
+                    new Map
+                    {
+                        MapId = 10990100,
+                        Name = "Akihabara",
+                        SpawnX = 0,
+                        SpawnY = 0,
+                        SpawnZ = 0,
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            await CreateModerationService(options, state)
+                .SyncAllStaffCirclesAsync(TestContext.Current.CancellationToken);
+
+            var modMsgSession = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 9002,
+            };
+            state.RegisterClient(ServerType.Msg, modMsgSession);
+
+            var areaSession = new CapturingPlayerSession
+            {
+                User = reporter,
+                UserId = reporter.Id,
+                Character = reporter.Characters.First(),
+                CharacterId = 8001,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+
+            var msgSession = new CapturingPlayerSession { User = reporter, UserId = reporter.Id };
+            var handler = CreateReportHandler(options, state);
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/report", "some", "problem"),
+                msgSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notify = Assert.Single(
+                modMsgSession.Sent,
+                packet => packet.Type == PacketType.CircleChatForwardNotify
+            );
+            var reader = new PacketReader(notify.Payload);
+            Assert.Equal(9001u, reader.ReadUInt());
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("Reporter", text, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("some problem", text, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UserListCommand_ListsOnlineUsersForModerators()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var mod = CreateUserWithCharacter(1, 9001, "moduser", "ModChar", 10990100);
+            mod.Role = UserRole.Moderator;
+            var player = CreateUserWithCharacter(2, 8001, "player", "PlayerChar", 10990100);
+            var other = CreateUserWithCharacter(3, 8002, "other", "OtherChar", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(mod, player, other);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var modSession = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 9001,
+            };
+            state.RegisterClient(ServerType.Msg, modSession);
+            state.RegisterClient(
+                ServerType.Msg,
+                new CapturingPlayerSession
+                {
+                    User = player,
+                    UserId = player.Id,
+                    Character = player.Characters.First(),
+                    CharacterId = 8001,
+                }
+            );
+            state.RegisterClient(
+                ServerType.Area,
+                new CapturingPlayerSession
+                {
+                    User = other,
+                    UserId = other.Id,
+                    Character = other.Characters.First(),
+                    CharacterId = 8002,
+                    MapId = 10990100,
+                    ChannelId = 1,
+                }
+            );
+
+            var handler = CreateReportHandler(options, state);
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/userlist"),
+                modSession,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                modSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.Contains("1: moduser", text, StringComparison.Ordinal);
+            Assert.Contains("2: player", text, StringComparison.Ordinal);
+            Assert.Contains("3: other", text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UserListCommand_DeniesNonModerators()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var player = CreateUserWithCharacter(2, 8001, "player", "PlayerChar", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(player);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var session = new CapturingPlayerSession
+            {
+                User = player,
+                UserId = player.Id,
+                Character = player.Characters.First(),
+                CharacterId = 8001,
+            };
+            state.RegisterClient(ServerType.Msg, session);
+
+            var handler = CreateReportHandler(options, state);
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/userlist"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            Assert.Contains(
+                "permission",
+                reader.ReadString("utf-8"),
+                StringComparison.OrdinalIgnoreCase
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task TpuCommand_DeniesWhenPersistedRoleWasDemoted()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var demoted = CreateUserWithCharacter(1, 9001, "exmod", "ExMod", 10990100);
+            demoted.Role = UserRole.User;
+            var target = CreateUserWithCharacter(2, 8001, "target", "TargetChar", 10990110);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(demoted, target);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var staleSessionUser = CreateUserWithCharacter(1, 9001, "exmod", "ExMod", 10990100);
+            staleSessionUser.Role = UserRole.Moderator;
+
+            var handler = CreateReportHandler(options, new SharedState());
+            var session = new CapturingPlayerSession
+            {
+                User = staleSessionUser,
+                UserId = demoted.Id,
+                Character = staleSessionUser.Characters.First(),
+                CharacterId = 9001,
+            };
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/tpu", "2"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            Assert.Contains(
+                "permission",
+                reader.ReadString("utf-8"),
+                StringComparison.OrdinalIgnoreCase
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UserListCommand_AllowsWhenPersistedRoleWasPromoted()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var promoted = CreateUserWithCharacter(1, 9001, "newmod", "NewMod", 10990100);
+            promoted.Role = UserRole.Moderator;
+            var player = CreateUserWithCharacter(2, 8001, "player", "PlayerChar", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(promoted, player);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var staleSessionUser = CreateUserWithCharacter(1, 9001, "newmod", "NewMod", 10990100);
+            staleSessionUser.Role = UserRole.User;
+
+            var state = new SharedState();
+            var session = new CapturingPlayerSession
+            {
+                User = staleSessionUser,
+                UserId = promoted.Id,
+                Character = staleSessionUser.Characters.First(),
+                CharacterId = 9001,
+            };
+            state.RegisterClient(ServerType.Msg, session);
+            state.RegisterClient(
+                ServerType.Msg,
+                new CapturingPlayerSession
+                {
+                    User = player,
+                    UserId = player.Id,
+                    Character = player.Characters.First(),
+                    CharacterId = 8001,
+                }
+            );
+
+            var handler = CreateReportHandler(options, state);
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/userlist"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.DoesNotContain("permission", text, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("1: newmod", text, StringComparison.Ordinal);
+            Assert.Contains("2: player", text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    private static CmdExecHandler CreateReportHandler(
+        DbContextOptions<MainContext> options,
+        SharedState state
+    ) =>
+        new(
+            state,
+            new MapRepository(new MainContext(options)),
+            new UserRepository(new MainContext(options)),
+            new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            ),
+            new MyRoomRepository(new MainContext(options)),
+            new CircleRepository(new MainContext(options)),
+            new StubItemBaseListCache(),
+            CreateDirectMapLinkTransitionService(options, state),
+            CreateModerationService(options, state),
+            new ChatLogRepository(new MainContext(options)),
+            new ReportTicketRepository(new MainContext(options)),
+            TestTextLocaliser.English,
+            new AdventureWorkRepository(new MainContext(options)),
+            WordFilter.FromTerms([]),
+            NullLogger<CmdExecHandler>.Instance
+        );
+
     private static byte[] BuildCmdExecPayload(string command, params string[] args)
     {
         var writer = new PacketWriter();
@@ -1361,6 +2074,22 @@ public class CmdExecHandlerTests
         writer.Write((uint)args.Length);
         return writer.ToBytes();
     }
+
+    private static ModerationService CreateModerationService(
+        DbContextOptions<MainContext> options,
+        SharedState state
+    ) =>
+        new(
+            new UserRepository(new MainContext(options)),
+            new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            ),
+            new CircleRepository(new MainContext(options)),
+            new MainContext(options),
+            state,
+            NullLogger<ModerationService>.Instance
+        );
 
     private static User CreateUserWithCharacter(
         int userId,

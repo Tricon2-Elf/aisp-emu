@@ -35,6 +35,12 @@
     "zh-Hans": "系统",
     "zh-Hant": "系統"
   },
+  "chat.slur_rejected": {
+    "ja": "そのメッセージは送信されませんでした。差別用語は使用しないでください。",
+    "en": "That message was not sent. Please don't use slurs.",
+    "zh-Hans": "该消息未发送。请不要使用歧视性用语。",
+    "zh-Hant": "該訊息未發送。請不要使用歧視性用語。"
+  },
   "maintenance.warning": {
     "ja": "サーバーメンテナンスまであと{0}分です。切断されます。",
     "en": "Server maintenance in {0} minute(s). You will be disconnected.",
@@ -172,6 +178,174 @@
     "en": "Room {0} was removed.",
     "zh-Hans": "已删除房间 {0}。",
     "zh-Hant": "已刪除房間 {0}。"
+  },
+  "cmd.kick.usage": {
+    "ja": "使い方: /kick <ユーザーID|名前> [分] [理由]",
+    "en": "Usage: /kick <userId|name> [minutes] [reason]",
+    "zh-Hans": "用法：/kick <用户ID|名称> [分钟] [原因]",
+    "zh-Hant": "用法：/kick <用戶ID|名稱> [分鐘] [原因]"
+  },
+  "cmd.ban.usage": {
+    "ja": "使い方: /ban <ユーザーID|名前> [日数|perma] [理由]（モデレーターは最大30日、管理者はperma可）",
+    "en": "Usage: /ban <userId|name> [days|perma] [reason] (moderators max 30 days; admins may use perma)",
+    "zh-Hans": "用法：/ban <用户ID|名称> [天数|perma] [原因]（版主最多30天；管理员可用 perma）",
+    "zh-Hant": "用法：/ban <用戶ID|名稱> [天數|perma] [原因]（版主最多30天；管理員可用 perma）"
+  },
+  "cmd.mod.usage": {
+    "ja": "使い方: /mod <名前>",
+    "en": "Usage: /mod <name>",
+    "zh-Hans": "用法：/mod <名称>",
+    "zh-Hant": "用法：/mod <名稱>"
+  },
+  "cmd.unmod.usage": {
+    "ja": "使い方: /unmod <名前>",
+    "en": "Usage: /unmod <name>",
+    "zh-Hans": "用法：/unmod <名称>",
+    "zh-Hant": "用法：/unmod <名稱>"
+  },
+  "cmd.userlist.empty": {
+    "ja": "オンラインのユーザーはいません。",
+    "en": "No users are online.",
+    "zh-Hans": "当前没有在线用户。",
+    "zh-Hant": "目前沒有在線用戶。"
+  },
+  "cmd.userlist.entry": {
+    "ja": "{0}: {1}",
+    "en": "{0}: {1}",
+    "zh-Hans": "{0}: {1}",
+    "zh-Hant": "{0}: {1}"
+  },
+  "cmd.tpu.usage": {
+    "ja": "使い方: /tpu <ユーザーID|名前>",
+    "en": "Usage: /tpu <userId|name>",
+    "zh-Hans": "用法：/tpu <用户ID|名称>",
+    "zh-Hant": "用法：/tpu <用戶ID|名稱>"
+  },
+  "cmd.tpu.not_in_map": {
+    "ja": "マップにいないためテレポートできません。",
+    "en": "You must be in a map to teleport.",
+    "zh-Hans": "你必须在地图中才能传送。",
+    "zh-Hant": "你必須在地圖中才能傳送。"
+  },
+  "cmd.tpu.target_offline": {
+    "ja": "対象プレイヤーはマップにいません。",
+    "en": "That player is not currently in a map.",
+    "zh-Hans": "该玩家当前不在地图中。",
+    "zh-Hant": "該玩家目前不在地圖中。"
+  },
+  "cmd.tpu.failed": {
+    "ja": "テレポートに失敗しました。",
+    "en": "Teleport failed.",
+    "zh-Hans": "传送失败。",
+    "zh-Hant": "傳送失敗。"
+  },
+  "cmd.tpu.success": {
+    "ja": "{0} の位置へテレポートしました（マップ {1}、チャンネル {2}）。",
+    "en": "Teleported to {0} (map {1}, channel {2}).",
+    "zh-Hans": "已传送到 {0}（地图 {1}，频道 {2}）。",
+    "zh-Hant": "已傳送到 {0}（地圖 {1}，頻道 {2}）。"
+  },
+  "cmd.kick.success": {
+    "ja": "{0} を {1} 分間キックしました（{2} セッション切断）。",
+    "en": "Kicked {0} for {1} minute(s) ({2} session(s) closed).",
+    "zh-Hans": "已将 {0} 踢出 {1} 分钟（断开 {2} 个会话）。",
+    "zh-Hant": "已將 {0} 踢出 {1} 分鐘（斷開 {2} 個工作階段）。"
+  },
+  "cmd.ban.success": {
+    "ja": "{0} を {1} 日間BANしました（{2} セッション切断）。",
+    "en": "Banned {0} for {1} day(s) ({2} session(s) closed).",
+    "zh-Hans": "已将 {0} 封禁 {1} 天（断开 {2} 个会话）。",
+    "zh-Hant": "已將 {0} 封禁 {1} 天（斷開 {2} 個工作階段）。"
+  },
+  "cmd.ban.success_permanent": {
+    "ja": "{0} を永久BANしました（{1} セッション切断）。",
+    "en": "Permanently banned {0} ({1} session(s) closed).",
+    "zh-Hans": "已永久封禁 {0}（断开 {1} 个会话）。",
+    "zh-Hant": "已永久封禁 {0}（斷開 {1} 個工作階段）。"
+  },
+  "cmd.mod.success": {
+    "ja": "{0} をモデレーターに任命しました。",
+    "en": "Promoted {0} to Moderator.",
+    "zh-Hans": "已将 {0} 提升为版主。",
+    "zh-Hant": "已將 {0} 提升為版主。"
+  },
+  "cmd.unmod.success": {
+    "ja": "{0} のモデレーター権限を解除しました。",
+    "en": "Removed Moderator role from {0}.",
+    "zh-Hans": "已移除 {0} 的版主权限。",
+    "zh-Hant": "已移除 {0} 的版主權限。"
+  },
+  "cmd.moderation.target_not_found": {
+    "ja": "対象のプレイヤーが見つかりません。",
+    "en": "Target player was not found.",
+    "zh-Hans": "未找到目标玩家。",
+    "zh-Hant": "未找到目標玩家。"
+  },
+  "cmd.moderation.permission_denied": {
+    "ja": "この操作を行う権限がありません。",
+    "en": "You do not have permission to do that.",
+    "zh-Hans": "你没有执行此操作的权限。",
+    "zh-Hant": "你沒有執行此操作的權限。"
+  },
+  "cmd.moderation.cannot_target_self": {
+    "ja": "自分自身を対象にすることはできません。",
+    "en": "You cannot target yourself.",
+    "zh-Hans": "你不能以自己为目标。",
+    "zh-Hant": "你不能以自己為目標。"
+  },
+  "cmd.moderation.already_moderator": {
+    "ja": "対象はすでにスタッフです。",
+    "en": "That player is already staff.",
+    "zh-Hans": "该玩家已经是工作人员。",
+    "zh-Hant": "該玩家已經是工作人員。"
+  },
+  "cmd.moderation.not_moderator": {
+    "ja": "対象はモデレーターではありません。",
+    "en": "That player is not a Moderator.",
+    "zh-Hans": "该玩家不是版主。",
+    "zh-Hant": "該玩家不是版主。"
+  },
+  "cmd.moderation.invalid_ban_duration": {
+    "ja": "BAN期間が無効です。",
+    "en": "Invalid ban duration.",
+    "zh-Hans": "封禁时长无效。",
+    "zh-Hant": "封禁時長無效。"
+  },
+  "cmd.moderation.failed": {
+    "ja": "モデレーション操作に失敗しました。",
+    "en": "Moderation action failed.",
+    "zh-Hans": "管理操作失败。",
+    "zh-Hant": "管理操作失敗。"
+  },
+  "cmd.report.usage": {
+    "ja": "使い方: /report <メッセージ>",
+    "en": "Usage: /report <message>",
+    "zh-Hans": "用法：/report <消息>",
+    "zh-Hant": "用法：/report <訊息>"
+  },
+  "cmd.report.not_in_map": {
+    "ja": "マップ内にいる必要があります。",
+    "en": "You must be in a map to file a report.",
+    "zh-Hans": "你必须在地图内才能提交举报。",
+    "zh-Hant": "你必須在地圖內才能提交檢舉。"
+  },
+  "cmd.report.success": {
+    "ja": "通報を送信しました。スタッフが確認します。",
+    "en": "Your report has been submitted. Staff will review it.",
+    "zh-Hans": "举报已提交，工作人员将进行审核。",
+    "zh-Hant": "檢舉已提交，工作人員將進行審核。"
+  },
+  "cmd.report.failed": {
+    "ja": "通報の送信に失敗しました。",
+    "en": "Failed to submit your report.",
+    "zh-Hans": "举报提交失败。",
+    "zh-Hant": "檢舉提交失敗。"
+  },
+  "cmd.report.moderators_notice": {
+    "ja": "新しい通報 #{0}: {1} ({2}) — {3} ch {4} — {5}",
+    "en": "New report #{0}: {1} ({2}) — {3} ch {4} — {5}",
+    "zh-Hans": "新举报 #{0}：{1} ({2}) — {3} ch {4} — {5}",
+    "zh-Hant": "新檢舉 #{0}：{1} ({2}) — {3} ch {4} — {5}"
   },
   "map.island_title_format": {
     "ja": "{0}島 {1}",

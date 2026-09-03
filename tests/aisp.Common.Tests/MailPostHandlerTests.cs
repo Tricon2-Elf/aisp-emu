@@ -45,7 +45,7 @@ public class MailPostHandlerTests
             .Setup(c => c.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(senderChar);
 
-        var handler = new MailPostHandler(characters.Object, state);
+        var handler = new MailPostHandler(characters.Object, state, WordFilter.FromTerms([]));
         var response = await handler.HandleAsync(
             new MailPostRequest(2, string.Empty, "[無題]", "hello"),
             sender,
@@ -104,7 +104,7 @@ public class MailPostHandlerTests
             .Setup(c => c.GetByIdAsync(2, It.IsAny<CancellationToken>()))
             .ReturnsAsync(recipientChar);
 
-        var handler = new MailPostHandler(characters.Object, state);
+        var handler = new MailPostHandler(characters.Object, state, WordFilter.FromTerms([]));
         var response = await handler.HandleAsync(
             new MailPostRequest(2, string.Empty, "subj", "body"),
             sender,
@@ -126,7 +126,11 @@ public class MailPostHandlerTests
             .Setup(c => c.GetByIdAsync(99, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Character?)null);
 
-        var handler = new MailPostHandler(characters.Object, new SharedState());
+        var handler = new MailPostHandler(
+            characters.Object,
+            new SharedState(),
+            WordFilter.FromTerms([])
+        );
         var sender = new CapturingPlayerSession
         {
             User = CreateUser(1),
@@ -142,6 +146,57 @@ public class MailPostHandlerTests
 
         Assert.NotNull(response);
         Assert.Equal(1u, response!.Result);
+    }
+
+    [Fact]
+    public async Task Post_RejectsBlockedSubjectOrBody()
+    {
+        var state = new SharedState();
+        var senderChar = new Character { Id = 1, Name = "Alice" };
+        var recipientChar = new Character { Id = 2, Name = "Bob" };
+        var sender = new CapturingPlayerSession
+        {
+            User = CreateUser(10),
+            UserId = 10,
+            CharacterId = 1,
+            Character = senderChar,
+        };
+        var recipient = new CapturingPlayerSession
+        {
+            User = CreateUser(20),
+            UserId = 20,
+            CharacterId = 2,
+            Character = recipientChar,
+        };
+        state.RegisterClient(ServerType.Msg, sender);
+        state.RegisterClient(ServerType.Msg, recipient);
+
+        var characters = new Mock<ICharacterRepository>();
+        characters
+            .Setup(c => c.GetByIdAsync(2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipientChar);
+
+        var handler = new MailPostHandler(
+            characters.Object,
+            state,
+            WordFilter.FromTerms(["faggot"])
+        );
+        var response = await handler.HandleAsync(
+            new MailPostRequest(2, string.Empty, "Faggot", "hello"),
+            sender,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(1u, response!.Result);
+        Assert.DoesNotContain(recipient.Sent, packet => packet.Type == PacketType.NotifyNewMail);
+
+        var bodyResponse = await handler.HandleAsync(
+            new MailPostRequest(2, string.Empty, "hi", "you faggot"),
+            sender,
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(1u, bodyResponse!.Result);
+        Assert.DoesNotContain(recipient.Sent, packet => packet.Type == PacketType.NotifyNewMail);
     }
 
     private static User CreateUser(int id)

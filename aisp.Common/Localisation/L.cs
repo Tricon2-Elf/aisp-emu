@@ -73,6 +73,11 @@ public static class L
         public static readonly LocKey Name = new("system.name");
     }
 
+    public static class Chat
+    {
+        public static readonly LocKey SlurRejected = new("chat.slur_rejected");
+    }
+
     public static class Maintenance
     {
         public static readonly LocKey Warning = new("maintenance.warning");
@@ -106,6 +111,36 @@ public static class L
         public static readonly LocKey RoomRemoveNotEmpty = new("cmd.room.remove_not_empty");
         public static readonly LocKey RoomRemoveCurrent = new("cmd.room.remove_current");
         public static readonly LocKey RoomRemoveSuccess = new("cmd.room.remove_success");
+        public static readonly LocKey KickUsage = new("cmd.kick.usage");
+        public static readonly LocKey BanUsage = new("cmd.ban.usage");
+        public static readonly LocKey ModUsage = new("cmd.mod.usage");
+        public static readonly LocKey UnmodUsage = new("cmd.unmod.usage");
+        public static readonly LocKey KickSuccess = new("cmd.kick.success");
+        public static readonly LocKey BanSuccess = new("cmd.ban.success");
+        public static readonly LocKey BanSuccessPermanent = new("cmd.ban.success_permanent");
+        public static readonly LocKey ModSuccess = new("cmd.mod.success");
+        public static readonly LocKey UnmodSuccess = new("cmd.unmod.success");
+        public static readonly LocKey TargetNotFound = new("cmd.moderation.target_not_found");
+        public static readonly LocKey PermissionDenied = new("cmd.moderation.permission_denied");
+        public static readonly LocKey CannotTargetSelf = new("cmd.moderation.cannot_target_self");
+        public static readonly LocKey AlreadyModerator = new("cmd.moderation.already_moderator");
+        public static readonly LocKey NotModerator = new("cmd.moderation.not_moderator");
+        public static readonly LocKey InvalidBanDuration = new(
+            "cmd.moderation.invalid_ban_duration"
+        );
+        public static readonly LocKey ModerationFailed = new("cmd.moderation.failed");
+        public static readonly LocKey ReportUsage = new("cmd.report.usage");
+        public static readonly LocKey ReportNotInMap = new("cmd.report.not_in_map");
+        public static readonly LocKey ReportSuccess = new("cmd.report.success");
+        public static readonly LocKey ReportFailed = new("cmd.report.failed");
+        public static readonly LocKey ReportModeratorsNotice = new("cmd.report.moderators_notice");
+        public static readonly LocKey UserListEmpty = new("cmd.userlist.empty");
+        public static readonly LocKey UserListEntry = new("cmd.userlist.entry");
+        public static readonly LocKey TpuUsage = new("cmd.tpu.usage");
+        public static readonly LocKey TpuNotInMap = new("cmd.tpu.not_in_map");
+        public static readonly LocKey TpuTargetOffline = new("cmd.tpu.target_offline");
+        public static readonly LocKey TpuFailed = new("cmd.tpu.failed");
+        public static readonly LocKey TpuSuccess = new("cmd.tpu.success");
     }
 
     public static class Equipment

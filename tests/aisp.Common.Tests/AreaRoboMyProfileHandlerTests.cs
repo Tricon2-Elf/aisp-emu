@@ -48,7 +48,7 @@ public sealed class AreaRoboMyProfileHandlerTests
             var editSession = new CapturingPlayerSession { CharacterId = 7 };
             await using (var editDb = new MainContext(options))
             {
-                var handler = new AreaEditRoboMyProfileHandler(editDb);
+                var handler = new AreaEditRoboMyProfileHandler(editDb, WordFilter.FromTerms([]));
                 Assert.IsAssignableFrom<IRequiresAuthenticatedSession>(handler);
 
                 await handler.HandleAsync(
@@ -165,7 +165,10 @@ public sealed class AreaRoboMyProfileHandlerTests
             );
             await using (var editDb = new MainContext(options))
             {
-                await new AreaEditRoboMyProfileHandler(editDb).HandleAsync(
+                await new AreaEditRoboMyProfileHandler(
+                    editDb,
+                    WordFilter.FromTerms([])
+                ).HandleAsync(
                     BuildEditPayload(1, attemptedProfile, 999, new AvatarProfileMetadata(1, 2, 3)),
                     editSession,
                     TestContext.Current.CancellationToken
@@ -234,6 +237,57 @@ public sealed class AreaRoboMyProfileHandlerTests
             Assert.Equal("Preserved", stored.Like1);
             Assert.Equal("Keep me", stored.ProfileDescription);
             Assert.Equal(77u, stored.ProfileUnknownDword08);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task EditOwnedProfile_RejectsBlockedTextWithoutPersisting()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 7, TestContext.Current.CancellationToken);
+            await SeedRoboAsync(options, 7, 2, 44);
+
+            var session = new CapturingPlayerSession { CharacterId = 7 };
+            var blockedProfile = new ProfileData(
+                "Robots",
+                "Tea",
+                "Maps",
+                "Building things",
+                "Hot and strong",
+                "Finding shortcuts",
+                "I am a faggot"
+            );
+            await using (var editDb = new MainContext(options))
+            {
+                await new AreaEditRoboMyProfileHandler(
+                    editDb,
+                    WordFilter.FromTerms(["faggot"])
+                ).HandleAsync(
+                    BuildEditPayload(2, blockedProfile, 123, default),
+                    session,
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            var response = Assert.Single(session.Sent);
+            Assert.Equal(PacketType.EditRoboMyProfileResponse, response.Type);
+            Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
+
+            await using var inspectionDb = new MainContext(options);
+            var stored = await inspectionDb
+                .Robos.AsNoTracking()
+                .SingleAsync(
+                    x => x.CharacterId == 7 && x.RoboId == 2,
+                    TestContext.Current.CancellationToken
+                );
+            Assert.Equal(string.Empty, stored.Like1);
+            Assert.Equal(string.Empty, stored.ProfileDescription);
         }
         finally
         {

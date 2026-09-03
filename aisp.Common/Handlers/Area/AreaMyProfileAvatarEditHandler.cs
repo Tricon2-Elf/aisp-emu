@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.Handlers.Area;
 
-public class AreaMyProfileAvatarEditHandler(MainContext db)
+public class AreaMyProfileAvatarEditHandler(MainContext db, IWordFilter wordFilter)
     : IPacketHandler,
         IRequiresAuthenticatedSession
 {
@@ -21,6 +21,22 @@ public class AreaMyProfileAvatarEditHandler(MainContext db)
     )
     {
         var req = MyProfileAvatarEditRequest.FromBytes(payload.Span);
+        if (
+            wordFilter.ContainsBlockedWord(
+                WordFilterLevel.Complete,
+                req.Like1,
+                req.Like2,
+                req.Like3,
+                req.LikeDesc1,
+                req.LikeDesc2,
+                req.LikeDesc3,
+                req.AvatarDesc
+            )
+        )
+        {
+            await session.SendAsync(ResponseType, new MyProfileAvatarEditResponse(1).ToBytes(), ct);
+            return;
+        }
 
         var cha = await db.Characters.FirstOrDefaultAsync(c => c.Id == session.CharacterId, ct);
         if (cha != null)

@@ -1,12 +1,15 @@
 using aisp.Common;
 using aisp.Common.Config;
+using aisp.Common.DAL;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Services;
 using aisp.Network;
 using aisp.Network.Packets.Common;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -135,6 +138,27 @@ public class UserAdminServiceTests
         return user;
     }
 
+    private static UserAdminService CreateService(
+        IUserRepository userRepo,
+        SharedState? state = null
+    )
+    {
+        state ??= new SharedState();
+        var charRepo = new Mock<ICharacterRepository>();
+        var options = new DbContextOptionsBuilder<MainContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        var moderation = new ModerationService(
+            userRepo,
+            charRepo.Object,
+            new CircleRepository(new MainContext(options)),
+            new MainContext(options),
+            state,
+            NullLogger<ModerationService>.Instance
+        );
+        return new UserAdminService(userRepo, moderation, state, NullLogger<UserAdminService>.Instance);
+    }
+
     [Fact]
     public async Task CreateUser_Success()
     {
@@ -148,11 +172,7 @@ public class UserAdminServiceTests
             .ReturnsAsync(created);
 
         var state = new SharedState();
-        var service = new UserAdminService(
-            userRepo.Object,
-            state,
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object, state);
 
         var (success, error, user) = await service.CreateUserAsync(
             "newuser",
@@ -174,11 +194,7 @@ public class UserAdminServiceTests
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("exists")).ReturnsAsync(existing);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error, _) = await service.CreateUserAsync(
             "exists",
@@ -199,11 +215,7 @@ public class UserAdminServiceTests
         userRepo.Setup(r => r.GetByUsernameAsync("todelete")).ReturnsAsync(user);
         userRepo.Setup(r => r.DeleteAsync(1)).Returns(Task.CompletedTask);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error) = await service.DeleteUserAsync(
             "todelete",
@@ -221,11 +233,7 @@ public class UserAdminServiceTests
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("nope")).ReturnsAsync((User?)null);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error) = await service.DeleteUserAsync(
             "nope",
@@ -245,11 +253,7 @@ public class UserAdminServiceTests
         userRepo.Setup(r => r.GetByUsernameAsync("pwuser")).ReturnsAsync(user);
         userRepo.Setup(r => r.UpdatePasswordAsync(1, "newpw")).Returns(Task.CompletedTask);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error) = await service.ResetPasswordAsync(
             "pwuser",
@@ -266,11 +270,7 @@ public class UserAdminServiceTests
     public async Task ResetPassword_EmptyPassword()
     {
         var userRepo = new Mock<IUserRepository>();
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error) = await service.ResetPasswordAsync(
             "pwuser",
@@ -288,23 +288,24 @@ public class UserAdminServiceTests
         var user = CreateTestUser(1, "baduser");
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("baduser")).ReturnsAsync(user);
-        userRepo.Setup(r => r.SetBannedAsync(1, true, "reason")).Returns(Task.CompletedTask);
+        userRepo
+            .Setup(r => r.SetBannedAsync(1, true, "reason", It.IsAny<DateTime?>()))
+            .Returns(Task.CompletedTask);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error, _) = await service.BanUserAsync(
             "baduser",
             "reason",
-            TestContext.Current.CancellationToken
+            ct: TestContext.Current.CancellationToken
         );
 
         Assert.True(success);
         Assert.Null(error);
-        userRepo.Verify(r => r.SetBannedAsync(1, true, "reason"), Times.Once);
+        userRepo.Verify(
+            r => r.SetBannedAsync(1, true, "reason", It.IsAny<DateTime?>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -313,13 +314,9 @@ public class UserAdminServiceTests
         var user = CreateTestUser(1, "bannedguy", true);
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("bannedguy")).ReturnsAsync(user);
-        userRepo.Setup(r => r.SetBannedAsync(1, false, null)).Returns(Task.CompletedTask);
+        userRepo.Setup(r => r.SetBannedAsync(1, false, null, null)).Returns(Task.CompletedTask);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error) = await service.UnbanUserAsync(
             "bannedguy",
@@ -328,7 +325,7 @@ public class UserAdminServiceTests
 
         Assert.True(success);
         Assert.Null(error);
-        userRepo.Verify(r => r.SetBannedAsync(1, false, null), Times.Once);
+        userRepo.Verify(r => r.SetBannedAsync(1, false, null, null), Times.Once);
     }
 
     [Fact]
@@ -337,15 +334,11 @@ public class UserAdminServiceTests
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("ghost")).ReturnsAsync((User?)null);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (success, error, sessionsClosed) = await service.KickUserAsync(
             "ghost",
-            TestContext.Current.CancellationToken
+            ct: TestContext.Current.CancellationToken
         );
 
         Assert.False(success);
@@ -359,6 +352,9 @@ public class UserAdminServiceTests
         var user = CreateTestUser(42, "onlineuser");
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("onlineuser")).ReturnsAsync(user);
+        userRepo
+            .Setup(r => r.SetKickedUntilAsync(42, It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var state = new SharedState();
         var session = new Mock<IPlayerSession>();
@@ -367,15 +363,11 @@ public class UserAdminServiceTests
         session.Setup(s => s.UserId).Returns(42);
         state.RegisterClient(ServerType.Msg, session.Object);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            state,
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object, state);
 
         var (success, error, _) = await service.KickUserAsync(
             "onlineuser",
-            TestContext.Current.CancellationToken
+            ct: TestContext.Current.CancellationToken
         );
 
         Assert.True(success);
@@ -399,11 +391,7 @@ public class UserAdminServiceTests
         userRepo.Setup(r => r.GetAllAsync(null, null, null)).ReturnsAsync(users);
         userRepo.Setup(r => r.CountAsync(null)).ReturnsAsync(2);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var (summaries, total) = await service.ListUsersAsync(
             null,
@@ -430,11 +418,7 @@ public class UserAdminServiceTests
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("detailuser")).ReturnsAsync(user);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var detail = await service.GetUserDetailAsync(
             "detailuser",
@@ -456,11 +440,7 @@ public class UserAdminServiceTests
         var userRepo = new Mock<IUserRepository>();
         userRepo.Setup(r => r.GetByUsernameAsync("nobody")).ReturnsAsync((User?)null);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            new SharedState(),
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object);
 
         var detail = await service.GetUserDetailAsync(
             "nobody",
@@ -492,11 +472,7 @@ public class UserAdminServiceTests
         session.Setup(s => s.ChannelId).Returns(1);
         state.RegisterClient(ServerType.Msg, session.Object);
 
-        var service = new UserAdminService(
-            Mock.Of<IUserRepository>(),
-            state,
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(Mock.Of<IUserRepository>(), state);
 
         var clients = service.GetConnectedClients();
 
@@ -520,11 +496,7 @@ public class UserAdminServiceTests
         session.Setup(s => s.ConnectionId).Returns(Guid.NewGuid());
         state.RegisterClient(ServerType.Area, session.Object);
 
-        var service = new UserAdminService(
-            userRepo.Object,
-            state,
-            NullLogger<UserAdminService>.Instance
-        );
+        var service = CreateService(userRepo.Object, state);
 
         var stats = await service.GetStatsAsync(TestContext.Current.CancellationToken);
 

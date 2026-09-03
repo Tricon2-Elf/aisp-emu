@@ -1,5 +1,6 @@
 using aisp.Common.DAL;
 using aisp.Common.DAL.Repositories;
+using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
 using aisp.Common.Tests.Support;
 using aisp.Network;
@@ -43,6 +44,7 @@ public class AreaRoboConversationHandlerTests
             );
             var talkHandler = new AreaRoboTalkPostHandler(
                 repository,
+                WordFilter.FromTerms([]),
                 NullLogger<AreaRoboTalkPostHandler>.Instance
             );
             var detachHandler = new AreaRoboDetachFromAvatarHandler(
@@ -121,6 +123,7 @@ public class AreaRoboConversationHandlerTests
             var repository = new RoboRepository(db);
             var talkHandler = new AreaRoboTalkPostHandler(
                 repository,
+                WordFilter.FromTerms([]),
                 NullLogger<AreaRoboTalkPostHandler>.Instance
             );
             var detachHandler = new AreaRoboDetachFromAvatarHandler(
@@ -150,6 +153,51 @@ public class AreaRoboConversationHandlerTests
             );
 
             Assert.Empty(session.Sent);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task BlockedTalk_DoesNotForwardMessage()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
+            await using (var seedDb = new MainContext(options))
+            {
+                var objectId = RoboRepository.GetObjectId(1, 1);
+                var robo = new RoboData(1, new CharaData(objectId, 1_002_011, "Conversation Robo"))
+                {
+                    OwnerAvatarId = 1,
+                };
+                await new RoboRepository(seedDb).UpsertAsync(
+                    1,
+                    robo,
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            await using var handlerDb = new MainContext(options);
+            var talkHandler = new AreaRoboTalkPostHandler(
+                new RoboRepository(handlerDb),
+                WordFilter.FromTerms(["faggot"]),
+                NullLogger<AreaRoboTalkPostHandler>.Instance
+            );
+            var session = new CapturingPlayerSession { CharacterId = 1 };
+
+            await talkHandler.HandleAsync(
+                BuildTalkPayload(1, "Faggot"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var grant = Assert.Single(session.Sent);
+            Assert.Equal(PacketType.RoboGrantNextMessageNoticeNotify, grant.Type);
+            AssertUInts(grant.Payload, 1);
         }
         finally
         {

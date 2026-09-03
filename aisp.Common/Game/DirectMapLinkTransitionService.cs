@@ -1,5 +1,6 @@
 using aisp.Common.Config;
 using aisp.Common.DAL.Repositories;
+using aisp.Common.Handlers.Area;
 using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
@@ -497,6 +498,95 @@ public sealed class DirectMapLinkTransitionService(
         return true;
     }
 
+    public async Task<bool> TryTeleportNearPlayerAsync(
+        IPlayerSession session,
+        IPlayerSession target,
+        CancellationToken ct = default
+    )
+    {
+        if (target.CharacterId == 0 || target.MapId == 0)
+            return false;
+
+        var character = await ResolveCharacterAsync(session, ct);
+        if (character is null)
+            return false;
+
+        var destinationMap = await mapRepository.GetByMapIdAsync(target.MapId, ct);
+        if (destinationMap is null)
+            return false;
+
+        var destinationChannelId = target.ChannelId;
+        if (destinationChannelId == 0)
+        {
+            var resolvedChannelId = await ResolveChannelIdForMapAsync(target.MapId, ct);
+            if (resolvedChannelId is null)
+                return false;
+            destinationChannelId = resolvedChannelId.Value;
+        }
+
+        DAL.Entities.Room? destinationRoom = null;
+        if (MyRoomInfo.IsMyRoomMap(target.MapId) && target.MyRoomId != 0)
+        {
+            destinationRoom = await myRoomRepository.GetRoomAsync(
+                checked((int)target.MyRoomId),
+                ct
+            );
+            if (destinationRoom is null)
+                return false;
+        }
+
+        var needsTransition =
+            session.MapId != target.MapId
+            || session.ChannelId != destinationChannelId
+            || session.MyRoomId != target.MyRoomId;
+
+        if (!needsTransition)
+        {
+            await RelocateWithinAreaAsync(session, target.X, target.Y, target.Z, target.Rotation, ct);
+            return true;
+        }
+
+        var areaServerInfo = await ResolveAreaServerInfoForNotifyAsync(
+            session.ChannelId,
+            destinationChannelId,
+            ct
+        );
+        var notifyChangeMap = CreateNotifyChangeMap(
+            (uint)destinationChannelId,
+            target.MapId,
+            destinationMap,
+            areaServerInfo
+        );
+        notifyChangeMap = new NotifyChangeMap
+        {
+            ChannelId = notifyChangeMap.ChannelId,
+            MapId = notifyChangeMap.MapId,
+            MapSerialId = notifyChangeMap.MapSerialId,
+            RouteState = notifyChangeMap.RouteState,
+            PositionX = target.X,
+            PositionY = target.Y,
+            PositionZ = target.Z,
+            Rotation = target.Rotation,
+            Animation = notifyChangeMap.Animation,
+            Flag = notifyChangeMap.Flag,
+            AreaServerInfo = notifyChangeMap.AreaServerInfo,
+            FadeFlag = notifyChangeMap.FadeFlag,
+        };
+
+        await CompleteMapTransitionAsync(
+            session,
+            character,
+            target.MapId,
+            (uint)destinationChannelId,
+            destinationMap,
+            notifyChangeMap,
+            sendMapEnterResponse: false,
+            ct,
+            destinationRoom
+        );
+        return true;
+    }
+
     public async Task<NotifyChangeMap> BuildNotifyChangeMapAsync(
         uint channelId,
         uint destinationMapId,
@@ -793,6 +883,49 @@ public sealed class DirectMapLinkTransitionService(
             return SameAreaServerInfo;
 
         return await ResolveAreaServerInfoAsync(destinationChannelId, ct);
+    }
+
+    private async Task RelocateWithinAreaAsync(
+        IPlayerSession session,
+        float x,
+        float y,
+        float z,
+        int rotation,
+        CancellationToken ct
+    )
+    {
+        var character = session.Character ?? await ResolveCharacterAsync(session, ct);
+        if (character is null)
+            return;
+
+        session.X = x;
+        session.Y = y;
+        session.Z = z;
+        session.Rotation = rotation;
+        session.MovementTypeId = (int)MovementType.Stopped;
+
+        var newPos = new MovementData(x, y, z, rotation, MovementType.Stopped);
+        await session.SendAsync(
+            PacketType.AvatarNotifyMove,
+            new AvatarNotifyMove(session.CharacterId, [newPos]).ToBytes(),
+            ct
+        );
+
+        var disappearPacket = new NotifyDisappearChara(session.CharacterId).ToBytes();
+        var appearPacket = AreasvEnterHandler.CreateNotify(
+            character,
+            session.CharacterId,
+            1,
+            newPos,
+            checked((uint)session.ChannelId),
+            session.MapId
+        );
+
+        foreach (var other in state.GetAreaPeers(session))
+        {
+            await other.SendAsync(PacketType.NotifyDisappearChara, disappearPacket, ct);
+            await other.SendAsync(PacketType.AvatarNotifyData, appearPacket, ct);
+        }
     }
 
     private NotifyChangeMap CreateNotifyChangeMap(
