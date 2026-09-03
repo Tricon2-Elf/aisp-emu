@@ -4,7 +4,6 @@ using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
-using aisp.Network.Packets.Common;
 using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Area;
@@ -68,7 +67,7 @@ public class AreasvEnterHandler(
         {
             await session.SendAsync(
                 ResponseType,
-                new LoginResponse(AuthResponseResult.Failure).ToBytes(),
+                new AreasvEnterResponse((uint)AuthResponseResult.Failure, 0).ToBytes(),
                 ct
             );
             return;

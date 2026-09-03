@@ -3,6 +3,7 @@ using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Msg;
+using aisp.Common.Services;
 using aisp.Common.Tests.Support;
 using aisp.Network;
 using aisp.Network.Data;
@@ -46,11 +47,7 @@ public class AvatarCreationFlowTests
                 runDb,
                 NullLogger<CharacterRepository>.Instance
             );
-            var createHandler = new AvatarCreateHandler(
-                NullLogger<AvatarCreateHandler>.Instance,
-                characterRepository,
-                WordFilter.FromTerms(Array.Empty<string>())
-            );
+            var createHandler = CreateAvatarCreateHandler(options, characterRepository);
             var createResponse = await createHandler.HandleAsync(
                 new AvatarCreateRequest
                 {
@@ -152,8 +149,8 @@ public class AvatarCreationFlowTests
                 runDb,
                 NullLogger<CharacterRepository>.Instance
             );
-            var createHandler = new AvatarCreateHandler(
-                NullLogger<AvatarCreateHandler>.Instance,
+            var createHandler = CreateAvatarCreateHandler(
+                options,
                 characterRepository,
                 WordFilter.FromTerms(["faggot"])
             );
@@ -220,11 +217,7 @@ public class AvatarCreationFlowTests
                 runDb,
                 NullLogger<CharacterRepository>.Instance
             );
-            var createHandler = new AvatarCreateHandler(
-                NullLogger<AvatarCreateHandler>.Instance,
-                characterRepository,
-                WordFilter.FromTerms(Array.Empty<string>())
-            );
+            var createHandler = CreateAvatarCreateHandler(options, characterRepository);
             var createResponse = await createHandler.HandleAsync(
                 new AvatarCreateRequest
                 {
@@ -262,4 +255,94 @@ public class AvatarCreationFlowTests
             await connection.DisposeAsync();
         }
     }
+
+    [Fact]
+    public async Task AvatarCreate_StaffUser_AddsNewCharacterToModeratorsCircle()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var admin = new User { Username = "bootstrap-admin", Role = UserRole.ServerAdmin };
+            admin.SetPassword("pw");
+
+            await using (var seedDb = new MainContext(options))
+            {
+                seedDb.Users.Add(admin);
+                foreach (var itemId in DefaultClothingItems.Female)
+                    seedDb.Items.Add(new Item { Id = itemId, Name = $"item-{itemId}" });
+                await seedDb.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var session = new CapturingPlayerSession
+            {
+                UserId = admin.Id,
+                User = new User
+                {
+                    Id = admin.Id,
+                    Username = admin.Username,
+                    Role = UserRole.ServerAdmin,
+                },
+            };
+
+            await using var runDb = new MainContext(options);
+            var characterRepository = new CharacterRepository(
+                runDb,
+                NullLogger<CharacterRepository>.Instance
+            );
+            var createHandler = CreateAvatarCreateHandler(options, characterRepository);
+            var createResponse = await createHandler.HandleAsync(
+                new AvatarCreateRequest
+                {
+                    AvatarName = "Admin Avatar",
+                    modelId = 1_002_011,
+                    visual = new CharaVisual(BloodType.AB, 7, 26, 2, 0, 4, 2_002_031),
+                    slotId = 0,
+                },
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.NotNull(createResponse);
+            Assert.Equal(0u, new PacketReader(createResponse.ToBytes()).ReadUInt());
+
+            var created = Assert.Single(session.User.Characters);
+            await using var verifyDb = new MainContext(options);
+            var circle = Assert.Single(
+                verifyDb.Circles.Where(c => c.Name == ModerationService.ModeratorsCircleName)
+            );
+            Assert.Equal(created.Id, circle.LeaderCharacterId);
+            Assert.True(
+                verifyDb.CircleMembers.Any(member =>
+                    member.CircleId == circle.Id && member.CharacterId == created.Id
+                )
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    private static AvatarCreateHandler CreateAvatarCreateHandler(
+        DbContextOptions<MainContext> options,
+        ICharacterRepository characterRepository,
+        IWordFilter? wordFilter = null
+    ) =>
+        new(
+            NullLogger<AvatarCreateHandler>.Instance,
+            characterRepository,
+            wordFilter ?? WordFilter.FromTerms(Array.Empty<string>()),
+            new ModerationService(
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new CircleRepository(new MainContext(options)),
+                new MainContext(options),
+                new SharedState(),
+                NullLogger<ModerationService>.Instance
+            )
+        );
 }

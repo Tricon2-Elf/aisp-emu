@@ -1920,6 +1920,125 @@ public class CmdExecHandlerTests
         }
     }
 
+    [Fact]
+    public async Task TpuCommand_DeniesWhenPersistedRoleWasDemoted()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var demoted = CreateUserWithCharacter(1, 9001, "exmod", "ExMod", 10990100);
+            demoted.Role = UserRole.User;
+            var target = CreateUserWithCharacter(2, 8001, "target", "TargetChar", 10990110);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(demoted, target);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var staleSessionUser = CreateUserWithCharacter(1, 9001, "exmod", "ExMod", 10990100);
+            staleSessionUser.Role = UserRole.Moderator;
+
+            var handler = CreateReportHandler(options, new SharedState());
+            var session = new CapturingPlayerSession
+            {
+                User = staleSessionUser,
+                UserId = demoted.Id,
+                Character = staleSessionUser.Characters.First(),
+                CharacterId = 9001,
+            };
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/tpu", "2"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            Assert.Contains(
+                "permission",
+                reader.ReadString("utf-8"),
+                StringComparison.OrdinalIgnoreCase
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UserListCommand_AllowsWhenPersistedRoleWasPromoted()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var promoted = CreateUserWithCharacter(1, 9001, "newmod", "NewMod", 10990100);
+            promoted.Role = UserRole.Moderator;
+            var player = CreateUserWithCharacter(2, 8001, "player", "PlayerChar", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(promoted, player);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var staleSessionUser = CreateUserWithCharacter(1, 9001, "newmod", "NewMod", 10990100);
+            staleSessionUser.Role = UserRole.User;
+
+            var state = new SharedState();
+            var session = new CapturingPlayerSession
+            {
+                User = staleSessionUser,
+                UserId = promoted.Id,
+                Character = staleSessionUser.Characters.First(),
+                CharacterId = 9001,
+            };
+            state.RegisterClient(ServerType.Msg, session);
+            state.RegisterClient(
+                ServerType.Msg,
+                new CapturingPlayerSession
+                {
+                    User = player,
+                    UserId = player.Id,
+                    Character = player.Characters.First(),
+                    CharacterId = 8001,
+                }
+            );
+
+            var handler = CreateReportHandler(options, state);
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/userlist"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var notice = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var reader = new PacketReader(notice.Payload);
+            reader.ReadUInt();
+            reader.ReadUInt();
+            var text = reader.ReadString("utf-8");
+            Assert.DoesNotContain("permission", text, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("1: newmod", text, StringComparison.Ordinal);
+            Assert.Contains("2: player", text, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static CmdExecHandler CreateReportHandler(
         DbContextOptions<MainContext> options,
         SharedState state

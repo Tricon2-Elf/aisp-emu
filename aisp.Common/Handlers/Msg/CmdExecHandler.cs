@@ -1007,9 +1007,7 @@ public class CmdExecHandler(
 
     private async Task HandleUserListCommandAsync(IPlayerSession session, CancellationToken ct)
     {
-        var actorRole = session.User?.Role;
-        if (actorRole is null && session.UserId > 0)
-            actorRole = (await userRepo.GetById(session.UserId))?.Role;
+        var actorRole = await GetPersistedActorRoleAsync(session, ct);
 
         if (actorRole?.CanKickOrBan() != true)
         {
@@ -1042,9 +1040,7 @@ public class CmdExecHandler(
         CancellationToken ct
     )
     {
-        var actorRole = session.User?.Role;
-        if (actorRole is null && session.UserId > 0)
-            actorRole = (await userRepo.GetById(session.UserId))?.Role;
+        var actorRole = await GetPersistedActorRoleAsync(session, ct);
 
         if (actorRole?.CanKickOrBan() != true)
         {
@@ -1377,6 +1373,17 @@ public class CmdExecHandler(
             _ => L.Cmd.ModerationFailed,
         };
         await SendModerationNoticeAsync(session, key, ct);
+    }
+
+    private async Task<UserRole?> GetPersistedActorRoleAsync(
+        IPlayerSession session,
+        CancellationToken ct
+    )
+    {
+        if (session.UserId <= 0)
+            return null;
+
+        return (await userRepo.GetById(session.UserId))?.Role;
     }
 
     private Task SendModerationNoticeAsync(
