@@ -513,7 +513,6 @@ recv_notify_update_stamina
 recv_notify_update_status_point
 recv_notify_update_tank
 recv_notify_update_tank_max
-recv_notify_user_status_update
 recv_notify_voice_chara
 send_notify_mission_party_list_update
 recv_close_npc_rank_windor_r
@@ -689,8 +688,6 @@ recv_ucc_adv_figure_obtain
 recv_ucc_voice_obtain
 recv_get_ai_upload_list_r
 send_get_ai_upload_list
-recv_user_status_update_r
-send_user_status_update
 send_check_version
 recv_check_version_r
 recv_aipower_data

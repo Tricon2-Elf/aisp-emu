@@ -1150,6 +1150,53 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Packet Size:** 4
 - **Description:** Result of closing the AI power window. The client reads a fixed 4 bytes. Not sent by the emulator. The packet table previously listed it as 0x6EE1, which the client dispatcher routes to recv_item_discard_sum_r.
 
+## send_user_status_update (UserStatusUpdateRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xCF9A
+- **Packet Size:** 57
+- **Description:** The status window: the avatar's one-line status text and its icon / colour choice (wrapper 0x7B9F60, logger `send_user_status_update( objid=, data )`). This opcode was previously listed as send_get_avatar_profile_data, which does not exist in the client. The text is copied out of a fixed buffer, so the bytes after the NUL are garbage. Only the session's own avatar id is accepted; the status is stored on the character and travels in every later recv_avatar_notify_data (the UserStatus record inside AvatarData).
+
+**Layout:**
+
+```text
+    UInt     {ObjectId}       // the player's own avatar id
+    Char[49] {StatusText}
+    UInt     {StatusIconId}
+```
+
+## recv_user_status_update_r (UserStatusUpdateResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xD824
+- **Packet Size:** 8
+- **Description:** Acknowledges the update (case 0x7EDB94).
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UInt {ObjectId}
+```
+
+## recv_notify_user_status_update (NotifyUserStatusUpdate)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x7016
+- **Packet Size:** 57
+- **Description:** The new status, pushed to everyone on the map including the sender (case 0x7D39CF, client buffer 0x3C).
+
+**Layout:**
+
+```text
+    UInt     {ObjectId}
+    Char[49] {StatusText}
+    UInt     {StatusIconId}
+```
+
 ## send_get_adventure_upload_rate (AdventureUploadRateGetRequest)
 
 - **Server:** Area

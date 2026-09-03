@@ -279,6 +279,10 @@ public class AreasvEnterHandler(
             cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
             ItemEntityMapper.ResolveEquipSocket
         );
-        return new AvatarNotifyData(res, new AvatarData(objId, cd)).ToBytes();
+        var avatarData = new AvatarData(objId, cd) { UserStatus = UserStatusOf(cha) };
+        return new AvatarNotifyData(res, avatarData).ToBytes();
     }
+
+    public static UserStatusData UserStatusOf(Character cha) =>
+        new() { StatusText = cha.UserStatusText, StatusIconId = cha.UserStatusIconId };
 }

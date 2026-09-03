@@ -45,6 +45,14 @@ public interface ICharacterRepository
         CancellationToken ct = default
     );
     Task TouchLastLoggedInAsync(int characterId, CancellationToken ct = default);
+
+    /// <summary>Stores the avatar's status line and icon. False when the character is unknown.</summary>
+    Task<bool> UpdateUserStatusAsync(
+        int characterId,
+        string statusText,
+        uint statusIconId,
+        CancellationToken ct = default
+    );
     Task AddInventoryAsync(
         int characterId,
         int itemId,
@@ -192,6 +200,22 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         character.CharadollPersonality = personality;
         await db.SaveChangesAsync(ct);
         return character;
+    }
+
+    public async Task<bool> UpdateUserStatusAsync(
+        int characterId,
+        string statusText,
+        uint statusIconId,
+        CancellationToken ct = default
+    )
+    {
+        var character = await db.Characters.SingleOrDefaultAsync(c => c.Id == characterId, ct);
+        if (character is null)
+            return false;
+        character.UserStatusText = statusText;
+        character.UserStatusIconId = statusIconId;
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     public async Task TouchLastLoggedInAsync(int characterId, CancellationToken ct = default)

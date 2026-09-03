@@ -103,6 +103,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Characters");
             e.HasKey(x => x.Id);
+            e.Property(x => x.UserStatusText)
+                .HasMaxLength(UserStatusData.StatusTextLength)
+                .HasDefaultValue(string.Empty);
+            e.Property(x => x.UserStatusIconId).HasDefaultValue(0u);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.Name).IsUnique();

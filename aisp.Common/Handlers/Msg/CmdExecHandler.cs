@@ -1434,6 +1434,10 @@ public class CmdExecHandler(
             cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
             ItemEntityMapper.ResolveEquipSocket
         );
-        return new AvatarNotifyData(1, new AvatarData(objId, cd)).ToBytes();
+        var avatarData = new AvatarData(objId, cd)
+        {
+            UserStatus = AreasvEnterHandler.UserStatusOf(cha),
+        };
+        return new AvatarNotifyData(1, avatarData).ToBytes();
     }
 }
