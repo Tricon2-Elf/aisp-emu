@@ -49,11 +49,7 @@ public class UserAdminService
         if (user == null)
             return (false, "failed to create user", null);
 
-        _logger.LogInformation(
-            "API created user {Username} (ID: {UserId})",
-            user.Username,
-            user.Id
-        );
+        _logger.LogInformation("API created user {UserId}", user.Id);
         return (true, null, MapToDetail(user));
     }
 
@@ -69,11 +65,7 @@ public class UserAdminService
         await _moderation.DisconnectUserAsync(user, ct);
 
         await _userRepo.DeleteAsync(user.Id);
-        _logger.LogInformation(
-            "API deleted user {Username} (ID: {UserId})",
-            user.Username,
-            user.Id
-        );
+        _logger.LogInformation("API deleted user {UserId}", user.Id);
         return (true, null);
     }
 
@@ -91,7 +83,7 @@ public class UserAdminService
             return (false, "user not found");
 
         await _userRepo.UpdatePasswordAsync(user.Id, newPassword);
-        _logger.LogInformation("API reset password for {Username}", username);
+        _logger.LogInformation("API reset password for user {UserId}", user.Id);
         return (true, null);
     }
 
@@ -130,7 +122,7 @@ public class UserAdminService
             return (false, "user not found");
 
         await _userRepo.SetBannedAsync(user.Id, false);
-        _logger.LogInformation("API unbanned user {Username}", username);
+        _logger.LogInformation("API unbanned user {UserId}", user.Id);
         return (true, null);
     }
 
@@ -152,8 +144,8 @@ public class UserAdminService
 
         var sessionsClosed = await _moderation.DisconnectUserAsync(user, ct);
         _logger.LogInformation(
-            "API kicked user {Username} until {KickedUntil}, closed {Count} sessions",
-            username,
+            "API kicked user {UserId} until {KickedUntil}, closed {Count} sessions",
+            user.Id,
             kickedUntil,
             sessionsClosed
         );
@@ -172,7 +164,7 @@ public class UserAdminService
 
         await _userRepo.SetRoleAsync(user.Id, role, ct);
         await _moderation.SyncModeratorsCircleForUserAsync(user.Id, ct);
-        _logger.LogInformation("API set role for {Username} to {Role}", username, role);
+        _logger.LogInformation("API set role for user {UserId} to {Role}", user.Id, role);
         return (true, null);
     }
 

@@ -61,8 +61,8 @@ public sealed class UserDetailModel(
             await msgApi.DisconnectAsync(userId, ct);
             await areaApi.DisconnectAsync(userId, ct);
             logger.LogInformation(
-                "Portal moderator {Moderator} reset the password for user {UserId}",
-                User.Identity?.Name,
+                "Portal moderator {ModeratorUserId} reset the password for user {UserId}",
+                ActorUserId,
                 userId
             );
             StatusMessage =
@@ -100,10 +100,9 @@ public sealed class UserDetailModel(
                 ct
             );
             logger.LogInformation(
-                "Portal moderator {Moderator} kicked user {UserId}. Reason: {Reason}",
-                User.Identity?.Name,
-                userId,
-                reason ?? "No reason provided"
+                "Portal moderator {ModeratorUserId} kicked user {UserId}",
+                ActorUserId,
+                userId
             );
         }
         catch (PortalApiException exception)
