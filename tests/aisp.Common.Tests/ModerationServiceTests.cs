@@ -52,7 +52,10 @@ public class ModerationServiceTests
 
             Assert.Equal(ModerationError.None, error);
             await using var db = new MainContext(options);
-            var saved = await db.Users.SingleAsync(u => u.Id == 2);
+            var saved = await db.Users.SingleAsync(
+                u => u.Id == 2,
+                TestContext.Current.CancellationToken
+            );
             Assert.True(saved.IsBanned);
             Assert.NotNull(saved.BannedUntil);
             Assert.InRange(
@@ -137,7 +140,12 @@ public class ModerationServiceTests
             );
 
             await using var db = new MainContext(options);
-            Assert.Equal(UserRole.User, (await db.Users.SingleAsync(u => u.Id == 2)).Role);
+            Assert.Equal(
+                UserRole.User,
+                (
+                    await db.Users.SingleAsync(u => u.Id == 2, TestContext.Current.CancellationToken)
+                ).Role
+            );
         }
         finally
         {
@@ -204,7 +212,10 @@ public class ModerationServiceTests
 
             Assert.Equal(ModerationError.None, error);
             await using var db = new MainContext(options);
-            var saved = await db.Users.SingleAsync(u => u.Id == 2);
+            var saved = await db.Users.SingleAsync(
+                u => u.Id == 2,
+                TestContext.Current.CancellationToken
+            );
             Assert.True(saved.IsBanned);
             Assert.Null(saved.BannedUntil);
         }
@@ -234,7 +245,10 @@ public class ModerationServiceTests
 
             Assert.Equal(ModerationError.None, error);
             await using var db = new MainContext(options);
-            var saved = await db.Users.SingleAsync(u => u.Id == 2);
+            var saved = await db.Users.SingleAsync(
+                u => u.Id == 2,
+                TestContext.Current.CancellationToken
+            );
             Assert.True(saved.VerifyPassword("new-password-123"));
         }
         finally
