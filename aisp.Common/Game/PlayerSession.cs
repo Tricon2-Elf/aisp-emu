@@ -51,4 +51,9 @@ public class PlayerSession : IPlayerSession
 
     public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) =>
         ClientConnection.SendAsync(type, payload, ct);
+
+    public Task SendAsync(
+        IReadOnlyList<(PacketType Type, byte[] Payload)> packets,
+        CancellationToken ct = default
+    ) => ClientConnection.SendAsync(packets, ct);
 }

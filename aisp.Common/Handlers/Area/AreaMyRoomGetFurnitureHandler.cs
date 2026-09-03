@@ -31,6 +31,8 @@ public class AreaMyRoomGetFurnitureHandler(
             return;
         }
 
+        var packets = new List<(PacketType Type, byte[] Payload)>();
+
         if (MyRoomInfo.IsMyRoomMap(session.MapId))
         {
             if (session.MyRoomId == 0)
@@ -56,11 +58,16 @@ public class AreaMyRoomGetFurnitureHandler(
 
             var furniture = await myRoomRepository.GetFurnitureAsync(room.Id, ct);
             foreach (var placement in furniture)
-                await session.SendAsync(
-                    PacketType.MyRoomNotifyFurniture,
-                    new MyRoomNotifyFurniture(MyRoomFurnitureMapper.ToPacket(placement)).ToBytes(),
-                    ct
+            {
+                packets.Add(
+                    (
+                        PacketType.MyRoomNotifyFurniture,
+                        new MyRoomNotifyFurniture(
+                            MyRoomFurnitureMapper.ToPacket(placement)
+                        ).ToBytes()
+                    )
                 );
+            }
 
             if (room.OwnerCharacterId == checked((int)session.CharacterId))
             {
@@ -69,16 +76,14 @@ public class AreaMyRoomGetFurnitureHandler(
                     ct
                 );
                 foreach (var stack in availableFurniture.OrderBy(x => x.Key))
-                    await CharacterItemSync.SendFurnitureInventoryAvailabilityAsync(
-                        session,
+                {
+                    CharacterItemSync.AppendFurnitureInventoryAvailability(
+                        packets,
                         stack.Key,
-                        stack.Value,
-                        ct
+                        stack.Value
                     );
-            }
+                }
 
-            if (room.OwnerCharacterId == checked((int)session.CharacterId))
-            {
                 var robos = await roboRepository.GetAllAsync(room.OwnerCharacterId, ct);
                 foreach (var robo in robos)
                 {
@@ -103,13 +108,13 @@ public class AreaMyRoomGetFurnitureHandler(
                         map
                     );
                     state.RememberRoboMovement(session.CharacterId, robo.RoboId, map.Movement);
-                    await session.SendAsync(PacketType.NotifyUpdateRoboState, notify.ToBytes(), ct);
+                    packets.Add((PacketType.NotifyUpdateRoboState, notify.ToBytes()));
                 }
             }
         }
 
         // Keep the client in its furniture-loading wait state until Robo activation has been queued.
-        var response = new MyRoomGetFurnitureResponse(0);
-        await session.SendAsync(ResponseType, response.ToBytes(), ct);
+        packets.Add((ResponseType, new MyRoomGetFurnitureResponse(0).ToBytes()));
+        await session.SendAsync(packets, ct);
     }
 }

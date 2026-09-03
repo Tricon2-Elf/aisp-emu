@@ -24,62 +24,52 @@ internal static class CharacterItemSync
     public static uint ResolveObjId(IPlayerSession session) =>
         session.CharacterId != 0 ? session.CharacterId : 1u;
 
-    public static async Task SendInventoryBootstrapAsync(
+    public static Task SendInventoryBootstrapAsync(
         IPlayerSession session,
         Character character,
         CancellationToken ct
     )
     {
-        await session.SendAsync(
-            PacketType.ItemGetListResponse,
-            new ItemGetListResponse(0).ToBytes(),
-            ct
-        );
-        await SendBootstrapAsync(session, character, ct);
-    }
-
-    public static async Task SendInventoryBootstrapAsync(
-        IPlayerSession session,
-        Character character,
-        IEnumerable<(int ItemId, int Quantity)> storageItems,
-        CancellationToken ct
-    )
-    {
-        await session.SendAsync(
-            PacketType.ItemGetListResponse,
-            new ItemGetListResponse(0).ToBytes(),
-            ct
-        );
-        await SendBootstrapAsync(session, character, ct);
-        await SendStorageBootstrapAsync(session, storageItems, ct);
-    }
-
-    public static async Task SendStorageBootstrapAsync(
-        IPlayerSession session,
-        IEnumerable<(int ItemId, int Quantity)> storageItems,
-        CancellationToken ct
-    )
-    {
-        foreach (var (itemId, quantity) in storageItems.OrderBy(x => x.ItemId))
+        var packets = new List<(PacketType Type, byte[] Payload)>
         {
-            if (quantity <= 0)
-                continue;
+            (PacketType.ItemGetListResponse, new ItemGetListResponse(0).ToBytes()),
+        };
+        AppendBootstrapPackets(packets, session, character);
+        return session.SendAsync(packets, ct);
+    }
 
-            await SendItemTableEntryAsync(
-                session,
-                StorageItemTablePlace,
-                itemId,
-                (ushort)Math.Min(quantity, ushort.MaxValue),
-                ct
-            );
-        }
+    public static Task SendInventoryBootstrapAsync(
+        IPlayerSession session,
+        Character character,
+        IEnumerable<(int ItemId, int Quantity)> storageItems,
+        CancellationToken ct
+    )
+    {
+        var packets = new List<(PacketType Type, byte[] Payload)>
+        {
+            (PacketType.ItemGetListResponse, new ItemGetListResponse(0).ToBytes()),
+        };
+        AppendBootstrapPackets(packets, session, character);
+        AppendStorageBootstrapPackets(packets, storageItems);
+        return session.SendAsync(packets, ct);
+    }
+
+    public static Task SendStorageBootstrapAsync(
+        IPlayerSession session,
+        IEnumerable<(int ItemId, int Quantity)> storageItems,
+        CancellationToken ct
+    )
+    {
+        var packets = new List<(PacketType Type, byte[] Payload)>();
+        AppendStorageBootstrapPackets(packets, storageItems);
+        return session.SendAsync(packets, ct);
     }
 
     /// <summary>
     /// Pushes a changed bag stack count, e.g. after discard/consume,
     /// recv_item_update_num while copies remain, recv_item_delete once the stack is gone.
     /// </summary>
-    public static async Task SendInventoryQuantityAsync(
+    public static Task SendInventoryQuantityAsync(
         IPlayerSession session,
         int itemId,
         int remaining,
@@ -89,15 +79,14 @@ internal static class CharacterItemSync
         var serialId = ResolveSerialId(itemId);
         if (remaining <= 0)
         {
-            await session.SendAsync(
+            return session.SendAsync(
                 PacketType.ItemDeleteNotify,
                 new ItemDeleteNotify(PrimaryItemTablePlace, serialId).ToBytes(),
                 ct
             );
-            return;
         }
 
-        await session.SendAsync(
+        return session.SendAsync(
             PacketType.ItemUpdateNumNotify,
             new ItemUpdateNumNotify(
                 PrimaryItemTablePlace,
@@ -108,7 +97,7 @@ internal static class CharacterItemSync
         );
     }
 
-    public static async Task SyncItemTableQuantityAsync(
+    public static Task SyncItemTableQuantityAsync(
         IPlayerSession session,
         uint place,
         int itemId,
@@ -119,15 +108,14 @@ internal static class CharacterItemSync
         var serialId = ResolveSerialId(itemId);
         if (quantity <= 0)
         {
-            await session.SendAsync(
+            return session.SendAsync(
                 PacketType.ItemDeleteNotify,
                 new ItemDeleteNotify(place, serialId).ToBytes(),
                 ct
             );
-            return;
         }
 
-        await SendItemTableEntryAsync(
+        return SendItemTableEntryAsync(
             session,
             place,
             itemId,
@@ -136,21 +124,149 @@ internal static class CharacterItemSync
         );
     }
 
-    public static async Task SendBootstrapAsync(
+    public static Task SendBootstrapAsync(
         IPlayerSession session,
         Character character,
         CancellationToken ct
     )
     {
+        var packets = new List<(PacketType Type, byte[] Payload)>();
+        AppendBootstrapPackets(packets, session, character);
+        return session.SendAsync(packets, ct);
+    }
+
+    public static Task SendInventoryItemAsync(
+        IPlayerSession session,
+        int itemId,
+        ushort quantity,
+        CancellationToken ct
+    )
+    {
+        return SendPrimaryItemTableEntryAsync(session, itemId, quantity, ct);
+    }
+
+    /// <summary>
+    /// Synchronizes the number of unplaced copies shown by the furniture UI.
+    /// The client requires recv_item_delete when the count reaches zero because
+    /// its 65531 event rebuilds the furniture slot list.
+    /// </summary>
+    public static Task SendFurnitureInventoryAvailabilityAsync(
+        IPlayerSession session,
+        int itemId,
+        int quantity,
+        CancellationToken ct
+    )
+    {
+        var packets = new List<(PacketType Type, byte[] Payload)>(1);
+        AppendFurnitureInventoryAvailability(packets, itemId, quantity);
+        return session.SendAsync(packets, ct);
+    }
+
+    public static void AppendFurnitureInventoryAvailability(
+        List<(PacketType Type, byte[] Payload)> packets,
+        int itemId,
+        int quantity
+    )
+    {
+        var serialId = ResolveSerialId(itemId);
+        if (quantity <= 0)
+        {
+            packets.Add(
+                (
+                    PacketType.ItemDeleteNotify,
+                    new ItemDeleteNotify(PrimaryItemTablePlace, serialId).ToBytes()
+                )
+            );
+            return;
+        }
+
+        packets.Add(
+            BuildItemTableEntry(
+                PrimaryItemTablePlace,
+                itemId,
+                (ushort)Math.Min(quantity, ushort.MaxValue)
+            )
+        );
+    }
+
+    public static Task SendUnequippedAsync(
+        IPlayerSession session,
+        uint objId,
+        EquippedItemChange change,
+        CancellationToken ct
+    )
+    {
+        var packets = new List<(PacketType Type, byte[] Payload)>();
+        AppendUnequippedPackets(packets, objId, change);
+        return session.SendAsync(packets, ct);
+    }
+
+    public static Task SendEquippedAsync(
+        IPlayerSession session,
+        uint objId,
+        EquippedItemChange change,
+        CancellationToken ct
+    )
+    {
+        return session.SendAsync(
+            PacketType.ItemEquippedNotify,
+            BuildEquippedNotify(objId, change).ToBytes(),
+            ct
+        );
+    }
+
+    public static Task SendReplaceChangesAsync(
+        IPlayerSession session,
+        EquipReplaceResult result,
+        CancellationToken ct
+    )
+    {
+        var objId = ResolveObjId(session);
+        var packets = new List<(PacketType Type, byte[] Payload)>();
+
+        foreach (var removed in result.Removed)
+            AppendUnequippedPackets(packets, objId, removed);
+
+        foreach (var added in result.Added)
+            packets.Add(
+                (PacketType.ItemEquippedNotify, BuildEquippedNotify(objId, added).ToBytes())
+            );
+
+        AppendInventoryCountPackets(packets, result.InventoryCountsByItemId);
+        return session.SendAsync(packets, ct);
+    }
+
+    /// <summary>
+    /// Syncs bag quantities only (no avatar equip/unequip notifies). Used when dressing
+    /// Charadolls / Robos so removed clothes return to the owner's inventory UI.
+    /// </summary>
+    public static Task SendInventoryCountsAsync(
+        IPlayerSession session,
+        IReadOnlyDictionary<int, int> inventoryCountsByItemId,
+        CancellationToken ct
+    )
+    {
+        var packets = new List<(PacketType Type, byte[] Payload)>();
+        AppendInventoryCountPackets(packets, inventoryCountsByItemId);
+        return session.SendAsync(packets, ct);
+    }
+
+    private static void AppendBootstrapPackets(
+        List<(PacketType Type, byte[] Payload)> packets,
+        IPlayerSession session,
+        Character character
+    )
+    {
         var objId = ResolveObjId(session);
 
-        // Seed primary item-table entries first.
         foreach (var stack in character.Inventory.OrderBy(i => i.ItemId))
         {
             if (stack.Quantity <= 0)
                 continue;
 
-            await SendPrimaryItemTableEntryAsync(session, stack.ItemId, (ushort)stack.Quantity, ct);
+            packets.Add(
+                BuildItemTableEntry(PrimaryItemTablePlace, stack.ItemId, (ushort)stack.Quantity)
+            );
         }
 
         foreach (var equip in character.Equipment.OrderBy(e => e.SlotIndex))
@@ -165,142 +281,96 @@ internal static class CharacterItemSync
                 name: equip.Item?.Name
             );
 
-            await session.SendAsync(
-                PacketType.ItemEquippedNotify,
-                new ItemEquippedNotify(objId, serialId, socket).ToBytes(),
-                ct
+            packets.Add(
+                (
+                    PacketType.ItemEquippedNotify,
+                    new ItemEquippedNotify(objId, serialId, socket).ToBytes()
+                )
             );
         }
     }
 
-    public static async Task SendInventoryItemAsync(
-        IPlayerSession session,
-        int itemId,
-        ushort quantity,
-        CancellationToken ct
+    private static void AppendStorageBootstrapPackets(
+        List<(PacketType Type, byte[] Payload)> packets,
+        IEnumerable<(int ItemId, int Quantity)> storageItems
     )
     {
-        await SendPrimaryItemTableEntryAsync(session, itemId, quantity, ct);
-    }
-
-    /// <summary>
-    /// Synchronizes the number of unplaced copies shown by the furniture UI.
-    /// The client requires recv_item_delete when the count reaches zero because
-    /// its 65531 event rebuilds the furniture slot list.
-    /// </summary>
-    public static async Task SendFurnitureInventoryAvailabilityAsync(
-        IPlayerSession session,
-        int itemId,
-        int quantity,
-        CancellationToken ct
-    )
-    {
-        var serialId = ResolveSerialId(itemId);
-        if (quantity <= 0)
+        foreach (var (itemId, quantity) in storageItems.OrderBy(x => x.ItemId))
         {
-            await session.SendAsync(
-                PacketType.ItemDeleteNotify,
-                new ItemDeleteNotify(PrimaryItemTablePlace, serialId).ToBytes(),
-                ct
+            if (quantity <= 0)
+                continue;
+
+            packets.Add(
+                BuildItemTableEntry(
+                    StorageItemTablePlace,
+                    itemId,
+                    (ushort)Math.Min(quantity, ushort.MaxValue)
+                )
             );
-            return;
         }
-
-        await SendPrimaryItemTableEntryAsync(
-            session,
-            itemId,
-            (ushort)Math.Min(quantity, ushort.MaxValue),
-            ct
-        );
     }
 
-    private static async Task SendInventoryCountAsync(
-        IPlayerSession session,
-        int itemId,
-        int count,
-        CancellationToken ct
-    )
-    {
-        var clamped = count <= 0 ? (ushort)0 : (ushort)Math.Min(count, ushort.MaxValue);
-        await SendInventoryItemAsync(session, itemId, clamped, ct);
-    }
-
-    public static async Task SendUnequippedAsync(
-        IPlayerSession session,
+    private static void AppendUnequippedPackets(
+        List<(PacketType Type, byte[] Payload)> packets,
         uint objId,
-        EquippedItemChange change,
-        CancellationToken ct
+        EquippedItemChange change
     )
     {
         var serialId = ResolveSerialId(change.ItemId);
-
-        await session.SendAsync(
-            PacketType.ItemRemovedNotify,
-            new ItemRemovedNotify(objId, serialId, change.SocketBit).ToBytes(),
-            ct
+        packets.Add(
+            (
+                PacketType.ItemRemovedNotify,
+                new ItemRemovedNotify(objId, serialId, change.SocketBit).ToBytes()
+            )
         );
-        await SendPrimaryItemTableEntryAsync(session, change.ItemId, (ushort)InventoryListNum, ct);
+        packets.Add(
+            BuildItemTableEntry(PrimaryItemTablePlace, change.ItemId, (ushort)InventoryListNum)
+        );
     }
 
-    public static async Task SendEquippedAsync(
-        IPlayerSession session,
-        uint objId,
-        EquippedItemChange change,
-        CancellationToken ct
+    private static void AppendInventoryCountPackets(
+        List<(PacketType Type, byte[] Payload)> packets,
+        IReadOnlyDictionary<int, int> inventoryCountsByItemId
     )
+    {
+        foreach (var (itemId, count) in inventoryCountsByItemId)
+        {
+            var clamped = count <= 0 ? (ushort)0 : (ushort)Math.Min(count, ushort.MaxValue);
+            packets.Add(BuildItemTableEntry(PrimaryItemTablePlace, itemId, clamped));
+        }
+    }
+
+    private static ItemEquippedNotify BuildEquippedNotify(uint objId, EquippedItemChange change)
     {
         var serialId = ResolveSerialId(change.ItemId);
         var socket =
             change.SocketBit != 0
                 ? change.SocketBit
                 : ItemEntityMapper.ResolveBodyspot(change.ItemId, name: change.ItemName);
+        return new ItemEquippedNotify(objId, serialId, socket);
+    }
 
-        await session.SendAsync(
-            PacketType.ItemEquippedNotify,
-            new ItemEquippedNotify(objId, serialId, socket).ToBytes(),
-            ct
+    private static (PacketType Type, byte[] Payload) BuildItemTableEntry(
+        uint place,
+        int itemId,
+        ushort quantity
+    )
+    {
+        var serialId = ResolveSerialId(itemId);
+        return (
+            PacketType.ItemCreateNotify,
+            new ItemCreateNotify(place, serialId, quantity, (uint)itemId).ToBytes()
         );
     }
 
-    public static async Task SendReplaceChangesAsync(
-        IPlayerSession session,
-        EquipReplaceResult result,
-        CancellationToken ct
-    )
-    {
-        var objId = ResolveObjId(session);
-
-        foreach (var removed in result.Removed)
-            await SendUnequippedAsync(session, objId, removed, ct);
-
-        foreach (var added in result.Added)
-            await SendEquippedAsync(session, objId, added, ct);
-
-        await SendInventoryCountsAsync(session, result.InventoryCountsByItemId, ct);
-    }
-
-    /// <summary>
-    /// Syncs bag quantities only (no avatar equip/unequip notifies). Used when dressing
-    /// Charadolls / Robos so removed clothes return to the owner's inventory UI.
-    /// </summary>
-    public static async Task SendInventoryCountsAsync(
-        IPlayerSession session,
-        IReadOnlyDictionary<int, int> inventoryCountsByItemId,
-        CancellationToken ct
-    )
-    {
-        foreach (var (itemId, count) in inventoryCountsByItemId)
-            await SendInventoryCountAsync(session, itemId, count, ct);
-    }
-
-    private static async Task SendPrimaryItemTableEntryAsync(
+    private static Task SendPrimaryItemTableEntryAsync(
         IPlayerSession session,
         int itemId,
         ushort quantity,
         CancellationToken ct
-    ) => await SendItemTableEntryAsync(session, PrimaryItemTablePlace, itemId, quantity, ct);
+    ) => SendItemTableEntryAsync(session, PrimaryItemTablePlace, itemId, quantity, ct);
 
-    private static async Task SendItemTableEntryAsync(
+    private static Task SendItemTableEntryAsync(
         IPlayerSession session,
         uint place,
         int itemId,
@@ -308,11 +378,7 @@ internal static class CharacterItemSync
         CancellationToken ct
     )
     {
-        var serialId = ResolveSerialId(itemId);
-        await session.SendAsync(
-            PacketType.ItemCreateNotify,
-            new ItemCreateNotify(place, serialId, quantity, (uint)itemId).ToBytes(),
-            ct
-        );
+        var (type, payload) = BuildItemTableEntry(place, itemId, quantity);
+        return session.SendAsync(type, payload, ct);
     }
 }

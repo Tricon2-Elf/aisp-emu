@@ -45,4 +45,22 @@ public interface IPlayerSession
     bool IsAuthenticated { get; }
 
     Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sends multiple packets. Default loops single-packet SendAsync.
+    /// Network sessions override to pack complete VCE PacketData messages into frames.
+    /// </summary>
+    Task SendAsync(
+        IReadOnlyList<(PacketType Type, byte[] Payload)> packets,
+        CancellationToken ct = default
+    )
+    {
+        async Task SendAllAsync()
+        {
+            foreach (var (type, payload) in packets)
+                await SendAsync(type, payload, ct);
+        }
+
+        return packets.Count == 0 ? Task.CompletedTask : SendAllAsync();
+    }
 }
