@@ -225,6 +225,7 @@ public class CmdExecHandlerTests
                 new ChatLogRepository(new MainContext(options)),
                 new ReportTicketRepository(new MainContext(options)),
                 TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -1939,6 +1940,7 @@ public class CmdExecHandlerTests
             new ChatLogRepository(new MainContext(options)),
             new ReportTicketRepository(new MainContext(options)),
             TestTextLocaliser.English,
+            new AdventureWorkRepository(new MainContext(options)),
             WordFilter.FromTerms([]),
             NullLogger<CmdExecHandler>.Instance
         );

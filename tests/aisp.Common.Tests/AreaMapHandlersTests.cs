@@ -2929,6 +2929,7 @@ public class AreaMapHandlersTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(
                 new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
                 new MapRepository(handlerDb),
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
