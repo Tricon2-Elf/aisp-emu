@@ -109,9 +109,11 @@ public interface IAdventureShopRepository
 
     /// <summary>
     /// Registers a disc recovered from a legacy download cache under its original script id (below
-    /// FirstScriptId), already on sale, with the two texts in the stored UTF-8 form. WorkId 0 marks it as not
-    /// backed by a work in the editor. With <paramref name="replace"/> an existing listing under that id is
-    /// updated in place and put back on sale, keeping its purchases and counters.
+    /// FirstScriptId), already on sale, with the two texts in the stored UTF-8 form. The listing takes the owner's
+    /// next work id without a work row, the same state a listing is in once its work was deleted from the
+    /// notebook: no slot of the 100 works, no sheets, and the id is never handed out again. With
+    /// <paramref name="replace"/> an existing listing under that id is updated in place and put back on sale,
+    /// keeping its purchases, counters and work id.
     /// </summary>
     Task<AdventureImportOutcome> ImportListingAsync(
         int ownerUserId,
@@ -510,6 +512,8 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
         {
             if (!replace)
                 return AdventureImportOutcome.IdTaken;
+            if (existing.WorkId <= 0 || existing.UserId != ownerUserId)
+                existing.WorkId = await ConsumeWorkIdAsync(ownerUserId, ct);
             existing.UserId = ownerUserId;
             existing.Title = draft.Title;
             existing.AuthorName = draft.AuthorName;
@@ -532,13 +536,14 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
             return AdventureImportOutcome.Replaced;
         }
         var listedAt = listedAtUtc ?? now;
+        var workId = await ConsumeWorkIdAsync(ownerUserId, ct);
         db.AdventureListings.Add(
             new AdventureListing
             {
                 ScriptId = scriptId,
                 UserId = ownerUserId,
                 CharacterId = 0,
-                WorkId = 0,
+                WorkId = workId,
                 Title = draft.Title,
                 AuthorName = draft.AuthorName,
                 Genre = draft.Genre,
@@ -562,6 +567,16 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return AdventureImportOutcome.Imported;
+    }
+
+    /// <summary>Takes the owner's next work id for a listing without creating a work row, so 新規作成 can never reuse it.</summary>
+    private async Task<int> ConsumeWorkIdAsync(int ownerUserId, CancellationToken ct)
+    {
+        var user = await db.Users.SingleAsync(u => u.Id == ownerUserId, ct);
+        var workId = user.NextAdventureWorkId;
+        user.NextAdventureWorkId = Math.Min(workId + 1, ushort.MaxValue);
+        await db.SaveChangesAsync(ct);
+        return workId;
     }
 
     public async Task<IReadOnlyList<AdventureListing>> GetAllListingsAsync(

@@ -100,6 +100,14 @@ public sealed class AdventureAdminEndpointsTests
             // Imports default to readable and official; the PC library's lock and ribbon tab key off these.
             Assert.True(listing.ContentsPublic);
             Assert.True(listing.Official);
+            // The listing consumes the owner's next work id but gets no work row, like a work deleted from the
+            // notebook: no slot of the 100, no sheets, and 新規作成 can never hand the id out again.
+            Assert.Equal(1, listing.WorkId);
+            Assert.Empty(await db.AdventureWorks.Where(w => w.UserId == owner.Id).ToListAsync());
+            db.ChangeTracker.Clear();
+            var ownerAfter = await db.Users.SingleAsync(u => u.Id == owner.Id);
+            Assert.Equal(2, ownerAfter.NextAdventureWorkId);
+            Assert.Equal(0, ownerAfter.AdventureSheetStock);
             Assert.Equal(new DateTime(2009, 2, 19, 19, 45, 34), listing.ListedAt);
             Assert.Equal(Script, listing.Content!.Script);
             Assert.Equal(Datalist, listing.Content.Datalist);
@@ -132,6 +140,8 @@ public sealed class AdventureAdminEndpointsTests
                 .SingleAsync(l => l.ScriptId == 1729);
             Assert.Equal(AdventureListingState.Listed, replacedListing.State);
             Assert.Equal("Refreshed.", replacedListing.Comment);
+            Assert.Equal(1, replacedListing.WorkId);
+            Assert.Empty(await db.AdventureWorks.Where(w => w.UserId == owner.Id).ToListAsync());
             Assert.Contains("Rue", Encoding.UTF8.GetString(replacedListing.Content!.Datalist));
             var sealedFields = new Dictionary<string, string>(fields)
             {
