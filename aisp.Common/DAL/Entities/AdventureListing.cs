@@ -10,6 +10,12 @@ public enum AdventureListingState
 
     /// <summary>Taken down by the author (or replaced by a newer upload of the same work). Buyers keep their copies.</summary>
     Delisted = 2,
+
+    /// <summary>
+    /// A pending upload the client reported as failed, or that a retry superseded. Kept so the script id is never
+    /// handed out again: the client remembers a failed id and rejects a later upload that gets the same one.
+    /// </summary>
+    Abandoned = 3,
 }
 
 /// <summary>

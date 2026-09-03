@@ -1529,7 +1529,7 @@ The ranking rows' trailing UShort + UInt are ignored by the client. The genre na
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x1F30
 - **Packet Size:** 12
-- **Description:** Report 1 puts the pending listing on sale, marks the work Uploaded and takes down any older listing of the same work; result 1 means upload.php never stored a manuscript for that script id. Any other report drops the pending listing so the work can be uploaded again (result 0).
+- **Description:** Report 1 puts the pending listing on sale, marks the work Uploaded and takes down any older listing of the same work; result 1 means upload.php never stored a manuscript for that script id. Any other report abandons the pending listing so the work can be uploaded again (result 0); the row is kept so its script id is never reused, because the client remembers a failed id and answers a later upload that gets the same one with 「原因不明のエラーが発生しました」 (seen live).
 
 **Layout:**
 

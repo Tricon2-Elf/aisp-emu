@@ -525,7 +525,18 @@ public class AdventureWorkHandlersTests
             var reader = new PacketReader(reply.Payload);
             Assert.Equal(0u, reader.ReadUInt());
             Assert.Equal((ulong)started.Value.Listing.ScriptId, reader.ReadULong());
-            Assert.Empty(db.AdventureListings);
+            // The row stays, abandoned, so the id is never handed out again (the client rejects a reused id).
+            db.ChangeTracker.Clear();
+            var abandoned = Assert.Single(db.AdventureListings);
+            Assert.Equal(AdventureListingState.Abandoned, abandoned.State);
+            var next = await shop.BeginUploadAsync(
+                user.Id,
+                1,
+                1,
+                new AdventureListingDraft("T", "A", 0, "", 10, true, 1),
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal(started.Value.Listing.ScriptId + 1, next!.Value.Listing.ScriptId);
         }
         finally
         {

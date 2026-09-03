@@ -96,7 +96,7 @@ public interface IAdventureShopRepository
         CancellationToken ct = default
     );
 
-    /// <summary>Drops a Pending listing whose upload the client reported as failed.</summary>
+    /// <summary>Marks a Pending listing whose upload the client reported as failed as Abandoned; the id stays consumed.</summary>
     Task<bool> AbandonUploadAsync(int userId, long scriptId, CancellationToken ct = default);
 
     /// <summary>Takes a listing off sale and lets the work be uploaded again. Buyers keep their copies.</summary>
@@ -242,7 +242,8 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
             await db
                 .AdventureTickets.Where(t => staleIds.Contains(t.ScriptId))
                 .ExecuteDeleteAsync(ct);
-            db.AdventureListings.RemoveRange(stale);
+            foreach (var old in stale)
+                old.State = AdventureListingState.Abandoned;
             await db.SaveChangesAsync(ct);
         }
 
@@ -425,14 +426,17 @@ public sealed class AdventureShopRepository(MainContext db) : IAdventureShopRepo
         CancellationToken ct = default
     )
     {
-        var removed = await db
+        var abandoned = await db
             .AdventureListings.Where(l =>
                 l.ScriptId == scriptId
                 && l.UserId == userId
                 && l.State == AdventureListingState.Pending
             )
-            .ExecuteDeleteAsync(ct);
-        return removed > 0;
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(l => l.State, AdventureListingState.Abandoned),
+                ct
+            );
+        return abandoned > 0;
     }
 
     public async Task<bool> DelistAsync(int userId, long scriptId, CancellationToken ct = default)
