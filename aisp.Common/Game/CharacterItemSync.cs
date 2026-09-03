@@ -17,7 +17,7 @@ internal static class CharacterItemSync
     public static uint ResolveSerialId(int itemId) => (uint)itemId;
 
     /// <summary>
-    /// recv_item_update_list third field is list count/num.
+    /// Quantity written into recv_item_create when an unequipped copy returns to the bag.
     /// </summary>
     public const uint InventoryListNum = 1;
 
@@ -186,8 +186,7 @@ internal static class CharacterItemSync
     /// <summary>
     /// Synchronizes the number of unplaced copies shown by the furniture UI.
     /// The client requires recv_item_delete when the count reaches zero because
-    /// its 65531 event rebuilds the furniture slot list. A zero-valued
-    /// recv_item_update_list alone leaves a stale selectable slot behind.
+    /// its 65531 event rebuilds the furniture slot list.
     /// </summary>
     public static async Task SendFurnitureInventoryAvailabilityAsync(
         IPlayerSession session,
@@ -313,11 +312,6 @@ internal static class CharacterItemSync
         await session.SendAsync(
             PacketType.ItemCreateNotify,
             new ItemCreateNotify(place, serialId, quantity, (uint)itemId).ToBytes(),
-            ct
-        );
-        await session.SendAsync(
-            PacketType.ItemUpdateListNotify,
-            new ItemUpdateListNotify(place, serialId, quantity).ToBytes(),
             ct
         );
     }

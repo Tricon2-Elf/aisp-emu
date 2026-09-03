@@ -2,7 +2,6 @@ using aisp.Common.DAL.Entities;
 using aisp.Common.Game;
 using aisp.Common.Tests.Support;
 using aisp.Network;
-using aisp.Network.Packets.Area;
 
 namespace aisp.Common.Tests;
 
@@ -49,9 +48,6 @@ public class CharacterItemSyncTests
 
         Assert.Equal(2, session.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
         Assert.Single(session.Sent, p => p.Type == PacketType.ItemEquippedNotify);
-        Assert.Equal(2, session.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
-
-        var inventoryUpdate = session.Sent.First(p => p.Type == PacketType.ItemUpdateListNotify);
-        Assert.True(inventoryUpdate.Payload.Length >= 12);
+        Assert.DoesNotContain(session.Sent, p => p.Type == PacketType.ItemUpdateListNotify);
     }
 }

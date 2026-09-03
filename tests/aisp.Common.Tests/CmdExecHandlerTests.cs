@@ -1158,9 +1158,9 @@ public class CmdExecHandlerTests
                 expectedItems.Count,
                 areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify)
             );
-            Assert.Equal(
-                expectedItems.Count,
-                areaSession.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify)
+            Assert.DoesNotContain(
+                areaSession.Sent,
+                p => p.Type == PacketType.ItemUpdateListNotify
             );
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
@@ -1244,7 +1244,10 @@ public class CmdExecHandlerTests
             Assert.Equal(1, inventory.Quantity);
 
             Assert.Equal(1, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
-            Assert.Equal(1, areaSession.Sent.Count(p => p.Type == PacketType.ItemUpdateListNotify));
+            Assert.DoesNotContain(
+                areaSession.Sent,
+                p => p.Type == PacketType.ItemUpdateListNotify
+            );
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
         finally

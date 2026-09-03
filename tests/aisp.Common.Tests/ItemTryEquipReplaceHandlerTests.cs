@@ -409,7 +409,10 @@ public class ItemTryEquipReplaceHandlerTests
             Assert.Equal(PacketType.ItemTryEquipReplacedNotify, actor.Sent[1].Type);
             Assert.Equal(roboObjectId, new PacketReader(actor.Sent[1].Payload).ReadUInt());
             Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemCreateNotify);
-            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemUpdateListNotify);
+            Assert.DoesNotContain(
+                actor.Sent,
+                packet => packet.Type == PacketType.ItemUpdateListNotify
+            );
             AssertRoboEquipmentUpdate(actor.Sent[^1], roboObjectId, newRoboTopId);
             Assert.Collection(
                 peer.Sent,
@@ -507,7 +510,10 @@ public class ItemTryEquipReplaceHandlerTests
             }
 
             Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemCreateNotify);
-            Assert.Contains(actor.Sent, packet => packet.Type == PacketType.ItemUpdateListNotify);
+            Assert.DoesNotContain(
+                actor.Sent,
+                packet => packet.Type == PacketType.ItemUpdateListNotify
+            );
             Assert.DoesNotContain(
                 actor.Sent,
                 packet =>

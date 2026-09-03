@@ -153,8 +153,7 @@ public class AreaMyRoomEditingHandlerTests
                     Assert.Equal(PacketType.MyRoomRemoveFurnitureResponse, removeResponse.Type);
                     Assert.Equal(0u, new PacketReader(removeResponse.Payload).ReadUInt());
                 },
-                itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1),
-                inventoryUpdate => AssertInventoryCount(inventoryUpdate, itemId: 7001, quantity: 1)
+                itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1)
             );
             var removeNotification = Assert.Single(roomPeer.Sent);
             Assert.Equal(PacketType.NotifyMyRoomRemoveFurniture, removeNotification.Type);
@@ -523,7 +522,6 @@ public class AreaMyRoomEditingHandlerTests
                 session.Sent,
                 furniture => Assert.Equal(PacketType.MyRoomNotifyFurniture, furniture.Type),
                 itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1),
-                inventoryUpdate => AssertInventoryCount(inventoryUpdate, itemId: 7001, quantity: 1),
                 response => Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type)
             );
         }
@@ -913,19 +911,6 @@ public class AreaMyRoomEditingHandlerTests
         Assert.Equal(directionX, reader.ReadByte());
         Assert.Equal(directionY, reader.ReadByte());
         Assert.Equal(1u, reader.ReadUInt());
-    }
-
-    private static void AssertInventoryCount(
-        (PacketType Type, byte[] Payload) packet,
-        uint itemId,
-        uint quantity
-    )
-    {
-        Assert.Equal(PacketType.ItemUpdateListNotify, packet.Type);
-        var reader = new PacketReader(packet.Payload);
-        Assert.Equal(CharacterItemSync.PrimaryItemTablePlace, reader.ReadUInt());
-        Assert.Equal(itemId, reader.ReadUInt());
-        Assert.Equal(quantity, reader.ReadUInt());
     }
 
     private static void AssertFurnitureUnavailable(
