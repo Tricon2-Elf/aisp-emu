@@ -48,6 +48,7 @@ internal static class AdventureHttpEndpointsExtensions
             return Fail(1, "bad request");
         }
 
+        CloseAfterReply(request);
         var form = await request.ReadFormAsync(ct);
         var ticket = form["ticket"].ToString();
         var listing = await shop.RedeemUploadTicketAsync(ticket, ct);
@@ -133,6 +134,7 @@ internal static class AdventureHttpEndpointsExtensions
             return Fail(1, "bad request");
         }
 
+        CloseAfterReply(request);
         var form = await request.ReadFormAsync(ct);
         var ticket = form["ticket"].ToString();
         var content = await shop.RedeemDownloadTicketAsync(ticket, ct);
@@ -204,4 +206,14 @@ internal static class AdventureHttpEndpointsExtensions
         );
 
     private static IResult Xml(string body) => Results.Text(body, "text/xml", Encoding.UTF8);
+
+    /// <summary>
+    /// The client's uploader object is recreated per upload but the previous one is only closed, and when that
+    /// close completes its destructor clears the window's job pointer without checking it still owns it. With a
+    /// kept-alive connection the close lands during the next upload and wipes that upload's job, which then shows
+    /// 「原因不明のエラー」 (verified in the client, seen live as every second upload failing). Closing the
+    /// connection right after each reply makes the close land while nothing else is stored.
+    /// </summary>
+    private static void CloseAfterReply(HttpRequest request) =>
+        request.HttpContext.Response.Headers.Connection = "close";
 }

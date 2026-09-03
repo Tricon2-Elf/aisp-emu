@@ -109,6 +109,8 @@ public sealed class AdventureHttpEndpointsTests
             // The client's parser wants status as a root attribute and text in every child it reads.
             Assert.StartsWith("<?xml", body);
             Assert.Contains("status=\"ok\"", body);
+            // Every reply closes the connection: a kept-alive socket's later close wipes the client's next upload job.
+            Assert.Equal("close", context.Response.Headers.Connection.ToString());
             Assert.Contains("<cms>ok</cms>", body);
             Assert.Contains($"<scriptid>{scriptId}</scriptid>", body);
             Assert.DoesNotContain("<contents></contents>", body);
