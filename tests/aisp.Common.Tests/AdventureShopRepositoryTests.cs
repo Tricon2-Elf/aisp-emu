@@ -208,4 +208,22 @@ public sealed class AdventureShopRepositoryTests
             options.GetLastCutoffUtc(new DateTime(2026, 9, 4, 20, 0, 0, DateTimeKind.Utc))
         );
     }
+
+    [Fact]
+    public void SettlementOptions_CutoffInsideASpringForwardGap_MovesToTheFirstValidMinute()
+    {
+        var options = new AdventureSettlementOptions
+        {
+            DayOfWeek = DayOfWeek.Sunday,
+            Time = "02:30",
+            TimeZone = "America/New_York",
+        };
+        // Clocks jumped from 02:00 to 03:00 on Sunday 2026-03-08; 02:30 that day never existed.
+        // The cutoff becomes 03:00 EDT = 07:00 UTC instead of an exception every check for a week.
+        var monday = new DateTime(2026, 3, 9, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(new DateTime(2026, 3, 8, 7, 0, 0), options.GetLastCutoffUtc(monday));
+        // A normal week keeps the configured time: Sunday 02:30 EDT = 06:30 UTC.
+        var nextMonday = new DateTime(2026, 3, 16, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(new DateTime(2026, 3, 15, 6, 30, 0), options.GetLastCutoffUtc(nextMonday));
+    }
 }

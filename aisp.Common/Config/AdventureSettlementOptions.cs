@@ -49,6 +49,10 @@ public class AdventureSettlementOptions
         var candidate = local.Date.Add(time.ToTimeSpan());
         while (candidate.DayOfWeek != DayOfWeek || candidate > local)
             candidate = candidate.AddDays(-1);
+        // A cutoff inside a zone's spring-forward gap does not exist as a local time; take the
+        // first instant after the gap instead of throwing every check for a week.
+        while (zone.IsInvalidTime(candidate))
+            candidate = candidate.AddMinutes(1);
         return TimeZoneInfo.ConvertTimeToUtc(
             DateTime.SpecifyKind(candidate, DateTimeKind.Unspecified),
             zone
