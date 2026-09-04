@@ -162,13 +162,22 @@ body.tv #comments{top:36px}
   function rolloffOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ var m=/^rolloff:(.+)$/i.exec(w[i]); if(m) return m[1].split('/').join(','); } return ''; }
   // pan: also stereo-pan it by bearing (off by default).
   function panOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ if(/^pan$/i.test(w[i])) return true; } return false; }
+  // start:<unix> offset:<seconds> [paused:<unix>]: a video's shared timeline (at start it was at
+  // offset and playing; paused since paused). The hook seeks to the position, which stops
+  // advancing at the pause time, and holds while paused; hold=1 is this screen's own pause.
+  function timelineOf(v){
+    var w=(v||'').split(' '), t={start:0,offset:0,paused:0};
+    for(var i=1;i<w.length;i++){ var m=/^(start|offset|paused):([0-9.]+)$/i.exec(w[i]); if(m) t[m[1].toLowerCase()]=+m[2]; }
+    return t;
+  }
   function publish(){
-    var m=mainOf(src), b=geometry(src).crop, browser=/^electron:/i.test(m), cr=cropOf(src), sc=browser?scrollOf(src):null, sca=browser?scaleOf(src):0, k=keyOf(src), f=fpsOf(src), ro=rolloffOf(src), pn=panOf(src);
+    var m=mainOf(src), b=geometry(src).crop, browser=/^electron:/i.test(m), cr=cropOf(src), sc=browser?scrollOf(src):null, sca=browser?scaleOf(src):0, k=keyOf(src), f=fpsOf(src), ro=rolloffOf(src), pn=panOf(src), tl=timelineOf(src);
     var stream=m&&!isPage(m)&&m!=='blank'&&m!=='title';
-    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+';box='+b.join(',')+(cr?';crop='+cr:'')+(sc?';scrollx='+sc[0]+';scrolly='+sc[1]:'')+(sca?';scale='+sca:'')+(k?';key='+k:'')+(f?';fps='+f:'')+(ro?';rolloff='+ro:'')+(pn?';pan=1':'')+(stream?';src='+m:'');
+    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+';box='+b.join(',')+(cr?';crop='+cr:'')+(sc?';scrollx='+sc[0]+';scrolly='+sc[1]:'')+(sca?';scale='+sca:'')+(k?';key='+k:'')+(f?';fps='+f:'')+(ro?';rolloff='+ro:'')+(pn?';pan=1':'')
+      +(tl.start?';start='+tl.start+';offset='+tl.offset+(tl.paused?';paused='+tl.paused:''):'')+(state.paused?';hold=1':'')+(stream?';src='+m:'');
     // The client forwards volume while the state is playing or paused, and only flushes a
     // pending comment-visibility toggle then too; it reads the word from .value here.
-    var sf=$('statusForm'); if(sf) sf.value='value='+(state.paused?'paused':'playing')+' (statusForm)';
+    var sf=$('statusForm'); if(sf) sf.value='value='+(tl.paused||state.paused?'paused':'playing')+' (statusForm)';
   }
   // "title": a title card, "aisp-emu" centred in each panel on a dark background ('all'), or
   // on the Stage banner alone ('top') while the main panel plays something and nothing else

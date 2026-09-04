@@ -11,17 +11,129 @@ namespace aisp.Common.Game;
 /// map, set with the /screen chat command.
 ///
 /// The ids anyone may type into a room TV (fetched by every viewer's client, so only short ids
-/// that expand to a known site): title, pattern:live, tw:&lt;channel&gt; (Twitch through
-/// streamlink), twe:&lt;channel&gt; (the Twitch player embed in the off-screen browser),
-/// ytl:&lt;id&gt; (a YouTube live through streamlink) and lv… (Nico Live through streamlink).
+/// that expand to a known site): title, pattern:live, pattern:vod, tw:&lt;channel&gt; (Twitch
+/// through streamlink), twe:&lt;channel&gt; (the Twitch player embed in the off-screen browser),
+/// yt:&lt;id&gt; (a YouTube video through yt-dlp), ytl:&lt;id&gt; (a YouTube live through
+/// streamlink), lv… (Nico Live through streamlink), lv…:vod (the same, once archived, as a
+/// video through yt-dlp instead) and sm… (a Nico video through yt-dlp).
 /// Only /screen takes streamlink:&lt;url&gt;, stream:&lt;url&gt;, electron:&lt;url&gt; and a
 /// web page URL.
 /// </summary>
-public sealed class ScreenAssignments
+public sealed class ScreenAssignments(TimeProvider? time = null)
 {
-    private readonly ConcurrentDictionary<uint, string> _byMap = new();
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
+    private readonly ConcurrentDictionary<uint, Entry> _byMap = new();
 
-    public void Set(uint mapId, string source) => _byMap[mapId] = Normalize(source);
+    // Timelines of videos typed into room TVs, by map and channel: room instances share a map
+    // id, so the channel the hook adds to the TV's URL is what tells one room from another.
+    private readonly ConcurrentDictionary<string, Timeline> _byMovie = new(
+        StringComparer.OrdinalIgnoreCase
+    );
+
+    private static string MovieKey(uint map, int channel, string movieId) =>
+        string.Create(CultureInfo.InvariantCulture, $"{map}/{channel}/{movieId}");
+
+    /// <summary>
+    /// Where a video is: at <see cref="StartedAt"/> it was at <see cref="Offset"/> seconds and
+    /// playing, unless <see cref="PausedAt"/> is set, in which case it has sat at the position
+    /// it reached then. Every client computes the same position from the same numbers, so all
+    /// screens show the same point of the video; the page publishes them for the hook, which
+    /// seeks accordingly and holds while paused.
+    /// </summary>
+    public sealed record Timeline(DateTimeOffset StartedAt, double Offset, DateTimeOffset? PausedAt)
+    {
+        public bool Paused => PausedAt is not null;
+
+        public double PositionAt(DateTimeOffset now) =>
+            Math.Max(0, Offset + ((PausedAt ?? now) - StartedAt).TotalSeconds);
+
+        public Timeline Pause(DateTimeOffset now) => Paused ? this : this with { PausedAt = now };
+
+        public Timeline Resume(DateTimeOffset now) =>
+            Paused ? new Timeline(now, PositionAt(now), null) : this;
+
+        public Timeline Seek(DateTimeOffset now, double seconds) =>
+            new(now, Math.Max(0, seconds), Paused ? now : null);
+    }
+
+    private sealed record Entry(string Source, Timeline Timeline);
+
+    public void Set(uint mapId, string source) =>
+        _byMap[mapId] = new Entry(Normalize(source), new Timeline(_time.GetUtcNow(), 0, null));
+
+    public Timeline? GetTimeline(uint mapId) =>
+        _byMap.TryGetValue(mapId, out var entry) ? entry.Timeline : null;
+
+    /// <summary>pause, resume or seek:&lt;seconds&gt; on the map's video; false without one.</summary>
+    public bool Control(uint mapId, string action)
+    {
+        if (!_byMap.TryGetValue(mapId, out var entry) || !IsVideoSource(entry.Source))
+            return false;
+        var updated = Apply(entry.Timeline, action);
+        if (updated is null)
+            return false;
+        _byMap[mapId] = entry with { Timeline = updated };
+        return true;
+    }
+
+    /// <summary>
+    /// The same for a video typed into a room TV (its timeline is shared by everyone on that TV,
+    /// in that room: map plus channel, since room instances reuse the same map id).
+    /// </summary>
+    public bool ControlMovie(uint map, int channel, string movieId, string action)
+    {
+        if (!IsVideoSource(movieId))
+            return false;
+        var key = MovieKey(map, channel, MainOf(movieId));
+        var timeline = _byMovie.GetOrAdd(key, _ => new Timeline(_time.GetUtcNow(), 0, null));
+        var updated = Apply(timeline, action);
+        if (updated is null)
+            return false;
+        _byMovie[key] = updated;
+        return true;
+    }
+
+    /// <summary>
+    /// A room TV was freshly set to a movie: (re)starts that TV's timeline at zero for the room,
+    /// so picking a video plays it from the beginning even if that id was already playing
+    /// somewhere else. A no-op for anything that is not a video (streams, pages, the pattern).
+    /// </summary>
+    public void SetMovie(uint map, int channel, string movieId)
+    {
+        if (!IsVideoSource(movieId))
+            return;
+        _byMovie[MovieKey(map, channel, MainOf(movieId))] = new Timeline(
+            _time.GetUtcNow(),
+            0,
+            null
+        );
+    }
+
+    private Timeline? Apply(Timeline timeline, string action)
+    {
+        var now = _time.GetUtcNow();
+        if (string.Equals(action, "pause", StringComparison.OrdinalIgnoreCase))
+            return timeline.Pause(now);
+        if (string.Equals(action, "resume", StringComparison.OrdinalIgnoreCase))
+            return timeline.Resume(now);
+        if (
+            action.StartsWith("seek:", StringComparison.OrdinalIgnoreCase)
+            && double.TryParse(
+                action[5..],
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var seconds
+            )
+        )
+            return timeline.Seek(now, seconds);
+        return null;
+    }
+
+    private static string TimelineWords(Timeline timeline) =>
+        string.Create(
+            CultureInfo.InvariantCulture,
+            $"start:{timeline.StartedAt.ToUnixTimeSeconds()} offset:{timeline.Offset:0.###}"
+        ) + (timeline.Paused ? " paused:" + timeline.PausedAt!.Value.ToUnixTimeSeconds() : "");
 
     /// <summary>An empty main area; used with a banner page on the Stage wall.</summary>
     public const string Blank = "blank";
@@ -37,10 +149,12 @@ public sealed class ScreenAssignments
 
     /// <summary>
     /// The launcher hook's own calibration picture and test tone, generated in the client at the
-    /// panel's exact size. pattern:live counts from zero whenever it starts, like a stream. Bare
-    /// "pattern" is the same thing.
+    /// panel's exact size. pattern:live counts from zero whenever it starts, like a stream;
+    /// pattern:vod is a looping video that follows the shared timeline, so pause, resume and
+    /// seek can be checked without a real video. Bare "pattern" is the live one.
     /// </summary>
     public const string PatternLive = "pattern:live";
+    public const string PatternVod = "pattern:vod";
 
     /// <summary>
     /// The parent Twitch's player embed demands: it must name the site embedding the player.
@@ -58,8 +172,8 @@ public sealed class ScreenAssignments
 
     /// <summary>
     /// Canonical form of a source: trimmed, with the typed short ids expanded to their prefixed
-    /// forms (tw: to twitch:, a bare lv… id to nico:, bare pattern to pattern:live). A source is
-    /// "&lt;main&gt; [main:&lt;url&gt;] [banner:&lt;url&gt;] [&lt;url&gt;] [box:x/y/w/h]
+    /// forms (tw: to twitch:, a bare lv… or sm… id to nico:, bare pattern to pattern:live). A
+    /// source is "&lt;main&gt; [main:&lt;url&gt;] [banner:&lt;url&gt;] [&lt;url&gt;] [box:x/y/w/h]
     /// [crop:sw/sh:cx/cy] [scrollx:N] [scrolly:N] [scroll:x/y] [scale:N] [key[:RRGGBB]] [fps:N]
     /// [rolloff:…] [pan]": main:&lt;url&gt; is a frame page under the main panel, with the box
     /// relative to that panel; banner:&lt;url&gt; is a page for the Stage banner strip (the
@@ -77,11 +191,14 @@ public sealed class ScreenAssignments
         var main = words[0];
         if (main.StartsWith("tw:", StringComparison.OrdinalIgnoreCase))
             main = "twitch:" + main[3..];
-        else if (IsNicoLiveId(main))
+        else if (IsNicoLiveId(main) || IsNicoVideoId(main) || IsNicoLiveVodId(main))
             main = "nico:" + main;
         else if (string.Equals(main, "pattern", StringComparison.OrdinalIgnoreCase))
             main = PatternLive;
-        else if (string.Equals(main, PatternLive, StringComparison.OrdinalIgnoreCase))
+        else if (
+            string.Equals(main, PatternLive, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(main, PatternVod, StringComparison.OrdinalIgnoreCase)
+        )
             main = main.ToLowerInvariant();
         return string.Join(' ', new[] { main }.Concat(words.Skip(1)));
     }
@@ -280,10 +397,11 @@ public sealed class ScreenAssignments
 
     public bool Clear(uint mapId) => _byMap.TryRemove(mapId, out _);
 
-    public string? Get(uint mapId) => _byMap.TryGetValue(mapId, out var source) ? source : null;
+    public string? Get(uint mapId) =>
+        _byMap.TryGetValue(mapId, out var entry) ? entry.Source : null;
 
-    // The ids end up inside URLs on every viewer's command line (streamlink, the browser host),
-    // so only the characters the sites themselves use are let through.
+    // The ids end up inside URLs on every viewer's command line (streamlink, yt-dlp, the
+    // browser host), so only the characters the sites themselves use are let through.
 
     /// <summary>A Twitch login: letters, digits and underscores.</summary>
     public static bool IsTwitchChannel(string? value) =>
@@ -302,6 +420,23 @@ public sealed class ScreenAssignments
         && value.StartsWith("lv", StringComparison.OrdinalIgnoreCase)
         && value[2..].All(char.IsAsciiDigit);
 
+    /// <summary>sm followed by digits: a Nico video id, as typed into a TV.</summary>
+    public static bool IsNicoVideoId(string? value) =>
+        value is not null
+        && value.Length > 2
+        && value.StartsWith("sm", StringComparison.OrdinalIgnoreCase)
+        && value[2..].All(char.IsAsciiDigit);
+
+    /// <summary>
+    /// A Nico Live id with :vod appended: once a broadcast has ended and Nico has archived it,
+    /// the same watch page also serves it as a plain video, playable through yt-dlp with a
+    /// shared timeline (pause/resume/seek) instead of live through streamlink.
+    /// </summary>
+    public static bool IsNicoLiveVodId(string? value) =>
+        value is not null
+        && value.EndsWith(":vod", StringComparison.OrdinalIgnoreCase)
+        && IsNicoLiveId(value[..^4]);
+
     private static bool HasPrefix(string main, string prefix, Func<string, bool> rest) =>
         main.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && rest(main[prefix.Length..]);
 
@@ -317,14 +452,30 @@ public sealed class ScreenAssignments
     public static bool IsNicoLiveSource(string? source) =>
         source is not null && HasPrefix(MainOf(source), "nico:", IsNicoLiveId);
 
+    /// <summary>nico:lv…:vod (see <see cref="IsNicoLiveVodId"/>): the archive through yt-dlp,
+    /// with a shared timeline, instead of live through streamlink.</summary>
+    public static bool IsNicoLiveVodSource(string? source) =>
+        source is not null && HasPrefix(MainOf(source), "nico:", IsNicoLiveVodId);
+
+    /// <summary>nico:sm… (a bare sm… id): a Nico video through yt-dlp, with a shared timeline.</summary>
+    public static bool IsNicoVideoSource(string? source) =>
+        source is not null && HasPrefix(MainOf(source), "nico:", IsNicoVideoId);
+
+    /// <summary>yt:&lt;id&gt;: a YouTube video through yt-dlp, with a shared timeline.</summary>
+    public static bool IsYouTubeVideoSource(string? source) =>
+        source is not null && HasPrefix(MainOf(source), "yt:", IsYouTubeId);
+
     /// <summary>ytl:&lt;id&gt;: a YouTube live stream through streamlink.</summary>
     public static bool IsYouTubeLiveSource(string? source) =>
         source is not null && HasPrefix(MainOf(source), "ytl:", IsYouTubeId);
 
-    /// <summary>pattern:live, the hook's own test picture and tone.</summary>
+    /// <summary>pattern:live or pattern:vod, the hook's own test picture and tone.</summary>
     public static bool IsPatternSource(string? source) =>
         source is not null
-        && string.Equals(MainOf(source), PatternLive, StringComparison.OrdinalIgnoreCase);
+        && (
+            string.Equals(MainOf(source), PatternLive, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(MainOf(source), PatternVod, StringComparison.OrdinalIgnoreCase)
+        );
 
     /// <summary>
     /// electron:&lt;http(s) url&gt;: any page in the off-screen browser, overlaid like a stream.
@@ -337,6 +488,17 @@ public sealed class ScreenAssignments
     public static bool IsBrowserSource(string? source) =>
         IsElectronSource(source) || IsTwitchEmbedSource(source);
 
+    /// <summary>A video with a shared timeline (not a live stream): yt:, sm… and pattern:vod.
+    /// The hook seeks to the shared position and /screen pause, resume and seek move it.</summary>
+    public static bool IsVideoSource(string? source) =>
+        IsYouTubeVideoSource(source)
+        || IsNicoVideoSource(source)
+        || IsNicoLiveVodSource(source)
+        || (
+            source is not null
+            && string.Equals(MainOf(source), PatternVod, StringComparison.OrdinalIgnoreCase)
+        );
+
     /// <summary>
     /// The ids anyone may type into a room TV: short ids that expand to a known site (or the
     /// test pattern), never an arbitrary URL, since every viewer's client fetches what is typed.
@@ -346,6 +508,7 @@ public sealed class ScreenAssignments
         || IsTwitchEmbedSource(source)
         || IsNicoLiveSource(source)
         || IsYouTubeLiveSource(source)
+        || IsVideoSource(source)
         || IsPatternSource(source);
 
     /// <summary>
@@ -417,9 +580,9 @@ public sealed class ScreenAssignments
 
     /// <summary>
     /// The form the launcher hook understands: streamlink:&lt;url&gt; (anything streamlink
-    /// opens), stream:&lt;url&gt; (anything ffmpeg opens), pattern:live and
-    /// electron:&lt;http(s) url&gt;; the friendly ids are vocabulary of this server. Page URLs
-    /// and the page's own keywords pass through.
+    /// opens), stream:&lt;url&gt; (anything ffmpeg opens), yt-dlp:&lt;url&gt; (a video it seeks),
+    /// pattern:live, pattern:vod and electron:&lt;http(s) url&gt;; the friendly ids are
+    /// vocabulary of this server. Page URLs and the page's own keywords pass through.
     /// </summary>
     public static string ToHookSource(string source)
     {
@@ -433,8 +596,14 @@ public sealed class ScreenAssignments
                 + main[4..]
                 + "&parent="
                 + TwitchEmbedParent;
+        else if (IsNicoLiveVodSource(main))
+            main = "yt-dlp:https://www.nicovideo.jp/watch/" + main[5..^4];
         else if (IsNicoLiveSource(main))
             main = "streamlink:https://live.nicovideo.jp/watch/" + main[5..];
+        else if (IsNicoVideoSource(main))
+            main = "yt-dlp:https://www.nicovideo.jp/watch/" + main[5..];
+        else if (IsYouTubeVideoSource(main))
+            main = "yt-dlp:https://www.youtube.com/watch?v=" + main[3..];
         else if (IsYouTubeLiveSource(main))
             main = "streamlink:https://www.youtube.com/watch?v=" + main[4..];
         return string.Join(' ', new[] { main }.Concat(words.Skip(1)));
@@ -442,13 +611,15 @@ public sealed class ScreenAssignments
 
     /// <summary>
     /// The source a screen page should publish, given the route the hook sent the client to,
-    /// the movie id (room TVs only) and the map the hook read from the client. Null means the
-    /// page shows its diagnostics. A typed movie id only reaches this for the typed ids
-    /// (<see cref="IsTypedSource"/>), the title card, the test page and the calibration grid:
-    /// anything else typed (the c: rectangles included) falls back to the map's assignment. An
-    /// unassigned room TV stays blank; an unassigned town screen shows the title card.
+    /// the movie id (room TVs only), the map the hook read from the client and, for a room TV,
+    /// the channel that tells its room instance apart from another one on the same map. Null
+    /// means the page shows its diagnostics. A typed movie id only reaches this for the typed
+    /// ids (<see cref="IsTypedSource"/>), the title card, the test page and the calibration
+    /// grid: anything else typed (the c: rectangles included) falls back to the map's
+    /// assignment. An unassigned room TV stays blank; an unassigned town screen shows the title
+    /// card.
     /// </summary>
-    public string? Resolve(string route, string? movieId, uint? mapId)
+    public string? Resolve(string route, string? movieId, uint? mapId, int channel = 0)
     {
         if (route == "room-tv" && movieId is not null)
         {
@@ -459,17 +630,27 @@ public sealed class ScreenAssignments
                 return TitleCard;
             if (string.Equals(typed, Calibrate, StringComparison.OrdinalIgnoreCase))
                 return Calibrate;
+            if (IsVideoSource(typed))
+            {
+                // A typed video plays from a timeline shared by that TV, in that room.
+                var timeline = _byMovie.GetOrAdd(
+                    MovieKey(mapId ?? 0, channel, typed),
+                    _ => new Timeline(_time.GetUtcNow(), 0, null)
+                );
+                return ToHookSource(typed) + " " + TimelineWords(timeline);
+            }
             if (IsTypedSource(typed))
                 return ToHookSource(typed);
         }
-        var source = mapId is { } map && _byMap.TryGetValue(map, out var found) ? found : null;
-        if (source is null)
+        var entry = mapId is { } map && _byMap.TryGetValue(map, out var found) ? found : null;
+        if (entry is null)
             return route == "room-tv" ? Blank : TitleCard;
-        if (string.Equals(source, TestScreen, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(entry.Source, TestScreen, StringComparison.OrdinalIgnoreCase))
             return null;
+        var assigned = entry.Source;
         // Town screens attenuate with distance by default; an explicit rolloff word wins, filled
         // out to the hook's seven-number form; rolloff:flat drops it.
-        var words = ToHookSource(source).Split(' ').ToList();
+        var words = ToHookSource(assigned).Split(' ').ToList();
         var rolloffIndex = words.FindIndex(IsRolloffWord);
         if (rolloffIndex >= 0)
         {
@@ -480,13 +661,15 @@ public sealed class ScreenAssignments
                 words[rolloffIndex] = expanded;
         }
         else if (
-            IsStreamSource(source)
+            IsStreamSource(assigned)
             && mapId is { } m2
             && DefaultRolloffWord(m2) is { } defaultRolloff
         )
         {
             words.Add(defaultRolloff);
         }
+        if (IsVideoSource(assigned))
+            words.Add(TimelineWords(entry.Timeline));
         return string.Join(' ', words);
     }
 }

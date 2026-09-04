@@ -926,7 +926,8 @@ public class CmdExecHandler(
     /// <summary>
     /// /screen &lt;source&gt; plays a source on every in-game screen of the map the player is on
     /// (the Akihabara display, the Stage billboard): the ids anyone may type into a room TV
-    /// (tw:, twe:, ytl:, lv…, pattern:live, title), plus streamlink:&lt;url&gt; or
+    /// (tw:, twe:, yt:, ytl:, lv…, lv…:vod, sm…, pattern:live, pattern:vod, title), plus
+    /// streamlink:&lt;url&gt; or
     /// stream:&lt;url&gt; for the launcher hook to decode, electron:&lt;http(s) url&gt; for an
     /// off-screen browser overlay, or an http(s) URL of a web page to show in IE. /screen off
     /// clears it; /screen alone shows it.
@@ -958,8 +959,24 @@ public class CmdExecHandler(
             await SendSystemNoticeAsync(
                 session,
                 current is null
-                    ? $"Map {mapId}: screens show the default page. /screen tw:<channel> | stream:<url> | <page url> | title | off"
+                    ? $"Map {mapId}: screens show the default page. /screen tw:<channel> | yt:<id> | stream:<url> | <page url> | title | off"
                     : $"Map {mapId}: screens play {current}. /screen off to clear.",
+                ct
+            );
+            return;
+        }
+
+        // pause / resume / seek <seconds> steer the map's video without changing the source.
+        var verb = args[0].ToLowerInvariant();
+        if (verb is "pause" or "resume" or "seek")
+        {
+            var action = verb == "seek" ? "seek:" + (args.Count > 1 ? args[1] : "") : verb;
+            var applied = screenAssignments.Control(mapId, action);
+            await SendSystemNoticeAsync(
+                session,
+                applied
+                    ? $"Map {mapId}: video {verb}{(verb == "seek" ? " " + args[1] : "")}."
+                    : $"Map {mapId}: no video to {verb} (set one with /screen yt:<id>, sm<id> or pattern:vod).",
                 ct
             );
             return;
@@ -978,6 +995,7 @@ public class CmdExecHandler(
             await SendSystemNoticeAsync(
                 session,
                 "/screen <source> [extras]. Sources: tw:<channel> (Twitch), twe:<channel> (Twitch embed), ytl:<id> (YouTube live), lv<id> (Nico Live),\n"
+                    + "yt:<id> (YouTube), sm<id> (Nico video), lv<id>:vod (an archived Nico Live, once Nico has one) or pattern:vod (videos, played in step by everyone; then /screen pause, resume, seek <seconds>),\n"
                     + "pattern:live (the hook's own test picture and tone), streamlink:<url>, stream:<url>, electron:<http(s) url> (off-screen browser), a web page URL,\n"
                     + "blank, title, testscreen, calibrate, c:x1/y1:x2/y2:..., or off.\n"
                     + "Extras: main:<url> (a frame page under the main panel; box:x/y/w/h is then relative to it), banner:<url> (the Stage banner strip, else the title card),\n"

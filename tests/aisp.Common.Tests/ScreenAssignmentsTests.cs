@@ -4,10 +4,19 @@ namespace aisp.Common.Tests;
 
 public sealed class ScreenAssignmentsTests
 {
+    private sealed class TestTime : TimeProvider
+    {
+        public DateTimeOffset Now = new(2026, 9, 3, 12, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
     [Fact]
     public void RoomTv_PlaysTheTypedIds_OtherwiseTheMapAssignment()
     {
-        var assignments = new ScreenAssignments();
+        var time = new TestTime();
+        var assignments = new ScreenAssignments(time);
+        var t0 = time.Now.ToUnixTimeSeconds();
         assignments.Set(10990100, " twitch:someone ");
 
         // A Twitch channel typed into the TV wins, whatever the map says; tw: is the short form.
@@ -24,12 +33,16 @@ public sealed class ScreenAssignmentsTests
             "electron:https://player.twitch.tv/?channel=ironmouse&parent=aisp.moe",
             assignments.Resolve("room-tv", "twe:ironmouse", null)
         );
-        // YouTube: ytl: is a live stream through streamlink.
+        // YouTube: ytl: is a live stream through streamlink, yt: a video through yt-dlp.
         Assert.Equal(
             "streamlink:https://www.youtube.com/watch?v=jfKfPfyJRdk",
             assignments.Resolve("room-tv", "ytl:jfKfPfyJRdk", null)
         );
-        // Nico: a bare lv… id is a live programme through streamlink.
+        Assert.Equal(
+            $"yt-dlp:https://www.youtube.com/watch?v=dQw4w9WgXcQ start:{t0} offset:0",
+            assignments.Resolve("room-tv", "yt:dQw4w9WgXcQ", null)
+        );
+        // Nico: a bare lv… id is a live programme through streamlink, sm… a video through yt-dlp.
         Assert.Equal(
             "streamlink:https://live.nicovideo.jp/watch/lv351315472",
             assignments.Resolve("room-tv", "lv351315472", 10990100)
@@ -38,9 +51,17 @@ public sealed class ScreenAssignmentsTests
             "streamlink:https://live.nicovideo.jp/watch/lv1",
             assignments.Resolve("room-tv", "nico:lv1", null)
         );
-        // The hook's test pattern; bare pattern is the same thing.
+        Assert.Equal(
+            $"yt-dlp:https://www.nicovideo.jp/watch/sm11273499 start:{t0} offset:0",
+            assignments.Resolve("room-tv", "sm11273499", 10990100)
+        );
+        // The hook's test pattern, live or as a video on the shared timeline; bare pattern is live.
         Assert.Equal("pattern:live", assignments.Resolve("room-tv", "pattern:live", null));
         Assert.Equal("pattern:live", assignments.Resolve("room-tv", "pattern", null));
+        Assert.Equal(
+            $"pattern:vod start:{t0} offset:0",
+            assignments.Resolve("room-tv", "pattern:vod", 10990100)
+        );
         // The title card and the calibration grid can be typed too; the c: rectangles cannot.
         Assert.Equal("title", assignments.Resolve("room-tv", "title", 10990100));
         Assert.Equal("calibrate", assignments.Resolve("room-tv", "Calibrate", 10990100));
@@ -53,8 +74,11 @@ public sealed class ScreenAssignmentsTests
         Assert.Equal("blank", assignments.Resolve("room-tv", "https://example.test/", null));
         Assert.Equal("blank", assignments.Resolve("room-tv", "electron:https://x", null));
         Assert.Equal("blank", assignments.Resolve("room-tv", "streamlink:https://x/y", null));
+        Assert.Equal("blank", assignments.Resolve("room-tv", "yt-dlp:https://x/y", null));
         // Ids with characters the sites do not use never reach a command line.
         Assert.Equal("blank", assignments.Resolve("room-tv", "tw:some\"one", null));
+        Assert.Equal("blank", assignments.Resolve("room-tv", "yt:abc&x=1", null));
+        Assert.Equal("blank", assignments.Resolve("room-tv", "smx", null));
         // Anything else typed falls back to the map, then to blank.
         Assert.Equal(
             "streamlink:https://twitch.tv/someone rolloff:-17340/375/-20639/1000/12000/1/0",
@@ -66,6 +90,91 @@ public sealed class ScreenAssignmentsTests
         Assert.Null(assignments.Resolve("room-tv", "testscreen", 10990100));
         assignments.Set(19001003, "TestScreen");
         Assert.Null(assignments.Resolve("live-watch", null, 19001003));
+    }
+
+    [Fact]
+    public void Videos_CarryASharedTimeline_ThatPauseResumeAndSeekMove()
+    {
+        var time = new TestTime();
+        var assignments = new ScreenAssignments(time);
+        var t0 = time.Now.ToUnixTimeSeconds();
+        assignments.Set(30000001, "yt:abc123");
+        Assert.Equal(
+            $"yt-dlp:https://www.youtube.com/watch?v=abc123 start:{t0} offset:0",
+            assignments.Resolve("channel-screen", null, 30000001)
+        );
+        // Ten seconds in, the words do not change: the position follows from start alone.
+        time.Now = time.Now.AddSeconds(10);
+        Assert.EndsWith(
+            $"start:{t0} offset:0",
+            assignments.Resolve("channel-screen", null, 30000001)
+        );
+        Assert.Equal(10, assignments.GetTimeline(30000001)!.PositionAt(time.Now));
+        // Pause: the position freezes at 10, the words gain the pause time.
+        Assert.True(assignments.Control(30000001, "pause"));
+        time.Now = time.Now.AddSeconds(5);
+        Assert.Equal(10, assignments.GetTimeline(30000001)!.PositionAt(time.Now));
+        Assert.EndsWith(
+            $"start:{t0} offset:0 paused:{t0 + 10}",
+            assignments.Resolve("channel-screen", null, 30000001)
+        );
+        // Resume: a new start at now with the paused position as offset.
+        Assert.True(assignments.Control(30000001, "resume"));
+        Assert.EndsWith(
+            $"start:{t0 + 15} offset:10",
+            assignments.Resolve("channel-screen", null, 30000001)
+        );
+        time.Now = time.Now.AddSeconds(2);
+        Assert.Equal(12, assignments.GetTimeline(30000001)!.PositionAt(time.Now));
+        // Seek while playing.
+        Assert.True(assignments.Control(30000001, "seek:100"));
+        Assert.EndsWith(
+            $"start:{t0 + 17} offset:100",
+            assignments.Resolve("channel-screen", null, 30000001)
+        );
+        // Not a video: nothing to control.
+        assignments.Set(30000001, "tw:someone");
+        Assert.False(assignments.Control(30000001, "pause"));
+        Assert.False(assignments.Control(30000002, "pause"));
+        // The other videos: a Nico video and the vod pattern.
+        assignments.Set(30000001, "sm9");
+        Assert.True(assignments.Control(30000001, "pause"));
+        assignments.Set(30000001, "pattern:vod");
+        Assert.True(assignments.Control(30000001, "seek:30"));
+        Assert.Equal(
+            $"pattern:vod start:{t0 + 17} offset:30",
+            assignments.Resolve("channel-screen", null, 30000001)
+        );
+        // A video typed into a room TV gets a timeline shared by that TV, in that room: map plus
+        // channel, since room instances reuse the same map id.
+        Assert.Equal(
+            $"yt-dlp:https://www.youtube.com/watch?v=xyz start:{t0 + 17} offset:0",
+            assignments.Resolve("room-tv", "yt:xyz", 10990100, 1)
+        );
+        Assert.True(assignments.ControlMovie(10990100, 1, "yt:xyz", "pause"));
+        Assert.EndsWith($"paused:{t0 + 17}", assignments.Resolve("room-tv", "yt:xyz", 10990100, 1));
+        // A different room on the same map (another channel) does not share that pause.
+        Assert.DoesNotContain("paused:", assignments.Resolve("room-tv", "yt:xyz", 10990100, 2));
+        // Freshly setting the same id restarts that room's TV, even mid-playback.
+        assignments.SetMovie(10990100, 1, "yt:xyz");
+        Assert.EndsWith(
+            $"start:{t0 + 17} offset:0",
+            assignments.Resolve("room-tv", "yt:xyz", 10990100, 1)
+        );
+        Assert.True(assignments.ControlMovie(10990100, 1, "pattern:vod", "pause"));
+        Assert.EndsWith(
+            $"paused:{t0 + 17}",
+            assignments.Resolve("room-tv", "pattern:vod", 10990100, 1)
+        );
+        Assert.False(assignments.ControlMovie(10990100, 1, "pattern:live", "pause"));
+        Assert.False(assignments.ControlMovie(10990100, 1, "yt-dlp:https://x/y", "pause"));
+        Assert.False(assignments.ControlMovie(10990100, 1, "tw:someone", "pause"));
+        // SetMovie ignores anything that is not a video: no timeline appears for it.
+        assignments.SetMovie(10990100, 1, "tw:someone");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone",
+            assignments.Resolve("room-tv", "tw:someone", 10990100, 1)
+        );
     }
 
     [Fact]
@@ -127,6 +236,8 @@ public sealed class ScreenAssignmentsTests
         );
         Assert.Equal("twitch:someone https://x/banner", assignments.Get(10990100));
         // The typed ids keep their friendly form in the assignment too.
+        assignments.Set(10990100, "sm9 pan");
+        Assert.Equal("nico:sm9 pan", assignments.Get(10990100));
         assignments.Set(10990100, "pattern");
         Assert.Equal("pattern:live", assignments.Get(10990100));
 
@@ -146,16 +257,43 @@ public sealed class ScreenAssignmentsTests
         Assert.True(ScreenAssignments.IsTwitchEmbedSource("twe:ironmouse"));
         Assert.True(ScreenAssignments.IsBrowserSource("twe:ironmouse"));
         Assert.False(ScreenAssignments.IsTwitchSource("twe:ironmouse"));
+        Assert.True(ScreenAssignments.IsYouTubeVideoSource("yt:dQw4w9WgXcQ"));
+        Assert.True(ScreenAssignments.IsVideoSource("yt:dQw4w9WgXcQ"));
         Assert.True(ScreenAssignments.IsYouTubeLiveSource("ytl:jfKfPfyJRdk"));
-        Assert.False(ScreenAssignments.IsYouTubeLiveSource("ytl:"));
-        Assert.False(ScreenAssignments.IsYouTubeLiveSource("ytl:a/b"));
+        Assert.False(ScreenAssignments.IsVideoSource("ytl:jfKfPfyJRdk"));
+        Assert.False(ScreenAssignments.IsYouTubeVideoSource("yt:"));
+        Assert.False(ScreenAssignments.IsYouTubeVideoSource("yt:a/b"));
         Assert.True(ScreenAssignments.IsNicoLiveSource("lv351315472"));
+        Assert.True(ScreenAssignments.IsNicoVideoSource("sm11273499"));
+        Assert.True(ScreenAssignments.IsVideoSource("sm11273499"));
+        Assert.True(ScreenAssignments.IsNicoLiveVodId("lv351315472:vod"));
+        Assert.False(ScreenAssignments.IsNicoLiveVodId("lv351315472"));
+        Assert.True(ScreenAssignments.IsNicoLiveVodSource("lv351315472:vod"));
+        Assert.True(ScreenAssignments.IsVideoSource("lv351315472:vod"));
+        Assert.False(ScreenAssignments.IsNicoLiveSource("lv351315472:vod"));
         Assert.False(ScreenAssignments.IsNicoLiveId("lvx"));
         Assert.False(ScreenAssignments.IsNicoLiveId("lv"));
+        Assert.False(ScreenAssignments.IsNicoVideoId("sm"));
+        Assert.False(ScreenAssignments.IsNicoVideoId("smile"));
         Assert.True(ScreenAssignments.IsPatternSource("pattern:live"));
+        Assert.True(ScreenAssignments.IsPatternSource("pattern:vod"));
         Assert.True(ScreenAssignments.IsPatternSource("pattern"));
         Assert.False(ScreenAssignments.IsPatternSource("pattern:x"));
-        foreach (var typed in new[] { "tw:yueri", "twe:yueri", "ytl:abc", "lv1", "pattern:live" })
+        Assert.True(ScreenAssignments.IsVideoSource("pattern:vod"));
+        Assert.False(ScreenAssignments.IsVideoSource("pattern:live"));
+        foreach (
+            var typed in new[]
+            {
+                "tw:yueri",
+                "twe:yueri",
+                "yt:abc",
+                "ytl:abc",
+                "lv1",
+                "sm1",
+                "pattern:live",
+                "pattern:vod",
+            }
+        )
         {
             Assert.True(ScreenAssignments.IsTypedSource(typed), typed);
             Assert.True(ScreenAssignments.IsStreamSource(typed), typed);
@@ -180,7 +318,11 @@ public sealed class ScreenAssignmentsTests
         Assert.True(ScreenAssignments.IsValidSource("HTTP://host/page"));
         Assert.False(ScreenAssignments.IsTypedSource("HTTP://host/page"));
         Assert.False(ScreenAssignments.IsPageUrl("twitch:yueri"));
-        // Not sources: the hook's own raw forms with nothing after the prefix, other schemes.
+        // Not sources: the hook's own raw yt-dlp form (yt: and sm… are the typed ways in), other
+        // browser hosts, and the raw forms with nothing after the prefix.
+        Assert.False(ScreenAssignments.IsValidSource("yt-dlp:https://x/y"));
+        Assert.False(ScreenAssignments.IsValidSource("cef:https://x"));
+        Assert.False(ScreenAssignments.IsValidSource("edge:https://x"));
         Assert.False(ScreenAssignments.IsValidSource("streamlink:"));
         Assert.False(ScreenAssignments.IsValidSource("stream:"));
         Assert.False(ScreenAssignments.IsValidSource("electron:"));
@@ -191,8 +333,8 @@ public sealed class ScreenAssignmentsTests
         Assert.True(ScreenAssignments.IsValidSource("calibrate"));
         Assert.True(ScreenAssignments.IsValidSource("title"));
         Assert.True(ScreenAssignments.IsValidSource("blank"));
+        Assert.False(ScreenAssignments.IsValidSource("sm"));
         Assert.False(ScreenAssignments.IsValidSource("Hello World"));
-        Assert.False(ScreenAssignments.IsValidSource("tw:yueri twitch:other"));
         Assert.False(ScreenAssignments.IsValidSource(null));
         // The hook's forms.
         Assert.Equal(
@@ -200,14 +342,23 @@ public sealed class ScreenAssignmentsTests
             ScreenAssignments.ToHookSource("streamlink:https://x/y")
         );
         Assert.Equal("pattern:live", ScreenAssignments.ToHookSource("Pattern"));
+        Assert.Equal("pattern:vod", ScreenAssignments.ToHookSource("pattern:VOD"));
         Assert.Equal("title", ScreenAssignments.ToHookSource("title"));
         Assert.Equal(
             "electron:https://player.twitch.tv/?channel=yueri&parent=aisp.moe scroll:0/40",
             ScreenAssignments.ToHookSource("twe:yueri scroll:0/40")
         );
         Assert.Equal(
+            "yt-dlp:https://www.nicovideo.jp/watch/sm9",
+            ScreenAssignments.ToHookSource("sm9")
+        );
+        Assert.Equal(
             "streamlink:https://live.nicovideo.jp/watch/lv351315472",
             ScreenAssignments.ToHookSource("lv351315472")
+        );
+        Assert.Equal(
+            "yt-dlp:https://www.nicovideo.jp/watch/lv351315472",
+            ScreenAssignments.ToHookSource("lv351315472:vod")
         );
         Assert.Equal(
             "streamlink:https://www.youtube.com/watch?v=abc",
@@ -227,6 +378,7 @@ public sealed class ScreenAssignmentsTests
         Assert.False(ScreenAssignments.IsMainWord("main:x"));
         Assert.False(ScreenAssignments.IsValidSource("tw:yueri main:frame.html"));
         Assert.False(ScreenAssignments.IsValidSource("tw:yueri banner:ftp://x"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri twitch:other"));
         Assert.Equal(
             "streamlink:https://twitch.tv/yueri box:0/0/10/10 main:https://x/f",
             ScreenAssignments.ToHookSource("tw:yueri box:0/0/10/10 main:https://x/f")

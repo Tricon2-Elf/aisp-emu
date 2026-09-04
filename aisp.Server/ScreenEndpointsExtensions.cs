@@ -36,6 +36,40 @@ internal static class ScreenEndpointsExtensions
                     ScreenAssignments assignments
                 ) => ServePage(route, context, environment, assignments)
             );
+        // Moves a video's shared timeline for everyone; the reply is the new source line. The
+        // page does not use it yet: the client calls its ext_play/ext_pause around its own
+        // lifecycle (leaving a map, arriving), which would pause the video for everyone.
+        app.MapPost(
+            "/ai-sp/screen-control",
+            (HttpContext context, ScreenAssignments assignments, ILoggerFactory loggers) =>
+            {
+                var query = context.Request.Query;
+                uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
+                var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
+                var action = query["action"].ToString();
+                var route = query["route"].ToString();
+                string? movieId = query["movieid"];
+                var applied =
+                    route == "room-tv" && !string.IsNullOrEmpty(movieId)
+                        ? assignments.ControlMovie(mapId ?? 0, channel, movieId, action)
+                        : mapId is { } m && assignments.Control(m, action);
+                loggers
+                    .CreateLogger("aisp.Server.ScreenEvents")
+                    .LogInformation(
+                        "screen control {Action} on route {Route} map {Map} movie {Movie} from {Remote}: {Applied}",
+                        action,
+                        route,
+                        mapId,
+                        movieId,
+                        context.Connection.RemoteIpAddress,
+                        applied ? "applied" : "ignored"
+                    );
+                context.Response.Headers.CacheControl = "no-store";
+                return Results.Json(
+                    new { applied, src = assignments.Resolve(route, movieId, mapId, channel) ?? "" }
+                );
+            }
+        );
         // Polled by the page so a changed assignment reaches screens that are already open.
         app.MapGet(
             "/ai-sp/screen-source",
@@ -43,10 +77,12 @@ internal static class ScreenEndpointsExtensions
             {
                 var query = context.Request.Query;
                 uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
+                var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
                 var source = assignments.Resolve(
                     query["route"].ToString(),
                     query["movieid"],
-                    mapId
+                    mapId,
+                    channel
                 );
                 context.Response.Headers.CacheControl = "no-store";
                 return Results.Json(new { src = source ?? "" });
@@ -68,7 +104,8 @@ internal static class ScreenEndpointsExtensions
 
         var query = context.Request.Query;
         uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
-        var source = assignments.Resolve(route, query["movieid"], mapId);
+        var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
+        var source = assignments.Resolve(route, query["movieid"], mapId, channel);
 
         // A room TV never needs the page to poll: the client re-navigates it on every assignment
         // change (movie set, channel switch, room re-entry). live-watch (the Stage) is pushed
