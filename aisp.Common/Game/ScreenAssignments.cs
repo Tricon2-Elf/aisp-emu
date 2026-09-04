@@ -60,14 +60,14 @@ public sealed class ScreenAssignments
     /// Canonical form of a source: trimmed, with the typed short ids expanded to their prefixed
     /// forms (tw: to twitch:, a bare lv… id to nico:, bare pattern to pattern:live). A source is
     /// "&lt;main&gt; [main:&lt;url&gt;] [banner:&lt;url&gt;] [&lt;url&gt;] [box:x/y/w/h]
-    /// [crop:sw/sh:cx/cy] [scrollx:N] [scrolly:N] [scroll:x/y] [scale:N] [key[:RRGGBB]]":
-    /// main:&lt;url&gt; is a frame page under the main panel, with the box relative to that
-    /// panel; banner:&lt;url&gt; is a page for the Stage banner strip (the title card when
-    /// absent); a bare page URL is the raw form, a frame page under the whole crop with a box or
-    /// key word, the banner otherwise; a box word places the video inside the crop; a crop word
-    /// renders the picture at another size and shows the box-sized window at cx,cy of it (for
-    /// browser sources sw/sh is the layout viewport); scroll words pan a browser document;
-    /// scale:N is browser zoom; a key word colour-keys the video into the page.
+    /// [crop:sw/sh:cx/cy] [scrollx:N] [scrolly:N] [scroll:x/y] [scale:N] [key[:RRGGBB]] [fps:N]
+    /// [rolloff:…] [pan]": main:&lt;url&gt; is a frame page under the main panel, with the box
+    /// relative to that panel; banner:&lt;url&gt; is a page for the Stage banner strip (the
+    /// title card when absent); a bare page URL is the raw form, a frame page under the whole
+    /// crop with a box or key word, the banner otherwise; a box word places the video inside
+    /// the crop; a crop word renders the picture at another size and shows the box-sized window
+    /// at cx,cy of it (for browser sources sw/sh is the layout viewport); scroll words pan a
+    /// browser document; scale:N is browser zoom; a key word colour-keys the video into the page.
     /// </summary>
     public static string Normalize(string source)
     {
@@ -102,6 +102,114 @@ public sealed class ScreenAssignments
                 && word[4..].All(char.IsAsciiHexDigit)
             )
         );
+
+    /// <summary>
+    /// rolloff:near/far (range only, the map's own screen position), rolloff:near/far/max/min
+    /// (also the gains to fade between), rolloff:x/y/z/near/far, rolloff:x/y/z/near/far/max/min,
+    /// or rolloff:flat (flat volume). max is the gain at near or closer and min the gain at far
+    /// or beyond, so the <see cref="DefaultMax"/>/<see cref="DefaultMin"/> default is the plain
+    /// fade to silence and e.g. 1/0.3 keeps a screen audible across the map. The hook attenuates
+    /// and pans the stream from the player's own position; town screens get a default from
+    /// <see cref="ScreenPositions"/> when no word is given.
+    /// </summary>
+    public static bool IsRolloffWord(string? word) =>
+        word is not null
+        && word.StartsWith("rolloff:", StringComparison.OrdinalIgnoreCase)
+        && (
+            string.Equals(word, "rolloff:flat", StringComparison.OrdinalIgnoreCase)
+            || (
+                word[8..].Split('/') is { Length: 2 or 4 or 5 or 7 } parts
+                && parts.All(part =>
+                    double.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out _)
+                )
+            )
+        );
+
+    /// <summary>
+    /// The hook wants the seven-number form: fills in the map's screen position for the forms
+    /// that leave it out and <see cref="DefaultMax"/>/<see cref="DefaultMin"/> for the forms that
+    /// leave the gains out. Drops rolloff:flat, or a position-less word on a map without a screen.
+    /// </summary>
+    private static string? ExpandRolloffWord(string word, uint? mapId)
+    {
+        if (string.Equals(word, "rolloff:flat", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var parts = word[8..].Split('/');
+        // 5 and 7 carry the position; 2 and 4 take the map's own screen, and have nowhere to
+        // fall back to without one.
+        var positioned = parts.Length is 5 or 7;
+        string position;
+        if (positioned)
+            position = $"{parts[0]}/{parts[1]}/{parts[2]}";
+        else if (mapId is { } map && ScreenPositions.TryGetValue(map, out var p))
+            position = string.Create(CultureInfo.InvariantCulture, $"{p.X}/{p.Y}/{p.Z}");
+        else
+            return null;
+        var range = positioned ? $"{parts[3]}/{parts[4]}" : $"{parts[0]}/{parts[1]}";
+        // 4 and 7 carry the gains; the other two fade all the way to silence.
+        var gains = parts.Length switch
+        {
+            4 => $"{parts[2]}/{parts[3]}",
+            7 => $"{parts[5]}/{parts[6]}",
+            _ => string.Create(CultureInfo.InvariantCulture, $"{DefaultMax}/{DefaultMin}"),
+        };
+        return $"rolloff:{position}/{range}/{gains}";
+    }
+
+    /// <summary>
+    /// World positions of the town screens, from the client's screen table (one record per map;
+    /// maps with several screens list the first). Room TVs have no fixed position. Same units and
+    /// axes as the avatar position the client reports in move packets (and reads from its own
+    /// CChara transform for the launcher hook's rolloff), so the distance is plain Euclidean.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<uint, (float X, float Y, float Z)> ScreenPositions =
+        new Dictionary<uint, (float, float, float)>
+        {
+            [10990100] = (-17340f, 375f, -20639f),
+            [10990110] = (-16850f, 310f, -19840f),
+            [10990200] = (-10873f, 1202.5f, -997f),
+            [10990210] = (-10873f, 1202.5f, -997f),
+            [10990220] = (-10873f, 1202.5f, -997f),
+            [19001003] = (0f, 352.1f, 1567f),
+            [10010200] = (-32.6f, 497f, -2086.4f),
+            [10010210] = (-32.6f, 497f, -2086.4f),
+            [10020200] = (-32.6f, 497f, -2086.4f),
+            [10020210] = (-32.6f, 497f, -2086.4f),
+            [10030200] = (-32.6f, 497f, -2086.4f),
+            [10030210] = (-32.6f, 497f, -2086.4f),
+            [10010110] = (-11826f, 150f, -4350f),
+            [10990400] = (-239.6f, 274.5f, 1184.8f),
+        };
+
+    /// <summary>Default rolloff, in world units: full volume up to Near, silent from Far.</summary>
+    public const float DefaultNear = 1000f;
+    public const float DefaultFar = 12000f;
+
+    /// <summary>Default gains to fade between: full at Near or closer, silent at Far or beyond.</summary>
+    public const float DefaultMax = 1f;
+    public const float DefaultMin = 0f;
+
+    /// <summary>The rolloff word for a town screen's map, or null for maps without a known screen.</summary>
+    public static string? DefaultRolloffWord(uint mapId) =>
+        ScreenPositions.TryGetValue(mapId, out var p)
+            ? string.Create(
+                CultureInfo.InvariantCulture,
+                $"rolloff:{p.X}/{p.Y}/{p.Z}/{DefaultNear}/{DefaultFar}/{DefaultMax}/{DefaultMin}"
+            )
+            : null;
+
+    /// <summary>fps:N, the constant rate ffmpeg produces: 15, 20, 25, 30, 50 or 60 (the rates
+    /// that divide both common sample rates, so the audio clock maps to whole frames).</summary>
+    public static bool IsFpsWord(string? word) =>
+        word is not null
+        && word.StartsWith("fps:", StringComparison.OrdinalIgnoreCase)
+        && int.TryParse(word[4..], out var fps)
+        && fps is 15 or 20 or 25 or 30 or 50 or 60;
+
+    /// <summary>pan: stereo-pan the stream by its bearing from the player. Off by default; a
+    /// screen in a street is not a point source, so only the distance rolloff applies.</summary>
+    public static bool IsPanWord(string? word) =>
+        string.Equals(word, "pan", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>scale:N for browser sources: Electron's zoom (1 = 100%), 0.1–8. A texture stretch this is not.</summary>
     public static bool IsScaleWord(string? word) =>
@@ -273,7 +381,7 @@ public sealed class ScreenAssignments
     /// <summary>
     /// What /screen accepts: a stream, a page, blank, the title card, the test page, the
     /// calibration aids; with optional extras (main:, banner: and bare page URLs, box, crop, key,
-    /// scroll and scale words).
+    /// fps, rolloff, pan, scroll and scale words).
     /// </summary>
     public static bool IsValidSource(string? source)
     {
@@ -289,6 +397,9 @@ public sealed class ScreenAssignments
                     || IsBoxWord(word)
                     || IsCropWord(word)
                     || IsKeyWord(word)
+                    || IsFpsWord(word)
+                    || IsRolloffWord(word)
+                    || IsPanWord(word)
                     || IsScrollWord(word)
                     || IsScaleWord(word)
                 )
@@ -356,6 +467,26 @@ public sealed class ScreenAssignments
             return route == "room-tv" ? Blank : TitleCard;
         if (string.Equals(source, TestScreen, StringComparison.OrdinalIgnoreCase))
             return null;
-        return ToHookSource(source);
+        // Town screens attenuate with distance by default; an explicit rolloff word wins, filled
+        // out to the hook's seven-number form; rolloff:flat drops it.
+        var words = ToHookSource(source).Split(' ').ToList();
+        var rolloffIndex = words.FindIndex(IsRolloffWord);
+        if (rolloffIndex >= 0)
+        {
+            var expanded = ExpandRolloffWord(words[rolloffIndex], mapId);
+            if (expanded is null)
+                words.RemoveAt(rolloffIndex);
+            else
+                words[rolloffIndex] = expanded;
+        }
+        else if (
+            IsStreamSource(source)
+            && mapId is { } m2
+            && DefaultRolloffWord(m2) is { } defaultRolloff
+        )
+        {
+            words.Add(defaultRolloff);
+        }
+        return string.Join(' ', words);
     }
 }

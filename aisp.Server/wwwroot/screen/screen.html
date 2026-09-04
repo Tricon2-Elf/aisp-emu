@@ -155,10 +155,17 @@ body.tv #comments{top:36px}
   }
   // scale:N: Chromium zoom for electron: (1 = 100%). Not a texture stretch.
   function scaleOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ var m=/^scale:([0-9]*\.?[0-9]+)$/i.exec(w[i]); if(m){ var n=+m[1]; if(n>=0.1&&n<=8) return n; } } return 0; }
+  // fps:N: the constant rate ffmpeg produces (default 30 in the hook).
+  function fpsOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ var m=/^fps:(\d+)$/i.exec(w[i]); if(m) return +m[1]; } return 0; }
+  // rolloff:x/y/z/near/far/max/min: the hook attenuates the stream by the player's distance,
+  // fading from max at near to min at far. The server always sends all seven.
+  function rolloffOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ var m=/^rolloff:(.+)$/i.exec(w[i]); if(m) return m[1].split('/').join(','); } return ''; }
+  // pan: also stereo-pan it by bearing (off by default).
+  function panOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ if(/^pan$/i.test(w[i])) return true; } return false; }
   function publish(){
-    var m=mainOf(src), b=geometry(src).crop, browser=/^electron:/i.test(m), cr=cropOf(src), sc=browser?scrollOf(src):null, sca=browser?scaleOf(src):0, k=keyOf(src);
+    var m=mainOf(src), b=geometry(src).crop, browser=/^electron:/i.test(m), cr=cropOf(src), sc=browser?scrollOf(src):null, sca=browser?scaleOf(src):0, k=keyOf(src), f=fpsOf(src), ro=rolloffOf(src), pn=panOf(src);
     var stream=m&&!isPage(m)&&m!=='blank'&&m!=='title';
-    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+';box='+b.join(',')+(cr?';crop='+cr:'')+(sc?';scrollx='+sc[0]+';scrolly='+sc[1]:'')+(sca?';scale='+sca:'')+(k?';key='+k:'')+(stream?';src='+m:'');
+    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+';box='+b.join(',')+(cr?';crop='+cr:'')+(sc?';scrollx='+sc[0]+';scrolly='+sc[1]:'')+(sca?';scale='+sca:'')+(k?';key='+k:'')+(f?';fps='+f:'')+(ro?';rolloff='+ro:'')+(pn?';pan=1':'')+(stream?';src='+m:'');
     // The client forwards volume while the state is playing or paused, and only flushes a
     // pending comment-visibility toggle then too; it reads the word from .value here.
     var sf=$('statusForm'); if(sf) sf.value='value='+(state.paused?'paused':'playing')+' (statusForm)';

@@ -47,7 +47,7 @@ public sealed class ScreenAssignmentsTests
         Assert.Equal("blank", assignments.Resolve("room-tv", "c:0/0:10/10", null));
         // Typed URLs and streams are not honoured: they would make every viewer fetch them.
         Assert.Equal(
-            "streamlink:https://twitch.tv/someone",
+            "streamlink:https://twitch.tv/someone rolloff:-17340/375/-20639/1000/12000/1/0",
             assignments.Resolve("room-tv", "stream:https://x/y.m3u8", 10990100)
         );
         Assert.Equal("blank", assignments.Resolve("room-tv", "https://example.test/", null));
@@ -57,7 +57,7 @@ public sealed class ScreenAssignmentsTests
         Assert.Equal("blank", assignments.Resolve("room-tv", "tw:some\"one", null));
         // Anything else typed falls back to the map, then to blank.
         Assert.Equal(
-            "streamlink:https://twitch.tv/someone",
+            "streamlink:https://twitch.tv/someone rolloff:-17340/375/-20639/1000/12000/1/0",
             assignments.Resolve("room-tv", "Hello World", 10990100)
         );
         Assert.Equal("blank", assignments.Resolve("room-tv", "Hello World", 19001003));
@@ -76,13 +76,53 @@ public sealed class ScreenAssignmentsTests
         Assert.Equal("title", assignments.Resolve("channel-screen", null, 10990100));
 
         assignments.Set(10990100, "tw:someone https://x/banner");
+        // Town screens also get the map's screen position for rolloff, unless the source names one.
+        Assert.EndsWith(
+            " rolloff:-17340/375/-20639/1000/12000/1/0",
+            assignments.Resolve("channel-screen", null, 10990100)
+        );
+        // The short form keeps the map's position and only sets the range; rolloff:flat turns
+        // the rolloff off; a short form on a map without a known screen is dropped.
+        assignments.Set(10990100, "tw:someone rolloff:500/6000");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone rolloff:-17340/375/-20639/500/6000/1/0",
+            assignments.Resolve("channel-screen", null, 10990100)
+        );
+        // Four numbers add the gains to fade between, keeping the map's position.
+        assignments.Set(10990100, "tw:someone rolloff:500/6000/0.8/0.25");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone rolloff:-17340/375/-20639/500/6000/0.8/0.25",
+            assignments.Resolve("channel-screen", null, 10990100)
+        );
+        assignments.Set(10990100, "tw:someone rolloff:flat");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone",
+            assignments.Resolve("channel-screen", null, 10990100)
+        );
+        assignments.Set(30000001, "tw:someone rolloff:500/6000");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone",
+            assignments.Resolve("channel-screen", null, 30000001)
+        );
+        assignments.Set(10990100, "tw:someone rolloff:1/2/3/10/20");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone rolloff:1/2/3/10/20/1/0",
+            assignments.Resolve("channel-screen", null, 10990100)
+        );
+        // Seven is the hook's own form and passes through unchanged.
+        assignments.Set(10990100, "tw:someone rolloff:1/2/3/10/20/0.5/0.1");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone rolloff:1/2/3/10/20/0.5/0.1",
+            assignments.Resolve("channel-screen", null, 10990100)
+        );
+        assignments.Set(10990100, "tw:someone https://x/banner");
         // The page gets the hook's form; the stored assignment keeps the friendly one.
         Assert.Equal(
-            "streamlink:https://twitch.tv/someone https://x/banner",
+            "streamlink:https://twitch.tv/someone https://x/banner rolloff:-17340/375/-20639/1000/12000/1/0",
             assignments.Resolve("channel-screen", null, 10990100)
         );
         Assert.Equal(
-            "streamlink:https://twitch.tv/someone https://x/banner",
+            "streamlink:https://twitch.tv/someone https://x/banner rolloff:-17340/375/-20639/1000/12000/1/0",
             assignments.Resolve("live-watch", null, 10990100)
         );
         Assert.Equal("twitch:someone https://x/banner", assignments.Get(10990100));
@@ -211,6 +251,29 @@ public sealed class ScreenAssignmentsTests
         Assert.False(ScreenAssignments.IsValidSource("tw:yueri crop:0/686:0/0"));
         Assert.False(ScreenAssignments.IsValidSource("tw:yueri crop:972/686:-1/0"));
         Assert.False(ScreenAssignments.IsValidSource("tw:yueri crop:972,686:0,0"));
+        // fps:N picks ffmpeg's constant output rate, from the set that maps to whole samples.
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri fps:60"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri fps:24"));
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri pan"));
+        var panned = new ScreenAssignments();
+        panned.Set(19001003, "tw:yueri pan");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/yueri pan rolloff:0/352.1/1567/1000/12000/1/0",
+            panned.Resolve("channel-screen", null, 19001003)
+        );
+        Assert.True(
+            ScreenAssignments.IsValidSource("tw:yueri rolloff:-17340/375/-20639/1000/12000")
+        );
+        Assert.True(
+            ScreenAssignments.IsValidSource("tw:yueri rolloff:-17340/375/-20639/1000/12000/1/0.2")
+        );
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri rolloff:1/2/3"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri rolloff:1/2/3/4/5/6"));
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri rolloff:500/6000"));
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri rolloff:500/6000/1/0.3"));
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri rolloff:flat"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri audio:500/6000"));
+        Assert.Null(ScreenAssignments.DefaultRolloffWord(30000001));
         Assert.Equal(
             "streamlink:https://twitch.tv/yueri box:20/20/446/303",
             ScreenAssignments.ToHookSource("tw:yueri box:20/20/446/303")
@@ -236,6 +299,14 @@ public sealed class ScreenAssignmentsTests
         Assert.Equal(
             "electron:https://example.com scroll:120/40",
             ScreenAssignments.ToHookSource("electron:https://example.com scroll:120/40")
+        );
+        // Town screens get the same default distance rolloff as other streams.
+        var electronTown = new ScreenAssignments();
+        electronTown.Set(10990100, "electron:https://example.com scrollx:16");
+        Assert.Equal(
+            "electron:https://example.com scrollx:16 "
+                + ScreenAssignments.DefaultRolloffWord(10990100),
+            electronTown.Resolve("channel-screen", null, 10990100)
         );
     }
 }

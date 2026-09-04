@@ -983,7 +983,8 @@ public class CmdExecHandler(
                     + "Extras: main:<url> (a frame page under the main panel; box:x/y/w/h is then relative to it), banner:<url> (the Stage banner strip, else the title card),\n"
                     + "box:x/y/w/h to place the video inside the crop, crop:sw/sh:cx/cy to render it at sw x sh and show the box-sized window at cx,cy,\n"
                     + "scrollx:N scrolly:N or scroll:x/y to pan an electron: document, scale:N for browser zoom (1=100%; not a texture stretch),\n"
-                    + "key[:RRGGBB] to colour-key it.",
+                    + "key[:RRGGBB] to colour-key it,\n"
+                    + "fps:N (15/20/25/30/50/60), rolloff:near/far, rolloff:near/far/max/min (gains to fade between, default 1/0), rolloff:x/y/z/near/far, rolloff:x/y/z/near/far/max/min or rolloff:flat, pan to also stereo-pan by bearing.",
                 ct
             );
             return;
