@@ -62,11 +62,13 @@ body.tv #comments{top:36px}
 <iframe id="frame" style="position:absolute;left:0;top:0;width:0;height:0;border:0;display:none" frameborder="0" scrolling="no"></iframe>
 <iframe id="banner" style="position:absolute;left:0;top:0;width:0;height:0;border:0;display:none" frameborder="0" scrolling="no"></iframe>
 <div id="external_nico_0"></div>
-<!-- The client reads this element's .value for "value=<state> " (space-terminated) to learn the
-     player state, and gates ext_setCommentVisible's local flush on it reading playing or paused.
-     A plain div's .value is undefined, so this has to be a real form control, not matching
-     text as innerHTML. -->
-<input id="statusForm" type="text" readonly value="value=playing (statusForm)" style="position:absolute;left:9px;top:580px;font-size:11px;color:#888;border:0;background:transparent;padding:0" />
+<!-- The client reads this element's innerHTML (IHTMLElement::get_innerHTML, confirmed in the
+     binary's statusForm parser) for "value=<state> " (space-terminated) to learn the player
+     state: load, playing, paused, buffering, stopped, end, seeking. Anything else, including
+     an <input>, whose innerHTML is empty, parses as state 0, and the client crashes a few
+     seconds after a TV page that never leaves that state. So this stays a plain element with
+     the token in its text, never a form control. -->
+<div id="statusForm" style="position:absolute;left:9px;top:580px;font-size:11px;color:#888">value=playing (statusForm)</div>
 <div id="outside">This line is outside every crop rectangle and should never be visible in game.</div>
 <script>
 (function(){
@@ -196,9 +198,9 @@ body.tv #comments{top:36px}
     var stream=m&&!isPage(m)&&m!=='blank'&&m!=='title';
     document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+';box='+b.join(',')+(cr?';crop='+cr:'')+(sc?';scrollx='+sc[0]+';scrolly='+sc[1]:'')+(sca?';scale='+sca:'')+(k?';key='+k:'')+(f?';fps='+f:'')+(ro?';rolloff='+ro:'')+(pn?';pan=1':'')
       +(tl.start?';start='+tl.start+';offset='+tl.offset+(tl.paused?';paused='+tl.paused:''):'')+(state.paused?';hold=1':'')+(stream?';src='+m:'');
-    // The client forwards volume while the state is playing or paused, and only flushes a
-    // pending comment-visibility toggle then too; it reads the word from .value here.
-    var sf=$('statusForm'); if(sf) sf.value='value='+(tl.paused||state.paused?'paused':'playing')+' (statusForm)';
+    // The client forwards volume, and flushes a pending comment-visibility toggle, only while
+    // the state is playing or paused; it reads the word from this element's innerHTML.
+    var sf=$('statusForm'); if(sf) sf.innerHTML='value='+(tl.paused||state.paused?'paused':'playing')+' (statusForm)';
   }
   // "title": a title card, "aisp-emu" centred in each panel on a dark background ('all'), or
   // on the Stage banner alone ('top') while the main panel plays something and nothing else
