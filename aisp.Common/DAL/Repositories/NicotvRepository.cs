@@ -92,7 +92,9 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         nicotv.ChannelId = data.ChannelId;
         nicotv.MovieId = data.MovieId;
         nicotv.PlaybackState = data.PlaybackState;
-        nicotv.CommentVisibility = data.CommentVisibility;
+        // Not CommentVisibility: the client's TV panel fills that field with a constant (visible)
+        // in every snapshot it sends, so it says nothing about what the TV shows. The stored value
+        // is the server's default for the TV (see Nicotv.CommentVisibility).
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;

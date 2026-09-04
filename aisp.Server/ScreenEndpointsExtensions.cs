@@ -1,6 +1,7 @@
 using System.Net;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Network;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -58,7 +59,7 @@ internal static class ScreenEndpointsExtensions
                     ? parsedTvId
                     : null;
                 var action = query["action"].ToString();
-                var (route, movieId) = await ResolveRoomTvAsync(
+                var (route, movieId, _) = await ResolveRoomTvAsync(
                     query["route"].ToString(),
                     query,
                     nicotvRepository,
@@ -114,7 +115,7 @@ internal static class ScreenEndpointsExtensions
                         "screen-source poll {Query}",
                         context.Request.QueryString.Value
                     );
-                var (route, movieId) = await ResolveRoomTvAsync(
+                var (route, movieId, _) = await ResolveRoomTvAsync(
                     query["route"].ToString(),
                     query,
                     nicotvRepository,
@@ -133,7 +134,9 @@ internal static class ScreenEndpointsExtensions
     /// appends to its own Notify* broadcasts and get-info/open responses): when it does, the
     /// database's own movie and channel state for that Nicotv is authoritative over whatever the
     /// client's URL still says, and the route becomes room-tv so
-    /// <see cref="ScreenAssignments.Resolve"/> plays it.
+    /// <see cref="ScreenAssignments.Resolve"/> plays it. The same row carries the TV's comment
+    /// overlay default, which the page starts from (the client itself never sets it, see
+    /// AreaNicotvOpenByFurnitureHandler).
     ///
     /// channel-screen's own tvid= query parameter is a different thing: the client's own word,
     /// not ours. It is the channel number itself (0 through 4, and 0 is a real channel, not "no
@@ -144,7 +147,11 @@ internal static class ScreenEndpointsExtensions
     /// channel:&lt;n&gt;, the same way the database lookup above does for a channel-tuned Nicotv
     /// row.
     /// </summary>
-    private static async Task<(string Route, string? MovieId)> ResolveRoomTvAsync(
+    private static async Task<(
+        string Route,
+        string? MovieId,
+        bool CommentsVisible
+    )> ResolveRoomTvAsync(
         string route,
         IQueryCollection query,
         INicotvRepository nicotvRepository,
@@ -161,7 +168,11 @@ internal static class ScreenEndpointsExtensions
                 : !string.IsNullOrEmpty(nicotv.MovieId) ? nicotv.MovieId
                 : nicotv.ChannelId != 0 ? $"channel:{nicotv.ChannelId}"
                 : null;
-            return ("room-tv", content is null ? null : $"{content} n:{nicotvId}");
+            return (
+                "room-tv",
+                content is null ? null : $"{content} n:{nicotvId}",
+                nicotv?.CommentVisibility == NicotvCommentVisibility.Visible
+            );
         }
 
         if (
@@ -170,9 +181,9 @@ internal static class ScreenEndpointsExtensions
             && MyRoomInfo.IsMyRoomMap(mapId)
             && uint.TryParse(query["tvid"], out var channelNumber)
         )
-            return ("room-tv", $"channel:{channelNumber}");
+            return ("room-tv", $"channel:{channelNumber}", false);
 
-        return (route, query["movieid"]);
+        return (route, query["movieid"], false);
     }
 
     private static async Task<IResult> ServePage(
@@ -202,7 +213,7 @@ internal static class ScreenEndpointsExtensions
         uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
         var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
         uint? requestTvId = uint.TryParse(query["tvid"], out var parsedTvId) ? parsedTvId : null;
-        var (effectiveRoute, movieId) = await ResolveRoomTvAsync(
+        var (effectiveRoute, movieId, commentsVisible) = await ResolveRoomTvAsync(
             route,
             query,
             nicotvRepository,
@@ -219,12 +230,15 @@ internal static class ScreenEndpointsExtensions
         // keeps polling. roomtv is a separate, narrower flag: only a genuine room TV shows the
         // comment overlay, never the Stage or a town screen, no matter what the page is told by
         // ext_setCommentVisible; the page cannot tell a room TV from anything else on its own,
-        // only the server (map lookup) can.
+        // only the server (map lookup) can. comment=1 is the TV's own default for the overlay
+        // (off when absent): the client never sets it, so the page must start from the server's
+        // value, and it starts over on every re-navigation.
         var isRoomTv = effectiveRoute == "room-tv";
         var noPoll = isRoomTv || effectiveRoute == "live-watch";
         var titleSuffix =
             (isRoomTv ? ";roomtv=1" : "")
             + (noPoll ? ";nopoll=1" : "")
+            + (commentsVisible ? ";comment=1" : "")
             + (source is not null ? $";src={WebUtility.HtmlEncode(source)}" : "");
 
         var html = await File.ReadAllTextAsync(file.PhysicalPath, context.RequestAborted);

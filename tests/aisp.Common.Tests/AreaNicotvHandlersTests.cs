@@ -109,6 +109,7 @@ public sealed class AreaNicotvHandlersTests
                 Assert.Equal(2u, stored.FurnitureId);
                 Assert.Equal("Hello World", stored.MovieId);
                 Assert.Equal(NicotvPlaybackState.Playing, stored.PlaybackState);
+                Assert.Equal(NicotvCommentVisibility.Hidden, stored.CommentVisibility);
 
                 var repository = new NicotvRepository(db);
                 var session = CreateVisitorSession();
@@ -132,7 +133,7 @@ public sealed class AreaNicotvHandlersTests
     }
 
     [Fact]
-    public async Task OpenByFurniture_NotifiesActorAndPeerWhenCommentVisibilityChanges()
+    public async Task OpenByFurniture_KeepsTheServersCommentVisibility()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -149,6 +150,9 @@ public sealed class AreaNicotvHandlersTests
             state.RegisterClient(ServerType.Area, actor);
             state.RegisterClient(ServerType.Area, peer);
 
+            // The client's TV panel sends every open snapshot as comments visible, whatever the TV
+            // shows, and has no request for the field at all: it is the server's default for the
+            // TV (off), reaches the page through its title, and is never read back from a client.
             var openHandler = new AreaNicotvOpenByFurnitureHandler(repository, state);
             await ((IPacketHandler)openHandler).HandleAsync(
                 BuildOpenPayload(
@@ -158,47 +162,31 @@ public sealed class AreaNicotvHandlersTests
                 actor,
                 ct
             );
-            var nicotvId = checked(
-                (uint)
-                    Assert
-                        .IsType<Nicotv>(await repository.GetOrCreateForFurnitureAsync(42, 2, ct))
-                        .Id
+            var stored = Assert.IsType<Nicotv>(
+                await repository.GetOrCreateForFurnitureAsync(42, 2, ct)
+            );
+            Assert.Equal(NicotvCommentVisibility.Hidden, stored.CommentVisibility);
+            var opened = Assert.Single(actor.Sent, p => p.Type == PacketType.NicotvOpenResponse);
+            Assert.Equal(
+                NicotvCommentVisibility.Hidden,
+                NicotvData.FromBytes(opened.Payload.AsSpan(sizeof(uint) * 2)).CommentVisibility
             );
             actor.Sent.Clear();
             peer.Sent.Clear();
 
-            // Comment visibility has no dedicated set request of its own (confirmed against the
-            // client binary): the toggle button re-sends open-by-furniture with the new snapshot.
-            // recv_nicotv_set_comment_visible_r does not call the JS setter, only
-            // recv_notify_nicotv_set_comment_visible does, so the clicker needs that notify too,
-            // not just peers.
+            // A second open with the same snapshot changes nothing: no comment-visibility reply or
+            // notify goes out, to the clicker or to peers.
             await ((IPacketHandler)openHandler).HandleAsync(
                 BuildOpenPayload(
                     2,
-                    new NicotvData(commentVisibility: NicotvCommentVisibility.Hidden)
+                    new NicotvData(commentVisibility: NicotvCommentVisibility.Visible)
                 ),
                 actor,
                 ct
             );
-
-            Assert.Equal(
-                [
-                    PacketType.NicotvSetCommentVisibleResponse,
-                    PacketType.NotifyNicotvSetCommentVisible,
-                    PacketType.NicotvOpenResponse,
-                ],
-                actor.Sent.Select(p => p.Type)
-            );
-            Assert.Equal(
-                BuildUIntPayload(nicotvId, (uint)NicotvCommentVisibility.Hidden),
-                actor.Sent[1].Payload
-            );
-            var peerNotify = Assert.Single(peer.Sent);
-            Assert.Equal(PacketType.NotifyNicotvSetCommentVisible, peerNotify.Type);
-            Assert.Equal(
-                BuildUIntPayload(nicotvId, (uint)NicotvCommentVisibility.Hidden),
-                peerNotify.Payload
-            );
+            var only = Assert.Single(actor.Sent);
+            Assert.Equal(PacketType.NicotvOpenResponse, only.Type);
+            Assert.Empty(peer.Sent);
         }
         finally
         {

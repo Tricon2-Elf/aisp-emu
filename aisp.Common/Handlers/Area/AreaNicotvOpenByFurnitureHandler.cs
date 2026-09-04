@@ -38,7 +38,6 @@ public sealed class AreaNicotvOpenByFurnitureHandler(
         );
         var previousPlayback = existing?.PlaybackState;
         var previousMovieId = existing?.MovieId;
-        var previousCommentVisibility = existing?.CommentVisibility;
 
         var nicotv = await nicotvRepository.UpdateForFurnitureAsync(
             roomId,
@@ -51,8 +50,12 @@ public sealed class AreaNicotvOpenByFurnitureHandler(
 
         var nicotvId = checked((uint)nicotv.Id);
 
-        // Client has no dedicated send for comment-visible; open carries the full NicotvData
-        // snapshot, so broadcast peer notifies for fields that changed.
+        // Open carries the client's NicotvData snapshot, so peers get notifies for the fields that
+        // changed. Not comment visibility: the TV panel builds this snapshot from constants
+        // (playing, comments visible) whatever the TV shows, and the client has no request for
+        // that field at all (its panel button is an empty case in the binary). The stored value
+        // is the server's own default, which reaches the page in its title and is never read
+        // back from here; only NotifyNicotvSetCommentVisible can change it on a running client.
         if (previousPlayback is null || previousPlayback != nicotv.PlaybackState)
         {
             await MyRoomFurnitureNotification.BroadcastToRoomAsync(
@@ -81,35 +84,6 @@ public sealed class AreaNicotvOpenByFurnitureHandler(
                     NicotvMapper.WithNicotvId(nicotv.MovieId, nicotvId)
                 ).ToBytes(),
                 includeSource: false,
-                ct
-            );
-        }
-
-        if (
-            previousCommentVisibility is null
-            || previousCommentVisibility != nicotv.CommentVisibility
-        )
-        {
-            await session.SendAsync(
-                PacketType.NicotvSetCommentVisibleResponse,
-                new NicotvSetCommentVisibleResponse(0, nicotvId).ToBytes(),
-                ct
-            );
-            // Comment visibility has no dedicated set request of its own (confirmed: the client
-            // binary has no send for it): the toggle button re-sends open-by-furniture with the
-            // new snapshot, diffed above. recv_nicotv_set_comment_visible_r (just sent) does not
-            // call the JS setter either, only recv_notify_nicotv_set_comment_visible does, so the
-            // clicker needs this notify too, same as set-movie's own _r-is-a-no-op case.
-            await MyRoomFurnitureNotification.BroadcastToRoomAsync(
-                state,
-                session,
-                session.MyRoomId,
-                PacketType.NotifyNicotvSetCommentVisible,
-                new NotifyNicotvSetCommentVisible(
-                    nicotvId,
-                    (uint)nicotv.CommentVisibility
-                ).ToBytes(),
-                includeSource: true,
                 ct
             );
         }

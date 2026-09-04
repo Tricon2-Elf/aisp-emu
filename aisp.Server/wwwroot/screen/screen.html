@@ -26,7 +26,9 @@ body.tv #meta{top:32px}
 #calls{position:absolute;left:12px;bottom:8px;width:90%;height:90px;font-size:12px;color:#fc9;overflow:hidden}
 #pulse{position:absolute;right:12px;top:10px;width:24px;height:24px;background:#f80}
 /* Dummy feedback for ext_setCommentVisible: no real comment data; the toggle switches the
-   comment overlay (see .c below) on and off, and this small on/off indicator with it. */
+   comment overlay (see .c below) on and off. This small on/off indicator is diagnostics only:
+   it sits inside the TV's crop and a keyed room TV lets it through over the video, so it is
+   hidden with the other diagnostics whenever a real source plays. */
 #comments{position:absolute;right:12px;top:40px;font-size:12px;color:#8f8}
 body.tv #comments{top:36px}
 /* The comment overlay itself: MS Gothic at 16 px is a bitmap strike, no smoothing, so the
@@ -102,7 +104,7 @@ body.tv #comments{top:36px}
   var params=[]; for(var k in q) if(q.hasOwnProperty(k)) params.push(k+'='+q[k]);
   var meta=$('meta'), calls=$('calls'), ext=$('external_nico_0'), pulse=$('pulse');
   var mode=document.documentMode||'none', t0=new Date().getTime(), log=[];
-  var state={ volume:100, mute:false, repeat:true, comment:true, playhead:0, total:0, paused:false };
+  var state={ volume:100, mute:false, repeat:true, comment:false, playhead:0, total:0, paused:false };
   function note(s){
     log.unshift(s); if(log.length>6) log.length=6; calls.innerHTML=log.join('<br>');
   }
@@ -120,6 +122,11 @@ body.tv #comments{top:36px}
   // screen (a channel-screen that did not resolve to a room TV, Akihabara confirmed) has neither
   // guarantee, so it is the one case still left polling.
   var noPoll=/;nopoll=1(?:;|$)/.test(document.title||'');
+  // The comment overlay starts from the server's default for this TV (comment=1 in the title,
+  // otherwise off). The client never sets it on its own: its panel button is an empty case in
+  // the binary, and only the server's set-comment-visible notify (or the launcher hook filling
+  // that case in) reaches ext_setCommentVisible. It starts over on every re-navigation.
+  state.comment=/;comment=1(?:;|$)/.test(document.title||'');
   var frame=$('frame'), bannerFrame=$('banner');
   function isPage(v){ return /^https?:\/\//i.test(v); }
   // "<main> [main:<url>] [banner:<url>] [<url>] [box:x/y/w/h] ...": the main source goes to the
@@ -160,7 +167,12 @@ body.tv #comments{top:36px}
   }
   // The source's own key wins if it has one; otherwise the comment overlay forces the bare
   // DirectDraw key on so its text (drawn outside the key colour) survives the hook's video fill.
-  function effectiveKey(v){ return keyOf(v) || (roomTv && state.comment ? '100010' : ''); }
+  // A room TV is keyed whether or not comments are shown: the hook composites the page over the
+  // video by key colour, and switching it between keyed and plain on a toggle races the page's
+  // repaint, which shows one frame of the page's black base and indicator before the video
+  // returns. Keying a TV-sized box every frame costs nothing noticeable, so the toggle only
+  // hides the comment layer.
+  function effectiveKey(v){ return keyOf(v) || (roomTv ? '100010' : ''); }
   // crop:sw/sh:cx/cy: the hook renders the picture at sw x sh and paints the box-sized window
   // starting at cx,cy of it (zoom in, or cut a region out). For electron: sw/sh is the browser's
   // layout viewport. Published as crop=sw,sh,cx,cy.
@@ -241,7 +253,7 @@ body.tv #comments{top:36px}
   }
   // While a real source is up, the page is a blank black base under it.
   function showDiagnostics(on){
-    var ids=['title','meta','calls','pulse','statusForm'];
+    var ids=['title','meta','calls','pulse','statusForm','comments'];
     for(var i=0;i<ids.length;i++){ var e=$(ids[i]); if(e) e.style.visibility=on?'visible':'hidden'; }
     var leds=[$('led-top'),$('led-main')];
     for(var k=0;k<leds.length;k++) leds[k].style.background=on?'#1a1a2e':'#000';
