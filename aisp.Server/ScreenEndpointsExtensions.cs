@@ -35,8 +35,9 @@ internal static class ScreenEndpointsExtensions
                     HttpContext context,
                     IWebHostEnvironment environment,
                     ScreenAssignments assignments,
-                    INicotvRepository nicotvRepository
-                ) => ServePage(route, context, environment, assignments, nicotvRepository)
+                    INicotvRepository nicotvRepository,
+                    ILoggerFactory loggers
+                ) => ServePage(route, context, environment, assignments, nicotvRepository, loggers)
             );
         // Moves a video's shared timeline for everyone; the reply is the new source line. The
         // page does not use it yet: the client calls its ext_play/ext_pause around its own
@@ -53,6 +54,9 @@ internal static class ScreenEndpointsExtensions
                 var query = context.Request.Query;
                 uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
                 var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
+                uint? requestTvId = uint.TryParse(query["tvid"], out var parsedTvId)
+                    ? parsedTvId
+                    : null;
                 var action = query["action"].ToString();
                 var (route, movieId) = await ResolveRoomTvAsync(
                     query["route"].ToString(),
@@ -77,7 +81,12 @@ internal static class ScreenEndpointsExtensions
                     );
                 context.Response.Headers.CacheControl = "no-store";
                 return Results.Json(
-                    new { applied, src = assignments.Resolve(route, movieId, mapId, channel) ?? "" }
+                    new
+                    {
+                        applied,
+                        src = assignments.Resolve(route, movieId, mapId, channel, requestTvId)
+                            ?? "",
+                    }
                 );
             }
         );
@@ -87,19 +96,31 @@ internal static class ScreenEndpointsExtensions
             async (
                 HttpContext context,
                 ScreenAssignments assignments,
-                INicotvRepository nicotvRepository
+                INicotvRepository nicotvRepository,
+                ILoggerFactory loggers
             ) =>
             {
                 var query = context.Request.Query;
                 uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
                 var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
+                uint? requestTvId = uint.TryParse(query["tvid"], out var parsedTvId)
+                    ? parsedTvId
+                    : null;
+                // TEMPORARY: log the raw query so we can see exactly what the client is polling
+                // with. Remove once the tvid round-trip is confirmed end to end.
+                loggers
+                    .CreateLogger("aisp.Server.ScreenEvents")
+                    .LogInformation(
+                        "screen-source poll {Query}",
+                        context.Request.QueryString.Value
+                    );
                 var (route, movieId) = await ResolveRoomTvAsync(
                     query["route"].ToString(),
                     query,
                     nicotvRepository,
                     context.RequestAborted
                 );
-                var source = assignments.Resolve(route, movieId, mapId, channel);
+                var source = assignments.Resolve(route, movieId, mapId, channel, requestTvId);
                 context.Response.Headers.CacheControl = "no-store";
                 return Results.Json(new { src = source ?? "" });
             }
@@ -109,10 +130,19 @@ internal static class ScreenEndpointsExtensions
 
     /// <summary>
     /// A room TV may identify the furniture it's for as an n: tag on movieid (the tag the server
-    /// appends to its own Notify* broadcasts and get-info/open responses): when it does,
-    /// the database's own movie state for that Nicotv is authoritative over whatever the
+    /// appends to its own Notify* broadcasts and get-info/open responses): when it does, the
+    /// database's own movie and channel state for that Nicotv is authoritative over whatever the
     /// client's URL still says, and the route becomes room-tv so
     /// <see cref="ScreenAssignments.Resolve"/> plays it.
+    ///
+    /// channel-screen's own tvid= query parameter is a different thing: the client's own word,
+    /// not ours. It is the channel number itself (0 through 4, and 0 is a real channel, not "no
+    /// channel"), sent when a room TV is tuned to a channel rather than a typed movie, including
+    /// on room re-entry. It is only a channel reference on a MyRoom map: a town map's own screens
+    /// (confirmed on Akihabara) send a tvid= too, and treating that as a channel would override
+    /// the town screen's own /screen assignment. So only a room TV's tvid= indirects through
+    /// channel:&lt;n&gt;, the same way the database lookup above does for a channel-tuned Nicotv
+    /// row.
     /// </summary>
     private static async Task<(string Route, string? MovieId)> ResolveRoomTvAsync(
         string route,
@@ -124,9 +154,23 @@ internal static class ScreenEndpointsExtensions
         if (ScreenAssignments.TryGetNicotvId(query["movieid"], out var nicotvId))
         {
             var nicotv = await nicotvRepository.GetByIdAsync(nicotvId, ct);
-            var content = string.IsNullOrEmpty(nicotv?.MovieId) ? null : nicotv.MovieId;
+            // A movie id and a channel are exclusive on a Nicotv row (see NicotvRepository), so
+            // at most one of these is ever set.
+            var content =
+                nicotv is null ? null
+                : !string.IsNullOrEmpty(nicotv.MovieId) ? nicotv.MovieId
+                : nicotv.ChannelId != 0 ? $"channel:{nicotv.ChannelId}"
+                : null;
             return ("room-tv", content is null ? null : $"{content} n:{nicotvId}");
         }
+
+        if (
+            route == "channel-screen"
+            && uint.TryParse(query["map"], out var mapId)
+            && MyRoomInfo.IsMyRoomMap(mapId)
+            && uint.TryParse(query["tvid"], out var channelNumber)
+        )
+            return ("room-tv", $"channel:{channelNumber}");
 
         return (route, query["movieid"]);
     }
@@ -136,28 +180,43 @@ internal static class ScreenEndpointsExtensions
         HttpContext context,
         IWebHostEnvironment environment,
         ScreenAssignments assignments,
-        INicotvRepository nicotvRepository
+        INicotvRepository nicotvRepository,
+        ILoggerFactory loggers
     )
     {
         var file = environment.WebRootFileProvider.GetFileInfo("screen/screen.html");
         if (!file.Exists || file.PhysicalPath is null)
             return Results.NotFound();
 
+        // TEMPORARY: log the raw query of the page navigation itself. Remove once the tvid
+        // round-trip is confirmed end to end.
+        loggers
+            .CreateLogger("aisp.Server.ScreenEvents")
+            .LogInformation(
+                "screen page GET /ai-sp/{Route}{Query}",
+                route,
+                context.Request.QueryString.Value
+            );
+
         var query = context.Request.Query;
         uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
         var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
+        uint? requestTvId = uint.TryParse(query["tvid"], out var parsedTvId) ? parsedTvId : null;
         var (effectiveRoute, movieId) = await ResolveRoomTvAsync(
             route,
             query,
             nicotvRepository,
             context.RequestAborted
         );
-        var source = assignments.Resolve(effectiveRoute, movieId, mapId, channel);
+        var source = assignments.Resolve(effectiveRoute, movieId, mapId, channel, requestTvId);
 
-        // A room TV never needs the page to poll: the client re-navigates it on every assignment
-        // change (movie set, channel switch, room re-entry). live-watch (the Stage) is pushed
-        // too: /screen sends it notify_nicolive_reload (CmdExecHandler). A /channel-screen is a
-        // town screen (confirmed on Akihabara) with neither guarantee, so it alone keeps polling.
+        // A genuine room TV (whether reached as /room-tv, or as /channel-screen resolved onto
+        // one by a MyRoom map above) never needs the page to poll: the client re-navigates it on
+        // every assignment change (movie set, channel switch, room re-entry). live-watch (the
+        // Stage) is pushed too: both /screen and /channel on a map it is bound to send it
+        // notify_nicolive_reload (CmdExecHandler). A /channel-screen that did not resolve to a
+        // room TV is a town screen (confirmed on Akihabara) with neither guarantee, so it alone
+        // keeps polling.
         var noPoll = effectiveRoute is "room-tv" or "live-watch";
         var titleSuffix =
             (noPoll ? ";nopoll=1" : "")

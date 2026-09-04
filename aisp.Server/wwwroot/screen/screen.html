@@ -96,9 +96,9 @@ body.tv #comments{top:36px}
   // the source there when this page was served, and it must survive every update.
   var src=(function(){ var m=/;src=(.*)$/.exec(document.title||''); return m?m[1]:''; })();
   // Whether this page needs to poll at all: not for a room TV, which the client re-navigates on
-  // every assignment change, nor for live-watch (the Stage), which /screen pushes a reload to
-  // instead. A town screen (a channel-screen, Akihabara confirmed) has neither guarantee, so it
-  // is the one case left polling.
+  // every assignment change, nor for live-watch (the Stage), which /screen and /channel both push
+  // a reload to instead. A town screen (a channel-screen that did not resolve to a room TV,
+  // Akihabara confirmed) has neither guarantee, so it is the one case left polling.
   var noPoll=/;nopoll=1(?:;|$)/.test(document.title||'');
   var frame=$('frame'), bannerFrame=$('banner');
   function isPage(v){ return /^https?:\/\//i.test(v); }
@@ -338,10 +338,10 @@ body.tv #comments{top:36px}
   // it, so it keeps asking and republishes the title, which the hook follows, unless noPoll
   // (above) says the server already pushes this page a reload instead: a room TV re-navigates on
   // every assignment change on its own (movie set, channel switch, room re-entry), and live-watch
-  // (the Stage) gets notify_nicolive_reload from /screen. A /channel-screen (a town map's own
-  // screen, Akihabara confirmed) has neither guarantee, so it is the one case polling; the
-  // pushed cases never run this at all, so a relaxed 30s interval here only affects that one
-  // less time-sensitive case.
+  // (the Stage) gets notify_nicolive_reload from both /screen and /channel. A /channel-screen
+  // that is not a room TV (a town map's own screen, Akihabara confirmed) has neither guarantee,
+  // so it is the one case polling; the pushed cases never run this at all, so a relaxed 30s
+  // interval here only affects that one less time-sensitive case.
   function pollSource(){
     try{
       var xhr=new XMLHttpRequest();

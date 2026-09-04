@@ -28,6 +28,8 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
     // (see the n: tag below), or by map and channel otherwise: room instances share a map id,
     // and the channel the hook adds to the TV's URL is not reliably one room's own (it is the
     // player's session slot, not the room), so that id is what actually distinguishes rooms.
+    // Not tvid:, which is the client's own word for a channel number (see IsChannelSource), an
+    // unrelated thing.
     private readonly ConcurrentDictionary<string, Timeline> _byMovie = new(
         StringComparer.OrdinalIgnoreCase
     );
@@ -37,6 +39,37 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
 
     private static string NicotvKey(uint nicotvId) =>
         string.Create(CultureInfo.InvariantCulture, $"nicotv:{nicotvId}");
+
+    // What each numbered "AI channel" currently shows (livestream content only). The client's
+    // channel-screen route names channels in its own tvid= query (it climbs with the channel
+    // number while the NicotvId stays fixed), so the original game apparently modelled these as
+    // shared, reserved fake TVs. The shared-by-number behaviour is kept, backed by a plain
+    // channel map rather than fake furniture rows; channel:<n> is this server's vocabulary for
+    // it, resolved below. tvid= is the client's own word for a channel number, unrelated to the
+    // n: tag (see _byMovie).
+    private readonly ConcurrentDictionary<uint, string> _byChannel = new();
+
+    /// <summary>What channel &lt;n&gt; is currently assigned, or null if nothing is.</summary>
+    public string? GetChannelSource(uint channel) =>
+        _byChannel.TryGetValue(channel, out var source) ? source : null;
+
+    /// <summary>Clears channel &lt;n&gt;'s assignment; true if it had one.</summary>
+    public bool ClearChannelSource(uint channel) => _byChannel.TryRemove(channel, out _);
+
+    /// <summary>Assigns channel &lt;n&gt; a source; see <see cref="IsValidChannelContentSource"/>.</summary>
+    public void SetChannelSource(uint channel, string source) =>
+        _byChannel[channel] = Normalize(source);
+
+    /// <summary>Every map currently bound to channel &lt;n&gt; via channel:&lt;n&gt; (see /channel).</summary>
+    public IReadOnlyList<uint> GetMapsBoundToChannel(uint channel) =>
+        [
+            .. _byMap
+                .Where(entry =>
+                    IsChannelSource(entry.Value.Source)
+                    && ChannelNumberOf(entry.Value.Source) == channel
+                )
+                .Select(entry => entry.Key),
+        ];
 
     /// <summary>
     /// n:&lt;id&gt;: the Nicotv furniture's own database id, carried as a tag on a room TV's
@@ -200,7 +233,7 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
     /// The map with the Nico Live billboard (seedData/maps.json: "Stage"). notify_nicolive_reload
     /// only does anything there (confirmed on the shopping mall, which has none): the client has
     /// nothing on other maps that reacts to it, so sending it elsewhere is a silent no-op.
-    /// CmdExecHandler scopes its send to this map.
+    /// CmdExecHandler scopes both its sends (/screen, /channel) to this map.
     /// </summary>
     public const uint StageMapId = 19_001_003;
 
@@ -522,6 +555,47 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
     public static bool IsBrowserSource(string? source) =>
         IsElectronSource(source) || IsTwitchEmbedSource(source);
 
+    /// <summary>
+    /// channel:&lt;n&gt;: indirects to whatever /channel assigned channel n (see
+    /// <see cref="_byChannel"/>), resolved in <see cref="Resolve"/> before
+    /// <see cref="ToHookSource"/>. channel:auto indirects to whichever channel the requesting
+    /// screen's own tvid= says it is (a town map's screen may have a fixed one of its own, the
+    /// original game's apparent design; see <see cref="ResolveChannelIndirection"/>), rather
+    /// than a fixed number.
+    /// </summary>
+    public static bool IsChannelSource(string? source) =>
+        source is not null
+        && HasPrefix(
+            MainOf(source),
+            "channel:",
+            rest =>
+                string.Equals(rest, "auto", StringComparison.OrdinalIgnoreCase)
+                || uint.TryParse(rest, NumberStyles.None, CultureInfo.InvariantCulture, out _)
+        );
+
+    private static bool IsAutoChannelWord(string word) =>
+        string.Equals(word, "channel:auto", StringComparison.OrdinalIgnoreCase);
+
+    private static uint ChannelNumberOf(string source) =>
+        uint.Parse(MainOf(source).AsSpan(8), NumberStyles.None, CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// What /channel accepts for a channel's content: a bare stream, not a video with a shared
+    /// timeline (channels are livestream-only, with no per-channel pause/resume/seek) and not
+    /// another channel (no indirection chains). A channel is purely a source map: no box, key,
+    /// main:, crop: or other framing extras here; those belong on whoever references the
+    /// channel (a room TV typing channel:&lt;n&gt;, or /screen channel:&lt;n&gt; box:... key
+    /// main:...), since different screens frame the same channel differently. See
+    /// <see cref="ResolveChannelIndirection"/>, which keeps the reference's own extras and drops
+    /// the channel's word for its main token alone.
+    /// </summary>
+    public static bool IsValidChannelContentSource(string? source) =>
+        source is not null
+        && !ExtrasOf(source).Any()
+        && IsStreamSource(source)
+        && !IsVideoSource(source)
+        && !IsChannelSource(source);
+
     /// <summary>A video with a shared timeline (not a live stream): yt:, sm… and pattern:vod.
     /// The hook seeks to the shared position and /screen pause, resume and seek move it.</summary>
     public static bool IsVideoSource(string? source) =>
@@ -543,7 +617,8 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
         || IsNicoLiveSource(source)
         || IsYouTubeLiveSource(source)
         || IsVideoSource(source)
-        || IsPatternSource(source);
+        || IsPatternSource(source)
+        || IsChannelSource(source);
 
     /// <summary>
     /// Sources the launcher hook plays: the typed ids, plus (from /screen only)
@@ -644,16 +719,46 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
     }
 
     /// <summary>
-    /// The source a screen page should publish, given the route the hook sent the client to,
-    /// the movie id (room TVs only), the map the hook read from the client and, for a room TV,
-    /// the channel that tells its room instance apart from another one on the same map. Null
-    /// means the page shows its diagnostics. A typed movie id only reaches this for the typed
-    /// ids (<see cref="IsTypedSource"/>), the title card, the test page and the calibration
-    /// grid: anything else typed (the c: rectangles included) falls back to the map's
-    /// assignment. An unassigned room TV stays blank; an unassigned town screen shows the title
-    /// card.
+    /// Follows a channel:&lt;n&gt; or channel:auto main token to whatever /channel currently has
+    /// that channel assigned, keeping the reference's own extras (a room TV's channel button, or
+    /// /screen channel:&lt;n&gt; box:... key main:...) rather than the channel's, since a channel
+    /// is purely a source map: different screens frame the same channel differently, so framing
+    /// belongs on the reference, not stored on the channel (see
+    /// <see cref="IsValidChannelContentSource"/>). channel:auto uses the requesting screen's own
+    /// tvid= instead of a fixed number (a town map's screen may report a channel of its own, the
+    /// original game's apparent design), or the title card without one. An explicit channel:&lt;n&gt;
+    /// that is unassigned also resolves to the title card, same as an unassigned room TV's
+    /// channel button. Anything that is not a channel: word passes through untouched.
     /// </summary>
-    public string? Resolve(string route, string? movieId, uint? mapId, int channel = 0)
+    private string ResolveChannelIndirection(string source, uint? requestTvId)
+    {
+        var words = Normalize(source).Split(' ');
+        if (!IsChannelSource(words[0]))
+            return source;
+        var n = IsAutoChannelWord(words[0]) ? requestTvId : ChannelNumberOf(words[0]);
+        var content = n is { } number ? MainOf(GetChannelSource(number) ?? TitleCard) : TitleCard;
+        return string.Join(' ', new[] { content }.Concat(words.Skip(1)));
+    }
+
+    /// <summary>
+    /// The source a screen page should publish, given the route the hook sent the client to,
+    /// the movie id (room TVs only), the map the hook read from the client, for a room TV the
+    /// channel that tells its room instance apart from another one on the same map, and the
+    /// requesting screen's own tvid= (used only for channel:auto, see
+    /// <see cref="ResolveChannelIndirection"/>). Null means the page shows its diagnostics. A
+    /// typed movie id only reaches this for the typed ids (<see cref="IsTypedSource"/>), the
+    /// title card, the test page and the calibration grid: anything else typed (the c: rectangles
+    /// included) falls back to the map's assignment. An unassigned room TV stays blank; an
+    /// unassigned town screen defaults to channel:auto (the title card, absent a channel of its
+    /// own), same as an explicit /screen channel:auto would.
+    /// </summary>
+    public string? Resolve(
+        string route,
+        string? movieId,
+        uint? mapId,
+        int channel = 0,
+        uint? requestTvId = null
+    )
     {
         if (route == "room-tv" && movieId is not null)
         {
@@ -674,14 +779,16 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
                 return ToHookSource(typed) + " " + TimelineWords(timeline);
             }
             if (IsTypedSource(typed))
-                return ToHookSource(typed);
+                return ToHookSource(ResolveChannelIndirection(typed, requestTvId));
         }
         var entry = mapId is { } map && _byMap.TryGetValue(map, out var found) ? found : null;
         if (entry is null)
-            return route == "room-tv" ? Blank : TitleCard;
+            return route == "room-tv"
+                ? Blank
+                : ToHookSource(ResolveChannelIndirection("channel:auto", requestTvId));
         if (string.Equals(entry.Source, TestScreen, StringComparison.OrdinalIgnoreCase))
             return null;
-        var assigned = entry.Source;
+        var assigned = ResolveChannelIndirection(entry.Source, requestTvId);
         // Town screens attenuate with distance by default; an explicit rolloff word wins, filled
         // out to the hook's seven-number form; rolloff:flat drops it.
         var words = ToHookSource(assigned).Split(' ').ToList();

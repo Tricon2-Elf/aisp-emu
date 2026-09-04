@@ -20,6 +20,7 @@ public interface INicotvRepository
     );
     Task<Nicotv?> GetByIdInRoomAsync(int roomId, uint nicotvId, CancellationToken ct = default);
     Task<Nicotv?> GetByIdAsync(uint nicotvId, CancellationToken ct = default);
+    Task<IReadOnlyList<Nicotv>> GetByChannelAsync(uint channelId, CancellationToken ct = default);
     Task<Nicotv?> SetChannelAsync(
         int roomId,
         uint nicotvId,
@@ -119,6 +120,12 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
 
         return await db.Nicotvs.SingleOrDefaultAsync(x => x.Id == checked((int)nicotvId), ct);
     }
+
+    public async Task<IReadOnlyList<Nicotv>> GetByChannelAsync(
+        uint channelId,
+        CancellationToken ct = default
+    ) =>
+        channelId == 0 ? [] : await db.Nicotvs.Where(x => x.ChannelId == channelId).ToListAsync(ct);
 
     public async Task<Nicotv?> SetChannelAsync(
         int roomId,

@@ -97,6 +97,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -230,6 +231,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -348,6 +350,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -450,6 +453,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -594,6 +598,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms(["faggot"]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -834,6 +839,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -914,6 +920,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -996,6 +1003,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -1070,6 +1078,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -1162,6 +1171,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -1257,6 +1267,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -1351,6 +1362,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -1426,6 +1438,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -1557,6 +1570,7 @@ public class CmdExecHandlerTests
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
                 Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
@@ -2079,6 +2093,108 @@ public class CmdExecHandlerTests
         }
     }
 
+    [Fact]
+    public async Task ChannelCommand_SetsContentAndRejectsNonModeratorsAndInvalidSources()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var mod = CreateUserWithCharacter(1, 9001, "moduser", "ModChar", 10990100);
+            mod.Role = UserRole.Moderator;
+            var player = CreateUserWithCharacter(2, 8001, "player", "PlayerChar", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(mod, player);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var screenAssignments = new ScreenAssignments();
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
+                TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
+                screenAssignments,
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            // A non-moderator is refused, and the channel stays unassigned.
+            var playerMsgSession = new CapturingPlayerSession { User = player, UserId = player.Id };
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "tw:someone"),
+                playerMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(screenAssignments.GetChannelSource(2));
+            var refusal = Assert.Single(
+                playerMsgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var refusalReader = new PacketReader(refusal.Payload);
+            refusalReader.ReadUInt();
+            refusalReader.ReadUInt();
+            Assert.Contains(
+                "moderator",
+                refusalReader.ReadString("utf-8"),
+                StringComparison.OrdinalIgnoreCase
+            );
+
+            // A video (needs a shared timeline, which channels do not have) is rejected too.
+            var modMsgSession = new CapturingPlayerSession { User = mod, UserId = mod.Id };
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "yt:dQw4w9WgXcQ"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(screenAssignments.GetChannelSource(2));
+
+            // A moderator's livestream assignment sticks, normalised the same way /screen does.
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "tw:someone"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal("twitch:someone", screenAssignments.GetChannelSource(2));
+
+            // A room TV tuned to that channel (via channel:2, the same word /screen channel:2
+            // would bind a map to) resolves the assigned stream, not the title card.
+            Assert.Equal(
+                "streamlink:https://twitch.tv/someone",
+                screenAssignments.Resolve("room-tv", "channel:2 n:5", null)
+            );
+
+            // off clears it back to unassigned.
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "off"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(screenAssignments.GetChannelSource(2));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static CmdExecHandler CreateReportHandler(
         DbContextOptions<MainContext> options,
         SharedState state
@@ -2102,6 +2218,7 @@ public class CmdExecHandlerTests
             new AdventureWorkRepository(new MainContext(options)),
             WordFilter.FromTerms([]),
             new ScreenAssignments(),
+            new NicotvRepository(new MainContext(options)),
             Options.Create(new ServerOptions()),
             NullLogger<CmdExecHandler>.Instance
         );

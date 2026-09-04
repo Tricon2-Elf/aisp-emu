@@ -461,4 +461,123 @@ public sealed class ScreenAssignmentsTests
             electronTown.Resolve("channel-screen", null, 10990100)
         );
     }
+
+    [Fact]
+    public void Channels_AreSharedByNumber_LivestreamOnlyAndIndirectFromRoomTvsAndMaps()
+    {
+        // Livestream sources are valid channel content; a video (needs a timeline) or another
+        // channel (no indirection chains) is not.
+        Assert.True(ScreenAssignments.IsValidChannelContentSource("tw:someone"));
+        Assert.True(ScreenAssignments.IsValidChannelContentSource("twe:someone"));
+        Assert.True(ScreenAssignments.IsValidChannelContentSource("ytl:abc"));
+        Assert.True(ScreenAssignments.IsValidChannelContentSource("lv351315472"));
+        Assert.True(ScreenAssignments.IsValidChannelContentSource("streamlink:https://x/y"));
+        Assert.True(ScreenAssignments.IsValidChannelContentSource("pattern:live"));
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("yt:dQw4w9WgXcQ"));
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("sm11273499"));
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("lv351315472:vod"));
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("pattern:vod"));
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("channel:2"));
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("blank"));
+        // A channel is purely a source map: framing belongs on whoever references it, not here.
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("tw:someone box:0/0/10/10"));
+        Assert.False(ScreenAssignments.IsValidChannelContentSource("tw:someone key"));
+
+        var assignments = new ScreenAssignments();
+
+        // Unassigned: a room TV's channel button and a map bound to it both show the title card.
+        Assert.Null(assignments.GetChannelSource(2));
+        Assert.Equal("title", assignments.Resolve("room-tv", "channel:2 n:9", null));
+        assignments.Set(10990100, "channel:2");
+        Assert.Equal("title", assignments.Resolve("channel-screen", null, 10990100));
+
+        // Assigning the channel is what both a room TV tuned to it and a map bound to it follow,
+        // with no further wiring: it is the same channel:2 word either way.
+        assignments.SetChannelSource(2, "tw:someone");
+        // Normalized to its long form, like any other assignment.
+        Assert.Equal("twitch:someone", assignments.GetChannelSource(2));
+        // A live source drops any extras on the reference (n: included), same as any other
+        // typed, non-video room-tv source already does: it needs no shared timeline to key.
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone",
+            assignments.Resolve("room-tv", "channel:2 n:9", null)
+        );
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone "
+                + ScreenAssignments.DefaultRolloffWord(10990100),
+            assignments.Resolve("channel-screen", null, 10990100)
+        );
+
+        // Framing extras on the reference (/screen channel:2 box:... key main:...) survive
+        // indirection: only the channel: word is swapped for the channel's own main token, so
+        // the same channel can be framed differently on different screens.
+        assignments.Set(
+            10990200,
+            "channel:2 box:40/30/406/240 key main:https://example.com/vnframe.html"
+        );
+        Assert.Equal(
+            "streamlink:https://twitch.tv/someone box:40/30/406/240 key main:https://example.com/vnframe.html "
+                + ScreenAssignments.DefaultRolloffWord(10990200),
+            assignments.Resolve("channel-screen", null, 10990200)
+        );
+
+        // GetMapsBoundToChannel finds every map bound to it, and only that channel.
+        assignments.Set(19001003, "channel:2");
+        assignments.Set(30000001, "channel:3");
+        Assert.Equal(
+            [10990100u, 10990200u, 19001003u],
+            assignments.GetMapsBoundToChannel(2).Order()
+        );
+        Assert.Equal([30000001u], assignments.GetMapsBoundToChannel(3));
+
+        // Clearing it falls back to the title card again on both sides.
+        Assert.True(assignments.ClearChannelSource(2));
+        Assert.Null(assignments.GetChannelSource(2));
+        Assert.Equal("title", assignments.Resolve("room-tv", "channel:2 n:9", null));
+        Assert.Equal("title", assignments.Resolve("channel-screen", null, 10990100));
+    }
+
+    [Fact]
+    public void ChannelAuto_FollowsTheRequestingScreensOwnTvid_ButNeverOverridesAnExplicitSource()
+    {
+        Assert.True(ScreenAssignments.IsValidSource("channel:auto"));
+        Assert.True(ScreenAssignments.IsChannelSource("channel:auto"));
+
+        var assignments = new ScreenAssignments();
+        assignments.SetChannelSource(1, "tw:one");
+
+        // No tvid= on the request at all: an unassigned map shows the title card, for the routes
+        // and requests that never carry one (live-watch, screen, or a channel-screen request
+        // without it).
+        Assert.Equal("title", assignments.Resolve("channel-screen", null, 40000001));
+
+        // An unassigned map defaults to channel:auto: it follows the requesting screen's own
+        // tvid=, without needing an explicit /screen channel:auto first. (These map ids have no
+        // registered screen position, so no default rolloff word is added either way here.)
+        Assert.Equal(
+            "streamlink:https://twitch.tv/one",
+            assignments.Resolve("channel-screen", null, 40000001, requestTvId: 1)
+        );
+        // A requesting tvid= for an unassigned channel still falls back to the title card.
+        Assert.Equal(
+            "title",
+            assignments.Resolve("channel-screen", null, 40000001, requestTvId: 5)
+        );
+
+        // Explicit /screen channel:auto behaves identically to the unassigned default.
+        assignments.Set(40000002, "channel:auto");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/one",
+            assignments.Resolve("channel-screen", null, 40000002, requestTvId: 1)
+        );
+
+        // An explicit, non-channel /screen assignment always wins over the requesting screen's
+        // own tvid=: a moderator's direct assignment is authoritative, and a town screen's own
+        // tvid= must never override it.
+        assignments.Set(40000003, "tw:two");
+        Assert.Equal(
+            "streamlink:https://twitch.tv/two",
+            assignments.Resolve("channel-screen", null, 40000003, requestTvId: 1)
+        );
+    }
 }
