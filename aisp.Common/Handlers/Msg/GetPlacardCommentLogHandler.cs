@@ -24,7 +24,7 @@ public sealed class GetPlacardCommentLogHandler : IPacketHandler, IRequiresAuthe
             new NotifyPlacardCommentLog(
                 0,
                 request.PlacardId,
-                [new PlacardCommentLogEntry("AISpace", "Welcome to this Friend Link placard!")]
+                [new PlacardCommentLogEntry(string.Empty, "No comments")]
             ).ToBytes(),
             ct
         );

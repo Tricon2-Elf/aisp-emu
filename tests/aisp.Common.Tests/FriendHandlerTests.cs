@@ -12,6 +12,94 @@ namespace aisp.Common.Tests;
 
 public sealed class FriendHandlerTests
 {
+    [Fact]
+    public async Task ArbitraryTag_IsReturnedAfterSavingAndReconnecting()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        var ct = TestContext.Current.CancellationToken;
+        await TestDb.SeedCharacterAsync(options, 2, ct);
+
+        await using (var saveDb = new MainContext(options))
+        {
+            var saveHandler = new AreaFriendLinkTagChangeHandler(
+                new FriendRepository(saveDb),
+                WordFilter.FromTerms([])
+            );
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = 2,
+                User = await saveDb.Users.SingleAsync(ct),
+            };
+
+            var result = await saveHandler.HandleAsync(
+                new FriendLinkTagChangeRequest(3, "Anime"),
+                session,
+                ct
+            );
+
+            Assert.NotNull(result);
+            Assert.Equal(4u, new PacketReader(result!.ToBytes()).ReadUInt());
+        }
+
+        await using var reconnectDb = new MainContext(options);
+        var reconnectSession = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            User = await reconnectDb.Users.SingleAsync(ct),
+        };
+        var getHandler = new AreaFriendLinkTagGetHandler(new FriendRepository(reconnectDb));
+        var request = new PacketWriter();
+        request.Write(4u);
+
+        await getHandler.HandleAsync(request.ToBytes(), reconnectSession, ct);
+
+        var response = Assert.Single(
+            reconnectSession.Sent,
+            packet => packet.Type == PacketType.FriendLinkTagGetResponse
+        );
+        var reader = new PacketReader(response.Payload);
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(4u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(4u, reader.ReadUInt());
+        Assert.Equal("Anime", reader.ReadFixedString(61));
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(3u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public async Task ArbitraryTag_BlockedWordIsRejectedAndNotSaved()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        var ct = TestContext.Current.CancellationToken;
+        await TestDb.SeedCharacterAsync(options, 2, ct);
+
+        await using var db = new MainContext(options);
+        var handler = new AreaFriendLinkTagChangeHandler(
+            new FriendRepository(db),
+            WordFilter.FromTerms(["blockedword"])
+        );
+        var session = new CapturingPlayerSession
+        {
+            CharacterId = 2,
+            User = await db.Users.SingleAsync(ct),
+        };
+
+        var result = await handler.HandleAsync(
+            new FriendLinkTagChangeRequest(0, "BLOCKED-WORD"),
+            session,
+            ct
+        );
+
+        Assert.NotNull(result);
+        Assert.Equal(0u, new PacketReader(result!.ToBytes()).ReadUInt());
+        Assert.Empty(await db.FriendLinkTags.ToListAsync(ct));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

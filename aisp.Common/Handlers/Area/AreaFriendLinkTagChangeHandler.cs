@@ -5,7 +5,10 @@ using aisp.Network.Packets.Area;
 
 namespace aisp.Common.Handlers.Area;
 
-public sealed class AreaFriendLinkTagChangeHandler(IFriendRepository friends)
+public sealed class AreaFriendLinkTagChangeHandler(
+    IFriendRepository friends,
+    IWordFilter wordFilter
+)
     : PacketHandlerBase<FriendLinkTagChangeRequest, FriendLinkResultResponse>,
         IRequiresAuthenticatedSession
 {
@@ -20,6 +23,12 @@ public sealed class AreaFriendLinkTagChangeHandler(IFriendRepository friends)
     )
     {
         if (session.CharacterId > int.MaxValue)
+            return new FriendLinkResultResponse(0);
+
+        if (
+            !string.IsNullOrWhiteSpace(request.Name)
+            && wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.Name)
+        )
             return new FriendLinkResultResponse(0);
 
         var result = await friends.SetLinkTagAsync(
