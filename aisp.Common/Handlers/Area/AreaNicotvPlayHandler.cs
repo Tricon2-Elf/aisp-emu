@@ -37,13 +37,17 @@ public sealed class AreaNicotvPlayHandler(INicotvRepository nicotvRepository, Sh
         if (nicotv is null)
             return new NicotvPlayResponse(1, request.NicotvId);
 
+        // The client calls ext_play on its own screen browser for this notify regardless of
+        // Status (confirmed by testing both values), so Status goes out as-is rather than as a
+        // play/pause toggle. includeSource lets the sender see its own copy too, same as
+        // AreaNicotvSetMovieHandler.
         await MyRoomFurnitureNotification.BroadcastToRoomAsync(
             state,
             session,
             session.MyRoomId,
             PacketType.NotifyNicotvPlay,
             new NotifyNicotvPlay(request.NicotvId, request.Status).ToBytes(),
-            includeSource: false,
+            includeSource: true,
             ct
         );
         return new NicotvPlayResponse(0, request.NicotvId);

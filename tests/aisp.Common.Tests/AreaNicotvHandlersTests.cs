@@ -130,6 +130,81 @@ public sealed class AreaNicotvHandlersTests
     }
 
     [Fact]
+    public async Task OpenByFurniture_NotifiesActorAndPeerWhenCommentVisibilityChanges()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            await SeedNicotvFurnitureAsync(options, ct);
+
+            await using var db = new MainContext(options);
+            var repository = new NicotvRepository(db);
+
+            var state = new SharedState();
+            var actor = CreateVisitorSession(2);
+            var peer = CreateVisitorSession(3);
+            state.RegisterClient(ServerType.Area, actor);
+            state.RegisterClient(ServerType.Area, peer);
+
+            var openHandler = new AreaNicotvOpenByFurnitureHandler(repository, state);
+            await ((IPacketHandler)openHandler).HandleAsync(
+                BuildOpenPayload(
+                    2,
+                    new NicotvData(commentVisibility: NicotvCommentVisibility.Visible)
+                ),
+                actor,
+                ct
+            );
+            var nicotvId = checked(
+                (uint)
+                    Assert
+                        .IsType<Nicotv>(await repository.GetOrCreateForFurnitureAsync(42, 2, ct))
+                        .Id
+            );
+            actor.Sent.Clear();
+            peer.Sent.Clear();
+
+            // Comment visibility has no dedicated set request of its own (confirmed against the
+            // client binary): the toggle button re-sends open-by-furniture with the new snapshot.
+            // recv_nicotv_set_comment_visible_r does not call the JS setter, only
+            // recv_notify_nicotv_set_comment_visible does, so the clicker needs that notify too,
+            // not just peers.
+            await ((IPacketHandler)openHandler).HandleAsync(
+                BuildOpenPayload(
+                    2,
+                    new NicotvData(commentVisibility: NicotvCommentVisibility.Hidden)
+                ),
+                actor,
+                ct
+            );
+
+            Assert.Equal(
+                [
+                    PacketType.NicotvSetCommentVisibleResponse,
+                    PacketType.NotifyNicotvSetCommentVisible,
+                    PacketType.NicotvOpenResponse,
+                ],
+                actor.Sent.Select(p => p.Type)
+            );
+            Assert.Equal(
+                BuildUIntPayload(nicotvId, (uint)NicotvCommentVisibility.Hidden),
+                actor.Sent[1].Payload
+            );
+            var peerNotify = Assert.Single(peer.Sent);
+            Assert.Equal(PacketType.NotifyNicotvSetCommentVisible, peerNotify.Type);
+            Assert.Equal(
+                BuildUIntPayload(nicotvId, (uint)NicotvCommentVisibility.Hidden),
+                peerNotify.Payload
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task GetInfo_RejectsFurnitureOutsideTheCurrentRoom()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
@@ -218,9 +293,13 @@ public sealed class AreaNicotvHandlersTests
                 ct
             );
 
-            var response = Assert.Single(actor.Sent);
-            Assert.Equal(PacketType.NicotvSetChannelResponse, response.Type);
-            Assert.Equal(BuildUIntPayload(nicotvId, 1), response.Payload);
+            // The client's set_channel_r handler is a no-op, same as set_movie_r, so the sender
+            // needs the notify too, to load the channel on its own TV.
+            Assert.Equal(
+                [PacketType.NotifyNicotvSetChannel, PacketType.NicotvSetChannelResponse],
+                actor.Sent.Select(p => p.Type)
+            );
+            Assert.Equal(BuildUIntPayload(nicotvId, 1), actor.Sent[1].Payload);
             var notification = Assert.Single(peer.Sent);
             Assert.Equal(PacketType.NotifyNicotvSetChannel, notification.Type);
             Assert.Equal(BuildUIntPayload(nicotvId, 1), notification.Payload);
@@ -231,7 +310,7 @@ public sealed class AreaNicotvHandlersTests
             var closeHandler = new AreaNicotvCloseHandler(repository, state);
             await ((IPacketHandler)closeHandler).HandleAsync(BuildUIntPayload(nicotvId), actor, ct);
 
-            response = Assert.Single(actor.Sent);
+            var response = Assert.Single(actor.Sent);
             Assert.Equal(PacketType.NicotvCloseResponse, response.Type);
             Assert.Equal(BuildUIntPayload(0, nicotvId), response.Payload);
             notification = Assert.Single(peer.Sent);
@@ -338,9 +417,19 @@ public sealed class AreaNicotvHandlersTests
                 ct
             );
 
-            Assert.Equal(PacketType.NicotvPlayResponse, Assert.Single(actor.Sent).Type);
+            // The sender gets its own copy of the notify too, same as set_movie's notify (the
+            // client calls ext_play on receiving it, though testing showed that happens for
+            // either status, so it is not a play/pause toggle signal and Status goes out as-is).
+            Assert.Equal(
+                [PacketType.NotifyNicotvPlay, PacketType.NicotvPlayResponse],
+                actor.Sent.Select(p => p.Type)
+            );
             Assert.Equal(PacketType.NotifyNicotvPlay, Assert.Single(peer.Sent).Type);
             Assert.Equal(NicotvPlaybackState.Paused, nicotv.PlaybackState);
+
+            var notifyStatus = new PacketReader(actor.Sent[0].Payload);
+            notifyStatus.ReadUInt();
+            Assert.Equal((uint)NicotvPlaybackState.Paused, notifyStatus.ReadUInt());
 
             actor.Sent.Clear();
             peer.Sent.Clear();
@@ -351,7 +440,12 @@ public sealed class AreaNicotvHandlersTests
                 ct
             );
 
-            Assert.Equal(PacketType.NicotvSetMovieResponse, Assert.Single(actor.Sent).Type);
+            // The client's set_movie_r handler is a no-op, so the sender needs the notify as well
+            // to load the movie on its own TV.
+            Assert.Equal(
+                [PacketType.NotifyNicotvSetMovie, PacketType.NicotvSetMovieResponse],
+                actor.Sent.Select(p => p.Type)
+            );
             Assert.Equal(PacketType.NotifyNicotvSetMovie, Assert.Single(peer.Sent).Type);
             Assert.Equal("sm9", nicotv.MovieId);
         }

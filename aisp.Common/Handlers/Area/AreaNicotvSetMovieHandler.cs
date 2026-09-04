@@ -41,7 +41,9 @@ public sealed class AreaNicotvSetMovieHandler(INicotvRepository nicotvRepository
             session.MyRoomId,
             PacketType.NotifyNicotvSetMovie,
             new NotifyNicotvSetMovie(request.NicotvId, request.MovieId).ToBytes(),
-            includeSource: false,
+            // The client ignores set_movie_r (an 8-byte no-op, verified); only the notify makes
+            // the sender's own TV load the movie, so it must get it too.
+            includeSource: true,
             ct
         );
         return new NicotvSetMovieResponse(0, request.NicotvId);

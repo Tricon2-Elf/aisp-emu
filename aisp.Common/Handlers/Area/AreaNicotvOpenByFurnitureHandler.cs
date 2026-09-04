@@ -92,6 +92,11 @@ public sealed class AreaNicotvOpenByFurnitureHandler(
                 new NicotvSetCommentVisibleResponse(0, nicotvId).ToBytes(),
                 ct
             );
+            // Comment visibility has no dedicated set request of its own (confirmed: the client
+            // binary has no send for it): the toggle button re-sends open-by-furniture with the
+            // new snapshot, diffed above. recv_nicotv_set_comment_visible_r (just sent) does not
+            // call the JS setter either, only recv_notify_nicotv_set_comment_visible does, so the
+            // clicker needs this notify too, same as set-movie's own _r-is-a-no-op case.
             await MyRoomFurnitureNotification.BroadcastToRoomAsync(
                 state,
                 session,
@@ -101,7 +106,7 @@ public sealed class AreaNicotvOpenByFurnitureHandler(
                     nicotvId,
                     (uint)nicotv.CommentVisibility
                 ).ToBytes(),
-                includeSource: false,
+                includeSource: true,
                 ct
             );
         }

@@ -122,7 +122,11 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         if (nicotv is null)
             return null;
 
+        // A TV shows a channel or a typed movie, never both. The movie id takes precedence when
+        // resolving what a TV shows (a typed video is the more specific pick), so tuning a
+        // channel clears it, and re-entering the room shows the tuned channel.
         nicotv.ChannelId = channelId;
+        nicotv.MovieId = "";
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;
@@ -162,7 +166,9 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         if (nicotv is null)
             return null;
 
+        // Exclusive with a channel selection; see the matching note in SetChannelAsync.
         nicotv.MovieId = movieId;
+        nicotv.ChannelId = 0;
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;
