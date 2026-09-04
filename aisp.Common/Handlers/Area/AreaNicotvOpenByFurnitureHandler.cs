@@ -76,7 +76,10 @@ public sealed class AreaNicotvOpenByFurnitureHandler(
                 session,
                 session.MyRoomId,
                 PacketType.NotifyNicotvSetMovie,
-                new NotifyNicotvSetMovie(nicotvId, nicotv.MovieId).ToBytes(),
+                new NotifyNicotvSetMovie(
+                    nicotvId,
+                    NicotvMapper.WithNicotvId(nicotv.MovieId, nicotvId)
+                ).ToBytes(),
                 includeSource: false,
                 ct
             );

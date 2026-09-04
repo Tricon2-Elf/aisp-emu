@@ -19,6 +19,7 @@ public interface INicotvRepository
         CancellationToken ct = default
     );
     Task<Nicotv?> GetByIdInRoomAsync(int roomId, uint nicotvId, CancellationToken ct = default);
+    Task<Nicotv?> GetByIdAsync(uint nicotvId, CancellationToken ct = default);
     Task<Nicotv?> SetChannelAsync(
         int roomId,
         uint nicotvId,
@@ -109,6 +110,14 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
             x => x.RoomId == roomId && x.Id == checked((int)nicotvId),
             ct
         );
+    }
+
+    public async Task<Nicotv?> GetByIdAsync(uint nicotvId, CancellationToken ct = default)
+    {
+        if (nicotvId == 0 || nicotvId > int.MaxValue)
+            return null;
+
+        return await db.Nicotvs.SingleOrDefaultAsync(x => x.Id == checked((int)nicotvId), ct);
     }
 
     public async Task<Nicotv?> SetChannelAsync(

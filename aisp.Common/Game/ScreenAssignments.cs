@@ -24,14 +24,52 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
     private readonly TimeProvider _time = time ?? TimeProvider.System;
     private readonly ConcurrentDictionary<uint, Entry> _byMap = new();
 
-    // Timelines of videos typed into room TVs, by map and channel: room instances share a map
-    // id, so the channel the hook adds to the TV's URL is what tells one room from another.
+    // Timelines of videos typed into room TVs, by the furniture's own database id where known
+    // (see the n: tag below), or by map and channel otherwise: room instances share a map id,
+    // and the channel the hook adds to the TV's URL is not reliably one room's own (it is the
+    // player's session slot, not the room), so that id is what actually distinguishes rooms.
     private readonly ConcurrentDictionary<string, Timeline> _byMovie = new(
         StringComparer.OrdinalIgnoreCase
     );
 
     private static string MovieKey(uint map, int channel, string movieId) =>
         string.Create(CultureInfo.InvariantCulture, $"{map}/{channel}/{movieId}");
+
+    private static string NicotvKey(uint nicotvId) =>
+        string.Create(CultureInfo.InvariantCulture, $"nicotv:{nicotvId}");
+
+    /// <summary>
+    /// n:&lt;id&gt;: the Nicotv furniture's own database id, carried as a tag on a room TV's
+    /// movie id so the shared timeline can be keyed by the specific TV rather than by map
+    /// and channel, which do not reliably identify a room (see <see cref="_byMovie"/>). Short
+    /// (not nicotvid:) since it is invisible wire budget inside a 96-character movie id, not
+    /// something read by a person.
+    /// </summary>
+    public static bool TryGetNicotvId(string? source, out uint nicotvId)
+    {
+        nicotvId = 0;
+        if (source is null)
+            return false;
+        foreach (var word in ExtrasOf(source))
+            if (
+                word.StartsWith("n:", StringComparison.OrdinalIgnoreCase)
+                && uint.TryParse(
+                    word.AsSpan(2),
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out nicotvId
+                )
+            )
+                return true;
+        return false;
+    }
+
+    /// <summary>The room-tv timeline key for a (possibly n:-tagged) movie id: the furniture's
+    /// own id when present, otherwise the map-and-channel fallback.</summary>
+    private static string RoomTvKey(uint map, int channel, string movieId) =>
+        TryGetNicotvId(movieId, out var nicotvId)
+            ? NicotvKey(nicotvId)
+            : MovieKey(map, channel, MainOf(movieId));
 
     /// <summary>
     /// Where a video is: at <see cref="StartedAt"/> it was at <see cref="Offset"/> seconds and
@@ -84,7 +122,7 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
     {
         if (!IsVideoSource(movieId))
             return false;
-        var key = MovieKey(map, channel, MainOf(movieId));
+        var key = RoomTvKey(map, channel, movieId);
         var timeline = _byMovie.GetOrAdd(key, _ => new Timeline(_time.GetUtcNow(), 0, null));
         var updated = Apply(timeline, action);
         if (updated is null)
@@ -102,11 +140,7 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
     {
         if (!IsVideoSource(movieId))
             return;
-        _byMovie[MovieKey(map, channel, MainOf(movieId))] = new Timeline(
-            _time.GetUtcNow(),
-            0,
-            null
-        );
+        _byMovie[RoomTvKey(map, channel, movieId)] = new Timeline(_time.GetUtcNow(), 0, null);
     }
 
     private Timeline? Apply(Timeline timeline, string action)
@@ -634,7 +668,7 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
             {
                 // A typed video plays from a timeline shared by that TV, in that room.
                 var timeline = _byMovie.GetOrAdd(
-                    MovieKey(mapId ?? 0, channel, typed),
+                    RoomTvKey(mapId ?? 0, channel, movieId),
                     _ => new Timeline(_time.GetUtcNow(), 0, null)
                 );
                 return ToHookSource(typed) + " " + TimelineWords(timeline);

@@ -68,7 +68,9 @@ public sealed class AreaNicotvHandlersTests
                 nicotvId = reader.ReadUInt();
                 Assert.NotEqual(0u, nicotvId);
                 var initial = NicotvData.FromBytes(response.Payload.AsSpan(sizeof(uint) * 2));
-                Assert.Equal("", initial.MovieId);
+                // An empty movie id still carries n: alone, so the screen page's movieid=
+                // round-trips the furniture id even for a TV that has never been set.
+                Assert.Equal($"n:{nicotvId}", initial.MovieId);
                 Assert.Equal(NicotvPlaybackState.Closed, initial.PlaybackState);
 
                 session.Sent.Clear();
@@ -96,7 +98,7 @@ public sealed class AreaNicotvHandlersTests
                 Assert.Equal(2u, reader.ReadUInt());
                 Assert.Equal(nicotvId, reader.ReadUInt());
                 var opened = NicotvData.FromBytes(response.Payload.AsSpan(sizeof(uint) * 2));
-                Assert.Equal("Hello World", opened.MovieId);
+                Assert.Equal($"Hello World n:{nicotvId}", opened.MovieId);
                 Assert.Equal(NicotvPlaybackState.Playing, opened.PlaybackState);
             }
 
@@ -118,7 +120,7 @@ public sealed class AreaNicotvHandlersTests
                 Assert.Equal(2u, reader.ReadUInt());
                 Assert.Equal(nicotvId, reader.ReadUInt());
                 Assert.Equal(
-                    "Hello World",
+                    $"Hello World n:{nicotvId}",
                     NicotvData.FromBytes(response.Payload.AsSpan(sizeof(uint) * 2)).MovieId
                 );
             }
@@ -410,7 +412,8 @@ public sealed class AreaNicotvHandlersTests
             state.RegisterClient(ServerType.Area, actor);
             state.RegisterClient(ServerType.Area, peer);
 
-            var playHandler = new AreaNicotvPlayHandler(repository, state);
+            var screenAssignments = new ScreenAssignments();
+            var playHandler = new AreaNicotvPlayHandler(repository, state, screenAssignments);
             await ((IPacketHandler)playHandler).HandleAsync(
                 BuildUIntPayload(nicotvId, (uint)NicotvPlaybackState.Paused),
                 actor,
@@ -433,7 +436,7 @@ public sealed class AreaNicotvHandlersTests
 
             actor.Sent.Clear();
             peer.Sent.Clear();
-            var movieHandler = new AreaNicotvSetMovieHandler(repository, state);
+            var movieHandler = new AreaNicotvSetMovieHandler(repository, state, screenAssignments);
             await ((IPacketHandler)movieHandler).HandleAsync(
                 BuildSetMoviePayload(nicotvId, "sm9"),
                 actor,
@@ -448,6 +451,40 @@ public sealed class AreaNicotvHandlersTests
             );
             Assert.Equal(PacketType.NotifyNicotvSetMovie, Assert.Single(peer.Sent).Type);
             Assert.Equal("sm9", nicotv.MovieId);
+
+            // Setting the movie also starts that room's shared timeline for it at zero. The
+            // screen page round-trips the n: tag the handler appended, so that is how a
+            // real poll would ask for this TV; a plain "sm9" (no n: tag) is a different TV.
+            var taggedMovieId = $"sm9 n:{nicotvId}";
+            Assert.Contains(
+                "offset:0",
+                screenAssignments.Resolve("room-tv", taggedMovieId, actor.MapId, actor.ChannelId)
+            );
+
+            // The pause button (NicotvPlayRequest) pauses that TV's timeline for the room...
+            await ((IPacketHandler)playHandler).HandleAsync(
+                BuildUIntPayload(nicotvId, (uint)NicotvPlaybackState.Paused),
+                actor,
+                ct
+            );
+            Assert.Contains(
+                "paused:",
+                screenAssignments.Resolve("room-tv", taggedMovieId, actor.MapId, actor.ChannelId)
+            );
+            // ...but not some other TV's timeline (a different n: tag, or none at all).
+            Assert.DoesNotContain(
+                "paused:",
+                screenAssignments.Resolve(
+                    "room-tv",
+                    $"sm9 n:{nicotvId + 1}",
+                    actor.MapId,
+                    actor.ChannelId
+                )
+            );
+            Assert.DoesNotContain(
+                "paused:",
+                screenAssignments.Resolve("room-tv", "sm9", actor.MapId, actor.ChannelId)
+            );
         }
         finally
         {

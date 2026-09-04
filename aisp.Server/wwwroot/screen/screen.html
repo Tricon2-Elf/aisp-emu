@@ -316,7 +316,9 @@ body.tv #comments{top:36px}
     d.innerText=String(value); d.value=String(value); document.body.appendChild(d); return value;
   }
   // The client's play/pause toggle is a single ext_play(bool), called with whether it is now
-  // playing (false for pause); there is no separate ext_pause in real use.
+  // playing (false for pause); there is no separate ext_pause in real use. This holds this
+  // screen only; the shared timeline (what pause/resume actually moves for everyone in the
+  // room) is driven over the network by NicotvPlayRequest, not by this call.
   ext.ext_play=function(playing){ note('ext_play('+playing+')'); state.paused=!playing; publish(); };
   ext.ext_pause=function(){ note('ext_pause'); state.paused=true; publish(); };
   ext.ext_stop=function(){ note('ext_stop'); state.paused=true; publish(); };

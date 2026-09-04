@@ -1,4 +1,5 @@
 using System.Net;
+using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -33,22 +34,32 @@ internal static class ScreenEndpointsExtensions
                 (
                     HttpContext context,
                     IWebHostEnvironment environment,
-                    ScreenAssignments assignments
-                ) => ServePage(route, context, environment, assignments)
+                    ScreenAssignments assignments,
+                    INicotvRepository nicotvRepository
+                ) => ServePage(route, context, environment, assignments, nicotvRepository)
             );
         // Moves a video's shared timeline for everyone; the reply is the new source line. The
         // page does not use it yet: the client calls its ext_play/ext_pause around its own
         // lifecycle (leaving a map, arriving), which would pause the video for everyone.
         app.MapPost(
             "/ai-sp/screen-control",
-            (HttpContext context, ScreenAssignments assignments, ILoggerFactory loggers) =>
+            async (
+                HttpContext context,
+                ScreenAssignments assignments,
+                INicotvRepository nicotvRepository,
+                ILoggerFactory loggers
+            ) =>
             {
                 var query = context.Request.Query;
                 uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
                 var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
                 var action = query["action"].ToString();
-                var route = query["route"].ToString();
-                string? movieId = query["movieid"];
+                var (route, movieId) = await ResolveRoomTvAsync(
+                    query["route"].ToString(),
+                    query,
+                    nicotvRepository,
+                    context.RequestAborted
+                );
                 var applied =
                     route == "room-tv" && !string.IsNullOrEmpty(movieId)
                         ? assignments.ControlMovie(mapId ?? 0, channel, movieId, action)
@@ -73,17 +84,22 @@ internal static class ScreenEndpointsExtensions
         // Polled by the page so a changed assignment reaches screens that are already open.
         app.MapGet(
             "/ai-sp/screen-source",
-            (HttpContext context, ScreenAssignments assignments) =>
+            async (
+                HttpContext context,
+                ScreenAssignments assignments,
+                INicotvRepository nicotvRepository
+            ) =>
             {
                 var query = context.Request.Query;
                 uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
                 var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
-                var source = assignments.Resolve(
+                var (route, movieId) = await ResolveRoomTvAsync(
                     query["route"].ToString(),
-                    query["movieid"],
-                    mapId,
-                    channel
+                    query,
+                    nicotvRepository,
+                    context.RequestAborted
                 );
+                var source = assignments.Resolve(route, movieId, mapId, channel);
                 context.Response.Headers.CacheControl = "no-store";
                 return Results.Json(new { src = source ?? "" });
             }
@@ -91,11 +107,36 @@ internal static class ScreenEndpointsExtensions
         return app;
     }
 
+    /// <summary>
+    /// A room TV may identify the furniture it's for as an n: tag on movieid (the tag the server
+    /// appends to its own Notify* broadcasts and get-info/open responses): when it does,
+    /// the database's own movie state for that Nicotv is authoritative over whatever the
+    /// client's URL still says, and the route becomes room-tv so
+    /// <see cref="ScreenAssignments.Resolve"/> plays it.
+    /// </summary>
+    private static async Task<(string Route, string? MovieId)> ResolveRoomTvAsync(
+        string route,
+        IQueryCollection query,
+        INicotvRepository nicotvRepository,
+        CancellationToken ct
+    )
+    {
+        if (ScreenAssignments.TryGetNicotvId(query["movieid"], out var nicotvId))
+        {
+            var nicotv = await nicotvRepository.GetByIdAsync(nicotvId, ct);
+            var content = string.IsNullOrEmpty(nicotv?.MovieId) ? null : nicotv.MovieId;
+            return ("room-tv", content is null ? null : $"{content} n:{nicotvId}");
+        }
+
+        return (route, query["movieid"]);
+    }
+
     private static async Task<IResult> ServePage(
         string route,
         HttpContext context,
         IWebHostEnvironment environment,
-        ScreenAssignments assignments
+        ScreenAssignments assignments,
+        INicotvRepository nicotvRepository
     )
     {
         var file = environment.WebRootFileProvider.GetFileInfo("screen/screen.html");
@@ -105,13 +146,19 @@ internal static class ScreenEndpointsExtensions
         var query = context.Request.Query;
         uint? mapId = uint.TryParse(query["map"], out var parsedMap) ? parsedMap : null;
         var channel = int.TryParse(query["ch"], out var parsedChannel) ? parsedChannel : 0;
-        var source = assignments.Resolve(route, query["movieid"], mapId, channel);
+        var (effectiveRoute, movieId) = await ResolveRoomTvAsync(
+            route,
+            query,
+            nicotvRepository,
+            context.RequestAborted
+        );
+        var source = assignments.Resolve(effectiveRoute, movieId, mapId, channel);
 
         // A room TV never needs the page to poll: the client re-navigates it on every assignment
         // change (movie set, channel switch, room re-entry). live-watch (the Stage) is pushed
         // too: /screen sends it notify_nicolive_reload (CmdExecHandler). A /channel-screen is a
         // town screen (confirmed on Akihabara) with neither guarantee, so it alone keeps polling.
-        var noPoll = route is "room-tv" or "live-watch";
+        var noPoll = effectiveRoute is "room-tv" or "live-watch";
         var titleSuffix =
             (noPoll ? ";nopoll=1" : "")
             + (source is not null ? $";src={WebUtility.HtmlEncode(source)}" : "");
