@@ -426,6 +426,24 @@ namespace aisp.Common.DAL.Migrations
                     b.ToTable("FriendRequests", (string)null);
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("Slot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(61)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CharacterId", "Slot");
+
+                    b.ToTable("FriendLinkTags", (string)null);
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
                 {
                     b.Property<int>("CharacterIdLow")
@@ -1852,6 +1870,17 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("CharacterHigh");
 
                     b.Navigation("CharacterLow");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>
