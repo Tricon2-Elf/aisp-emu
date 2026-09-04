@@ -25,9 +25,16 @@ body.tv #title{font-size:18px;top:6px}
 body.tv #meta{top:32px}
 #calls{position:absolute;left:12px;bottom:8px;width:90%;height:90px;font-size:12px;color:#fc9;overflow:hidden}
 #pulse{position:absolute;right:12px;top:10px;width:24px;height:24px;background:#f80}
-/* Dummy feedback for ext_setCommentVisible: no real comment data, just a small on/off indicator. */
+/* Dummy feedback for ext_setCommentVisible: no real comment data; the toggle switches the
+   comment overlay (see .c below) on and off, and this small on/off indicator with it. */
 #comments{position:absolute;right:12px;top:40px;font-size:12px;color:#8f8}
 body.tv #comments{top:36px}
+/* The comment overlay itself: MS Gothic at 16 px is a bitmap strike, no smoothing, so the
+   outline trick keeps hard edges under colour keying. Each comment is the text drawn 8 times
+   in black around it, one in colour on top. */
+.c{position:absolute;white-space:nowrap;font:bold 28px/32px "MS Gothic","ＭＳ ゴシック",monospace;height:32px}
+.c span{position:absolute;left:0;top:0;color:#000}
+.c span.f{color:#fff}
 #outside{position:absolute;left:9px;top:600px;font-size:12px;color:#888}
 .ret{position:absolute;left:520px;font-size:12px;color:#00f}
 .corner{position:absolute;width:12px;height:12px;background:#f80}
@@ -44,6 +51,11 @@ body.tv #comments{top:36px}
     <div id="comments">💬 on</div>
     <div id="calls">calls from the client appear here</div>
   </div>
+  <!-- Dummy feedback for ext_setCommentVisible: not real comments, just the movie id flying
+       across the video box Nico style, key-composited so it survives the hook's own video fill.
+       A child of flvplayer_container, like the key fill it sits over, so its coordinates are
+       already crop-space with no ox/oy translation needed. -->
+  <div id="commentLayer" style="position:absolute;left:0;top:0;width:0;height:0;overflow:hidden;display:none"></div>
 </div>
 <!-- A page source (http/https) or a main: frame page is shown in the first frame, a banner: page
      in the second; stream sources go to the hook. -->
@@ -95,10 +107,16 @@ body.tv #comments{top:36px}
   // The launcher hook reads volume, mute and the source to play from the title; the server put
   // the source there when this page was served, and it must survive every update.
   var src=(function(){ var m=/;src=(.*)$/.exec(document.title||''); return m?m[1]:''; })();
-  // Whether this page needs to poll at all: not for a room TV, which the client re-navigates on
-  // every assignment change, nor for live-watch (the Stage), which /screen and /channel both push
-  // a reload to instead. A town screen (a channel-screen that did not resolve to a room TV,
-  // Akihabara confirmed) has neither guarantee, so it is the one case left polling.
+  // A genuine room TV: the server already knows this from resolving map/tvid against the
+  // database, which the page cannot do from the URL alone (a /channel-screen is a room TV only
+  // on a MyRoom map; on a town map, Akihabara confirmed, it is a real screen with no such thing).
+  // Also gates the comment overlay below, so it can never show on anything but a room TV, no
+  // matter what ext_setCommentVisible is called with.
+  var roomTv=/;roomtv=1(?:;|$)/.test(document.title||'');
+  // Separately, whether this page needs to poll at all: true for a room TV (above), and also for
+  // live-watch (the Stage), which /screen and /channel both push a reload to instead. A town
+  // screen (a channel-screen that did not resolve to a room TV, Akihabara confirmed) has neither
+  // guarantee, so it is the one case still left polling.
   var noPoll=/;nopoll=1(?:;|$)/.test(document.title||'');
   var frame=$('frame'), bannerFrame=$('banner');
   function isPage(v){ return /^https?:\/\//i.test(v); }
@@ -138,6 +156,9 @@ body.tv #comments{top:36px}
     for(var i=1;i<w.length;i++){ if(/^key$/i.test(w[i])) return '100010'; var m=/^key:([0-9a-f]{6})$/i.exec(w[i]); if(m) return m[1].toLowerCase(); }
     return '';
   }
+  // The source's own key wins if it has one; otherwise the comment overlay forces the bare
+  // DirectDraw key on so its text (drawn outside the key colour) survives the hook's video fill.
+  function effectiveKey(v){ return keyOf(v) || (roomTv && state.comment ? '100010' : ''); }
   // crop:sw/sh:cx/cy: the hook renders the picture at sw x sh and paints the box-sized window
   // starting at cx,cy of it (zoom in, or cut a region out). For electron: sw/sh is the browser's
   // layout viewport. Published as crop=sw,sh,cx,cy.
@@ -171,7 +192,7 @@ body.tv #comments{top:36px}
     return t;
   }
   function publish(){
-    var m=mainOf(src), b=geometry(src).crop, browser=/^electron:/i.test(m), cr=cropOf(src), sc=browser?scrollOf(src):null, sca=browser?scaleOf(src):0, k=keyOf(src), f=fpsOf(src), ro=rolloffOf(src), pn=panOf(src), tl=timelineOf(src);
+    var m=mainOf(src), b=geometry(src).crop, browser=/^electron:/i.test(m), cr=cropOf(src), sc=browser?scrollOf(src):null, sca=browser?scaleOf(src):0, k=effectiveKey(src), f=fpsOf(src), ro=rolloffOf(src), pn=panOf(src), tl=timelineOf(src);
     var stream=m&&!isPage(m)&&m!=='blank'&&m!=='title';
     document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+';box='+b.join(',')+(cr?';crop='+cr:'')+(sc?';scrollx='+sc[0]+';scrolly='+sc[1]:'')+(sca?';scale='+sca:'')+(k?';key='+k:'')+(f?';fps='+f:'')+(ro?';rolloff='+ro:'')+(pn?';pan=1':'')
       +(tl.start?';start='+tl.start+';offset='+tl.offset+(tl.paused?';paused='+tl.paused:''):'')+(state.paused?';hold=1':'')+(stream?';src='+m:'');
@@ -274,12 +295,15 @@ body.tv #comments{top:36px}
   }
   function hide(f){ f.style.display='none'; if(f.src) f.src='about:blank'; }
   function applySource(){
-    var m=mainOf(src), mp=mainPageOf(src), bn=bannerOf(src), raw=rawPageOf(src), g=geometry(src), vb=g.crop, k=keyOf(src);
+    var m=mainOf(src), mp=mainPageOf(src), bn=bannerOf(src), raw=rawPageOf(src), g=geometry(src), vb=g.crop, k=effectiveKey(src);
     var ox=isLive?0:9, oy=isLive?0:15, cw=isLive?950:486, ch=isLive?520:343; // the crop inside the page
     var rawFrame=raw&&!isPage(m)&&(hasBox(src)||!!k), rawBanner=raw&&!rawFrame;
     // The built-in gold frame and key fill are only for a box without a frame page: a frame
-    // page paints around (and, keyed, over) the video itself.
-    showBoxFrame(m&&!isPage(m)&&m!=='blank'&&!mp&&!rawFrame?vb:null, k);
+    // page paints around (and, keyed, over) the video itself. The comment overlay is the same
+    // box again, on top, while comments are on.
+    var videoBox=m&&!isPage(m)&&m!=='blank'&&!mp&&!rawFrame?vb:null;
+    showBoxFrame(videoBox, k);
+    updateCommentLayer(videoBox&&roomTv&&state.comment?vb:null);
     showGrid(m==='calibrate');
     showRects(/^c:/i.test(m)?m.substring(2):null);
     var diagnostic = !m || m==='calibrate' || /^c:/i.test(m);
@@ -303,6 +327,65 @@ body.tv #comments{top:36px}
       hide(bannerFrame);
     publish();
   }
+  // The movie id flying across the box in the comment overlay: the raw, still n:-tagged
+  // movieid= this page was navigated with when there is one (a room TV), else the resolved
+  // src's own main token; the n: tag is the server's own wire budget, never meant to be read.
+  function commentText(){
+    var mid=(q.movieid||mainOf(src)||'aisp-emu').replace(/\s*\bn:\d+\b/gi,'').trim();
+    return mid||'aisp-emu';
+  }
+  // One flying comment: the text drawn 8 times in black, offset a pixel in every direction,
+  // with one more in colour on top, so it stays legible over anything without anti-aliasing.
+  function makeComment(text,color){
+    var d=document.createElement('div'); d.className='c';
+    var offs=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1],[0,0]];
+    for(var i=0;i<offs.length;i++){
+      var s=document.createElement('span');
+      if(i===8){ s.className='f'; s.style.color=color; }
+      s.style.left=offs[i][0]+'px'; s.style.top=offs[i][1]+'px';
+      s.appendChild(document.createTextNode(text));
+      d.appendChild(s);
+    }
+    $('commentLayer').appendChild(d);
+    return d;
+  }
+  // Only one comment on screen at a time: the next one spawns as soon as the previous one's
+  // tail has cleared the edge, never before. A shorter tick than the animation actually needs
+  // (25/s) is what makes it look smooth rather than stepping visibly frame to frame.
+  var commentTickMs=40, commentCrossMs=9000;
+  var comment=null, commentTimer=null;
+  function spawnComment(){
+    var cl=$('commentLayer'), bw=cl.clientWidth, bh=cl.clientHeight;
+    if(bw<=0||bh<=0) return;
+    var d=makeComment(commentText(),'#fff'), w=d.offsetWidth||220;
+    var speed=(bw+w)/(commentCrossMs/commentTickMs);
+    d.style.top='8px'; d.style.left=bw+'px';
+    comment={el:d,x:bw,speed:speed,w:w};
+  }
+  function commentStep(){
+    if(!comment){ spawnComment(); return; }
+    var cl=$('commentLayer'), c=comment;
+    c.x-=c.speed; c.el.style.left=Math.round(c.x)+'px';
+    if(c.x+c.w<0){ cl.removeChild(c.el); comment=null; }
+  }
+  // Sized and positioned to the video box (crop-space, like the key fill it sits over) while
+  // comments are on; torn down and hidden otherwise.
+  function updateCommentLayer(vb){
+    var cl=$('commentLayer');
+    if(!vb){
+      if(commentTimer){ clearInterval(commentTimer); commentTimer=null; }
+      if(comment){ cl.removeChild(comment.el); comment=null; }
+      cl.style.display='none';
+      return;
+    }
+    cl.style.left=vb[0]+'px'; cl.style.top=vb[1]+'px'; cl.style.width=vb[2]+'px'; cl.style.height=vb[3]+'px';
+    cl.style.display='block';
+    // showBoxFrame just above appended a fresh key fill after this div in the DOM, which would
+    // otherwise paint over it (later siblings stack on top with no z-index set anywhere here);
+    // move it back to the end so the comments stay above the key colour, not hidden under it.
+    box.appendChild(cl);
+    if(!commentTimer) commentTimer=setInterval(commentStep,commentTickMs);
+  }
   function updateComments(){
     var el=$('comments'); if(!el) return;
     el.textContent=state.comment?'💬 on':'💬 off';
@@ -325,7 +408,7 @@ body.tv #comments{top:36px}
   ext.ext_setMute=function(m){ note('ext_setMute '+m); state.mute=!!m; publish(); };
   ext.ext_setPlayheadTime=function(t){ note('ext_setPlayheadTime '+t); state.playhead=Number(t)||0; };
   ext.ext_setVolume=function(n){ note('ext_setVolume '+n); state.volume=Math.max(0,Math.min(100,Math.round(Number(n)))); publish(); };
-  ext.ext_setCommentVisible=function(b){ note('ext_setCommentVisible '+b); state.comment=!!b; updateComments(); };
+  ext.ext_setCommentVisible=function(b){ note('ext_setCommentVisible '+b); state.comment=!!b; updateComments(); applySource(); };
   ext.ext_setRepeat=function(b){ note('ext_setRepeat '+b); state.repeat=!!b; };
   ext.ext_isMute=function(r){ note('ext_isMute -> '+r); return ret(r, state.mute?1:0); };
   ext.ext_getVolume=function(r){ note('ext_getVolume -> '+r); return ret(r, state.volume); };

@@ -216,10 +216,15 @@ internal static class ScreenEndpointsExtensions
         // Stage) is pushed too: both /screen and /channel on a map it is bound to send it
         // notify_nicolive_reload (CmdExecHandler). A /channel-screen that did not resolve to a
         // room TV is a town screen (confirmed on Akihabara) with neither guarantee, so it alone
-        // keeps polling.
-        var noPoll = effectiveRoute is "room-tv" or "live-watch";
+        // keeps polling. roomtv is a separate, narrower flag: only a genuine room TV shows the
+        // comment overlay, never the Stage or a town screen, no matter what the page is told by
+        // ext_setCommentVisible; the page cannot tell a room TV from anything else on its own,
+        // only the server (map lookup) can.
+        var isRoomTv = effectiveRoute == "room-tv";
+        var noPoll = isRoomTv || effectiveRoute == "live-watch";
         var titleSuffix =
-            (noPoll ? ";nopoll=1" : "")
+            (isRoomTv ? ";roomtv=1" : "")
+            + (noPoll ? ";nopoll=1" : "")
             + (source is not null ? $";src={WebUtility.HtmlEncode(source)}" : "");
 
         var html = await File.ReadAllTextAsync(file.PhysicalPath, context.RequestAborted);
