@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>aisp:vol=100;mute=0</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;color:#000;font-family:Arial,sans-serif;overflow:hidden}
+/* The client copies a fixed rectangle out of the rendered page: 486x343 at (9,15) for a room
+   TV or channel screen, 950x520 at flvplayer_container's origin for live-watch. The launcher
+   hook paints a decoded stream into the video box of that crop; everything else here is what
+   the panels show of the page itself. */
+#navi{position:absolute;left:0;top:0;width:1024px;height:0}
+#flvplayer_container{position:absolute;background:#000;color:#fff;overflow:hidden}
+body.tv #flvplayer_container{left:9px;top:15px;width:486px;height:343px}
+body.live #flvplayer_container{left:0;top:0;width:950px;height:520px}
+/* The Stage wall shows two windows onto the crop, measured in game with /screen c: outlines
+   (2026-09-03): the banner is page (7,7)-(550,60), the main LED (7,65)-(550,447). A TV shows its
+   whole 486x343 crop. */
+.led{position:absolute;background:#1a1a2e;overflow:hidden}
+body.live #led-top{left:7px;top:7px;width:543px;height:53px}
+body.live #led-main{left:7px;top:65px;width:543px;height:382px}
+body.tv #led-top{display:none}
+body.tv #led-main{left:0;top:0;width:486px;height:343px}
+#title{position:absolute;left:12px;top:8px;font-size:22px;font-weight:bold;color:#ffd166;white-space:nowrap}
+body.tv #title{font-size:18px;top:6px}
+#meta{position:absolute;left:12px;top:10px;font-size:13px;color:#cfe;line-height:18px}
+body.tv #meta{top:32px}
+#calls{position:absolute;left:12px;bottom:8px;width:90%;height:90px;font-size:12px;color:#fc9;overflow:hidden}
+#pulse{position:absolute;right:12px;top:10px;width:24px;height:24px;background:#f80}
+/* Dummy feedback for ext_setCommentVisible: no real comment data, just a small on/off indicator. */
+#comments{position:absolute;right:12px;top:40px;font-size:12px;color:#8f8}
+body.tv #comments{top:36px}
+#outside{position:absolute;left:9px;top:600px;font-size:12px;color:#888}
+.ret{position:absolute;left:520px;font-size:12px;color:#00f}
+.corner{position:absolute;width:12px;height:12px;background:#f80}
+.panel{position:absolute;outline:2px solid #f80}
+.panel .lab{position:absolute;left:4px;top:2px;font-size:11px;color:#f80}
+</style></head><body>
+<div id="navi"></div>
+<div id="flvplayer_container">
+  <div id="led-top" class="led"><div id="title">aisp-emu screen</div><div id="pulse"></div></div>
+  <div id="led-main" class="led">
+    <div id="meta">loading</div>
+    <div id="comments">💬 on</div>
+    <div id="calls">calls from the client appear here</div>
+  </div>
+</div>
+<div id="external_nico_0"></div>
+<!-- The client reads this element's .value for "value=<state> " (space-terminated) to learn the
+     player state, and gates ext_setCommentVisible's local flush on it reading playing or paused.
+     A plain div's .value is undefined, so this has to be a real form control, not matching
+     text as innerHTML. -->
+<input id="statusForm" type="text" readonly value="value=playing (statusForm)" style="position:absolute;left:9px;top:580px;font-size:11px;color:#888;border:0;background:transparent;padding:0" />
+<div id="outside">This line is outside every crop rectangle and should never be visible in game.</div>
+<script>
+(function(){
+  function $(id){ return document.getElementById(id); }
+  var path=(window.location.pathname||'').replace(/^.*\//,'');
+  var kind={ 'room-tv':'room TV', 'channel-screen':'channel screen', 'live-watch':'live billboard' }[path]||'unknown screen';
+  var isLive=path==='live-watch';
+  document.body.className=isLive?'live':'tv';
+  var box=$('flvplayer_container'), main=$('led-main');
+  if(!isLive){ main.appendChild($('title')); main.appendChild($('pulse')); }
+  function corners(rects){
+    for(var r=0;r<rects.length;r++){
+      var x=rects[r][0], y=rects[r][1], w=rects[r][2], h=rects[r][3], n=rects[r][4];
+      if(n){
+        var p=document.createElement('div'); p.className='panel';
+        p.style.left=x+'px'; p.style.top=y+'px'; p.style.width=w+'px'; p.style.height=h+'px';
+        var lab=document.createElement('div'); lab.className='lab'; lab.innerHTML=n; p.appendChild(lab);
+        box.appendChild(p);
+      }
+      var cs=[[x,y],[x+w-12,y],[x,y+h-12],[x+w-12,y+h-12]];
+      for(var j=0;j<cs.length;j++){
+        var c=document.createElement('div'); c.className='corner';
+        c.style.left=cs[j][0]+'px'; c.style.top=cs[j][1]+'px'; box.appendChild(c);
+      }
+    }
+  }
+  // Corner markers on the boxes the panels actually show.
+  corners(isLive?[[7,7,543,53,'top'],[7,65,543,382,'main']]:[[0,0,486,343,'']]);
+  var q={}, search=(window.location.search||'').substring(1).split('&');
+  for(var i=0;i<search.length;i++){ if(!search[i]) continue; var kv=search[i].split('='); try{ q[decodeURIComponent(kv[0])]=decodeURIComponent((kv[1]||'').replace(/\+/g,' ')); }catch(e){ q[kv[0]]=kv[1]; } }
+  var params=[]; for(var k in q) if(q.hasOwnProperty(k)) params.push(k+'='+q[k]);
+  var meta=$('meta'), calls=$('calls'), ext=$('external_nico_0'), pulse=$('pulse');
+  var mode=document.documentMode||'none', t0=new Date().getTime(), log=[];
+  var state={ volume:100, mute:false, repeat:true, comment:true, playhead:0, total:0, paused:false };
+  function note(s){
+    log.unshift(s); if(log.length>6) log.length=6; calls.innerHTML=log.join('<br>');
+  }
+  // The launcher hook reads volume and mute from the title, which must survive every update.
+  function publish(){
+    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0);
+    // The client forwards volume while the state is playing or paused, and only flushes a
+    // pending comment-visibility toggle then too; it reads the word from .value here.
+    var sf=$('statusForm'); if(sf) sf.value='value='+(state.paused?'paused':'playing')+' (statusForm)';
+  }
+  function updateComments(){
+    var el=$('comments'); if(!el) return;
+    el.textContent=state.comment?'💬 on':'💬 off';
+    el.style.color=state.comment?'#8f8':'#888';
+  }
+  updateComments();
+  var retTop=600;
+  // Getters hand back their value through an element the client reads by id and then removes.
+  function ret(name,value){
+    var d=document.createElement('div'); d.id=name; d.className='ret'; d.style.top=(retTop+=14)+'px';
+    d.innerText=String(value); d.value=String(value); document.body.appendChild(d); return value;
+  }
+  // The client's play/pause toggle is a single ext_play(bool), called with whether it is now
+  // playing (false for pause); there is no separate ext_pause in real use.
+  ext.ext_play=function(playing){ note('ext_play('+playing+')'); state.paused=!playing; publish(); };
+  ext.ext_pause=function(){ note('ext_pause'); state.paused=true; publish(); };
+  ext.ext_stop=function(){ note('ext_stop'); state.paused=true; publish(); };
+  ext.ext_setMute=function(m){ note('ext_setMute '+m); state.mute=!!m; publish(); };
+  ext.ext_setPlayheadTime=function(t){ note('ext_setPlayheadTime '+t); state.playhead=Number(t)||0; };
+  ext.ext_setVolume=function(n){ note('ext_setVolume '+n); state.volume=Math.max(0,Math.min(100,Math.round(Number(n)))); publish(); };
+  ext.ext_setCommentVisible=function(b){ note('ext_setCommentVisible '+b); state.comment=!!b; updateComments(); };
+  ext.ext_setRepeat=function(b){ note('ext_setRepeat '+b); state.repeat=!!b; };
+  ext.ext_isMute=function(r){ note('ext_isMute -> '+r); return ret(r, state.mute?1:0); };
+  ext.ext_getVolume=function(r){ note('ext_getVolume -> '+r); return ret(r, state.volume); };
+  ext.ext_isCommentVisible=function(r){ note('ext_isCommentVisible -> '+r); return ret(r, state.comment?1:0); };
+  ext.ext_isRepeat=function(r){ note('ext_isRepeat -> '+r); return ret(r, state.repeat?1:0); };
+  ext.ext_getPlayheadTime=function(r){ note('ext_getPlayheadTime -> '+r); return ret(r, Math.floor((new Date().getTime()-t0)/1000)); };
+  ext.ext_getTotalTime=function(r){ note('ext_getTotalTime -> '+r); return ret(r, state.total); };
+  publish();
+  setInterval(function(){
+    var s=Math.floor((new Date().getTime()-t0)/1000);
+    meta.innerHTML=kind+' ('+path+')<br>'+(params.length?params.join(' &nbsp; '):'no parameters')+'<br>mode: '+mode+' &nbsp; clock: '+s+'s &nbsp; volume: '+state.volume+(state.mute?' (muted)':'');
+    pulse.style.background=(s%2)?'#f80':'#0cf';
+  },250);
+})();
+</script>
+</body></html>

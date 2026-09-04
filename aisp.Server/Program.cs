@@ -325,6 +325,7 @@ internal class Program
         app.MapAispEmuHttpEndpoints();
         app.MapAdventureHttpEndpoints();
         app.MapAdventureAdminEndpoints();
+        app.MapScreenEndpoints();
         if (portalEnabled)
         {
             app.UseStaticFiles();
