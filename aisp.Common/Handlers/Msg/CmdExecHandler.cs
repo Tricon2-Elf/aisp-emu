@@ -977,9 +977,13 @@ public class CmdExecHandler(
         {
             await SendSystemNoticeAsync(
                 session,
-                "/screen <source>. Sources: tw:<channel> (Twitch), twe:<channel> (Twitch embed), ytl:<id> (YouTube live), lv<id> (Nico Live),\n"
+                "/screen <source> [extras]. Sources: tw:<channel> (Twitch), twe:<channel> (Twitch embed), ytl:<id> (YouTube live), lv<id> (Nico Live),\n"
                     + "pattern:live (the hook's own test picture and tone), streamlink:<url>, stream:<url>, electron:<http(s) url> (off-screen browser), a web page URL,\n"
-                    + "blank, title, testscreen, calibrate, c:x1/y1:x2/y2:..., or off.",
+                    + "blank, title, testscreen, calibrate, c:x1/y1:x2/y2:..., or off.\n"
+                    + "Extras: main:<url> (a frame page under the main panel; box:x/y/w/h is then relative to it), banner:<url> (the Stage banner strip, else the title card),\n"
+                    + "box:x/y/w/h to place the video inside the crop, crop:sw/sh:cx/cy to render it at sw x sh and show the box-sized window at cx,cy,\n"
+                    + "scrollx:N scrolly:N or scroll:x/y to pan an electron: document, scale:N for browser zoom (1=100%; not a texture stretch),\n"
+                    + "key[:RRGGBB] to colour-key it.",
                 ct
             );
             return;

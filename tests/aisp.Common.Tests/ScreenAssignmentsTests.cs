@@ -75,17 +75,17 @@ public sealed class ScreenAssignmentsTests
         // Unassigned town screens show the title card.
         Assert.Equal("title", assignments.Resolve("channel-screen", null, 10990100));
 
-        assignments.Set(10990100, "tw:someone");
+        assignments.Set(10990100, "tw:someone https://x/banner");
         // The page gets the hook's form; the stored assignment keeps the friendly one.
         Assert.Equal(
-            "streamlink:https://twitch.tv/someone",
+            "streamlink:https://twitch.tv/someone https://x/banner",
             assignments.Resolve("channel-screen", null, 10990100)
         );
         Assert.Equal(
-            "streamlink:https://twitch.tv/someone",
+            "streamlink:https://twitch.tv/someone https://x/banner",
             assignments.Resolve("live-watch", null, 10990100)
         );
-        Assert.Equal("twitch:someone", assignments.Get(10990100));
+        Assert.Equal("twitch:someone https://x/banner", assignments.Get(10990100));
         // The typed ids keep their friendly form in the assignment too.
         assignments.Set(10990100, "pattern");
         Assert.Equal("pattern:live", assignments.Get(10990100));
@@ -147,6 +147,7 @@ public sealed class ScreenAssignmentsTests
         Assert.False(ScreenAssignments.IsValidSource("electron:ftp://x"));
         Assert.False(ScreenAssignments.IsElectronSource("https://example.com"));
         Assert.True(ScreenAssignments.IsValidSource("testscreen"));
+        Assert.True(ScreenAssignments.IsValidSource("pattern:live box:0/0/100/50"));
         Assert.True(ScreenAssignments.IsValidSource("calibrate"));
         Assert.True(ScreenAssignments.IsValidSource("title"));
         Assert.True(ScreenAssignments.IsValidSource("blank"));
@@ -161,8 +162,8 @@ public sealed class ScreenAssignmentsTests
         Assert.Equal("pattern:live", ScreenAssignments.ToHookSource("Pattern"));
         Assert.Equal("title", ScreenAssignments.ToHookSource("title"));
         Assert.Equal(
-            "electron:https://player.twitch.tv/?channel=yueri&parent=aisp.moe",
-            ScreenAssignments.ToHookSource("twe:yueri")
+            "electron:https://player.twitch.tv/?channel=yueri&parent=aisp.moe scroll:0/40",
+            ScreenAssignments.ToHookSource("twe:yueri scroll:0/40")
         );
         Assert.Equal(
             "streamlink:https://live.nicovideo.jp/watch/lv351315472",
@@ -172,6 +173,69 @@ public sealed class ScreenAssignmentsTests
             "streamlink:https://www.youtube.com/watch?v=abc",
             ScreenAssignments.ToHookSource("ytl:abc")
         );
-        Assert.Equal("twitch:yueri", ScreenAssignments.Normalize(" tw:yueri "));
+        // A bare second URL is the raw form (a banner page, or with a box a whole-crop frame
+        // page); main:<url> and banner:<url> name the panel. All three have to be pages.
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri https://example.test/banner"));
+        Assert.True(ScreenAssignments.IsValidSource("blank https://example.test/banner"));
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri banner:https://example.test/banner"));
+        Assert.True(
+            ScreenAssignments.IsValidSource(
+                "twe:ironmouse box:40/30/406/240 key main:https://example.test/frame.html banner:https://example.test/top"
+            )
+        );
+        Assert.True(ScreenAssignments.IsMainWord("main:http://x/"));
+        Assert.False(ScreenAssignments.IsMainWord("main:x"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri main:frame.html"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri banner:ftp://x"));
+        Assert.Equal(
+            "streamlink:https://twitch.tv/yueri box:0/0/10/10 main:https://x/f",
+            ScreenAssignments.ToHookSource("tw:yueri box:0/0/10/10 main:https://x/f")
+        );
+        // A box:x/y/w/h word places the video inside the crop; the page can put HTML around it.
+        // Slashes because the client splits chat arguments on commas.
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri box:20/20/446/303"));
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri https://x/ box:0/76/635/441"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri box:20/20"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri box:20,20,446,303"));
+        // key / key:RRGGBB colour-keys the video into the page's own pixels.
+        Assert.True(
+            ScreenAssignments.IsValidSource("tw:yueri box:20/20/446/303 key https://x/frame")
+        );
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri key:100010"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri key:12"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri key:zzzzzz"));
+        // crop:sw/sh:cx/cy renders at sw x sh and shows the box-sized window at cx,cy of it.
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri crop:972/686:243/171"));
+        Assert.True(ScreenAssignments.IsValidSource("tw:yueri box:20/20/446/303 crop:892/606:0/0"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri crop:972/686"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri crop:0/686:0/0"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri crop:972/686:-1/0"));
+        Assert.False(ScreenAssignments.IsValidSource("tw:yueri crop:972,686:0,0"));
+        Assert.Equal(
+            "streamlink:https://twitch.tv/yueri box:20/20/446/303",
+            ScreenAssignments.ToHookSource("tw:yueri box:20/20/446/303")
+        );
+        Assert.Equal(
+            "twitch:yueri https://x/",
+            ScreenAssignments.Normalize(" tw:yueri  https://x/ ")
+        );
+        // Browser extras: scroll pans the document, scale is zoom.
+        Assert.True(ScreenAssignments.IsValidSource("electron:https://example.com scrollx:120"));
+        Assert.True(ScreenAssignments.IsValidSource("electron:https://example.com scrolly:40"));
+        Assert.True(ScreenAssignments.IsValidSource("electron:https://example.com scroll:120/40"));
+        Assert.True(
+            ScreenAssignments.IsValidSource(
+                "electron:https://www.nicovideo.jp crop:800/600:50/0 scrollx:100 scale:0.75"
+            )
+        );
+        Assert.True(ScreenAssignments.IsValidSource("twe:yueri crop:800/600:0/0 scale:0.75"));
+        Assert.True(ScreenAssignments.IsScaleWord("scale:0.75"));
+        Assert.True(ScreenAssignments.IsValidSource("electron:https://x scale:1"));
+        Assert.False(ScreenAssignments.IsValidSource("electron:https://x scale:0"));
+        Assert.False(ScreenAssignments.IsValidSource("electron:https://x scale:9"));
+        Assert.Equal(
+            "electron:https://example.com scroll:120/40",
+            ScreenAssignments.ToHookSource("electron:https://example.com scroll:120/40")
+        );
     }
 }

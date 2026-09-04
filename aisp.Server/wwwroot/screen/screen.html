@@ -45,8 +45,10 @@ body.tv #comments{top:36px}
     <div id="calls">calls from the client appear here</div>
   </div>
 </div>
-<!-- A page source (http/https) is shown in the frame; stream sources go to the hook. -->
+<!-- A page source (http/https) or a main: frame page is shown in the first frame, a banner: page
+     in the second; stream sources go to the hook. -->
 <iframe id="frame" style="position:absolute;left:0;top:0;width:0;height:0;border:0;display:none" frameborder="0" scrolling="no"></iframe>
+<iframe id="banner" style="position:absolute;left:0;top:0;width:0;height:0;border:0;display:none" frameborder="0" scrolling="no"></iframe>
 <div id="external_nico_0"></div>
 <!-- The client reads this element's .value for "value=<state> " (space-terminated) to learn the
      player state, and gates ext_setCommentVisible's local flush on it reading playing or paused.
@@ -98,23 +100,72 @@ body.tv #comments{top:36px}
   // instead. A town screen (a channel-screen, Akihabara confirmed) has neither guarantee, so it
   // is the one case left polling.
   var noPoll=/;nopoll=1(?:;|$)/.test(document.title||'');
-  var frame=$('frame');
+  var frame=$('frame'), bannerFrame=$('banner');
   function isPage(v){ return /^https?:\/\//i.test(v); }
-  // The main source goes to the main panel: stream sources are published for the hook; pages
-  // are framed here.
+  // "<main> [main:<url>] [banner:<url>] [<url>] [box:x/y/w/h] ...": the main source goes to the
+  // main panel; main:<url> is a frame page under the whole main panel (the hook paints the video
+  // box over it); banner:<url> is a page for the Stage banner strip. The raw form is a bare
+  // URL word: with a box or key it is a frame page under the whole crop, in crop coordinates,
+  // otherwise the Stage banner. Stream sources are published for the hook; pages are framed here.
   function mainOf(v){ return (v||'').split(' ')[0]; }
+  function wordOf(v,name){ var w=(v||'').split(' '), re=new RegExp('^'+name+':(https?://.+)$','i'); for(var i=1;i<w.length;i++){ var m=re.exec(w[i]); if(m) return m[1]; } return ''; }
+  function mainPageOf(v){ return wordOf(v,'main'); }
+  function bannerOf(v){ return wordOf(v,'banner'); }
+  function rawPageOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++) if(isPage(w[i])) return w[i]; return ''; }
+  function hasBox(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++) if(/^box:/i.test(w[i])) return true; return false; }
   // The main panel, in crop coordinates: a TV shows all of its crop, the Stage wall its main LED.
   var panel=isLive?[7,65,543,382]:[0,0,486,343];
+  function boxOf(v){
+    var w=(v||'').split(' ');
+    for(var i=1;i<w.length;i++){ var m=/^box:(\d+)\/(\d+)\/(\d+)\/(\d+)$/i.exec(w[i]); if(m) return [+m[1],+m[2],+m[3],+m[4]]; }
+    return null;
+  }
+  // The video box: where the hook paints a stream, in crop coordinates. Without a box word it
+  // is the whole main panel. A box word is in crop coordinates, unless a main: frame page is
+  // given: then it is relative to the main panel, the way the frame page sees it, and the crop
+  // form is worked out here. Returns {crop:[x,y,w,h] for the hook, rel:[x,y,w,h] for the page}.
+  function geometry(v){
+    var raw=boxOf(v), mp=mainPageOf(v);
+    if(!raw) return { crop:panel, rel:[0,0,panel[2],panel[3]] };
+    if(mp) return { crop:[panel[0]+raw[0],panel[1]+raw[1],raw[2],raw[3]], rel:raw };
+    return { crop:raw, rel:[raw[0]-panel[0],raw[1]-panel[1],raw[2],raw[3]] };
+  }
+  // key or key:RRGGBB: the hook fills only pixels of exactly that colour inside the box with
+  // video, so page content drawn over it stays on top. Bare key is the DirectDraw overlay key,
+  // the near-black RGB 16,0,16.
+  function keyOf(v){
+    var w=(v||'').split(' ');
+    for(var i=1;i<w.length;i++){ if(/^key$/i.test(w[i])) return '100010'; var m=/^key:([0-9a-f]{6})$/i.exec(w[i]); if(m) return m[1].toLowerCase(); }
+    return '';
+  }
+  // crop:sw/sh:cx/cy: the hook renders the picture at sw x sh and paints the box-sized window
+  // starting at cx,cy of it (zoom in, or cut a region out). For electron: sw/sh is the browser's
+  // layout viewport. Published as crop=sw,sh,cx,cy.
+  function cropOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ var m=/^crop:(\d+)\/(\d+):(\d+)\/(\d+)$/i.exec(w[i]); if(m) return [+m[1],+m[2],+m[3],+m[4]].join(','); } return ''; }
+  // scrollx:N, scrolly:N, or scroll:x/y: document offset the off-screen browser (electron:) enforces.
+  // Null when no scroll extra is present (the hook then shows scrollbars again).
+  function scrollOf(v){
+    var x=0,y=0,set=false,w=(v||'').split(' ');
+    for(var i=1;i<w.length;i++){
+      var mx=/^scrollx:(-?\d+)$/i.exec(w[i]); if(mx){ x=+mx[1]; set=true; }
+      var my=/^scrolly:(-?\d+)$/i.exec(w[i]); if(my){ y=+my[1]; set=true; }
+      var m=/^scroll:(-?\d+)\/(-?\d+)$/i.exec(w[i]); if(m){ x=+m[1]; y=+m[2]; set=true; }
+    }
+    return set?[x,y]:null;
+  }
+  // scale:N: Chromium zoom for electron: (1 = 100%). Not a texture stretch.
+  function scaleOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ var m=/^scale:([0-9]*\.?[0-9]+)$/i.exec(w[i]); if(m){ var n=+m[1]; if(n>=0.1&&n<=8) return n; } } return 0; }
   function publish(){
-    var m=mainOf(src);
+    var m=mainOf(src), b=geometry(src).crop, browser=/^electron:/i.test(m), cr=cropOf(src), sc=browser?scrollOf(src):null, sca=browser?scaleOf(src):0, k=keyOf(src);
     var stream=m&&!isPage(m)&&m!=='blank'&&m!=='title';
-    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+(stream?';src='+m:'');
+    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+';box='+b.join(',')+(cr?';crop='+cr:'')+(sc?';scrollx='+sc[0]+';scrolly='+sc[1]:'')+(sca?';scale='+sca:'')+(k?';key='+k:'')+(stream?';src='+m:'');
     // The client forwards volume while the state is playing or paused, and only flushes a
     // pending comment-visibility toggle then too; it reads the word from .value here.
     var sf=$('statusForm'); if(sf) sf.value='value='+(state.paused?'paused':'playing')+' (statusForm)';
   }
   // "title": a title card, "aisp-emu" centred in each panel on a dark background ('all'), or
-  // on the Stage banner alone ('top') while the main panel plays something.
+  // on the Stage banner alone ('top') while the main panel plays something and nothing else
+  // claims the banner.
   var cards=[];
   function showTitleCard(mode){
     for(var i=0;i<cards.length;i++) box.removeChild(cards[i]);
@@ -129,6 +180,23 @@ body.tv #comments{top:36px}
       c.appendChild(t);
       box.appendChild(c); cards.push(c);
     }
+  }
+  var boxFrame=null, keyFill=null;
+  function showBoxFrame(b,k){
+    if(boxFrame){ box.removeChild(boxFrame); boxFrame=null; }
+    if(keyFill){ box.removeChild(keyFill); keyFill=null; }
+    if(!b) return;
+    // Without a frame page the shell paints the key colour itself, or nothing matches.
+    if(k){
+      keyFill=document.createElement('div'); keyFill.style.position='absolute';
+      keyFill.style.left=b[0]+'px'; keyFill.style.top=b[1]+'px'; keyFill.style.width=b[2]+'px'; keyFill.style.height=b[3]+'px';
+      keyFill.style.background='#'+k; box.appendChild(keyFill);
+    }
+    if(b[0]===panel[0]&&b[1]===panel[1]&&b[2]===panel[2]&&b[3]===panel[3]) return;
+    boxFrame=document.createElement('div'); boxFrame.style.position='absolute';
+    boxFrame.style.left=(b[0]-4)+'px'; boxFrame.style.top=(b[1]-4)+'px'; boxFrame.style.width=(b[2]+8)+'px'; boxFrame.style.height=(b[3]+8)+'px';
+    boxFrame.style.border='4px solid #ffd166'; boxFrame.style.boxSizing='content-box';
+    box.appendChild(boxFrame);
   }
   // While a real source is up, the page is a blank black base under it.
   function showDiagnostics(on){
@@ -178,25 +246,45 @@ body.tv #comments{top:36px}
     }
     box.appendChild(rectsLayer);
   }
+  // The frame page learns where the video box is inside it, the size it fills and the key
+  // colour, if any. For main: the box is relative to the main panel, which is the frame's own
+  // size; for the raw whole-crop form both are in crop coordinates.
+  function withParams(url,b,w,h,k){
+    return url+(url.indexOf('?')<0?'?':'&')+'box='+b.join('/')+'&crop='+w+'/'+h+(isLive?'&kind=live':'&kind=tv')+(k?'&key='+k:'');
+  }
   function place(f,x,y,w,h,url){
     f.style.left=x+'px'; f.style.top=y+'px'; f.style.width=w+'px'; f.style.height=h+'px'; f.style.display='block';
     if(f.src!==url) f.src=url;
   }
   function hide(f){ f.style.display='none'; if(f.src) f.src='about:blank'; }
   function applySource(){
-    var m=mainOf(src);
-    var ox=isLive?0:9, oy=isLive?0:15; // the crop inside the page
+    var m=mainOf(src), mp=mainPageOf(src), bn=bannerOf(src), raw=rawPageOf(src), g=geometry(src), vb=g.crop, k=keyOf(src);
+    var ox=isLive?0:9, oy=isLive?0:15, cw=isLive?950:486, ch=isLive?520:343; // the crop inside the page
+    var rawFrame=raw&&!isPage(m)&&(hasBox(src)||!!k), rawBanner=raw&&!rawFrame;
+    // The built-in gold frame and key fill are only for a box without a frame page: a frame
+    // page paints around (and, keyed, over) the video itself.
+    showBoxFrame(m&&!isPage(m)&&m!=='blank'&&!mp&&!rawFrame?vb:null, k);
     showGrid(m==='calibrate');
     showRects(/^c:/i.test(m)?m.substring(2):null);
     var diagnostic = !m || m==='calibrate' || /^c:/i.test(m);
     showDiagnostics(diagnostic);
     // A banner left free by a playing main panel shows the title card rather than nothing.
-    var topFree=isLive && m && m!=='title' && m!=='blank' && !diagnostic;
+    var topFree=isLive && m && m!=='title' && m!=='blank' && !diagnostic && !bn && !raw;
     showTitleCard(m==='title'?'all':(topFree?'top':null));
     if(isPage(m))
-      place(frame, ox+panel[0], oy+panel[1], panel[2], panel[3], m); // a page as the source: over the main panel
+      place(frame, ox+vb[0], oy+vb[1], vb[2], vb[3], m); // a page as the source: over the video box
+    else if(mp)
+      place(frame, ox+panel[0], oy+panel[1], panel[2], panel[3], withParams(mp,g.rel,panel[2],panel[3],k)); // under the whole main panel
+    else if(rawFrame)
+      place(frame, ox, oy, cw, ch, withParams(raw,vb,cw,ch,k)); // the raw form: under the whole crop
     else
       hide(frame);
+    if(isLive && bn)
+      place(bannerFrame, 7, 7, 543, 53, bn);
+    else if(isLive && rawBanner)
+      place(bannerFrame, 7, 7, 543, 53, raw);
+    else
+      hide(bannerFrame);
     publish();
   }
   function updateComments(){

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace aisp.Common.Game;
 
@@ -22,7 +23,7 @@ public sealed class ScreenAssignments
 
     public void Set(uint mapId, string source) => _byMap[mapId] = Normalize(source);
 
-    /// <summary>An empty main area.</summary>
+    /// <summary>An empty main area; used with a banner page on the Stage wall.</summary>
     public const string Blank = "blank";
 
     /// <summary>The diagnostic page itself, whatever the map is set to.</summary>
@@ -57,7 +58,16 @@ public sealed class ScreenAssignments
 
     /// <summary>
     /// Canonical form of a source: trimmed, with the typed short ids expanded to their prefixed
-    /// forms (tw: to twitch:, a bare lv… id to nico:, bare pattern to pattern:live).
+    /// forms (tw: to twitch:, a bare lv… id to nico:, bare pattern to pattern:live). A source is
+    /// "&lt;main&gt; [main:&lt;url&gt;] [banner:&lt;url&gt;] [&lt;url&gt;] [box:x/y/w/h]
+    /// [crop:sw/sh:cx/cy] [scrollx:N] [scrolly:N] [scroll:x/y] [scale:N] [key[:RRGGBB]]":
+    /// main:&lt;url&gt; is a frame page under the main panel, with the box relative to that
+    /// panel; banner:&lt;url&gt; is a page for the Stage banner strip (the title card when
+    /// absent); a bare page URL is the raw form, a frame page under the whole crop with a box or
+    /// key word, the banner otherwise; a box word places the video inside the crop; a crop word
+    /// renders the picture at another size and shows the box-sized window at cx,cy of it (for
+    /// browser sources sw/sh is the layout viewport); scroll words pan a browser document;
+    /// scale:N is browser zoom; a key word colour-keys the video into the page.
     /// </summary>
     public static string Normalize(string source)
     {
@@ -75,6 +85,85 @@ public sealed class ScreenAssignments
             main = main.ToLowerInvariant();
         return string.Join(' ', new[] { main }.Concat(words.Skip(1)));
     }
+
+    /// <summary>
+    /// key or key:RRGGBB: colour keying. The page paints the key colour where video belongs and
+    /// the hook fills only those pixels, so HTML can sit over the video. Bare "key" is the
+    /// DirectDraw overlay key of the era, the near-black RGB 16,0,16 (100010) that let a
+    /// rectangle painted in Paint show the movie through.
+    /// </summary>
+    public static bool IsKeyWord(string? word) =>
+        word is not null
+        && (
+            string.Equals(word, "key", StringComparison.OrdinalIgnoreCase)
+            || (
+                word.StartsWith("key:", StringComparison.OrdinalIgnoreCase)
+                && word.Length == 10
+                && word[4..].All(char.IsAsciiHexDigit)
+            )
+        );
+
+    /// <summary>scale:N for browser sources: Electron's zoom (1 = 100%), 0.1–8. A texture stretch this is not.</summary>
+    public static bool IsScaleWord(string? word) =>
+        word is not null
+        && word.StartsWith("scale:", StringComparison.OrdinalIgnoreCase)
+        && double.TryParse(
+            word[6..],
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out var scale
+        )
+        && scale is >= 0.1 and <= 8;
+
+    /// <summary>
+    /// scrollx:N, scrolly:N, or scroll:x/y: document offset in CSS pixels, enforced inside the
+    /// off-screen browser. The layout viewport is crop:sw/sh when given, else the box.
+    /// </summary>
+    public static bool IsScrollWord(string? word)
+    {
+        if (word is null)
+            return false;
+        if (
+            word.StartsWith("scrollx:", StringComparison.OrdinalIgnoreCase)
+            || word.StartsWith("scrolly:", StringComparison.OrdinalIgnoreCase)
+        )
+            return int.TryParse(
+                word[8..],
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out _
+            );
+        return word.StartsWith("scroll:", StringComparison.OrdinalIgnoreCase)
+            && word[7..].Split('/') is { Length: 2 } parts
+            && parts.All(part =>
+                int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)
+            );
+    }
+
+    /// <summary>
+    /// box:x/y/w/h with four non-negative integers. Slashes, not commas: the client splits chat
+    /// arguments on commas and spaces (URLs, with their colons and slashes, come through whole).
+    /// </summary>
+    public static bool IsBoxWord(string? word) =>
+        word is not null
+        && word.StartsWith("box:", StringComparison.OrdinalIgnoreCase)
+        && word[4..].Split('/') is { Length: 4 } parts
+        && parts.All(part => int.TryParse(part, out var n) && n >= 0);
+
+    /// <summary>
+    /// crop:sw/sh:cx/cy: the picture is rendered (letterboxed) at sw x sh instead of the box
+    /// size, and the box-sized window starting at cx,cy of that is what the box shows. Zooms
+    /// in, or cuts a region out: crop:972/686:243/171 shows the middle quarter of a TV. For
+    /// browser sources sw x sh is the layout viewport, not a video letterbox.
+    /// </summary>
+    public static bool IsCropWord(string? word) =>
+        word is not null
+        && word.StartsWith("crop:", StringComparison.OrdinalIgnoreCase)
+        && word[5..].Split(':') is { Length: 2 } halves
+        && halves[0].Split('/') is { Length: 2 } size
+        && size.All(part => int.TryParse(part, out var n) && n > 0)
+        && halves[1].Split('/') is { Length: 2 } origin
+        && origin.All(part => int.TryParse(part, out var n) && n >= 0);
 
     private static string MainOf(string source) => Normalize(source).Split(' ')[0];
 
@@ -165,6 +254,14 @@ public sealed class ScreenAssignments
             || IsElectronSource(source)
         );
 
+    /// <summary>main:&lt;url&gt;: a frame page under the main panel; box:x/y/w/h is then relative to it.</summary>
+    public static bool IsMainWord(string? word) =>
+        word is not null && HasPrefix(word, "main:", IsPageUrl);
+
+    /// <summary>banner:&lt;url&gt;: a page for the Stage wall's banner strip.</summary>
+    public static bool IsBannerWord(string? word) =>
+        word is not null && HasPrefix(word, "banner:", IsPageUrl);
+
     /// <summary>A web page the screen shows as is, framed inside the screen page.</summary>
     public static bool IsPageUrl(string? source) =>
         source is not null
@@ -175,14 +272,27 @@ public sealed class ScreenAssignments
 
     /// <summary>
     /// What /screen accepts: a stream, a page, blank, the title card, the test page, the
-    /// calibration aids. A single word: nothing may follow it.
+    /// calibration aids; with optional extras (main:, banner: and bare page URLs, box, crop, key,
+    /// scroll and scale words).
     /// </summary>
     public static bool IsValidSource(string? source)
     {
         if (source is null)
             return false;
         var main = MainOf(source);
-        if (ExtrasOf(source).Any())
+        if (
+            !ExtrasOf(source)
+                .All(word =>
+                    IsPageUrl(word)
+                    || IsMainWord(word)
+                    || IsBannerWord(word)
+                    || IsBoxWord(word)
+                    || IsCropWord(word)
+                    || IsKeyWord(word)
+                    || IsScrollWord(word)
+                    || IsScaleWord(word)
+                )
+        )
             return false;
         return IsStreamSource(main)
             || IsPageUrl(main)
