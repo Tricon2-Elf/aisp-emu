@@ -168,13 +168,15 @@ body.tv #comments{top:36px}
   // scrollx:N, scrolly:N, or scroll:x/y: document offset the off-screen browser (electron:) enforces.
   // Null when no scroll extra is present (the hook then shows scrollbars again).
   function scrollOf(v){
-    var x=0,y=0,set=false,w=(v||'').split(' ');
+    // "given", not "set": Wine's jscript (the engine behind its IE, used for testing this page
+    // in the local prefix) refuses "set" as a variable name, although IE itself accepts it.
+    var x=0,y=0,given=false,w=(v||'').split(' ');
     for(var i=1;i<w.length;i++){
-      var mx=/^scrollx:(-?\d+)$/i.exec(w[i]); if(mx){ x=+mx[1]; set=true; }
-      var my=/^scrolly:(-?\d+)$/i.exec(w[i]); if(my){ y=+my[1]; set=true; }
-      var m=/^scroll:(-?\d+)\/(-?\d+)$/i.exec(w[i]); if(m){ x=+m[1]; y=+m[2]; set=true; }
+      var mx=/^scrollx:(-?\d+)$/i.exec(w[i]); if(mx){ x=+mx[1]; given=true; }
+      var my=/^scrolly:(-?\d+)$/i.exec(w[i]); if(my){ y=+my[1]; given=true; }
+      var m=/^scroll:(-?\d+)\/(-?\d+)$/i.exec(w[i]); if(m){ x=+m[1]; y=+m[2]; given=true; }
     }
-    return set?[x,y]:null;
+    return given?[x,y]:null;
   }
   // scale:N: Chromium zoom for electron: (1 = 100%). Not a texture stretch.
   function scaleOf(v){ var w=(v||'').split(' '); for(var i=1;i<w.length;i++){ var m=/^scale:([0-9]*\.?[0-9]+)$/i.exec(w[i]); if(m){ var n=+m[1]; if(n>=0.1&&n<=8) return n; } } return 0; }
