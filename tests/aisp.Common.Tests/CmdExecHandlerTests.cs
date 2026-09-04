@@ -252,7 +252,11 @@ public class CmdExecHandlerTests
             var reader = new PacketReader(notice.Payload);
             reader.ReadUInt();
             reader.ReadUInt();
-            Assert.Contains("target", reader.ReadString("utf-8"), StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                "target",
+                reader.ReadString("utf-8"),
+                StringComparison.OrdinalIgnoreCase
+            );
         }
         finally
         {
@@ -670,14 +674,19 @@ public class CmdExecHandlerTests
                 msgSession,
                 TestContext.Current.CancellationToken
             );
-            var listNotice = Assert.Single(
-                msgSession.Sent,
-                packet => packet.Type == PacketType.TalkForwardNotify
+            // A list longer than one notice allows arrives as several; read them all.
+            var listText = string.Join(
+                "\n",
+                msgSession
+                    .Sent.Where(packet => packet.Type == PacketType.TalkForwardNotify)
+                    .Select(packet =>
+                    {
+                        var listReader = new PacketReader(packet.Payload);
+                        listReader.ReadUInt();
+                        listReader.ReadUInt();
+                        return listReader.ReadString("utf-8");
+                    })
             );
-            var listReader = new PacketReader(listNotice.Payload);
-            listReader.ReadUInt();
-            listReader.ReadUInt();
-            var listText = listReader.ReadString("utf-8");
             Assert.Contains("9000: Visitor's Default Room", listText, StringComparison.Ordinal);
             Assert.Contains(
                 $"{createdRoom.Id}: Second Room (8 tatami) [default]",

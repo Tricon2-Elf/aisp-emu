@@ -1279,7 +1279,11 @@ public class CmdExecHandler(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "CmdExecHandler: failed to create report ticket for user {UserId}", user.Id);
+            logger.LogError(
+                ex,
+                "CmdExecHandler: failed to create report ticket for user {UserId}",
+                user.Id
+            );
             await SendModerationNoticeAsync(session, L.Cmd.ReportFailed, ct);
         }
     }
@@ -1409,16 +1413,7 @@ public class CmdExecHandler(
         IPlayerSession session,
         string text,
         CancellationToken ct
-    )
-    {
-        // DistID -5 is the client "System" / Notice chat filter (see sub_428B10 / sub_428BB0).
-        const uint systemDistId = unchecked((uint)-5);
-        return session.SendAsync(
-            PacketType.TalkForwardNotify,
-            new TalkForwardNotify(0, systemDistId, $"{text}\r\n", 0).ToBytes(),
-            ct
-        );
-    }
+    ) => SystemNotice.SendAsync(session, text, ct);
 
     private static byte[] CreateTeleportNotify(Character cha, uint objId, MovementData pos)
     {
