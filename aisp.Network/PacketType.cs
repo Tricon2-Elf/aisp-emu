@@ -833,7 +833,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_get_free_friend_link_tag",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     FriendLinkTagGetFreeRequest = 0xC88F,
 
@@ -841,9 +841,25 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_get_friend_link_tag_data",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     FriendLinkTagGetRequest = 0x0F97,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_friend_link_tag_change",
+        ImplementationState.Implemented
+    )]
+    FriendLinkTagChangeRequest = 0xA514,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_placard_setting",
+        ImplementationState.Implemented
+    )]
+    PlacardSettingRequest = 0xCFEA,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2402,7 +2418,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_delete_friend_list_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     DeleteFriendListResponse = 0x4BD6,
 
@@ -2722,7 +2738,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_friend_link_tag_change_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     FriendLinkTagChangeResponse = 0x690F,
 
@@ -2826,9 +2842,17 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_get_free_friend_link_tag_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     GetFreeFriendLinkTagResponse = 0x9865,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_placard_setting_r",
+        ImplementationState.Implemented
+    )]
+    PlacardSettingResponse = 0x7D4A,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2866,7 +2890,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_get_placard_comment_log_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     GetPlacardCommentLogResponse = 0x511B,
 
@@ -3401,6 +3425,14 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_notify_delete_friend_list_avatar",
+        ImplementationState.Implemented
+    )]
+    NotifyDeleteFriendListAvatar = 0x3EE9,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_notify_complete_state_open",
         ImplementationState.NotImplemented
     )]
@@ -3866,7 +3898,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_notify_placard_comment_log",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyPlacardCommentLog = 0x553F,
 
@@ -3874,7 +3906,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_placard_in_map",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyPlacardInMap = 0x9089,
 
@@ -3882,7 +3914,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_placard_setting",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyPlacardSetting = 0x71CB,
 
@@ -4162,7 +4194,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_placard_remove_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     PlacardRemoveResponse = 0x7C34,
 
@@ -4858,7 +4890,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_delete_friend_list",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     DeleteFriendListRequest = 0x343B,
 
@@ -5050,9 +5082,17 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_get_placard_comment_log",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     GetPlacardCommentLogRequest = 0xA50E,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_placard_remove",
+        ImplementationState.Implemented
+    )]
+    PlacardRemoveRequest = 0x8917,
 
     [PacketMetadata(
         PacketServerType.Area,
