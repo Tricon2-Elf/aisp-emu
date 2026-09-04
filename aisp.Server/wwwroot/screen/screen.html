@@ -33,6 +33,8 @@ body.tv #comments{top:36px}
 .corner{position:absolute;width:12px;height:12px;background:#f80}
 .panel{position:absolute;outline:2px solid #f80}
 .panel .lab{position:absolute;left:4px;top:2px;font-size:11px;color:#f80}
+.card{position:absolute;background:#0d0b1a;color:#e8e6f0;text-align:center;font-family:Verdana,Arial,sans-serif;font-weight:bold;overflow:hidden}
+.card .w{position:absolute;left:0;width:100%;letter-spacing:4px}
 </style></head><body>
 <div id="navi"></div>
 <div id="flvplayer_container">
@@ -43,6 +45,8 @@ body.tv #comments{top:36px}
     <div id="calls">calls from the client appear here</div>
   </div>
 </div>
+<!-- A page source (http/https) is shown in the frame; stream sources go to the hook. -->
+<iframe id="frame" style="position:absolute;left:0;top:0;width:0;height:0;border:0;display:none" frameborder="0" scrolling="no"></iframe>
 <div id="external_nico_0"></div>
 <!-- The client reads this element's .value for "value=<state> " (space-terminated) to learn the
      player state, and gates ext_setCommentVisible's local flush on it reading playing or paused.
@@ -86,12 +90,114 @@ body.tv #comments{top:36px}
   function note(s){
     log.unshift(s); if(log.length>6) log.length=6; calls.innerHTML=log.join('<br>');
   }
-  // The launcher hook reads volume and mute from the title, which must survive every update.
+  // The launcher hook reads volume, mute and the source to play from the title; the server put
+  // the source there when this page was served, and it must survive every update.
+  var src=(function(){ var m=/;src=(.*)$/.exec(document.title||''); return m?m[1]:''; })();
+  // Whether this page needs to poll at all: not for a room TV, which the client re-navigates on
+  // every assignment change, nor for live-watch (the Stage), which /screen pushes a reload to
+  // instead. A town screen (a channel-screen, Akihabara confirmed) has neither guarantee, so it
+  // is the one case left polling.
+  var noPoll=/;nopoll=1(?:;|$)/.test(document.title||'');
+  var frame=$('frame');
+  function isPage(v){ return /^https?:\/\//i.test(v); }
+  // The main source goes to the main panel: stream sources are published for the hook; pages
+  // are framed here.
+  function mainOf(v){ return (v||'').split(' ')[0]; }
+  // The main panel, in crop coordinates: a TV shows all of its crop, the Stage wall its main LED.
+  var panel=isLive?[7,65,543,382]:[0,0,486,343];
   function publish(){
-    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0);
+    var m=mainOf(src);
+    var stream=m&&!isPage(m)&&m!=='blank'&&m!=='title';
+    document.title='aisp:vol='+state.volume+';mute='+(state.mute?1:0)+(stream?';src='+m:'');
     // The client forwards volume while the state is playing or paused, and only flushes a
     // pending comment-visibility toggle then too; it reads the word from .value here.
     var sf=$('statusForm'); if(sf) sf.value='value='+(state.paused?'paused':'playing')+' (statusForm)';
+  }
+  // "title": a title card, "aisp-emu" centred in each panel on a dark background ('all'), or
+  // on the Stage banner alone ('top') while the main panel plays something.
+  var cards=[];
+  function showTitleCard(mode){
+    for(var i=0;i<cards.length;i++) box.removeChild(cards[i]);
+    cards=[];
+    if(!mode) return;
+    var rects=isLive?(mode==='top'?[[7,7,543,53,26]]:[[7,7,543,53,26],[7,65,543,382,56]]):(mode==='top'?[]:[[0,0,486,343,48]]);
+    for(var r=0;r<rects.length;r++){
+      var x=rects[r][0], y=rects[r][1], w=rects[r][2], h=rects[r][3], fs=rects[r][4];
+      var c=document.createElement('div'); c.className='card';
+      c.style.left=x+'px'; c.style.top=y+'px'; c.style.width=w+'px'; c.style.height=h+'px';
+      var t=document.createElement('div'); t.className='w'; t.style.fontSize=fs+'px'; t.style.lineHeight=fs+'px'; t.style.top=Math.round((h-fs)/2)+'px'; t.innerHTML='aisp-emu';
+      c.appendChild(t);
+      box.appendChild(c); cards.push(c);
+    }
+  }
+  // While a real source is up, the page is a blank black base under it.
+  function showDiagnostics(on){
+    var ids=['title','meta','calls','pulse','statusForm'];
+    for(var i=0;i<ids.length;i++){ var e=$(ids[i]); if(e) e.style.visibility=on?'visible':'hidden'; }
+    var leds=[$('led-top'),$('led-main')];
+    for(var k=0;k<leds.length;k++) leds[k].style.background=on?'#1a1a2e':'#000';
+    var cs=document.getElementsByTagName('div');
+    for(var j=0;j<cs.length;j++) if(cs[j].className==='corner'||cs[j].className==='panel') cs[j].style.visibility=on?'visible':'hidden';
+  }
+  // Calibration: a fine grid over the whole crop (lines every 10 px, labels every 50) so a
+  // panel's edges can be read in game. Drawn as page-coordinate lines over everything.
+  var grid=null;
+  function showGrid(on){
+    if(grid){ box.removeChild(grid); grid=null; }
+    if(!on) return;
+    grid=document.createElement('div'); grid.style.position='absolute'; grid.style.left='0'; grid.style.top='0';
+    var W=isLive?950:486, H=isLive?520:343;
+    grid.style.width=W+'px'; grid.style.height=H+'px'; grid.style.background='#fff';
+    for(var y=0;y<=H;y+=10){ var l=document.createElement('div'); l.style.position='absolute'; l.style.left='0'; l.style.top=y+'px'; l.style.width=W+'px'; l.style.height='1px'; l.style.background=(y%50)?'#cde':'#06c'; grid.appendChild(l); }
+    for(var x=0;x<=W;x+=10){ var v=document.createElement('div'); v.style.position='absolute'; v.style.left=x+'px'; v.style.top='0'; v.style.width='1px'; v.style.height=H+'px'; v.style.background=(x%50)?'#cde':'#06c'; grid.appendChild(v); }
+    for(var y2=0;y2<H;y2+=50) for(var x2=0;x2<W;x2+=50){
+      var t=document.createElement('div'); t.style.position='absolute'; t.style.left=(x2+2)+'px'; t.style.top=(y2+1)+'px';
+      t.style.fontSize='9px'; t.style.color='#000'; t.style.lineHeight='9px'; t.innerHTML=x2+'/'+y2; grid.appendChild(t);
+    }
+    box.appendChild(grid);
+  }
+  // c:x1/y1:x2/y2:x3/y3:x4/y4 ... : rectangles by opposite corners, drawn with their numbers so
+  // they can be adjusted from chat until they sit on the panel edges (slashes: the client
+  // splits chat arguments on commas).
+  var rectsLayer=null;
+  function showRects(spec){
+    if(rectsLayer){ box.removeChild(rectsLayer); rectsLayer=null; }
+    if(!spec) return;
+    rectsLayer=document.createElement('div'); rectsLayer.style.position='absolute'; rectsLayer.style.left='0'; rectsLayer.style.top='0';
+    var pts=spec.split(':'), colors=['#f80','#0f0','#f0f','#0ff'];
+    for(var i=0;i+1<pts.length;i+=2){
+      var a=pts[i].split('/'), b=pts[i+1].split('/');
+      var x1=Math.min(+a[0],+b[0]), y1=Math.min(+a[1],+b[1]), x2=Math.max(+a[0],+b[0]), y2=Math.max(+a[1],+b[1]);
+      if(isNaN(x1)||isNaN(y1)||isNaN(x2)||isNaN(y2)) continue;
+      var r=document.createElement('div'); r.style.position='absolute'; r.style.left=x1+'px'; r.style.top=y1+'px';
+      r.style.width=(x2-x1)+'px'; r.style.height=(y2-y1)+'px'; r.style.border='2px solid '+colors[(i/2)%colors.length];
+      r.style.boxSizing='border-box';
+      var t=document.createElement('div'); t.style.position='absolute'; t.style.left='6px'; t.style.top='4px'; t.style.fontSize='12px'; t.style.color=colors[(i/2)%colors.length];
+      t.innerHTML=x1+','+y1+' - '+x2+','+y2; r.appendChild(t);
+      rectsLayer.appendChild(r);
+    }
+    box.appendChild(rectsLayer);
+  }
+  function place(f,x,y,w,h,url){
+    f.style.left=x+'px'; f.style.top=y+'px'; f.style.width=w+'px'; f.style.height=h+'px'; f.style.display='block';
+    if(f.src!==url) f.src=url;
+  }
+  function hide(f){ f.style.display='none'; if(f.src) f.src='about:blank'; }
+  function applySource(){
+    var m=mainOf(src);
+    var ox=isLive?0:9, oy=isLive?0:15; // the crop inside the page
+    showGrid(m==='calibrate');
+    showRects(/^c:/i.test(m)?m.substring(2):null);
+    var diagnostic = !m || m==='calibrate' || /^c:/i.test(m);
+    showDiagnostics(diagnostic);
+    // A banner left free by a playing main panel shows the title card rather than nothing.
+    var topFree=isLive && m && m!=='title' && m!=='blank' && !diagnostic;
+    showTitleCard(m==='title'?'all':(topFree?'top':null));
+    if(isPage(m))
+      place(frame, ox+panel[0], oy+panel[1], panel[2], panel[3], m); // a page as the source: over the main panel
+    else
+      hide(frame);
+    publish();
   }
   function updateComments(){
     var el=$('comments'); if(!el) return;
@@ -121,10 +227,32 @@ body.tv #comments{top:36px}
   ext.ext_isRepeat=function(r){ note('ext_isRepeat -> '+r); return ret(r, state.repeat?1:0); };
   ext.ext_getPlayheadTime=function(r){ note('ext_getPlayheadTime -> '+r); return ret(r, Math.floor((new Date().getTime()-t0)/1000)); };
   ext.ext_getTotalTime=function(r){ note('ext_getTotalTime -> '+r); return ret(r, state.total); };
-  publish();
+  applySource();
+  // The server may change what a screen plays after it loaded, with nothing client-side to tell
+  // it, so it keeps asking and republishes the title, which the hook follows, unless noPoll
+  // (above) says the server already pushes this page a reload instead: a room TV re-navigates on
+  // every assignment change on its own (movie set, channel switch, room re-entry), and live-watch
+  // (the Stage) gets notify_nicolive_reload from /screen. A /channel-screen (a town map's own
+  // screen, Akihabara confirmed) has neither guarantee, so it is the one case polling; the
+  // pushed cases never run this at all, so a relaxed 30s interval here only affects that one
+  // less time-sensitive case.
+  function pollSource(){
+    try{
+      var xhr=new XMLHttpRequest();
+      xhr.open('GET','screen-source?route='+encodeURIComponent(path)+'&'+(window.location.search||'?').substring(1)+'&_='+new Date().getTime(),true);
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4||xhr.status!==200) return;
+        var m=/"src"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(xhr.responseText||'');
+        var next=m?m[1].replace(/\\"/g,'"').replace(/\\\\/g,'\\'):'';
+        if(next!==src){ src=next; applySource(); }
+      };
+      xhr.send(null);
+    }catch(e){}
+  }
+  if(!noPoll) setInterval(pollSource,30000);
   setInterval(function(){
     var s=Math.floor((new Date().getTime()-t0)/1000);
-    meta.innerHTML=kind+' ('+path+')<br>'+(params.length?params.join(' &nbsp; '):'no parameters')+'<br>mode: '+mode+' &nbsp; clock: '+s+'s &nbsp; volume: '+state.volume+(state.mute?' (muted)':'');
+    meta.innerHTML=kind+' ('+path+')<br>'+(params.length?params.join(' &nbsp; '):'no parameters')+'<br>mode: '+mode+' &nbsp; clock: '+s+'s &nbsp; volume: '+state.volume+(state.mute?' (muted)':'')+'<br>source: '+(src||'(none, showing this page)');
     pulse.style.background=(s%2)?'#f80':'#0cf';
   },250);
 })();

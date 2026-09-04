@@ -1,3 +1,4 @@
+using aisp.Common.Config;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
@@ -9,6 +10,7 @@ using aisp.Network.Packets.Area;
 using aisp.Network.Packets.Msg;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Character = aisp.Common.DAL.Entities.Character;
 
 namespace aisp.Common.Handlers.Msg;
@@ -28,6 +30,8 @@ public class CmdExecHandler(
     ITextLocaliser localiser,
     IAdventureWorkRepository adventureWorks,
     IWordFilter wordFilter,
+    ScreenAssignments screenAssignments,
+    IOptions<ServerOptions> serverOptions,
     ILogger<CmdExecHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -72,6 +76,12 @@ public class CmdExecHandler(
                     session.User?.Id ?? session.UserId
                 );
             }
+            return;
+        }
+
+        if (cmd is "screen" or "display")
+        {
+            await HandleScreenCommandAsync(session, request.Arguments, ct);
             return;
         }
 
@@ -911,6 +921,97 @@ public class CmdExecHandler(
             return state.GetAreaSessionByCharacterId(msgSession.CharacterId);
 
         return null;
+    }
+
+    /// <summary>
+    /// /screen &lt;source&gt; plays a source on every in-game screen of the map the player is on
+    /// (the Akihabara display, the Stage billboard): the ids anyone may type into a room TV
+    /// (tw:, twe:, ytl:, lv…, pattern:live, title), plus streamlink:&lt;url&gt; or
+    /// stream:&lt;url&gt; for the launcher hook to decode, electron:&lt;http(s) url&gt; for an
+    /// off-screen browser overlay, or an http(s) URL of a web page to show in IE. /screen off
+    /// clears it; /screen alone shows it.
+    /// The Stage billboard (see ScreenAssignments.StageMapId) reloads at once through
+    /// notify_nicolive_reload; any other screen (a town map's own, Akihabara confirmed) has no
+    /// such thing and only picks up a change on its next poll, a few seconds later.
+    /// </summary>
+    private async Task HandleScreenCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (session.User is not { } actor || !actor.Role.CanKickOrBan())
+        {
+            await SendSystemNoticeAsync(session, "/screen is for moderators.", ct);
+            return;
+        }
+        var areaClient = ResolveAreaClient(session);
+        if (areaClient is null)
+        {
+            await SendSystemNoticeAsync(session, "/screen needs you to be on a map.", ct);
+            return;
+        }
+        var mapId = areaClient.MapId;
+        if (args.Count == 0)
+        {
+            var current = screenAssignments.Get(mapId);
+            await SendSystemNoticeAsync(
+                session,
+                current is null
+                    ? $"Map {mapId}: screens show the default page. /screen tw:<channel> | stream:<url> | <page url> | title | off"
+                    : $"Map {mapId}: screens play {current}. /screen off to clear.",
+                ct
+            );
+            return;
+        }
+
+        // The client splits command arguments on commas and spaces; the source syntax uses
+        // neither inside a word (coordinates are slash-separated).
+        var source = string.Join(" ", args).Trim();
+        var clearing = source is "off" or "clear" or "none";
+        if (clearing)
+            screenAssignments.Clear(mapId);
+        else if (ScreenAssignments.IsValidSource(source))
+            screenAssignments.Set(mapId, source);
+        else
+        {
+            await SendSystemNoticeAsync(
+                session,
+                "/screen <source>. Sources: tw:<channel> (Twitch), twe:<channel> (Twitch embed), ytl:<id> (YouTube live), lv<id> (Nico Live),\n"
+                    + "pattern:live (the hook's own test picture and tone), streamlink:<url>, stream:<url>, electron:<http(s) url> (off-screen browser), a web page URL,\n"
+                    + "blank, title, testscreen, calibrate, c:x1/y1:x2/y2:..., or off.",
+                ct
+            );
+            return;
+        }
+        logger.LogInformation(
+            "CmdExecHandler: user {UserId} set the screens of map {MapId} to {Source}",
+            actor.Id,
+            mapId,
+            clearing ? "(default)" : source
+        );
+
+        // The Nico Live billboard re-navigates on this notify; the page it fetches carries the
+        // new source. Confirmed by testing to do nothing on a map without one (the shopping
+        // mall), so only bother sending it on the one map that has it.
+        var liveId = serverOptions.Value.NicoLive.LiveId?.Trim() ?? "";
+        var reloaded = 0;
+        if (!string.IsNullOrEmpty(liveId) && mapId == ScreenAssignments.StageMapId)
+        {
+            var reload = new NotifyNicoliveReload(liveId).ToBytes();
+            foreach (var client in state.AreaClients.Where(c => c.MapId == mapId))
+            {
+                await client.SendAsync(PacketType.NotifyNicoliveReload, reload, ct);
+                reloaded++;
+            }
+        }
+        await SendSystemNoticeAsync(
+            session,
+            clearing
+                ? $"Map {mapId}: screens back to the default page ({reloaded} client(s) told); open screens follow within a few seconds."
+                : $"Map {mapId}: screens set to {source} ({reloaded} client(s) told); open screens follow within a few seconds.",
+            ct
+        );
     }
 
     private async Task HandleKickCommandAsync(
