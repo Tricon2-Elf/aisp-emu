@@ -580,19 +580,20 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
         uint.Parse(MainOf(source).AsSpan(8), NumberStyles.None, CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// What /channel accepts for a channel's content: a bare stream, not a video with a shared
-    /// timeline (channels are livestream-only, with no per-channel pause/resume/seek) and not
-    /// another channel (no indirection chains). A channel is purely a source map: no box, key,
-    /// main:, crop: or other framing extras here; those belong on whoever references the
-    /// channel (a room TV typing channel:&lt;n&gt;, or /screen channel:&lt;n&gt; box:... key
-    /// main:...), since different screens frame the same channel differently. See
+    /// What /channel accepts for a channel's content: a bare stream or a web page, not a video
+    /// with a shared timeline (channels are livestream-only, with no per-channel
+    /// pause/resume/seek) and not another channel (no indirection chains). A channel is purely a
+    /// source map: no box, key, main:, crop: or other framing extras here; those belong on
+    /// whoever references the channel (a room TV typing channel:&lt;n&gt;, or /screen
+    /// channel:&lt;n&gt; box:... key main:...), since different screens frame the same channel
+    /// differently. See
     /// <see cref="ResolveChannelIndirection"/>, which keeps the reference's own extras and drops
     /// the channel's word for its main token alone.
     /// </summary>
     public static bool IsValidChannelContentSource(string? source) =>
         source is not null
         && !ExtrasOf(source).Any()
-        && IsStreamSource(source)
+        && (IsStreamSource(source) || IsPageUrl(source))
         && !IsVideoSource(source)
         && !IsChannelSource(source);
 

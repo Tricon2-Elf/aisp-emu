@@ -473,6 +473,9 @@ public sealed class ScreenAssignmentsTests
         Assert.True(ScreenAssignments.IsValidChannelContentSource("lv351315472"));
         Assert.True(ScreenAssignments.IsValidChannelContentSource("streamlink:https://x/y"));
         Assert.True(ScreenAssignments.IsValidChannelContentSource("pattern:live"));
+        // A web page is channel content too (the help has always said so): the screen page shows
+        // it over the video box, the same as a page given to /screen directly.
+        Assert.True(ScreenAssignments.IsValidChannelContentSource("https://example.com/rain.html"));
         Assert.False(ScreenAssignments.IsValidChannelContentSource("yt:dQw4w9WgXcQ"));
         Assert.False(ScreenAssignments.IsValidChannelContentSource("sm11273499"));
         Assert.False(ScreenAssignments.IsValidChannelContentSource("lv351315472:vod"));
@@ -482,6 +485,9 @@ public sealed class ScreenAssignmentsTests
         // A channel is purely a source map: framing belongs on whoever references it, not here.
         Assert.False(ScreenAssignments.IsValidChannelContentSource("tw:someone box:0/0/10/10"));
         Assert.False(ScreenAssignments.IsValidChannelContentSource("tw:someone key"));
+        Assert.False(
+            ScreenAssignments.IsValidChannelContentSource("https://example.com/rain.html key")
+        );
 
         var assignments = new ScreenAssignments();
 
