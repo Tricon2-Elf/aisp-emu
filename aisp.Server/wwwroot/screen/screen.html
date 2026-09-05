@@ -457,7 +457,14 @@ body.tv #comments{top:36px}
   if(!noPoll) setInterval(pollSource,30000);
   setInterval(function(){
     var s=Math.floor((new Date().getTime()-t0)/1000);
-    meta.innerHTML=kind+' ('+path+')<br>'+(params.length?params.join(' &nbsp; '):'no parameters')+'<br>mode: '+mode+' &nbsp; clock: '+s+'s &nbsp; volume: '+state.volume+(state.mute?' (muted)':'')+'<br>source: '+(src||'(none, showing this page)');
+    while(meta.firstChild) meta.removeChild(meta.firstChild);
+    meta.appendChild(document.createTextNode(kind+' ('+path+')'));
+    meta.appendChild(document.createElement('br'));
+    meta.appendChild(document.createTextNode(params.length?params.join(' & '):'no parameters'));
+    meta.appendChild(document.createElement('br'));
+    meta.appendChild(document.createTextNode('mode: '+mode+'   clock: '+s+'s   volume: '+state.volume+(state.mute?' (muted)':'')));
+    meta.appendChild(document.createElement('br'));
+    meta.appendChild(document.createTextNode('source: '+(src||'(none, showing this page)')));
     pulse.style.background=(s%2)?'#f80':'#0cf';
   },250);
 })();
