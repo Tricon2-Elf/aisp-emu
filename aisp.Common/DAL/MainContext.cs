@@ -167,6 +167,11 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.PlaybackState)
                 .HasConversion<uint>()
                 .HasDefaultValue(NicotvPlaybackState.Closed);
+            // TODO: make Hidden the database default too (a migration altering this column's
+            // default) once the screens branch lands; kept out of it so it merges without a schema
+            // change. New rows already get Hidden from the entity's initializer, which EF writes
+            // explicitly since it differs from the enum's zero; this only costs a startup warning
+            // about the mismatch.
             e.Property(x => x.CommentVisibility)
                 .HasConversion<uint>()
                 .HasDefaultValue(NicotvCommentVisibility.Visible);

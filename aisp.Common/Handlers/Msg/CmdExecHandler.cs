@@ -1,3 +1,4 @@
+using aisp.Common.Config;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
@@ -9,6 +10,7 @@ using aisp.Network.Packets.Area;
 using aisp.Network.Packets.Msg;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Character = aisp.Common.DAL.Entities.Character;
 
 namespace aisp.Common.Handlers.Msg;
@@ -28,6 +30,9 @@ public class CmdExecHandler(
     ITextLocaliser localiser,
     IAdventureWorkRepository adventureWorks,
     IWordFilter wordFilter,
+    ScreenAssignments screenAssignments,
+    INicotvRepository nicotvRepository,
+    IOptions<ServerOptions> serverOptions,
     ILogger<CmdExecHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -72,6 +77,18 @@ public class CmdExecHandler(
                     session.User?.Id ?? session.UserId
                 );
             }
+            return;
+        }
+
+        if (cmd is "screen" or "display")
+        {
+            await HandleScreenCommandAsync(session, request.Arguments, ct);
+            return;
+        }
+
+        if (cmd is "channel")
+        {
+            await HandleChannelCommandAsync(session, request.Arguments, ct);
             return;
         }
 
@@ -913,6 +930,231 @@ public class CmdExecHandler(
         return null;
     }
 
+    /// <summary>
+    /// /screen &lt;source&gt; plays a source on every in-game screen of the map the player is on
+    /// (the Akihabara display, the Stage billboard, TVs on a channel): the ids anyone may type
+    /// into a room TV (tw:, twe:, yt:, ytl:, lv…, lv…:vod, sm…, pattern:live, pattern:vod,
+    /// title), plus streamlink:&lt;url&gt; or stream:&lt;url&gt; for the launcher hook to decode,
+    /// electron:&lt;http(s) url&gt; for an off-screen browser overlay, or an http(s) URL of a
+    /// web page to show in IE. /screen off clears it; /screen alone shows it.
+    /// The Stage billboard (see ScreenAssignments.StageMapId) reloads at once through
+    /// notify_nicolive_reload, same as /channel does when it changes a channel the Stage is
+    /// bound to (see HandleChannelCommandAsync); any other screen (a town map's own, Akihabara
+    /// confirmed, or another map bound to a channel) has no such thing and only picks up a
+    /// change on its next poll.
+    /// </summary>
+    private async Task HandleScreenCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (session.User is not { } actor || !actor.Role.CanKickOrBan())
+        {
+            await SendSystemNoticeAsync(session, "/screen is for moderators.", ct);
+            return;
+        }
+        var areaClient = ResolveAreaClient(session);
+        if (areaClient is null)
+        {
+            await SendSystemNoticeAsync(session, "/screen needs you to be on a map.", ct);
+            return;
+        }
+        var mapId = areaClient.MapId;
+        if (args.Count == 0)
+        {
+            var current = screenAssignments.Get(mapId);
+            await SendSystemNoticeAsync(
+                session,
+                current is null
+                    ? $"Map {mapId}: screens show the default page. /screen tw:<channel> | yt:<id> | stream:<url> | <page url> | title | off"
+                    : $"Map {mapId}: screens play {current}. /screen off to clear.",
+                ct
+            );
+            return;
+        }
+
+        // pause / resume / seek <seconds> steer the map's video without changing the source.
+        var verb = args[0].ToLowerInvariant();
+        if (verb is "pause" or "resume" or "seek")
+        {
+            var action = verb == "seek" ? "seek:" + (args.Count > 1 ? args[1] : "") : verb;
+            var applied = screenAssignments.Control(mapId, action);
+            await SendSystemNoticeAsync(
+                session,
+                applied
+                    ? $"Map {mapId}: video {verb}{(verb == "seek" ? " " + args[1] : "")}."
+                    : $"Map {mapId}: no video to {verb} (set one with /screen yt:<id>, sm<id> or pattern:vod).",
+                ct
+            );
+            return;
+        }
+
+        // The client splits command arguments on commas and spaces; the source syntax uses
+        // neither inside a word (coordinates are slash-separated).
+        var source = string.Join(" ", args).Trim();
+        var clearing = source is "off" or "clear" or "none";
+        if (clearing)
+            screenAssignments.Clear(mapId);
+        else if (ScreenAssignments.IsValidSource(source))
+            screenAssignments.Set(mapId, source);
+        else
+        {
+            await SendSystemNoticeAsync(
+                session,
+                "/screen <source> [extras]. Sources: tw:<channel> (Twitch), twe:<channel> (Twitch embed), ytl:<id> (YouTube live), lv<id> (Nico Live),\n"
+                    + "yt:<id> (YouTube), sm<id> (Nico video), lv<id>:vod (an archived Nico Live, once Nico has one) or pattern:vod (videos, played in step by everyone; then /screen pause, resume, seek <seconds>),\n"
+                    + "pattern:live (the hook's own test picture and tone), streamlink:<url>, stream:<url>, electron:<http(s) url> (off-screen browser), a web page URL,\n"
+                    + "channel:<n> (follows whatever /channel <n> <source> is showing), channel:auto (follows this screen's own tvid=, if it has one; the title card without one),\n"
+                    + "blank, title, testscreen, calibrate, c:x1/y1:x2/y2:..., or off.\n"
+                    + "Extras: main:<url> (a frame page under the main panel; box:x/y/w/h is then relative to it), banner:<url> (the Stage banner strip, else the title card),\n"
+                    + "box:x/y/w/h to place the video inside the crop, crop:sw/sh:cx/cy to render it at sw x sh and show the box-sized window at cx,cy,\n"
+                    + "scrollx:N scrolly:N or scroll:x/y to pan an electron: document, scale:N for browser zoom (1=100%; not a texture stretch),\n"
+                    + "key[:RRGGBB] to colour-key it,\n"
+                    + "fps:N (15/20/25/30/50/60), rolloff:near/far, rolloff:near/far/max/min (gains to fade between, default 1/0), rolloff:x/y/z/near/far, rolloff:x/y/z/near/far/max/min or rolloff:flat, pan to also stereo-pan by bearing.",
+                ct
+            );
+            return;
+        }
+        logger.LogInformation(
+            "CmdExecHandler: user {UserId} set the screens of map {MapId} to {Source}",
+            actor.Id,
+            mapId,
+            clearing ? "(default)" : source
+        );
+
+        // The Nico Live billboard re-navigates on this notify; the page it fetches carries the
+        // new source. Confirmed by testing to do nothing on a map without one (the shopping
+        // mall), so only bother sending it on the one map that has it.
+        var liveId = serverOptions.Value.NicoLive.LiveId?.Trim() ?? "";
+        var reloaded = 0;
+        if (!string.IsNullOrEmpty(liveId) && mapId == ScreenAssignments.StageMapId)
+        {
+            var reload = new NotifyNicoliveReload(liveId).ToBytes();
+            foreach (var client in state.AreaClients.Where(c => c.MapId == mapId))
+            {
+                await client.SendAsync(PacketType.NotifyNicoliveReload, reload, ct);
+                reloaded++;
+            }
+        }
+        await SendSystemNoticeAsync(
+            session,
+            clearing
+                ? $"Map {mapId}: screens back to the default page ({reloaded} client(s) told); open screens follow within a few seconds."
+                : $"Map {mapId}: screens set to {source} ({reloaded} client(s) told); open screens follow within a few seconds.",
+            ct
+        );
+    }
+
+    /// <summary>
+    /// /channel &lt;n&gt; &lt;source&gt; assigns channel n's content (livestream only, since a
+    /// channel has no per-viewer pause/resume/seek) and pushes every room TV already tuned to it
+    /// a fresh set-channel notify so it reloads at once, the way /screen reloads the live
+    /// billboard. /channel &lt;n&gt; off clears it. Binding a map's own screens to a channel
+    /// needs no separate command: /screen channel:n does it, channel:n being an ordinary source
+    /// like tw: or yt:. Bound map screens other than the Stage have no reload packet of their own
+    /// (nothing else in the protocol does this) and only pick a content change up on their next
+    /// poll, same as any other /screen change.
+    /// </summary>
+    private async Task HandleChannelCommandAsync(
+        IPlayerSession session,
+        IReadOnlyList<string> args,
+        CancellationToken ct
+    )
+    {
+        if (session.User is not { } actor || !actor.Role.CanKickOrBan())
+        {
+            await SendSystemNoticeAsync(session, "/channel is for moderators.", ct);
+            return;
+        }
+        if (args.Count < 2 || !uint.TryParse(args[0], out var channelNumber))
+        {
+            await SendSystemNoticeAsync(
+                session,
+                "/channel <n> <source> sets what channel n shows (livestream only: tw:, twe:, ytl:, lv…, streamlink:<url>, stream:<url>, electron:<http(s) url>, pattern:live, a page URL)"
+                    + " or off to clear it. To have a map's own screens follow a channel instead, use /screen channel:<n>.",
+                ct
+            );
+            return;
+        }
+
+        var source = string.Join(" ", args.Skip(1)).Trim();
+        var clearing = source is "off" or "clear" or "none";
+        if (clearing)
+            screenAssignments.ClearChannelSource(channelNumber);
+        else if (ScreenAssignments.IsValidChannelContentSource(source))
+            screenAssignments.SetChannelSource(channelNumber, source);
+        else
+        {
+            await SendSystemNoticeAsync(
+                session,
+                "/channel <n> <source>: a livestream only (tw:, twe:, ytl:, lv…, streamlink:<url>, stream:<url>, electron:<http(s) url>, pattern:live, a page URL), or off to clear.",
+                ct
+            );
+            return;
+        }
+        logger.LogInformation(
+            "CmdExecHandler: user {UserId} set channel {Channel} to {Source}",
+            actor.Id,
+            channelNumber,
+            clearing ? "(default)" : source
+        );
+
+        // Every room TV already tuned to this channel reloads at once: its own Nicotv id and
+        // channel number are unchanged, so this is exactly the notify AreaNicotvSetChannelHandler
+        // sends for a player's own "ai ch" press, and the resolve-time database lookup it
+        // triggers picks up the content just assigned above. Not a TV that is switched off: the
+        // client takes the notify as the TV showing its channel and turns it on, which only its
+        // owner's power button should do; it reads the channel's new content when opened.
+        var tuned = await nicotvRepository.GetByChannelAsync(channelNumber, ct);
+        var roomsNotified = 0;
+        foreach (var nicotv in tuned)
+        {
+            if (nicotv.PlaybackState == NicotvPlaybackState.Closed)
+                continue;
+            var recipients = state
+                .AreaClients.Where(c => c.MyRoomId == (uint)nicotv.RoomId)
+                .ToList();
+            if (recipients.Count == 0)
+                continue;
+            var notify = new NotifyNicotvSetChannel(
+                checked((uint)nicotv.Id),
+                channelNumber
+            ).ToBytes();
+            foreach (var client in recipients)
+                await client.SendAsync(PacketType.NotifyNicotvSetChannel, notify, ct);
+            roomsNotified++;
+        }
+
+        // A map bound to this channel via /screen channel:<n> gets the same reload /screen itself
+        // sends, and just as scoped: only the Stage's own screen reacts to this notify (see
+        // ScreenAssignments.StageMapId), so a bound town screen only picks this up on its next
+        // poll.
+        var liveId = serverOptions.Value.NicoLive.LiveId?.Trim() ?? "";
+        var boundMaps = screenAssignments.GetMapsBoundToChannel(channelNumber);
+        var mapsNotified = 0;
+        if (!string.IsNullOrEmpty(liveId) && boundMaps.Contains(ScreenAssignments.StageMapId))
+        {
+            var recipients = state
+                .AreaClients.Where(c => c.MapId == ScreenAssignments.StageMapId)
+                .ToList();
+            if (recipients.Count > 0)
+            {
+                var reload = new NotifyNicoliveReload(liveId).ToBytes();
+                foreach (var client in recipients)
+                    await client.SendAsync(PacketType.NotifyNicoliveReload, reload, ct);
+                mapsNotified = 1;
+            }
+        }
+        await SendSystemNoticeAsync(
+            session,
+            clearing
+                ? $"Channel {channelNumber}: cleared ({tuned.Count} TV(s) in {roomsNotified} room(s) told; {mapsNotified} of {boundMaps.Count} map screen(s) told, the rest follow within a few seconds)."
+                : $"Channel {channelNumber}: set to {source} ({tuned.Count} TV(s) in {roomsNotified} room(s) told; {mapsNotified} of {boundMaps.Count} map screen(s) told, the rest follow within a few seconds).",
+            ct
+        );
+    }
+
     private async Task HandleKickCommandAsync(
         IPlayerSession session,
         IReadOnlyList<string> args,
@@ -1279,7 +1521,11 @@ public class CmdExecHandler(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "CmdExecHandler: failed to create report ticket for user {UserId}", user.Id);
+            logger.LogError(
+                ex,
+                "CmdExecHandler: failed to create report ticket for user {UserId}",
+                user.Id
+            );
             await SendModerationNoticeAsync(session, L.Cmd.ReportFailed, ct);
         }
     }
@@ -1409,16 +1655,7 @@ public class CmdExecHandler(
         IPlayerSession session,
         string text,
         CancellationToken ct
-    )
-    {
-        // DistID -5 is the client "System" / Notice chat filter (see sub_428B10 / sub_428BB0).
-        const uint systemDistId = unchecked((uint)-5);
-        return session.SendAsync(
-            PacketType.TalkForwardNotify,
-            new TalkForwardNotify(0, systemDistId, $"{text}\r\n", 0).ToBytes(),
-            ct
-        );
-    }
+    ) => SystemNotice.SendAsync(session, text, ct);
 
     private static byte[] CreateTeleportNotify(Character cha, uint objId, MovementData pos)
     {

@@ -96,6 +96,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -227,6 +230,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -252,7 +258,11 @@ public class CmdExecHandlerTests
             var reader = new PacketReader(notice.Payload);
             reader.ReadUInt();
             reader.ReadUInt();
-            Assert.Contains("target", reader.ReadString("utf-8"), StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                "target",
+                reader.ReadString("utf-8"),
+                StringComparison.OrdinalIgnoreCase
+            );
         }
         finally
         {
@@ -339,6 +349,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -439,6 +452,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -581,6 +597,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms(["faggot"]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -670,14 +689,19 @@ public class CmdExecHandlerTests
                 msgSession,
                 TestContext.Current.CancellationToken
             );
-            var listNotice = Assert.Single(
-                msgSession.Sent,
-                packet => packet.Type == PacketType.TalkForwardNotify
+            // A list longer than one notice allows arrives as several; read them all.
+            var listText = string.Join(
+                "\n",
+                msgSession
+                    .Sent.Where(packet => packet.Type == PacketType.TalkForwardNotify)
+                    .Select(packet =>
+                    {
+                        var listReader = new PacketReader(packet.Payload);
+                        listReader.ReadUInt();
+                        listReader.ReadUInt();
+                        return listReader.ReadString("utf-8");
+                    })
             );
-            var listReader = new PacketReader(listNotice.Payload);
-            listReader.ReadUInt();
-            listReader.ReadUInt();
-            var listText = listReader.ReadString("utf-8");
             Assert.Contains("9000: Visitor's Default Room", listText, StringComparison.Ordinal);
             Assert.Contains(
                 $"{createdRoom.Id}: Second Room (8 tatami) [default]",
@@ -814,6 +838,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -892,6 +919,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -972,6 +1002,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1044,6 +1077,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1134,6 +1170,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1163,6 +1202,132 @@ public class CmdExecHandlerTests
                 p => p.Type == PacketType.ItemUpdateListNotify
             );
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ChannelCommand_ReloadsTunedTvsThatAreOn_NotOnesSwitchedOff()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var mod = CreateUserWithCharacter(1, 8004, "channel-mod", "Channel Mod", 20_000_000);
+            mod.Role = UserRole.Moderator;
+            await TestDb.SeedCharacterAsync(options, 42, ct);
+            int onTvId;
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(mod);
+                db.Items.Add(
+                    new Item
+                    {
+                        Id = 11_000_591,
+                        Name = "ブラウン管TV（１９インチ）",
+                        IconId = 11_000_591,
+                    }
+                );
+                db.Furniture.Add(
+                    new Furniture
+                    {
+                        ItemId = 11_000_591,
+                        PlacementFlags = FurniturePlacementFlags.Floor,
+                    }
+                );
+                db.MyRoomFurniture.Add(
+                    new MyRoomFurniture
+                    {
+                        RoomId = 42,
+                        FurnitureId = 2,
+                        ItemId = 11_000_591,
+                    }
+                );
+                db.MyRoomFurniture.Add(
+                    new MyRoomFurniture
+                    {
+                        RoomId = 42,
+                        FurnitureId = 3,
+                        ItemId = 11_000_591,
+                    }
+                );
+                // Two TVs on channel 1 in the same room: one showing it, one switched off.
+                var on = new Nicotv
+                {
+                    RoomId = 42,
+                    FurnitureId = 2,
+                    ChannelId = 1,
+                    PlaybackState = NicotvPlaybackState.Playing,
+                };
+                db.Nicotvs.Add(on);
+                db.Nicotvs.Add(
+                    new Nicotv
+                    {
+                        RoomId = 42,
+                        FurnitureId = 3,
+                        ChannelId = 1,
+                        PlaybackState = NicotvPlaybackState.Closed,
+                    }
+                );
+                await db.SaveChangesAsync(ct);
+                onTvId = on.Id;
+            }
+
+            var state = new SharedState();
+            var viewer = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 8004,
+                MapId = 20_000_000,
+                MyRoomId = 42,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, viewer);
+            var msgSession = new CapturingPlayerSession { User = mod, UserId = mod.Id };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
+                new StubItemBaseListCache(DefaultClothingItems.Male),
+                CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
+                TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("channel", "1", "tw:someone"),
+                msgSession,
+                ct
+            );
+
+            // Only the TV that is on reloads; the one switched off would have been turned on by it.
+            var notify = Assert.Single(
+                viewer.Sent,
+                p => p.Type == PacketType.NotifyNicotvSetChannel
+            );
+            var reader = new PacketReader(notify.Payload);
+            Assert.Equal((uint)onTvId, reader.ReadUInt());
+            Assert.Equal(1u, reader.ReadUInt());
         }
         finally
         {
@@ -1227,6 +1392,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1319,6 +1487,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1392,6 +1563,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1521,6 +1695,9 @@ public class CmdExecHandlerTests
                 TestTextLocaliser.English,
                 new AdventureWorkRepository(new MainContext(options)),
                 WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -2042,6 +2219,108 @@ public class CmdExecHandlerTests
         }
     }
 
+    [Fact]
+    public async Task ChannelCommand_SetsContentAndRejectsNonModeratorsAndInvalidSources()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var mod = CreateUserWithCharacter(1, 9001, "moduser", "ModChar", 10990100);
+            mod.Role = UserRole.Moderator;
+            var player = CreateUserWithCharacter(2, 8001, "player", "PlayerChar", 10990100);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(mod, player);
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var state = new SharedState();
+            var screenAssignments = new ScreenAssignments();
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
+                new StubItemBaseListCache(),
+                CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
+                TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
+                screenAssignments,
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            // A non-moderator is refused, and the channel stays unassigned.
+            var playerMsgSession = new CapturingPlayerSession { User = player, UserId = player.Id };
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "tw:someone"),
+                playerMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(screenAssignments.GetChannelSource(2));
+            var refusal = Assert.Single(
+                playerMsgSession.Sent,
+                packet => packet.Type == PacketType.TalkForwardNotify
+            );
+            var refusalReader = new PacketReader(refusal.Payload);
+            refusalReader.ReadUInt();
+            refusalReader.ReadUInt();
+            Assert.Contains(
+                "moderator",
+                refusalReader.ReadString("utf-8"),
+                StringComparison.OrdinalIgnoreCase
+            );
+
+            // A video (needs a shared timeline, which channels do not have) is rejected too.
+            var modMsgSession = new CapturingPlayerSession { User = mod, UserId = mod.Id };
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "yt:dQw4w9WgXcQ"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(screenAssignments.GetChannelSource(2));
+
+            // A moderator's livestream assignment sticks, normalised the same way /screen does.
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "tw:someone"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal("twitch:someone", screenAssignments.GetChannelSource(2));
+
+            // A room TV tuned to that channel (via channel:2, the same word /screen channel:2
+            // would bind a map to) resolves the assigned stream, not the title card.
+            Assert.Equal(
+                "streamlink:https://twitch.tv/someone",
+                screenAssignments.Resolve("room-tv", "channel:2 n:5", null)
+            );
+
+            // off clears it back to unassigned.
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "off"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(screenAssignments.GetChannelSource(2));
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static CmdExecHandler CreateReportHandler(
         DbContextOptions<MainContext> options,
         SharedState state
@@ -2064,6 +2343,9 @@ public class CmdExecHandlerTests
             TestTextLocaliser.English,
             new AdventureWorkRepository(new MainContext(options)),
             WordFilter.FromTerms([]),
+            new ScreenAssignments(),
+            new NicotvRepository(new MainContext(options)),
+            Options.Create(new ServerOptions()),
             NullLogger<CmdExecHandler>.Instance
         );
 
