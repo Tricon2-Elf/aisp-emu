@@ -1,5 +1,6 @@
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Msg;
@@ -8,6 +9,34 @@ namespace aisp.Common.Handlers.Msg;
 
 public static class CircleNotifyHelper
 {
+    public static async Task BroadcastCircleChatAsync(
+        ICircleRepository circles,
+        SharedState state,
+        int circleId,
+        uint fromAvatarId,
+        Func<GameLanguage, string> messageFactory,
+        int? excludeCharacterId = null,
+        CancellationToken ct = default
+    )
+    {
+        var members = await circles.GetMembersAsync(circleId, ct);
+        foreach (
+            var client in state.GetOnlineMsgClientsByCharacterIds(
+                members.Select(member => member.CharacterId)
+            )
+        )
+        {
+            if (excludeCharacterId is not null && client.CharacterId == excludeCharacterId.Value)
+                continue;
+
+            var forward = new CircleChatForwardNotify(
+                fromAvatarId,
+                messageFactory(client.Language)
+            ).ToBytes();
+            _ = client.SendAsync(PacketType.CircleChatForwardNotify, forward, ct);
+        }
+    }
+
     public static async Task SendRosterAsync(
         ICircleRepository circles,
         SharedState state,

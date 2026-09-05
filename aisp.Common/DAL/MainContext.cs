@@ -1,5 +1,6 @@
 using aisp.Common.Config;
 using aisp.Common.DAL.Entities;
+using aisp.Common.Game;
 using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Data;
@@ -34,7 +35,14 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<CircleMember> CircleMembers => Set<CircleMember>();
     public DbSet<CircleJoinRequest> CircleJoinRequests => Set<CircleJoinRequest>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<AdventureWork> AdventureWorks => Set<AdventureWork>();
+    public DbSet<AdventureListing> AdventureListings => Set<AdventureListing>();
+    public DbSet<AdventureListingContent> AdventureListingContents =>
+        Set<AdventureListingContent>();
+    public DbSet<AdventurePurchase> AdventurePurchases => Set<AdventurePurchase>();
+    public DbSet<AdventureTicket> AdventureTickets => Set<AdventureTicket>();
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+    public DbSet<FriendLinkTag> FriendLinkTags => Set<FriendLinkTag>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
     public DbSet<Npc> Npcs => Set<Npc>();
@@ -44,6 +52,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<SessionPresence> SessionPresences => Set<SessionPresence>();
     public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
     public DbSet<LocalisedText> LocalisedTexts => Set<LocalisedText>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<ReportTicket> ReportTickets => Set<ReportTicket>();
+    public DbSet<ReportTicketPlayer> ReportTicketPlayers => Set<ReportTicketPlayer>();
+    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages => Set<ReportTicketChatMessage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -65,7 +77,14 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.AiPoints).HasDefaultValue(0L);
             e.Property(x => x.NicoPoints).HasDefaultValue(0L);
             e.Property(x => x.StorageDeposit).HasDefaultValue(0L);
+            e.Property(x => x.Role)
+                .HasConversion<byte>()
+                .HasDefaultValue(UserRole.User)
+                .HasSentinel(UserRole.User);
             e.Property(x => x.IsBanned).HasDefaultValue(false);
+            e.Property(x => x.AdventureSheetStock).HasDefaultValue(0);
+            e.Property(x => x.NextAdventureWorkId).HasDefaultValue(1);
+            e.Property(x => x.AdventureSalesBalance).HasDefaultValue(0L);
             e.Property(x => x.BanReason).HasMaxLength(256);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.Language)
@@ -85,6 +104,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Characters");
             e.HasKey(x => x.Id);
+            e.Property(x => x.UserStatusText)
+                .HasMaxLength(UserStatusData.StatusTextLength)
+                .HasDefaultValue(string.Empty);
+            e.Property(x => x.UserStatusIconId).HasDefaultValue(0u);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.Name).IsUnique();
@@ -144,6 +167,11 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.PlaybackState)
                 .HasConversion<uint>()
                 .HasDefaultValue(NicotvPlaybackState.Closed);
+            // TODO: make Hidden the database default too (a migration altering this column's
+            // default) once the screens branch lands; kept out of it so it merges without a schema
+            // change. New rows already get Hidden from the entity's initializer, which EF writes
+            // explicitly since it differs from the enum's zero; this only costs a startup warning
+            // about the mismatch.
             e.Property(x => x.CommentVisibility)
                 .HasConversion<uint>()
                 .HasDefaultValue(NicotvCommentVisibility.Visible);
@@ -411,6 +439,74 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             });
         });
 
+        b.Entity<AdventureWork>(e =>
+        {
+            e.ToTable("AdventureWorks");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UserId, x.WorkId }).IsUnique();
+        });
+
+        b.Entity<AdventureListing>(e =>
+        {
+            e.ToTable("AdventureListings");
+            e.HasKey(x => x.ScriptId);
+            // Assigned by the repository (max + 1, starting at AdventureListing.FirstScriptId) so ids never
+            // collide with the legacy service's script ids, which players may still have cached under dl/drama/.
+            e.Property(x => x.ScriptId).ValueGeneratedNever();
+            e.Property(x => x.Title).HasMaxLength(120).IsRequired();
+            e.Property(x => x.AuthorName).HasMaxLength(36).IsRequired();
+            e.Property(x => x.Comment).HasMaxLength(768).IsRequired();
+            e.Property(x => x.Official).HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UserId, x.WorkId });
+            e.HasIndex(x => new { x.State, x.Genre });
+        });
+
+        b.Entity<AdventureListingContent>(e =>
+        {
+            e.ToTable("AdventureListingContents");
+            e.HasKey(x => x.ScriptId);
+            e.HasOne(x => x.Listing)
+                .WithOne(x => x.Content)
+                .HasForeignKey<AdventureListingContent>(x => x.ScriptId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<AdventurePurchase>(e =>
+        {
+            e.ToTable("AdventurePurchases");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.PurchasedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.Listing)
+                .WithMany()
+                .HasForeignKey(x => x.ScriptId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.BuyerUser)
+                .WithMany()
+                .HasForeignKey(x => x.BuyerUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.BuyerUserId, x.ScriptId });
+            e.HasIndex(x => x.SettledAt);
+        });
+
+        b.Entity<AdventureTicket>(e =>
+        {
+            e.ToTable("AdventureTickets");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Token).HasMaxLength(40).IsRequired();
+            e.HasIndex(x => x.Token).IsUnique();
+            e.HasIndex(x => x.ExpiresAt);
+        });
+
         b.Entity<Friendship>(e =>
         {
             e.ToTable("Friendships");
@@ -442,6 +538,17 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.TargetCharacterId, x.Status });
             e.HasIndex(x => new { x.RequesterCharacterId, x.Status });
+        });
+
+        b.Entity<FriendLinkTag>(e =>
+        {
+            e.ToTable("FriendLinkTags");
+            e.HasKey(x => new { x.CharacterId, x.Slot });
+            e.Property(x => x.Name).HasMaxLength(61).IsRequired();
+            e.HasOne(x => x.Character)
+                .WithMany()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Map>(e =>
@@ -494,6 +601,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
         {
             e.ToTable("Npcs");
             e.HasKey(x => x.Id);
+            e.Property(x => x.NamePlate).HasDefaultValue(Npc.DefaultNamePlate);
             e.Property(x => x.Name).HasMaxLength(128).IsRequired();
             e.Property(x => x.ChannelId).HasDefaultValue(-1);
             e.Property(x => x.DayPhase).HasDefaultValue(-1);
@@ -551,6 +659,65 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.ToTable("PendingMapTransfers");
             e.HasKey(x => x.UserId);
             e.HasIndex(x => x.ExpiresAtUtc);
+        });
+
+        b.Entity<ChatMessage>(e =>
+        {
+            e.ToTable("ChatMessages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Kind).HasConversion<byte>();
+            e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
+            e.Property(x => x.Rejected).HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.CharacterId, x.CreatedAt });
+            e.HasIndex(x => new { x.UserId, x.CreatedAt });
+            e.HasIndex(x => new { x.Kind, x.CreatedAt });
+            e.HasIndex(x => new { x.CircleId, x.CreatedAt });
+            e.HasIndex(x => new { x.MapId, x.ChannelId, x.CreatedAt });
+        });
+
+        b.Entity<ReportTicket>(e =>
+        {
+            e.ToTable("ReportTickets");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ReporterUsername).HasMaxLength(64).IsRequired();
+            e.Property(x => x.ReporterCharacterName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Reason).HasMaxLength(1024).IsRequired();
+            e.Property(x => x.MapName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.ResolutionAction).HasMaxLength(1024);
+            e.Property(x => x.Status).HasConversion<byte>().HasDefaultValue(ReportTicketStatus.Open);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.Status, x.CreatedAt });
+        });
+
+        b.Entity<ReportTicketPlayer>(e =>
+        {
+            e.ToTable("ReportTicketPlayers");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Username).HasMaxLength(64).IsRequired();
+            e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
+            e.HasOne(x => x.ReportTicket)
+                .WithMany(x => x.Players)
+                .HasForeignKey(x => x.ReportTicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ReportTicketId);
+        });
+
+        b.Entity<ReportTicketChatMessage>(e =>
+        {
+            e.ToTable("ReportTicketChatMessages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
+            e.HasOne(x => x.ReportTicket)
+                .WithMany(x => x.ChatMessages)
+                .HasForeignKey(x => x.ReportTicketId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.ReportTicketId);
+            e.HasIndex(x => new { x.ReportTicketId, x.CreatedAt });
         });
     }
 }

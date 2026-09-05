@@ -1857,6 +1857,8 @@ public class AreaMapHandlersTests
         Assert.Collection(
             session.Sent,
             packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type),
+            packet => Assert.Equal(PacketType.MoneyUpdatedAipoint, packet.Type),
+            packet => Assert.Equal(PacketType.MoneyUpdatedNicopoint, packet.Type),
             packet =>
             {
                 Assert.Equal(PacketType.AvatarNotifyData, packet.Type);
@@ -1903,7 +1905,9 @@ public class AreaMapHandlersTests
 
         Assert.Collection(
             session.Sent,
-            packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type)
+            packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type),
+            packet => Assert.Equal(PacketType.MoneyUpdatedAipoint, packet.Type),
+            packet => Assert.Equal(PacketType.MoneyUpdatedNicopoint, packet.Type)
         );
         Assert.Empty(peer.Sent);
     }
@@ -1958,6 +1962,7 @@ public class AreaMapHandlersTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(
                 new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
                 new MapRepository(handlerDb),
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
@@ -2043,6 +2048,7 @@ public class AreaMapHandlersTests
             await using var handlerDb = new MainContext(options);
             var handler = new AreasvEnterHandler(
                 new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
                 new MapRepository(handlerDb),
                 new ChannelRepository(handlerDb),
                 new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
@@ -2833,62 +2839,6 @@ public class AreaMapHandlersTests
         Assert.Empty(sameAreaPeer.Sent);
     }
 
-    [Fact]
-    public async Task AvatarProfileGetDataHandler_OnlyResolvesTargetsInSameMapAndChannel()
-    {
-        var state = new SharedState();
-        var requester = CreateSession(
-            CreateUserWithCharacter(1, 6001, "profile-user", "Profile User", 10990100),
-            10990100,
-            1
-        );
-        var visibleTarget = CreateSession(
-            CreateUserWithCharacter(
-                2,
-                6002,
-                "visible-target",
-                "Visible",
-                10990100,
-                like1: "Apples"
-            ),
-            10990100,
-            1
-        );
-        var hiddenTarget = CreateSession(
-            CreateUserWithCharacter(3, 6003, "hidden-target", "Hidden", 10990100, like1: "Secret"),
-            10990100,
-            2
-        );
-
-        state.RegisterClient(ServerType.Area, requester);
-        state.RegisterClient(ServerType.Area, visibleTarget);
-        state.RegisterClient(ServerType.Area, hiddenTarget);
-
-        var handler = new AreaAvatarProfileGetDataHandler(state);
-
-        await handler.HandleAsync(
-            BuildUIntPayload(visibleTarget.CharacterId),
-            requester,
-            TestContext.Current.CancellationToken
-        );
-        var visibleReader = new PacketReader(requester.Sent[^1].Payload);
-        Assert.Equal(0u, visibleReader.ReadUInt());
-        Assert.Equal(visibleTarget.CharacterId, visibleReader.ReadUInt());
-        Assert.Equal("Apples", visibleReader.ReadFixedString(31, "shift_jis"));
-
-        requester.Sent.Clear();
-
-        await handler.HandleAsync(
-            BuildUIntPayload(hiddenTarget.CharacterId),
-            requester,
-            TestContext.Current.CancellationToken
-        );
-        var hiddenReader = new PacketReader(requester.Sent[^1].Payload);
-        Assert.Equal(0u, hiddenReader.ReadUInt());
-        Assert.Equal(hiddenTarget.CharacterId, hiddenReader.ReadUInt());
-        Assert.Equal(string.Empty, hiddenReader.ReadFixedString(31, "shift_jis"));
-    }
-
     private static CapturingPlayerSession CreateSession(
         User user,
         uint mapId,
@@ -2914,6 +2864,135 @@ public class AreaMapHandlersTests
             Z = z,
             Rotation = rotation,
         };
+    }
+
+    [Fact]
+    public async Task AreasvEnterHandler_InvalidOtp_SendsEightByteEnterResponse()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var session = new CapturingPlayerSession();
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreasvEnterHandler(
+                new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
+                new MapRepository(handlerDb),
+                new ChannelRepository(handlerDb),
+                new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
+                new MyRoomRepository(handlerDb),
+                new CircleRepository(handlerDb),
+                new FriendRepository(handlerDb),
+                new SharedState(),
+                NullLogger<AreasvEnterHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildAreasvEnterPayload(1, "unknown-otp-12345678"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            // recv_enter_areasv_r is a fixed 8-byte read on the client (result + objId).
+            var reply = Assert.Single(session.Sent, p => p.Type == PacketType.AreasvEnterResponse);
+            Assert.Equal(8, reply.Payload.Length);
+            Assert.NotEqual(0u, new PacketReader(reply.Payload).ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AreasvEnterHandler_KickedUser_SendsEightByteEnterResponse()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            const string otp = "kicked-otp-12345678";
+            var user = CreateUserWithCharacter(1, 3061, "kicked-user", "Kicked User", 10990100);
+            user.KickedUntil = DateTime.UtcNow.AddMinutes(10);
+
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.UserSessions.Add(
+                    new UserSession
+                    {
+                        UserId = user.Id,
+                        OTP = otp,
+                        ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+                    }
+                );
+                await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            var session = new CapturingPlayerSession();
+            await using var handlerDb = new MainContext(options);
+            var handler = new AreasvEnterHandler(
+                new UserSessionRepository(handlerDb, NullLogger<UserSessionRepository>.Instance),
+                new UserRepository(handlerDb),
+                new MapRepository(handlerDb),
+                new ChannelRepository(handlerDb),
+                new CharacterRepository(handlerDb, NullLogger<CharacterRepository>.Instance),
+                new MyRoomRepository(handlerDb),
+                new CircleRepository(handlerDb),
+                new FriendRepository(handlerDb),
+                new SharedState(),
+                NullLogger<AreasvEnterHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildAreasvEnterPayload((uint)user.Id, otp),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var reply = Assert.Single(session.Sent, p => p.Type == PacketType.AreasvEnterResponse);
+            Assert.Equal(8, reply.Payload.Length);
+            var reader = new PacketReader(reply.Payload);
+            Assert.Equal((uint)AuthResponseResult.Failure, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UploadRateHandlers_SendConfiguredPercent()
+    {
+        var options = Options.Create(
+            new ServerOptions { AiUploadRatePercent = 70, AdventureUploadRatePercent = 250 }
+        );
+        var session = new CapturingPlayerSession();
+
+        await new AreaAiUploadRateGetHandler(options).HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await new AreaAdventureUploadRateGetHandler(options).HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        // The client reads a fixed 4-byte percentage and computes price * rate / 100.
+        var ai = Assert.Single(session.Sent, p => p.Type == PacketType.AiUploadRateGetResponse);
+        Assert.Equal(4, ai.Payload.Length);
+        Assert.Equal(70u, new PacketReader(ai.Payload).ReadUInt());
+
+        var adventure = Assert.Single(
+            session.Sent,
+            p => p.Type == PacketType.AdventureUploadRateGetResponse
+        );
+        Assert.Equal(4, adventure.Payload.Length);
+        Assert.Equal(100u, new PacketReader(adventure.Payload).ReadUInt());
     }
 
     private static User CreateUserWithCharacter(

@@ -19,6 +19,8 @@ public interface INicotvRepository
         CancellationToken ct = default
     );
     Task<Nicotv?> GetByIdInRoomAsync(int roomId, uint nicotvId, CancellationToken ct = default);
+    Task<Nicotv?> GetByIdAsync(uint nicotvId, CancellationToken ct = default);
+    Task<IReadOnlyList<Nicotv>> GetByChannelAsync(uint channelId, CancellationToken ct = default);
     Task<Nicotv?> SetChannelAsync(
         int roomId,
         uint nicotvId,
@@ -90,7 +92,9 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         nicotv.ChannelId = data.ChannelId;
         nicotv.MovieId = data.MovieId;
         nicotv.PlaybackState = data.PlaybackState;
-        nicotv.CommentVisibility = data.CommentVisibility;
+        // Not CommentVisibility: the client's TV panel fills that field with a constant (visible)
+        // in every snapshot it sends, so it says nothing about what the TV shows. The stored value
+        // is the server's default for the TV (see Nicotv.CommentVisibility).
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;
@@ -111,6 +115,20 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         );
     }
 
+    public async Task<Nicotv?> GetByIdAsync(uint nicotvId, CancellationToken ct = default)
+    {
+        if (nicotvId == 0 || nicotvId > int.MaxValue)
+            return null;
+
+        return await db.Nicotvs.SingleOrDefaultAsync(x => x.Id == checked((int)nicotvId), ct);
+    }
+
+    public async Task<IReadOnlyList<Nicotv>> GetByChannelAsync(
+        uint channelId,
+        CancellationToken ct = default
+    ) =>
+        channelId == 0 ? [] : await db.Nicotvs.Where(x => x.ChannelId == channelId).ToListAsync(ct);
+
     public async Task<Nicotv?> SetChannelAsync(
         int roomId,
         uint nicotvId,
@@ -122,7 +140,14 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         if (nicotv is null)
             return null;
 
+        // A TV shows a channel or a typed movie, never both. The movie id takes precedence when
+        // resolving what a TV shows (a typed video is the more specific pick), so tuning a
+        // channel clears it, and re-entering the room shows the tuned channel.
         nicotv.ChannelId = channelId;
+        nicotv.MovieId = "";
+        // Tuning implies the TV is on: the client shows the channel at once and sends no open
+        // for it (open/close is the power toggle alone), so the stored state follows.
+        nicotv.PlaybackState = NicotvPlaybackState.Playing;
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;
@@ -162,7 +187,11 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         if (nicotv is null)
             return null;
 
+        // Exclusive with a channel selection; see the matching note in SetChannelAsync.
         nicotv.MovieId = movieId;
+        nicotv.ChannelId = 0;
+        // Same as SetChannelAsync: setting a movie turns the TV on and starts it playing.
+        nicotv.PlaybackState = NicotvPlaybackState.Playing;
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;

@@ -33,7 +33,12 @@ public class PostTalkHandlerTests
         state.RegisterClient(ServerType.Msg, sender);
         state.RegisterClient(ServerType.Msg, recipient);
 
-        var handler = new PostTalkHandler(state);
+        var handler = new PostTalkHandler(
+            state,
+            WordFilter.FromTerms([]),
+            TestTextLocaliser.English,
+            new CapturingChatLog()
+        );
         await handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "hello", 0),
             sender,
@@ -67,7 +72,12 @@ public class PostTalkHandlerTests
         state.RegisterClient(ServerType.Msg, sender);
         state.RegisterClient(ServerType.Msg, recipient);
 
-        var handler = new PostTalkHandler(state);
+        var handler = new PostTalkHandler(
+            state,
+            WordFilter.FromTerms([]),
+            TestTextLocaliser.English,
+            new CapturingChatLog()
+        );
         var completed = handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "hello", 0),
             sender,
@@ -108,7 +118,12 @@ public class PostTalkHandlerTests
         state.RegisterClient(ServerType.Msg, sender);
         state.RegisterClient(ServerType.Msg, recipient);
 
-        var handler = new PostTalkHandler(state);
+        var handler = new PostTalkHandler(
+            state,
+            WordFilter.FromTerms([]),
+            TestTextLocaliser.English,
+            new CapturingChatLog()
+        );
         await handler.HandleAsync(
             BuildPostTalkPayload(1, -1, "hello", 0),
             sender,
@@ -117,6 +132,111 @@ public class PostTalkHandlerTests
 
         var forward = recipient.Sent.Single(packet => packet.Type == PacketType.TalkForwardNotify);
         Assert.Equal(9001u, BinaryPrimitives.ReadUInt32LittleEndian(forward.Payload.AsSpan(0, 4)));
+    }
+
+    [Fact]
+    public async Task BlockedMessage_IsRejectedAndNotForwarded()
+    {
+        var user = CreateUser(1, 9001);
+        var state = new SharedState();
+
+        var sender = new CapturingPlayerSession
+        {
+            User = user,
+            UserId = user.Id,
+            CharacterId = 9001,
+        };
+        var recipient = new CapturingPlayerSession
+        {
+            User = CreateUser(2, 9002),
+            UserId = 2,
+            CharacterId = 9002,
+        };
+
+        state.RegisterClient(ServerType.Msg, sender);
+        state.RegisterClient(ServerType.Msg, recipient);
+
+        var chatLog = new CapturingChatLog();
+        var handler = new PostTalkHandler(
+            state,
+            WordFilter.FromTerms(["faggot"]),
+            TestTextLocaliser.English,
+            chatLog
+        );
+        await handler.HandleAsync(
+            BuildPostTalkPayload(1, -1, "Faggot", 0),
+            sender,
+            TestContext.Current.CancellationToken
+        );
+
+        var response = sender.Sent.Single(packet => packet.Type == PacketType.PostTalkResponse);
+        var reader = new PacketReader(response.Payload);
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(1u, reader.ReadUInt());
+        var notice = sender.Sent.Single(packet => packet.Type == PacketType.TalkForwardNotify);
+        var noticeReader = new PacketReader(notice.Payload);
+        Assert.Equal(0u, noticeReader.ReadUInt());
+        Assert.Equal(SystemNotice.DistId, noticeReader.ReadUInt());
+        Assert.Contains(
+            "Please don't use slurs.",
+            noticeReader.ReadString("utf-8"),
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain(
+            recipient.Sent,
+            packet => packet.Type == PacketType.TalkForwardNotify
+        );
+        var logged = Assert.Single(chatLog.Entries);
+        Assert.Equal(ChatLogKind.Public, logged.Kind);
+        Assert.Equal("Faggot", logged.Message);
+        Assert.True(logged.Rejected);
+        Assert.Equal(9001, logged.CharacterId);
+    }
+
+    [Fact]
+    public async Task SwearWithoutSlur_IsForwarded()
+    {
+        var user = CreateUser(1, 9001);
+        var state = new SharedState();
+
+        var sender = new CapturingPlayerSession
+        {
+            User = user,
+            UserId = user.Id,
+            CharacterId = 9001,
+        };
+        var recipient = new CapturingPlayerSession
+        {
+            User = CreateUser(2, 9002),
+            UserId = 2,
+            CharacterId = 9002,
+        };
+
+        state.RegisterClient(ServerType.Msg, sender);
+        state.RegisterClient(ServerType.Msg, recipient);
+
+        var chatLog = new CapturingChatLog();
+        var handler = new PostTalkHandler(
+            state,
+            WordFilter.FromTerms(["fuck", "faggot"], ["faggot"]),
+            TestTextLocaliser.English,
+            chatLog
+        );
+        await handler.HandleAsync(
+            BuildPostTalkPayload(1, -1, "this is fucked", 0),
+            sender,
+            TestContext.Current.CancellationToken
+        );
+
+        var response = sender.Sent.Single(packet => packet.Type == PacketType.PostTalkResponse);
+        var reader = new PacketReader(response.Payload);
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Contains(recipient.Sent, packet => packet.Type == PacketType.TalkForwardNotify);
+        var logged = Assert.Single(chatLog.Entries);
+        Assert.Equal("this is fucked", logged.Message);
+        Assert.False(logged.Rejected);
+        Assert.Equal(unchecked((uint)-1), logged.DistId);
     }
 
     private static User CreateUser(int userId, int characterId)

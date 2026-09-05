@@ -1,0 +1,45 @@
+{
+  "freeTags": [
+    {
+      "id": 100001,
+      "name": "Clannad"
+    },
+    {
+      "id": 100002,
+      "name": "Shuffle!"
+    },
+    {
+      "id": 100003,
+      "name": "Da Capo"
+    },
+    {
+      "id": 100004,
+      "name": "Kanon"
+    },
+    {
+      "id": 100005,
+      "name": "Air"
+    },
+    {
+      "id": 100006,
+      "name": "Little Busters!"
+    },
+    {
+      "id": 100007,
+      "name": "ToHeart2"
+    },
+    {
+      "id": 100008,
+      "name": "School Days"
+    },
+    {
+      "id": 100009,
+      "name": "Fate/stay night"
+    },
+    {
+      "id": 100010,
+      "name": "Higurashi"
+    }
+  ],
+  "questionnaireTags": []
+}

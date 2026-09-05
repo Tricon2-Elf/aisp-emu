@@ -21,7 +21,8 @@ public sealed class Robo
     public uint Hairstyle { get; set; }
     public uint ParameterId { get; set; }
 
-    public uint JobId { get; set; }
+    /// <summary>Name plate variant behind the robo's name (CharaData.NamePlate); the client sends it back in its RoboData.</summary>
+    public uint NamePlate { get; set; }
 
     public string Like1 { get; set; } = string.Empty;
     public string Like2 { get; set; } = string.Empty;

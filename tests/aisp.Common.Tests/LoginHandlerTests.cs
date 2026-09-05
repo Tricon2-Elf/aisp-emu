@@ -46,12 +46,7 @@ public class LoginHandlerTests
                 r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(Array.Empty<(aisp.Common.DAL.Entities.Circle, uint)>());
-        var handler = new LoginHandler(
-            sessionRepo.Object,
-            circles.Object,
-            state,
-            NullLogger<LoginHandler>.Instance
-        );
+        var handler = CreateHandler(sessionRepo.Object, user, circles.Object, state);
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
 
@@ -123,12 +118,7 @@ public class LoginHandlerTests
                 r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(Array.Empty<(aisp.Common.DAL.Entities.Circle, uint)>());
-        var handler = new LoginHandler(
-            sessionRepo.Object,
-            circles.Object,
-            state,
-            NullLogger<LoginHandler>.Instance
-        );
+        var handler = CreateHandler(sessionRepo.Object, user, circles.Object, state);
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
 
@@ -165,12 +155,7 @@ public class LoginHandlerTests
                 r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(Array.Empty<(aisp.Common.DAL.Entities.Circle, uint)>());
-        var handler = new LoginHandler(
-            sessionRepo.Object,
-            circles.Object,
-            new SharedState(),
-            NullLogger<LoginHandler>.Instance
-        );
+        var handler = CreateHandler(sessionRepo.Object, null, circles.Object, new SharedState());
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
 
@@ -210,12 +195,7 @@ public class LoginHandlerTests
                 r.GetMembershipsForCharacterAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())
             )
             .ReturnsAsync(Array.Empty<(aisp.Common.DAL.Entities.Circle, uint)>());
-        var handler = new LoginHandler(
-            sessionRepo.Object,
-            circles.Object,
-            new SharedState(),
-            NullLogger<LoginHandler>.Instance
-        );
+        var handler = CreateHandler(sessionRepo.Object, null, circles.Object, new SharedState());
         IPacketHandler wire = handler;
         var session = new CapturingPlayerSession();
 
@@ -228,6 +208,29 @@ public class LoginHandlerTests
         Assert.Equal(
             (uint)AuthResponseResult.InvalidCredentials,
             BinaryPrimitives.ReadUInt32LittleEndian(session.Sent[0].Payload.AsSpan(0, 4))
+        );
+    }
+
+    private static LoginHandler CreateHandler(
+        aisp.Common.DAL.Repositories.IUserSessionRepository sessionRepo,
+        User? user,
+        aisp.Common.DAL.Repositories.ICircleRepository circles,
+        SharedState state
+    )
+    {
+        var userRepo = new Mock<aisp.Common.DAL.Repositories.IUserRepository>();
+        userRepo
+            .Setup(r => r.ClearExpiredBanAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        if (user is not null)
+            userRepo.Setup(r => r.GetById(user.Id)).ReturnsAsync(user);
+
+        return new LoginHandler(
+            sessionRepo,
+            userRepo.Object,
+            circles,
+            state,
+            NullLogger<LoginHandler>.Instance
         );
     }
 }

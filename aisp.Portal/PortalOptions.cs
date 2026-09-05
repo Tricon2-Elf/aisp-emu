@@ -1,5 +1,7 @@
 namespace aisp.Portal;
 
+using aisp.Common.Game;
+
 public sealed class PortalBackendOptions
 {
     public const string SectionName = "PortalBackend";
@@ -16,7 +18,7 @@ public sealed class PortalOptions
     public bool AllowRegistration { get; set; } = true;
     public string[] AdminUsernames { get; set; } = [];
 
-    public bool IsAdmin(string username) =>
+    public bool IsBootstrapServerAdmin(string username) =>
         AdminUsernames.Any(candidate =>
             string.Equals(candidate, username, StringComparison.Ordinal)
         );

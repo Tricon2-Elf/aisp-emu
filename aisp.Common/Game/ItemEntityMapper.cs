@@ -24,7 +24,7 @@ internal enum WardrobeSocketBit : uint
     /// Seed JSON stores accessory attach IDs / window slots, not bitmasks. The client unequips by
     /// bitwise AND, so those IDs collide with clothing (11 = hat|coat|shirt, 16 = skirt, 51 = hat|coat|skirt|pants).
     /// </summary>
-    Headband = 1u << 25,
+    Headband = 1u << 30,
     Glasses = 1u << 12,
     Wig = 1u << 13,
     Necklace = 1u << 14,
@@ -39,12 +39,12 @@ internal enum WardrobeSocketBit : uint
     Armband = 1u << 22,
     Bracelet = 1u << 23,
     LeftShoulderBand = 1u << 24,
-    Wings = 1u << 26,
     LeftShoulderBag = 1u << 26,
-    Tail = 1u << 27,
-    CostumeHead = 1u << 25,
+    Wings = 1u << 27,
+    Tail = 1u << 28,
+    CostumeHead = 1u << 30,
     HeldItem = 1u << 19,
-    KigurumiHead = 1u << 28,
+    KigurumiHead = 1u << 29,
 }
 
 internal enum WardrobeCategoryId : uint
@@ -112,7 +112,7 @@ internal static class ItemEntityMapper
         return (itemId / 100_000) switch
         {
             100 => (uint)WardrobeSocketBit.Head,
-            101 => (uint)WardrobeSocketBit.UpperBodyLayer3,
+            101 => ResolveUpperBodyBodyspot(name),
             102 => ResolveLowerBodyBodyspot(itemId, name),
             103 => (uint)WardrobeSocketBit.Hands,
             104 => (uint)WardrobeSocketBit.Socks,
@@ -130,6 +130,32 @@ internal static class ItemEntityMapper
             return (uint)WardrobeSocketBit.None;
 
         return AccessoryAttachMap.ToSocketBit(itemId, (uint)storedSocket);
+    }
+
+    private static uint ResolveUpperBodyBodyspot(string? name)
+    {
+        // Wiki: 衣装/洋服上１コート, 上２ジャケット, 上３シャツ. Prefix 101 covers all three layers.
+        // Aprons are not on the shirt page; they go over a shirt (coat layer).
+        if (!string.IsNullOrEmpty(name))
+        {
+            if (
+                name.Contains("エプロン", StringComparison.Ordinal)
+                || name.Contains("コート", StringComparison.Ordinal)
+                || name.Contains("白衣", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeSocketBit.UpperBodyLayer1;
+            if (
+                name.Contains("ジャケット", StringComparison.Ordinal)
+                || name.Contains("カーディガン", StringComparison.Ordinal)
+                || name.Contains("ブレザー", StringComparison.Ordinal)
+                || name.Contains("学ラン", StringComparison.Ordinal)
+                || name.Contains("パーカー", StringComparison.Ordinal)
+                || name.Contains("スーツ", StringComparison.Ordinal)
+            )
+                return (uint)WardrobeSocketBit.UpperBodyLayer2;
+        }
+
+        return (uint)WardrobeSocketBit.UpperBodyLayer3;
     }
 
     private static uint ResolveLowerBodyBodyspot(int itemId, string? name)
@@ -165,9 +191,7 @@ internal static class ItemEntityMapper
         var id = (uint)item.Id;
         var iconId = (uint)item.IconId;
         var (socket1, socket2) = GetCatalogSockets(item.Id, ResolveBodyspot(item));
-        var category = item.CatalogCategory is int persisted
-            ? (uint)persisted
-            : ResolveCatalogCategory(item);
+        var category = ResolveItemCatalogCategory(item);
         var limitMapKey = ResolveLimitMapKey(item.Id);
 
         return new ItemData
@@ -199,6 +223,16 @@ internal static class ItemEntityMapper
         FurniturePlacementFlags? placementFlags
     ) => ResolveCatalogCategory(itemId, canonicalName, placementFlags);
 
+    private static uint ResolveItemCatalogCategory(Item item)
+    {
+        if (IsWardrobeAccessoryItem(item.Id))
+            return (uint)WardrobeCategoryId.Accessory;
+
+        return item.CatalogCategory is int persisted
+            ? (uint)persisted
+            : ResolveCatalogCategory(item);
+    }
+
     private static uint ResolveCatalogCategory(Item item) =>
         ResolveCatalogCategory(item.Id, item.Name, item.Furniture?.PlacementFlags);
 
@@ -208,15 +242,16 @@ internal static class ItemEntityMapper
         FurniturePlacementFlags? placementFlags
     )
     {
-        if (placementFlags is { } flags && flags != 0)
-            return ResolveFurnitureCategory(flags);
-
         if (itemId is < 10_000_000 or >= 200_000_000)
             return (uint)WardrobeCategoryId.None;
 
         // Furniture catalog IDs are 11xxxxxx except wardrobe accessory prefixes 112-118 / 122-124.
+        // Check this before placement flags so backpacks / wings (114xxxxx) cannot be furniture.
         if (IsWardrobeAccessoryPrefix(itemId / 100_000))
             return (uint)WardrobeCategoryId.Accessory;
+
+        if (placementFlags is { } flags && flags != 0)
+            return ResolveFurnitureCategory(flags);
 
         if (itemId / 100_000 >= 110)
             return (uint)WardrobeCategoryId.FurnitureFloor;
@@ -299,6 +334,11 @@ internal static class ItemEntityMapper
         return (socket, 0);
     }
 
+    internal static bool IsWardrobeAccessoryItem(int itemId) =>
+        itemId is >= 10_000_000 and < 200_000_000 && IsWardrobeAccessoryPrefix(itemId / 100_000);
+
+    internal static bool IsFurnitureCatalogCategory(int category) => category is >= 12 and <= 14;
+
     private static bool IsWardrobeAccessoryPrefix(int prefix) =>
         prefix is 108 or 109 or 112 or >= 114 and <= 118 or >= 122 and <= 124;
 
@@ -310,14 +350,25 @@ internal static class ItemEntityMapper
         var prefix = itemId / 100_000;
         return prefix switch
         {
-            100 or 101 or 102 or 103 or 104 or 105 or 106 or 107 or 108 or 109 or 112 or 114
-                or 115
-                or 116
-                or 117
-                or 118
-                or 122
-                or 123
-                or 124 => (uint)prefix,
+            100
+            or 101
+            or 102
+            or 103
+            or 104
+            or 105
+            or 106
+            or 107
+            or 108
+            or 109
+            or 112
+            or 114
+            or 115
+            or 116
+            or 117
+            or 118
+            or 122
+            or 123
+            or 124 => (uint)prefix,
             _ => 200u,
         };
     }

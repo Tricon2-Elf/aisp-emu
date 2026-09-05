@@ -55,6 +55,7 @@ public class AreaNpcGetDataHandler(INpcRepository npcRepository, ITextLocaliser 
             ItemEntityMapper.ResolveEquipSocket
         );
 
+        npcChara.NamePlate = npc.NamePlate;
         var npcPacket = new NpcNotifyData(0, objectId, npcChara).ToBytes();
         return session.SendAsync(PacketType.NpcNotifyData, npcPacket, ct);
     }

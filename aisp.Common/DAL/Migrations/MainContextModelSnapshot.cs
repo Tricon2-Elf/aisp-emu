@@ -17,6 +17,221 @@ namespace aisp.Common.DAL.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListing", b =>
+                {
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(768)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ContentSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ContentsPublic")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime?>("DelistedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DownloadCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Genre")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ListedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Official")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Pages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SalesCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("State")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WorkId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ScriptId");
+
+                    b.HasIndex("State", "Genre");
+
+                    b.HasIndex("UserId", "WorkId");
+
+                    b.ToTable("AdventureListings", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListingContent", b =>
+                {
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Datalist")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("Script")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.HasKey("ScriptId");
+
+                    b.ToTable("AdventureListingContents", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventurePurchase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("AuthorShare")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BuyerCharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BuyerUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("HiddenFromDownloads")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("HiddenFromHistory")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("SettledAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScriptId");
+
+                    b.HasIndex("SettledAt");
+
+                    b.HasIndex("BuyerUserId", "ScriptId");
+
+                    b.ToTable("AdventurePurchases", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureTicket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.ToTable("AdventureTickets", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureWork", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("Sheets")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Uploaded")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WorkId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "WorkId")
+                        .IsUnique();
+
+                    b.ToTable("AdventureWorks", (string)null);
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.Character", b =>
                 {
                     b.Property<int>("Id")
@@ -102,6 +317,18 @@ namespace aisp.Common.DAL.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<uint>("UserStatusIconId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0u);
+
+                    b.Property<string>("UserStatusText")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(49)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CircleId");
@@ -171,6 +398,73 @@ namespace aisp.Common.DAL.Migrations
                     b.HasIndex("ItemId");
 
                     b.ToTable("CharacterInventory", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.ChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("BalloonId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CharacterName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("CircleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<uint>("DistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint?>("MapId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Rejected")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CharacterId", "CreatedAt");
+
+                    b.HasIndex("CircleId", "CreatedAt");
+
+                    b.HasIndex("Kind", "CreatedAt");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("MapId", "ChannelId", "CreatedAt");
+
+                    b.ToTable("ChatMessages", (string)null);
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Circle", b =>
@@ -323,6 +617,24 @@ namespace aisp.Common.DAL.Migrations
                     b.HasIndex("TargetCharacterId", "Status");
 
                     b.ToTable("FriendRequests", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("Slot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(61)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CharacterId", "Slot");
+
+                    b.ToTable("FriendLinkTags", (string)null);
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
@@ -673,6 +985,11 @@ namespace aisp.Common.DAL.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
+                    b.Property<uint>("NamePlate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(4u);
+
                     b.Property<long>("NpcObjectId")
                         .HasColumnType("INTEGER");
 
@@ -772,6 +1089,142 @@ namespace aisp.Common.DAL.Migrations
                     b.ToTable("PendingMapTransfers", (string)null);
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.ReportTicket", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ChannelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<uint>("MapId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MapName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ReporterCharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReporterCharacterName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ReporterUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReporterUsername")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResolutionAction")
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ResolvedByUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue((byte)0);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("ReportTickets", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.ReportTicketChatMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CharacterName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Rejected")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ReportTicketId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportTicketId");
+
+                    b.HasIndex("ReportTicketId", "CreatedAt");
+
+                    b.ToTable("ReportTicketChatMessages", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.ReportTicketPlayer", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CharacterName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ReportTicketId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReportTicketId");
+
+                    b.ToTable("ReportTicketPlayers", (string)null);
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.Robo", b =>
                 {
                     b.Property<int>("CharacterId")
@@ -813,9 +1266,6 @@ namespace aisp.Common.DAL.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<uint>("Hairstyle")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("JobId")
                         .HasColumnType("INTEGER");
 
                     b.Property<byte>("Level")
@@ -864,6 +1314,9 @@ namespace aisp.Common.DAL.Migrations
                         .IsRequired()
                         .HasMaxLength(37)
                         .HasColumnType("TEXT");
+
+                    b.Property<uint>("NamePlate")
+                        .HasColumnType("INTEGER");
 
                     b.Property<uint>("ParameterId")
                         .HasColumnType("INTEGER");
@@ -1286,6 +1739,16 @@ namespace aisp.Common.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("AdventureSalesBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0L);
+
+                    b.Property<int>("AdventureSheetStock")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
                     b.Property<long>("AiPoints")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -1298,6 +1761,9 @@ namespace aisp.Common.DAL.Migrations
                     b.Property<DateTime?>("BannedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("BannedUntil")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
@@ -1308,6 +1774,9 @@ namespace aisp.Common.DAL.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<DateTime?>("KickedUntil")
+                        .HasColumnType("TEXT");
+
                     b.Property<byte>("Language")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -1316,6 +1785,11 @@ namespace aisp.Common.DAL.Migrations
 
                     b.Property<DateTime?>("LastLoggedInAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("NextAdventureWorkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
 
                     b.Property<long>("NicoPoints")
                         .ValueGeneratedOnAdd()
@@ -1327,6 +1801,11 @@ namespace aisp.Common.DAL.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("TEXT")
                         .HasColumnName("PasswordHash");
+
+                    b.Property<byte>("Role")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue((byte)0);
 
                     b.Property<long>("StorageDeposit")
                         .ValueGeneratedOnAdd()
@@ -1415,6 +1894,58 @@ namespace aisp.Common.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Worlds");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListing", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListingContent", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.AdventureListing", "Listing")
+                        .WithOne("Content")
+                        .HasForeignKey("aisp.Common.DAL.Entities.AdventureListingContent", "ScriptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventurePurchase", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.User", "BuyerUser")
+                        .WithMany()
+                        .HasForeignKey("BuyerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("aisp.Common.DAL.Entities.AdventureListing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ScriptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BuyerUser");
+
+                    b.Navigation("Listing");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureWork", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Character", b =>
@@ -1585,6 +2116,17 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("CharacterLow");
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>
                 {
                     b.HasOne("aisp.Common.DAL.Entities.Item", "Item")
@@ -1643,6 +2185,28 @@ namespace aisp.Common.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("Npc");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.ReportTicketChatMessage", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.ReportTicket", "ReportTicket")
+                        .WithMany("ChatMessages")
+                        .HasForeignKey("ReportTicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ReportTicket");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.ReportTicketPlayer", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.ReportTicket", "ReportTicket")
+                        .WithMany("Players")
+                        .HasForeignKey("ReportTicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ReportTicket");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Robo", b =>
@@ -1763,6 +2327,11 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListing", b =>
+                {
+                    b.Navigation("Content");
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.Character", b =>
                 {
                     b.Navigation("CircleMemberships");
@@ -1796,6 +2365,13 @@ namespace aisp.Common.DAL.Migrations
             modelBuilder.Entity("aisp.Common.DAL.Entities.Npc", b =>
                 {
                     b.Navigation("Equipment");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.ReportTicket", b =>
+                {
+                    b.Navigation("ChatMessages");
+
+                    b.Navigation("Players");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Robo", b =>

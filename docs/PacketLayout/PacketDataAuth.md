@@ -36,7 +36,7 @@
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0xB6B4
 - **Packet ID (int):** 46772
-- **Packet Size:** 12
+- **Packet Size:** 16
 - **Description:** Response to client version check; returns result and server version.
 
 **Layout:**
@@ -125,7 +125,7 @@
 - **Direction:** ClientToServer
 - **Packet ID (hex):** 0x62BC
 - **Packet ID (int):** 25276
-- **Packet Size:** 12
+- **Packet Size:** 16
 - **Description:** Client sends client version for compatibility check.
 
 **Layout:**

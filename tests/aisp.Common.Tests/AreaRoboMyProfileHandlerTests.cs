@@ -48,7 +48,7 @@ public sealed class AreaRoboMyProfileHandlerTests
             var editSession = new CapturingPlayerSession { CharacterId = 7 };
             await using (var editDb = new MainContext(options))
             {
-                var handler = new AreaEditRoboMyProfileHandler(editDb);
+                var handler = new AreaEditRoboMyProfileHandler(editDb, WordFilter.FromTerms([]));
                 Assert.IsAssignableFrom<IRequiresAuthenticatedSession>(handler);
 
                 await handler.HandleAsync(
@@ -80,7 +80,7 @@ public sealed class AreaRoboMyProfileHandlerTests
                 Assert.Equal(editedProfile.AvatarDesc, stored.ProfileDescription);
                 Assert.Equal(0x11223344u, stored.ProfileUnknownDword04);
                 Assert.Equal(0x55667788u, stored.ProfileUnknownDword08);
-                Assert.Equal(44u, stored.JobId);
+                Assert.Equal(44u, stored.NamePlate);
                 Assert.True(stored.UpdatedAt > previousUpdatedAt);
             }
 
@@ -165,7 +165,10 @@ public sealed class AreaRoboMyProfileHandlerTests
             );
             await using (var editDb = new MainContext(options))
             {
-                await new AreaEditRoboMyProfileHandler(editDb).HandleAsync(
+                await new AreaEditRoboMyProfileHandler(
+                    editDb,
+                    WordFilter.FromTerms([])
+                ).HandleAsync(
                     BuildEditPayload(1, attemptedProfile, 999, new AvatarProfileMetadata(1, 2, 3)),
                     editSession,
                     TestContext.Current.CancellationToken
@@ -187,7 +190,7 @@ public sealed class AreaRoboMyProfileHandlerTests
             Assert.Equal("Secret like", stored.Like1);
             Assert.Equal("Secret profile", stored.ProfileDescription);
             Assert.Equal(123u, stored.ProfileUnknownDword04);
-            Assert.Equal(44u, stored.JobId);
+            Assert.Equal(44u, stored.NamePlate);
         }
         finally
         {
@@ -241,18 +244,69 @@ public sealed class AreaRoboMyProfileHandlerTests
         }
     }
 
+    [Fact]
+    public async Task EditOwnedProfile_RejectsBlockedTextWithoutPersisting()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 7, TestContext.Current.CancellationToken);
+            await SeedRoboAsync(options, 7, 2, 44);
+
+            var session = new CapturingPlayerSession { CharacterId = 7 };
+            var blockedProfile = new ProfileData(
+                "Robots",
+                "Tea",
+                "Maps",
+                "Building things",
+                "Hot and strong",
+                "Finding shortcuts",
+                "I am a faggot"
+            );
+            await using (var editDb = new MainContext(options))
+            {
+                await new AreaEditRoboMyProfileHandler(
+                    editDb,
+                    WordFilter.FromTerms(["faggot"])
+                ).HandleAsync(
+                    BuildEditPayload(2, blockedProfile, 123, default),
+                    session,
+                    TestContext.Current.CancellationToken
+                );
+            }
+
+            var response = Assert.Single(session.Sent);
+            Assert.Equal(PacketType.EditRoboMyProfileResponse, response.Type);
+            Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
+
+            await using var inspectionDb = new MainContext(options);
+            var stored = await inspectionDb
+                .Robos.AsNoTracking()
+                .SingleAsync(
+                    x => x.CharacterId == 7 && x.RoboId == 2,
+                    TestContext.Current.CancellationToken
+                );
+            Assert.Equal(string.Empty, stored.Like1);
+            Assert.Equal(string.Empty, stored.ProfileDescription);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static async Task SeedRoboAsync(
         DbContextOptions<MainContext> options,
         int characterId,
         uint roboId,
-        uint jobId
+        uint namePlate
     )
     {
         var objectId = RoboRepository.GetObjectId(checked((uint)characterId), roboId);
         var character = new CharaData(objectId, 1002011, $"Robo {roboId}")
         {
             Visual = new CharaVisual(BloodType.A, 1, 1, 0, objectId, 0, 10930010),
-            JobId = jobId,
+            NamePlate = namePlate,
         };
         await using var db = new MainContext(options);
         await new RoboRepository(db).UpsertAsync(

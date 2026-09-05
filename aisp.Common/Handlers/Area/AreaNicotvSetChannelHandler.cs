@@ -38,13 +38,15 @@ public sealed class AreaNicotvSetChannelHandler(
         if (nicotv is null)
             return new NicotvSetChannelResponse(0, 0);
 
+        // The client's set_channel_r handler is a no-op, same as set_movie_r, so the sender needs
+        // the notify as well to load the channel on its own TV.
         await MyRoomFurnitureNotification.BroadcastToRoomAsync(
             state,
             session,
             session.MyRoomId,
             PacketType.NotifyNicotvSetChannel,
             new NotifyNicotvSetChannel(request.NicotvId, request.ChannelId).ToBytes(),
-            includeSource: false,
+            includeSource: true,
             ct
         );
         return new NicotvSetChannelResponse(request.NicotvId, request.ChannelId);

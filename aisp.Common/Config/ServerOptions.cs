@@ -41,6 +41,17 @@ public class ServerOptions
     /// <summary>When false, session presence is kept in-memory (single-node VPS). When true, SessionPresences table is used (multi-instance).</summary>
     public bool UseDistributedSessionPresence { get; set; } = false;
 
+    /// <summary>Answered to get_ai_upload_rate. On the original service this was the author's share, in percent of the sale price in デレ (the in-game currency), for user-made aiちゅーん (AI tune) uploaded to the shop. The client shows sale price * rate / 100 as 「1冊あたりの収益」.</summary>
+    public int AiUploadRatePercent { get; set; } = 70;
+
+    /// <summary>Answered to get_adventure_upload_rate. On the original service this was the author's share, in percent of the sale price in デレ (the in-game currency), for user-made drama (adventure) discs uploaded to the shop. The client shows sale price * rate / 100 as 「1冊あたりの収益」.</summary>
+    public int AdventureUploadRatePercent { get; set; } = 70;
+
+    /// <summary>Price of one 原稿用紙 (manuscript sheet) in デレ (the in-game currency) at the sheet shop the drama editor's 通販 button opens.</summary>
+    public long AdventureSheetPriceAi { get; set; } = 10;
+    /// <summary>Weekly settlement of drama disc sales: when the author's share of each sale, in デレ (the in-game currency), becomes collectable from the shop's 売上 clerk.</summary>
+    public AdventureSettlementOptions AdventureSettlement { get; set; } = new();
+
     public GameServerConfig AuthServer { get; set; } = new() { Port = 50050 };
     public GameServerConfig MsgServer { get; set; } = new() { Port = 50052 };
     public GameServerConfig AreaServer { get; set; } = new() { Port = 50054 };

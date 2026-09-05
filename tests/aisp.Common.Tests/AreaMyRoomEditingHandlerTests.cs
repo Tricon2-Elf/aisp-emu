@@ -153,8 +153,7 @@ public class AreaMyRoomEditingHandlerTests
                     Assert.Equal(PacketType.MyRoomRemoveFurnitureResponse, removeResponse.Type);
                     Assert.Equal(0u, new PacketReader(removeResponse.Payload).ReadUInt());
                 },
-                itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1),
-                inventoryUpdate => AssertInventoryCount(inventoryUpdate, itemId: 7001, quantity: 1)
+                itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1)
             );
             var removeNotification = Assert.Single(roomPeer.Sent);
             Assert.Equal(PacketType.NotifyMyRoomRemoveFurniture, removeNotification.Type);
@@ -195,7 +194,7 @@ public class AreaMyRoomEditingHandlerTests
                 TestContext.Current.CancellationToken
             );
 
-            var nameHandler = new AreaMyRoomUpdateNameHandler(repository);
+            var nameHandler = new AreaMyRoomUpdateNameHandler(repository, WordFilter.FromTerms([]));
             var state = new SharedState();
             state.RegisterClient(ServerType.Area, session);
             var securityHandler = CreateSecurityHandler(options, repository, state);
@@ -253,6 +252,47 @@ public class AreaMyRoomEditingHandlerTests
                 TestContext.Current.CancellationToken
             );
             Assert.Equal(MyRoomSecurity.CircleMembersOnly, stored.Security);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task UpdateName_RejectsBlockedRoomName()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
+
+            await using var db = new MainContext(options);
+            var repository = new MyRoomRepository(db);
+            var session = CreateSession();
+            var handler = new AreaMyRoomUpdateNameHandler(
+                repository,
+                WordFilter.FromTerms(["faggot"])
+            );
+
+            await ((IPacketHandler)handler).HandleAsync(
+                BuildNamePayload(42, "Faggot"),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var response = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.MyRoomUpdateNameResponse
+            );
+            Assert.Equal(1u, new PacketReader(response.Payload).ReadUInt());
+
+            db.ChangeTracker.Clear();
+            var stored = await db.Rooms.SingleAsync(
+                room => room.Id == 42,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal("My Room", stored.Name);
         }
         finally
         {
@@ -482,7 +522,6 @@ public class AreaMyRoomEditingHandlerTests
                 session.Sent,
                 furniture => Assert.Equal(PacketType.MyRoomNotifyFurniture, furniture.Type),
                 itemCreate => AssertInventoryItemCreated(itemCreate, itemId: 7001, quantity: 1),
-                inventoryUpdate => AssertInventoryCount(inventoryUpdate, itemId: 7001, quantity: 1),
                 response => Assert.Equal(PacketType.MyRoomGetFurnitureResponse, response.Type)
             );
         }
@@ -872,19 +911,6 @@ public class AreaMyRoomEditingHandlerTests
         Assert.Equal(directionX, reader.ReadByte());
         Assert.Equal(directionY, reader.ReadByte());
         Assert.Equal(1u, reader.ReadUInt());
-    }
-
-    private static void AssertInventoryCount(
-        (PacketType Type, byte[] Payload) packet,
-        uint itemId,
-        uint quantity
-    )
-    {
-        Assert.Equal(PacketType.ItemUpdateListNotify, packet.Type);
-        var reader = new PacketReader(packet.Payload);
-        Assert.Equal(CharacterItemSync.PrimaryItemTablePlace, reader.ReadUInt());
-        Assert.Equal(itemId, reader.ReadUInt());
-        Assert.Equal(quantity, reader.ReadUInt());
     }
 
     private static void AssertFurnitureUnavailable(

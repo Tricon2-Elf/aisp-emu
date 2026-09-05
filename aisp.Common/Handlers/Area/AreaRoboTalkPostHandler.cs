@@ -8,6 +8,7 @@ namespace aisp.Common.Handlers.Area;
 
 public sealed class AreaRoboTalkPostHandler(
     IRoboRepository roboRepository,
+    IWordFilter wordFilter,
     ILogger<AreaRoboTalkPostHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
@@ -35,6 +36,20 @@ public sealed class AreaRoboTalkPostHandler(
                 "Rejected Robo conversation message for character {CharacterId}: Robo {RoboId} is not owned by the character",
                 session.CharacterId,
                 request.RoboId
+            );
+            return;
+        }
+
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.Message))
+        {
+            logger.LogWarning(
+                "Rejected Robo conversation message for character {CharacterId}: blocked message",
+                session.CharacterId
+            );
+            await session.SendAsync(
+                PacketType.RoboGrantNextMessageNoticeNotify,
+                new RoboGrantNextMessageNoticeNotify(request.RoboId).ToBytes(),
+                ct
             );
             return;
         }

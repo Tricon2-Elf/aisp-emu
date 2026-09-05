@@ -68,7 +68,9 @@ public sealed class AreaNicotvHandlersTests
                 nicotvId = reader.ReadUInt();
                 Assert.NotEqual(0u, nicotvId);
                 var initial = NicotvData.FromBytes(response.Payload.AsSpan(sizeof(uint) * 2));
-                Assert.Equal("", initial.MovieId);
+                // An empty movie id still carries n: alone, so the screen page's movieid=
+                // round-trips the furniture id even for a TV that has never been set.
+                Assert.Equal($"n:{nicotvId}", initial.MovieId);
                 Assert.Equal(NicotvPlaybackState.Closed, initial.PlaybackState);
 
                 session.Sent.Clear();
@@ -96,7 +98,7 @@ public sealed class AreaNicotvHandlersTests
                 Assert.Equal(2u, reader.ReadUInt());
                 Assert.Equal(nicotvId, reader.ReadUInt());
                 var opened = NicotvData.FromBytes(response.Payload.AsSpan(sizeof(uint) * 2));
-                Assert.Equal("Hello World", opened.MovieId);
+                Assert.Equal($"Hello World n:{nicotvId}", opened.MovieId);
                 Assert.Equal(NicotvPlaybackState.Playing, opened.PlaybackState);
             }
 
@@ -107,6 +109,7 @@ public sealed class AreaNicotvHandlersTests
                 Assert.Equal(2u, stored.FurnitureId);
                 Assert.Equal("Hello World", stored.MovieId);
                 Assert.Equal(NicotvPlaybackState.Playing, stored.PlaybackState);
+                Assert.Equal(NicotvCommentVisibility.Hidden, stored.CommentVisibility);
 
                 var repository = new NicotvRepository(db);
                 var session = CreateVisitorSession();
@@ -118,10 +121,72 @@ public sealed class AreaNicotvHandlersTests
                 Assert.Equal(2u, reader.ReadUInt());
                 Assert.Equal(nicotvId, reader.ReadUInt());
                 Assert.Equal(
-                    "Hello World",
+                    $"Hello World n:{nicotvId}",
                     NicotvData.FromBytes(response.Payload.AsSpan(sizeof(uint) * 2)).MovieId
                 );
             }
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task OpenByFurniture_KeepsTheServersCommentVisibility()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            await SeedNicotvFurnitureAsync(options, ct);
+
+            await using var db = new MainContext(options);
+            var repository = new NicotvRepository(db);
+
+            var state = new SharedState();
+            var actor = CreateVisitorSession(2);
+            var peer = CreateVisitorSession(3);
+            state.RegisterClient(ServerType.Area, actor);
+            state.RegisterClient(ServerType.Area, peer);
+
+            // The client's TV panel sends every open snapshot as comments visible, whatever the TV
+            // shows, and has no request for the field at all: it is the server's default for the
+            // TV (off), reaches the page through its title, and is never read back from a client.
+            var openHandler = new AreaNicotvOpenByFurnitureHandler(repository, state);
+            await ((IPacketHandler)openHandler).HandleAsync(
+                BuildOpenPayload(
+                    2,
+                    new NicotvData(commentVisibility: NicotvCommentVisibility.Visible)
+                ),
+                actor,
+                ct
+            );
+            var stored = Assert.IsType<Nicotv>(
+                await repository.GetOrCreateForFurnitureAsync(42, 2, ct)
+            );
+            Assert.Equal(NicotvCommentVisibility.Hidden, stored.CommentVisibility);
+            var opened = Assert.Single(actor.Sent, p => p.Type == PacketType.NicotvOpenResponse);
+            Assert.Equal(
+                NicotvCommentVisibility.Hidden,
+                NicotvData.FromBytes(opened.Payload.AsSpan(sizeof(uint) * 2)).CommentVisibility
+            );
+            actor.Sent.Clear();
+            peer.Sent.Clear();
+
+            // A second open with the same snapshot changes nothing: no comment-visibility reply or
+            // notify goes out, to the clicker or to peers.
+            await ((IPacketHandler)openHandler).HandleAsync(
+                BuildOpenPayload(
+                    2,
+                    new NicotvData(commentVisibility: NicotvCommentVisibility.Visible)
+                ),
+                actor,
+                ct
+            );
+            var only = Assert.Single(actor.Sent);
+            Assert.Equal(PacketType.NicotvOpenResponse, only.Type);
+            Assert.Empty(peer.Sent);
         }
         finally
         {
@@ -195,11 +260,13 @@ public sealed class AreaNicotvHandlersTests
 
             await using var db = new MainContext(options);
             var repository = new NicotvRepository(db);
+            // The TV starts switched off: tuning it is done without an open (open/close is the
+            // power toggle alone), and the client shows the channel at once.
             var nicotv = Assert.IsType<Nicotv>(
                 await repository.UpdateForFurnitureAsync(
                     42,
                     2,
-                    new NicotvData(playbackState: NicotvPlaybackState.Playing),
+                    new NicotvData(playbackState: NicotvPlaybackState.Closed),
                     ct
                 )
             );
@@ -218,20 +285,25 @@ public sealed class AreaNicotvHandlersTests
                 ct
             );
 
-            var response = Assert.Single(actor.Sent);
-            Assert.Equal(PacketType.NicotvSetChannelResponse, response.Type);
-            Assert.Equal(BuildUIntPayload(nicotvId, 1), response.Payload);
+            // The client's set_channel_r handler is a no-op, same as set_movie_r, so the sender
+            // needs the notify too, to load the channel on its own TV.
+            Assert.Equal(
+                [PacketType.NotifyNicotvSetChannel, PacketType.NicotvSetChannelResponse],
+                actor.Sent.Select(p => p.Type)
+            );
+            Assert.Equal(BuildUIntPayload(nicotvId, 1), actor.Sent[1].Payload);
             var notification = Assert.Single(peer.Sent);
             Assert.Equal(PacketType.NotifyNicotvSetChannel, notification.Type);
             Assert.Equal(BuildUIntPayload(nicotvId, 1), notification.Payload);
             Assert.Equal(1u, nicotv.ChannelId);
+            Assert.Equal(NicotvPlaybackState.Playing, nicotv.PlaybackState);
 
             actor.Sent.Clear();
             peer.Sent.Clear();
             var closeHandler = new AreaNicotvCloseHandler(repository, state);
             await ((IPacketHandler)closeHandler).HandleAsync(BuildUIntPayload(nicotvId), actor, ct);
 
-            response = Assert.Single(actor.Sent);
+            var response = Assert.Single(actor.Sent);
             Assert.Equal(PacketType.NicotvCloseResponse, response.Type);
             Assert.Equal(BuildUIntPayload(0, nicotvId), response.Payload);
             notification = Assert.Single(peer.Sent);
@@ -331,29 +403,82 @@ public sealed class AreaNicotvHandlersTests
             state.RegisterClient(ServerType.Area, actor);
             state.RegisterClient(ServerType.Area, peer);
 
-            var playHandler = new AreaNicotvPlayHandler(repository, state);
+            var screenAssignments = new ScreenAssignments();
+            var playHandler = new AreaNicotvPlayHandler(repository, state, screenAssignments);
             await ((IPacketHandler)playHandler).HandleAsync(
                 BuildUIntPayload(nicotvId, (uint)NicotvPlaybackState.Paused),
                 actor,
                 ct
             );
 
-            Assert.Equal(PacketType.NicotvPlayResponse, Assert.Single(actor.Sent).Type);
+            // The sender gets its own copy of the notify too, same as set_movie's notify (the
+            // client calls ext_play on receiving it, though testing showed that happens for
+            // either status, so it is not a play/pause toggle signal and Status goes out as-is).
+            Assert.Equal(
+                [PacketType.NotifyNicotvPlay, PacketType.NicotvPlayResponse],
+                actor.Sent.Select(p => p.Type)
+            );
             Assert.Equal(PacketType.NotifyNicotvPlay, Assert.Single(peer.Sent).Type);
             Assert.Equal(NicotvPlaybackState.Paused, nicotv.PlaybackState);
 
+            var notifyStatus = new PacketReader(actor.Sent[0].Payload);
+            notifyStatus.ReadUInt();
+            Assert.Equal((uint)NicotvPlaybackState.Paused, notifyStatus.ReadUInt());
+
             actor.Sent.Clear();
             peer.Sent.Clear();
-            var movieHandler = new AreaNicotvSetMovieHandler(repository, state);
+            var movieHandler = new AreaNicotvSetMovieHandler(repository, state, screenAssignments);
             await ((IPacketHandler)movieHandler).HandleAsync(
                 BuildSetMoviePayload(nicotvId, "sm9"),
                 actor,
                 ct
             );
 
-            Assert.Equal(PacketType.NicotvSetMovieResponse, Assert.Single(actor.Sent).Type);
+            // The client's set_movie_r handler is a no-op, so the sender needs the notify as well
+            // to load the movie on its own TV.
+            Assert.Equal(
+                [PacketType.NotifyNicotvSetMovie, PacketType.NicotvSetMovieResponse],
+                actor.Sent.Select(p => p.Type)
+            );
             Assert.Equal(PacketType.NotifyNicotvSetMovie, Assert.Single(peer.Sent).Type);
             Assert.Equal("sm9", nicotv.MovieId);
+            // Setting a movie starts it: the TV was paused, and the client plays the new movie
+            // without any open or play request of its own.
+            Assert.Equal(NicotvPlaybackState.Playing, nicotv.PlaybackState);
+
+            // Setting the movie also starts that room's shared timeline for it at zero. The
+            // screen page round-trips the n: tag the handler appended, so that is how a
+            // real poll would ask for this TV; a plain "sm9" (no n: tag) is a different TV.
+            var taggedMovieId = $"sm9 n:{nicotvId}";
+            Assert.Contains(
+                "offset:0",
+                screenAssignments.Resolve("room-tv", taggedMovieId, actor.MapId, actor.ChannelId)
+            );
+
+            // The pause button (NicotvPlayRequest) pauses that TV's timeline for the room...
+            await ((IPacketHandler)playHandler).HandleAsync(
+                BuildUIntPayload(nicotvId, (uint)NicotvPlaybackState.Paused),
+                actor,
+                ct
+            );
+            Assert.Contains(
+                "paused:",
+                screenAssignments.Resolve("room-tv", taggedMovieId, actor.MapId, actor.ChannelId)
+            );
+            // ...but not some other TV's timeline (a different n: tag, or none at all).
+            Assert.DoesNotContain(
+                "paused:",
+                screenAssignments.Resolve(
+                    "room-tv",
+                    $"sm9 n:{nicotvId + 1}",
+                    actor.MapId,
+                    actor.ChannelId
+                )
+            );
+            Assert.DoesNotContain(
+                "paused:",
+                screenAssignments.Resolve("room-tv", "sm9", actor.MapId, actor.ChannelId)
+            );
         }
         finally
         {

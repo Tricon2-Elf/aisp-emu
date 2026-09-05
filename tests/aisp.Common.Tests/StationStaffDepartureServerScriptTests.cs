@@ -7,8 +7,7 @@ using aisp.Common.Game.ServerScripts;
 using aisp.Common.Handlers.Area;
 using aisp.Common.Tests.Support;
 using aisp.Network;
-using aisp.Network.Packets.Area;
-using Microsoft.EntityFrameworkCore;
+using aisp.Network.Data;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -110,54 +109,6 @@ public sealed class StationStaffDepartureServerScriptTests
         );
     }
 
-    [Theory]
-    [InlineData(1u, "./script/event/introdution_myroom_dc.csv")]
-    [InlineData(2u, "./script/event/introdution_myroom_cl.csv")]
-    [InlineData(3u, "./script/event/introdution_myroom_sh.csv")]
-    public async Task StationStaffDeparture_SelectsClientScriptForHomeIsland(
-        uint homeIslandId,
-        string expectedLabel
-    )
-    {
-        var (connection, options) = TestDb.CreateInMemoryMainContext();
-        try
-        {
-            await using var db = new MainContext(options);
-            var character = await SeedCharacterAsync(db, homeIslandId);
-            var dispatcher = CreateDispatcher(db, new SharedState());
-            var session = new CapturingPlayerSession
-            {
-                CharacterId = (uint)character.Id,
-                MapId = 10990100,
-                ChannelId = 1,
-            };
-
-            await dispatcher.StartAsync(
-                session,
-                ServerEvents.Keys.StationStaffDeparture,
-                CreateContext(),
-                EventCompletionPolicy.Once,
-                TestContext.Current.CancellationToken
-            );
-
-            Assert.Equal(ServerEvents.Keys.StationStaffDeparture, session.ActiveEventKey);
-            Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
-            Assert.Equal(
-                1,
-                session.Sent.Count(packet => packet.Type == PacketType.EventStartNotify)
-            );
-            var scriptPlay = Assert.Single(
-                session.Sent,
-                packet => packet.Type == PacketType.EventScriptPlayNotify
-            );
-            Assert.Equal(expectedLabel, new PacketReader(scriptPlay.Payload).ReadString("utf-8"));
-        }
-        finally
-        {
-            await connection.DisposeAsync();
-        }
-    }
-
     [Fact]
     public async Task StationStaffDeparture_ShowsRegistrationMessageWithoutTeleport_WhenHomeIslandIsUnset()
     {
@@ -178,7 +129,7 @@ public sealed class StationStaffDepartureServerScriptTests
                 session,
                 ServerEvents.Keys.StationStaffDeparture,
                 CreateContext(),
-                EventCompletionPolicy.Once,
+                EventCompletionPolicy.Replayable,
                 TestContext.Current.CancellationToken
             );
 
@@ -202,7 +153,7 @@ public sealed class StationStaffDepartureServerScriptTests
             Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
             Assert.DoesNotContain(
                 session.Sent,
-                packet => packet.Type == PacketType.EventScriptPlayNotify
+                packet => packet.Type == PacketType.EventSelectInitNotify
             );
             Assert.DoesNotContain(
                 session.Sent,
@@ -233,24 +184,79 @@ public sealed class StationStaffDepartureServerScriptTests
     }
 
     [Fact]
-    public async Task StationStaffDeparture_TeleportsAfterFadeAcknowledgement()
+    public async Task StationStaffDeparture_ShowsIslandChoiceDialog()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
             await using var db = new MainContext(options);
-            var character = await SeedCharacterAsync(db, 3);
-            db.Maps.Add(
-                new Map
-                {
-                    MapId = 10030200,
-                    Name = "Shuffle Shopping Street",
-                    SpawnX = 10,
-                    SpawnY = 0.1f,
-                    SpawnZ = 20,
-                    SpawnRotation = 0,
-                }
+            var character = await SeedCharacterAsync(db, 1);
+            var dispatcher = CreateDispatcher(db, new SharedState());
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = (uint)character.Id,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+
+            await dispatcher.StartAsync(
+                session,
+                ServerEvents.Keys.StationStaffDeparture,
+                CreateContext(),
+                EventCompletionPolicy.Replayable,
+                TestContext.Current.CancellationToken
             );
+
+            Assert.Equal(ServerEvents.Keys.StationStaffDeparture, session.ActiveEventKey);
+            Assert.Equal(NpcEventKind.ServerScript, session.ActiveEventKind);
+            var selectInit = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.EventSelectInitNotify
+            );
+            Assert.Equal(
+                (uint)EventSelectType.Dialogue,
+                new PacketReader(selectInit.Payload).ReadUInt()
+            );
+            var islandLabels = session
+                .Sent.Where(packet => packet.Type == PacketType.EventSelectPushNotify)
+                .Select(packet => new PacketReader(packet.Payload).ReadString("utf-8"))
+                .ToArray();
+            Assert.Equal(["Da Capo", "SHUFFLE!", "CLANNAD"], islandLabels);
+            var selectExec = Assert.Single(
+                session.Sent,
+                packet => packet.Type == PacketType.EventSelectExecNotify
+            );
+            Assert.Equal(
+                "Which island would you like to visit?",
+                new PacketReader(selectExec.Payload).ReadString("utf-8")
+            );
+            Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
+            Assert.DoesNotContain(
+                session.Sent,
+                packet => packet.Type == PacketType.NotifyChangeMap
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Theory]
+    [InlineData(0, StationStaffDepartureServerScript.DaCapoShoppingStreetMapId)]
+    [InlineData(1, StationStaffDepartureServerScript.ShuffleShoppingStreetMapId)]
+    [InlineData(2, StationStaffDepartureServerScript.ClannadShoppingStreetMapId)]
+    public async Task StationStaffDeparture_TeleportsToSelectedShoppingDistrict(
+        byte selection,
+        uint expectedMapId
+    )
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            await using var db = new MainContext(options);
+            var character = await SeedCharacterAsync(db, 1);
+            SeedShoppingDistrictMaps(db);
             db.Channels.Add(
                 new GameChannel
                 {
@@ -278,38 +284,22 @@ public sealed class StationStaffDepartureServerScriptTests
                 session,
                 ServerEvents.Keys.StationStaffDeparture,
                 CreateContext(),
-                EventCompletionPolicy.Once,
-                TestContext.Current.CancellationToken
-            );
-            var scriptPlayHandler = new AreaEventScriptPlayHandler(
-                NullLogger<AreaEventScriptPlayHandler>.Instance,
-                dispatcher
-            );
-            await scriptPlayHandler.HandleAsync(
-                BuildUIntPayload(0),
-                session,
+                EventCompletionPolicy.Replayable,
                 TestContext.Current.CancellationToken
             );
 
-            Assert.Equal(10990100u, session.MapId);
-            Assert.DoesNotContain(
-                session.Sent,
-                packet => packet.Type is PacketType.EventEndNotify or PacketType.NotifyChangeMap
+            var selectHandler = new AreaEventSelectExecRHandler(
+                dispatcher,
+                NullLogger<AreaEventSelectExecRHandler>.Instance
             );
-
-            var fadeInHandler = new AreaEventFadeInHandler(
-                eventRepository,
-                NullLogger<AreaEventFadeInHandler>.Instance,
-                dispatcher
-            );
-            await fadeInHandler.HandleAsync(
-                ReadOnlyMemory<byte>.Empty,
+            await selectHandler.HandleAsync(
+                BuildEventSelectionPayload(selection),
                 session,
                 TestContext.Current.CancellationToken
             );
 
             Assert.Null(session.ActiveEventKey);
-            Assert.Equal(10030200u, session.MapId);
+            Assert.Equal(expectedMapId, session.MapId);
             Assert.Equal(1, session.Sent.Count(packet => packet.Type == PacketType.EventEndNotify));
             Assert.Equal(
                 1,
@@ -334,7 +324,7 @@ public sealed class StationStaffDepartureServerScriptTests
     }
 
     [Fact]
-    public async Task StationStaffDeparture_ClientScriptFailureAbortsWithoutTeleport()
+    public async Task StationStaffDeparture_CancelSelectionAbortsWithoutTeleport()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
@@ -352,16 +342,19 @@ public sealed class StationStaffDepartureServerScriptTests
                 session,
                 ServerEvents.Keys.StationStaffDeparture,
                 CreateContext(),
-                EventCompletionPolicy.Once,
+                EventCompletionPolicy.Replayable,
                 TestContext.Current.CancellationToken
             );
 
-            var handler = new AreaEventScriptPlayHandler(
-                NullLogger<AreaEventScriptPlayHandler>.Instance,
-                dispatcher
+            var handler = new AreaEventSelectExecRHandler(
+                dispatcher,
+                NullLogger<AreaEventSelectExecRHandler>.Instance
             );
+            var writer = new PacketWriter();
+            writer.Write(1u);
+            writer.Write((byte)0);
             await handler.HandleAsync(
-                BuildUIntPayload(9),
+                writer.ToBytes(),
                 session,
                 TestContext.Current.CancellationToken
             );
@@ -371,7 +364,7 @@ public sealed class StationStaffDepartureServerScriptTests
             Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventEndNotify);
             Assert.DoesNotContain(
                 session.Sent,
-                packet => packet.Type is PacketType.EventFadeInNotify or PacketType.NotifyChangeMap
+                packet => packet.Type == PacketType.NotifyChangeMap
             );
         }
         finally
@@ -398,6 +391,39 @@ public sealed class StationStaffDepartureServerScriptTests
         return character;
     }
 
+    private static void SeedShoppingDistrictMaps(MainContext db)
+    {
+        db.Maps.AddRange(
+            new Map
+            {
+                MapId = StationStaffDepartureServerScript.DaCapoShoppingStreetMapId,
+                Name = "Da Capo Shopping Street",
+                SpawnX = 10,
+                SpawnY = 0.1f,
+                SpawnZ = 20,
+                SpawnRotation = 0,
+            },
+            new Map
+            {
+                MapId = StationStaffDepartureServerScript.ShuffleShoppingStreetMapId,
+                Name = "Shuffle Shopping Street",
+                SpawnX = 10,
+                SpawnY = 0.1f,
+                SpawnZ = 20,
+                SpawnRotation = 0,
+            },
+            new Map
+            {
+                MapId = StationStaffDepartureServerScript.ClannadShoppingStreetMapId,
+                Name = "Clannad Shopping Street",
+                SpawnX = 10,
+                SpawnY = 0.1f,
+                SpawnZ = 20,
+                SpawnRotation = 0,
+            }
+        );
+    }
+
     private static ServerScriptDispatcher CreateDispatcher(MainContext db, SharedState state)
     {
         var eventRepository = new CharacterEventRepository(db);
@@ -407,7 +433,6 @@ public sealed class StationStaffDepartureServerScriptTests
         );
         var script = new StationStaffDepartureServerScript(
             new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
-            new ClientScriptSegmentRunner(),
             serverScriptSession,
             CreateDirectMapLinkTransitionService(db, state),
             TestTextLocaliser.English,
@@ -454,6 +479,14 @@ public sealed class StationStaffDepartureServerScriptTests
     {
         var writer = new PacketWriter();
         writer.Write(value);
+        return writer.ToBytes();
+    }
+
+    private static byte[] BuildEventSelectionPayload(byte selection)
+    {
+        var writer = new PacketWriter();
+        writer.Write(0u);
+        writer.Write(selection);
         return writer.ToBytes();
     }
 }

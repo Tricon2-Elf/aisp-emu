@@ -6,9 +6,11 @@ using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class CircleCreateHandler(ICircleRepository circles, SharedState state)
-    : PacketHandlerBase<CircleCreateRequest, CircleCreateResponse>,
-        IRequiresAuthenticatedSession
+public class CircleCreateHandler(
+    ICircleRepository circles,
+    SharedState state,
+    IWordFilter wordFilter
+) : PacketHandlerBase<CircleCreateRequest, CircleCreateResponse>, IRequiresAuthenticatedSession
 {
     public override PacketType RequestType => PacketType.CircleCreateRequest;
     public override PacketType ResponseType => PacketType.CircleCreateResponse;
@@ -21,6 +23,9 @@ public class CircleCreateHandler(ICircleRepository circles, SharedState state)
     )
     {
         if (session.CharacterId == 0)
+            return new CircleCreateResponse((uint)CircleResult.Failed, null);
+
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.Name))
             return new CircleCreateResponse((uint)CircleResult.Failed, null);
 
         var result = await circles.CreateAsync(

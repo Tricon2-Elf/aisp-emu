@@ -4,13 +4,13 @@ using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
-using aisp.Network.Packets.Common;
 using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Area;
 
 public class AreasvEnterHandler(
     IUserSessionRepository _sessionRepo,
+    IUserRepository userRepo,
     IMapRepository mapRepo,
     IChannelRepository channelRepo,
     ICharacterRepository characterRepo,
@@ -39,27 +39,43 @@ public class AreasvEnterHandler(
 
         if (userSession is null || userSession.UserId != loginReq.UserID)
         {
+            // recv_enter_areasv_r is a fixed 8-byte read on the client (result + objId);
+            // a 4-byte body desyncs the record parser.
             await session.SendAsync(
                 ResponseType,
-                new LoginResponse(AuthResponseResult.InvalidCredentials).ToBytes(),
+                new AreasvEnterResponse((uint)AuthResponseResult.InvalidCredentials, 0).ToBytes(),
                 ct
             );
             return;
         }
 
-        if (userSession.User.IsBanned)
+        var user =
+            await UserModerationState.PrepareUserForGameLoginAsync(userRepo, userSession.UserId, ct)
+            ?? userSession.User;
+
+        if (UserModerationState.IsCurrentlyBanned(user))
         {
             await session.SendAsync(
                 ResponseType,
-                new LoginResponse(AuthResponseResult.AccountBanned).ToBytes(),
+                new AreasvEnterResponse((uint)AuthResponseResult.AccountBanned, 0).ToBytes(),
                 ct
             );
             return;
         }
 
-        session.User = userSession.User;
-        session.UserId = userSession.User.Id;
-        session.Language = userSession.User.Language;
+        if (UserModerationState.IsCurrentlyKicked(user))
+        {
+            await session.SendAsync(
+                ResponseType,
+                new AreasvEnterResponse((uint)AuthResponseResult.Failure, 0).ToBytes(),
+                ct
+            );
+            return;
+        }
+
+        session.User = user;
+        session.UserId = user.Id;
+        session.Language = user.Language;
         var chara = await characterRepo.GetByIdAsync(session.User.Characters.First().Id, ct);
 
         if (chara is null)
@@ -263,6 +279,10 @@ public class AreasvEnterHandler(
             cha.Equipment.Select(e => new CharacterEquipSlot(e.SlotIndex, (uint)e.ItemId)),
             ItemEntityMapper.ResolveEquipSocket
         );
-        return new AvatarNotifyData(res, new AvatarData(objId, cd)).ToBytes();
+        var avatarData = new AvatarData(objId, cd) { UserStatus = UserStatusOf(cha) };
+        return new AvatarNotifyData(res, avatarData).ToBytes();
     }
+
+    public static UserStatusData UserStatusOf(Character cha) =>
+        new() { StatusText = cha.UserStatusText, StatusIconId = cha.UserStatusIconId };
 }

@@ -5,7 +5,10 @@ using aisp.Network.Packets.Area;
 
 namespace aisp.Common.Handlers.Area;
 
-public sealed class AreaMyRoomUpdateNameHandler(IMyRoomRepository myRoomRepository)
+public sealed class AreaMyRoomUpdateNameHandler(
+    IMyRoomRepository myRoomRepository,
+    IWordFilter wordFilter
+)
     : PacketHandlerBase<MyRoomUpdateNameRequest, MyRoomUpdateNameResponse>,
         IRequiresAuthenticatedSession
 {
@@ -27,6 +30,9 @@ public sealed class AreaMyRoomUpdateNameHandler(IMyRoomRepository myRoomReposito
                 ct
             )
         )
+            return new MyRoomUpdateNameResponse(1);
+
+        if (wordFilter.ContainsBlockedWord(WordFilterLevel.Complete, request.Name))
             return new MyRoomUpdateNameResponse(1);
 
         var updated = await myRoomRepository.UpdateNameAsync(

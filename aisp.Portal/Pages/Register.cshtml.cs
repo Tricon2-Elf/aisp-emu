@@ -1,8 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 using aisp.Portal;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
@@ -34,19 +31,7 @@ public sealed class RegisterModel(
                 new(Input.Username, Input.Password, Input.ConfirmPassword),
                 ct
             );
-            var claims = new List<Claim>
-            {
-                new(ClaimTypes.NameIdentifier, identity.UserId.ToString()),
-                new(ClaimTypes.Name, identity.Username),
-            };
-            if (portalOptions.Value.IsAdmin(identity.Username))
-                claims.Add(new("portal_admin", "true"));
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(
-                    new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)
-                )
-            );
+            await PortalSignInHelper.SignInAsync(HttpContext, identity);
             return Redirect("/account");
         }
         catch (PortalApiException ex)

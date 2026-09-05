@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using aisp.Common.Game;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace aisp.Portal;
@@ -61,11 +62,45 @@ public sealed class AuthPortalApiClient(
     public Task<PortalUserDetailDto> GetUserAsync(int userId, CancellationToken ct) =>
         GetAsync<PortalUserDetailDto>($"api/auth/portal/users/{userId}", ct);
 
-    public Task BanAsync(int userId, string? reason, CancellationToken ct) =>
-        PostNoContentAsync($"api/auth/portal/users/{userId}/ban", new PortalBanRequest(reason), ct);
+    public Task BanAsync(
+        int userId,
+        int actorUserId,
+        int? days,
+        string? reason,
+        CancellationToken ct
+    ) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/ban",
+            new PortalBanRequest(actorUserId, days, reason),
+            ct
+        );
 
-    public Task UnbanAsync(int userId, CancellationToken ct) =>
-        PostNoContentAsync<object?>($"api/auth/portal/users/{userId}/unban", null, ct);
+    public Task KickAsync(
+        int userId,
+        int actorUserId,
+        int? minutes,
+        string? reason,
+        CancellationToken ct
+    ) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/kick",
+            new PortalKickRequest(actorUserId, minutes, reason),
+            ct
+        );
+
+    public Task UnbanAsync(int userId, int actorUserId, CancellationToken ct) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/unban",
+            new PortalActorRequest(actorUserId),
+            ct
+        );
+
+    public Task SetRoleAsync(int userId, int actorUserId, UserRole role, CancellationToken ct) =>
+        PostNoContentAsync(
+            $"api/auth/portal/users/{userId}/role",
+            new PortalSetRoleRequest(actorUserId, role),
+            ct
+        );
 
     public Task SetPasswordAsync(
         int userId,
@@ -164,6 +199,23 @@ public sealed class AreaPortalApiClient(
             throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
     }
 
+    public async Task ResetRoboAsync(
+        int userId,
+        int characterId,
+        uint roboId,
+        PortalResetRoboRequest request,
+        CancellationToken ct
+    )
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/area/portal/users/{userId}/characters/{characterId}/robos/{roboId}/reset",
+            request,
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+    }
+
     public async Task<IReadOnlyList<PortalCharacterRoboSummaryDto>> GetSummariesAsync(
         IReadOnlyList<int> userIds,
         CancellationToken ct
@@ -229,6 +281,79 @@ public sealed class MsgPortalApiClient(
                 response.StatusCode,
                 "The backend returned an empty response."
             );
+    }
+
+    public async Task<PortalChatPageDto> GetUserChatAsync(
+        int userId,
+        int page,
+        int pageSize,
+        CancellationToken ct
+    )
+    {
+        var skip = Math.Max(page - 1, 0) * pageSize;
+        using var response = await httpClient.GetAsync(
+            $"api/msg/portal/users/{userId}/chat?skip={skip}&take={pageSize}",
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PortalChatPageDto>(cancellationToken: ct)
+            ?? throw new PortalApiException(
+                response.StatusCode,
+                "The backend returned an empty response."
+            );
+    }
+
+    public async Task<PortalReportPageDto> GetReportsAsync(
+        string? status,
+        int page,
+        int pageSize,
+        CancellationToken ct
+    )
+    {
+        var skip = Math.Max(page - 1, 0) * pageSize;
+        var statusQuery = string.IsNullOrWhiteSpace(status)
+            ? string.Empty
+            : $"&status={Uri.EscapeDataString(status)}";
+        using var response = await httpClient.GetAsync(
+            $"api/msg/portal/reports?skip={skip}&take={pageSize}{statusQuery}",
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PortalReportPageDto>(cancellationToken: ct)
+            ?? throw new PortalApiException(
+                response.StatusCode,
+                "The backend returned an empty response."
+            );
+    }
+
+    public async Task<PortalReportDetailDto> GetReportAsync(long id, CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync($"api/msg/portal/reports/{id}", ct);
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<PortalReportDetailDto>(cancellationToken: ct)
+            ?? throw new PortalApiException(
+                response.StatusCode,
+                "The backend returned an empty response."
+            );
+    }
+
+    public async Task ResolveReportAsync(
+        long id,
+        int actorUserId,
+        string action,
+        CancellationToken ct
+    )
+    {
+        using var response = await httpClient.PostAsJsonAsync(
+            $"api/msg/portal/reports/{id}/resolve",
+            new PortalResolveReportRequest(actorUserId, action),
+            ct
+        );
+        if (!response.IsSuccessStatusCode)
+            throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
     }
 }
 

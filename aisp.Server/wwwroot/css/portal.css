@@ -371,6 +371,46 @@ body {
     height: 100%;
 }
 
+.collection-panel > summary {
+    cursor: pointer;
+    gap: 0.75rem;
+    list-style: none;
+    margin-bottom: 0;
+    user-select: none;
+}
+
+.collection-panel > summary::-webkit-details-marker,
+.collection-panel > summary::marker {
+    content: "";
+    display: none;
+}
+
+.collection-panel[open] > summary {
+    margin-bottom: 0.85rem;
+}
+
+.collection-panel > summary h3 {
+    align-items: center;
+    display: inline-flex;
+}
+
+.collection-panel > summary h3::before {
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    content: "";
+    display: inline-block;
+    flex-shrink: 0;
+    height: 0.42rem;
+    margin-right: 0.55rem;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+    width: 0.42rem;
+}
+
+.collection-panel[open] > summary h3::before {
+    transform: rotate(45deg);
+}
+
 .section-heading {
     align-items: center;
     display: flex;
@@ -479,6 +519,11 @@ body {
 
 .robo-panel h3 {
     font-size: 1.05rem;
+}
+
+.robo-panel .collection-panel {
+    height: auto;
+    margin-top: 0.85rem;
 }
 
 .robo-stats {
@@ -657,7 +702,28 @@ body:has(.moderation-modal[open]) {
 
 .page-indicator {
     color: var(--portal-muted);
-    font-size: 0.82rem;
+    font-size: 0.86rem;
+}
+
+.chat-log-table {
+    margin-top: 0.25rem;
+    width: 100%;
+}
+
+.chat-log-table .chat-log-time,
+.chat-log-table .chat-log-channel,
+.chat-log-table .chat-log-status {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.chat-log-message {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.chat-log-rejected .chat-log-message {
+    color: var(--portal-danger);
 }
 
 .form-label {
@@ -714,10 +780,17 @@ body:has(.moderation-modal[open]) {
     color: #4c566a;
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
     background: #f7f7fb;
     border-color: #cfd4df;
     color: var(--portal-ink);
+}
+
+.btn-ghost:disabled,
+.btn-ghost.disabled {
+    background: #f7f7fb;
+    color: #a0a6b3;
+    opacity: 1;
 }
 
 .auth-link {

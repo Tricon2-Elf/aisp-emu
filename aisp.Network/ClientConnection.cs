@@ -15,7 +15,7 @@ public class ClientConnection(
     TcpClient? _tcpClient = null,
     string? _serverType = null,
     Func<Guid, int?>? _userIdResolver = null,
-    int sendQueueCapacity = 128,
+    int sendQueueCapacity = 1024,
     int sendTimeoutSeconds = 30
 ) : IDisposable
 {
@@ -23,10 +23,7 @@ public class ClientConnection(
     [
         PacketType.RoboAiscriptStartResponse,
     ];
-    const int MaxChunkSize = 1392;
     const int BlockSize = 16;
-    private const byte HeaderPrefix = 0x03;
-    private const int HeaderSize = 2;
     public VCECamellia128 C2S = new();
     public VCECamellia128 S2C = new();
     public bool encrypted = true;
@@ -44,7 +41,7 @@ public class ClientConnection(
     private readonly string _serverType = _serverType ?? "Unknown";
     private readonly TimeSpan _sendTimeout = TimeSpan.FromSeconds(Math.Max(1, sendTimeoutSeconds));
     private readonly CancellationTokenSource _sendCts = new();
-    private readonly Channel<OutboundPacket> _sendQueue = Channel.CreateBounded<OutboundPacket>(
+    private readonly Channel<byte[]> _sendQueue = Channel.CreateBounded<byte[]>(
         new BoundedChannelOptions(Math.Max(1, sendQueueCapacity))
         {
             SingleReader = true,
@@ -52,8 +49,6 @@ public class ClientConnection(
             FullMode = BoundedChannelFullMode.DropWrite,
         }
     );
-
-    private readonly record struct OutboundPacket(PacketType Type, byte[] Payload);
 
     private int? ResolveUserIdForLog()
     {
@@ -113,22 +108,71 @@ public class ClientConnection(
         if (IsClosed)
             return Task.CompletedTask;
 
-        if (type != PacketType.Ping && type != PacketType.TimeZoneGetResponse)
+        LogOutbound(type, payload.Length);
+        return EnqueueEncodedAsync(VceCodec.EncodePacketData(type, payload));
+    }
+
+    public Task SendAsync(
+        IReadOnlyList<(PacketType Type, byte[] Payload)> packets,
+        CancellationToken ct = default
+    )
+    {
+        if (IsClosed || packets.Count == 0)
+            return Task.CompletedTask;
+
+        if (packets.Count == 1)
+            return SendAsync(packets[0].Type, packets[0].Payload, ct);
+
+        for (var i = 0; i < packets.Count; i++)
         {
-            var logLevel = DebugSendLogs.Contains(type) ? LogLevel.Debug : LogLevel.Information;
-            logger.Log(
-                logLevel,
-                "Sending [{ServerType}] [UserId:{UserId}] {PacketType}, {Length}",
-                _serverType,
-                ResolveUserIdForLog()?.ToString() ?? "n/a",
-                type,
-                payload.Length
-            );
+            var (type, payload) = packets[i];
+            LogOutbound(type, payload.Length);
         }
 
+        var frames = VceCodec.EncodePacketDataFrames(packets);
         EnsureSendPump();
-        if (_sendQueue.Writer.TryWrite(new OutboundPacket(type, payload)))
-            return Task.CompletedTask;
+        foreach (var frame in frames)
+        {
+            if (!TryEnqueue(frame))
+                return Task.CompletedTask;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task SendAsync(
+        PacketType type,
+        IOutgoingPacket packet,
+        CancellationToken ct = default
+    ) => SendAsync(type, packet.ToBytes(), ct);
+
+    void LogOutbound(PacketType type, int payloadLength)
+    {
+        if (type == PacketType.Ping || type == PacketType.TimeZoneGetResponse)
+            return;
+
+        var logLevel = DebugSendLogs.Contains(type) ? LogLevel.Debug : LogLevel.Information;
+        logger.Log(
+            logLevel,
+            "Sending [{ServerType}] [UserId:{UserId}] {PacketType}, {Length}",
+            _serverType,
+            ResolveUserIdForLog()?.ToString() ?? "n/a",
+            type,
+            payloadLength
+        );
+    }
+
+    Task EnqueueEncodedAsync(byte[] encodedPlaintext)
+    {
+        EnsureSendPump();
+        TryEnqueue(encodedPlaintext);
+        return Task.CompletedTask;
+    }
+
+    bool TryEnqueue(byte[] encodedPlaintext)
+    {
+        if (_sendQueue.Writer.TryWrite(encodedPlaintext))
+            return true;
 
         if (!IsClosed)
         {
@@ -140,7 +184,7 @@ public class ClientConnection(
             Dispose();
         }
 
-        return Task.CompletedTask;
+        return false;
     }
 
     private void EnsureSendPump()
@@ -155,12 +199,12 @@ public class ClientConnection(
     {
         try
         {
-            await foreach (var item in _sendQueue.Reader.ReadAllAsync(_sendCts.Token))
+            await foreach (var encoded in _sendQueue.Reader.ReadAllAsync(_sendCts.Token))
             {
                 if (IsClosed)
                     break;
 
-                await WriteOutboundAsync(item, _sendCts.Token);
+                await WriteEncodedAsync(encoded, _sendCts.Token);
             }
         }
         catch (OperationCanceledException)
@@ -181,7 +225,7 @@ public class ClientConnection(
         }
     }
 
-    private async Task WriteOutboundAsync(OutboundPacket item, CancellationToken ct)
+    private async Task WriteEncodedAsync(byte[] dataToSend, CancellationToken ct)
     {
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(_sendTimeout);
@@ -189,15 +233,6 @@ public class ClientConnection(
 
         try
         {
-            var writer = new PacketWriter();
-            ushort packetType = (ushort)item.Type;
-            uint packetLength = (uint)item.Payload.Length + HeaderSize;
-            writer.Write(HeaderPrefix);
-            writer.Write(packetLength);
-            writer.Write(packetType);
-            writer.Write(item.Payload);
-            byte[] dataToSend = writer.ToBytes();
-
             if (!encrypted)
             {
                 await SendRawAsync(dataToSend, writeCt);
@@ -207,7 +242,7 @@ public class ClientConnection(
             int offset = 0;
             while (offset < dataToSend.Length)
             {
-                int plainChunkSize = Math.Min(MaxChunkSize, dataToSend.Length - offset);
+                int plainChunkSize = Math.Min(VceCodec.MaxChunkSize, dataToSend.Length - offset);
                 ReadOnlySpan<byte> plainChunk = dataToSend.AsSpan(offset, plainChunkSize);
                 byte[] padded = PadToBlock(plainChunk, BlockSize);
                 EncryptBlocks(padded);
@@ -235,12 +270,6 @@ public class ClientConnection(
         input.CopyTo(buffer);
         return buffer;
     }
-
-    public Task SendAsync(
-        PacketType type,
-        IOutgoingPacket packet,
-        CancellationToken ct = default
-    ) => SendAsync(type, packet.ToBytes(), ct);
 
     public void Dispose()
     {

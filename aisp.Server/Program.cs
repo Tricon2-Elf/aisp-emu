@@ -77,6 +77,11 @@ internal class Program
         builder.Services.AddScoped<IMyRoomRepository, MyRoomRepository>();
         builder.Services.AddScoped<ICircleRepository, CircleRepository>();
         builder.Services.AddScoped<IFriendRepository, FriendRepository>();
+        builder.Services.AddScoped<IAdventureWorkRepository, AdventureWorkRepository>();
+        builder.Services.AddScoped<IAdventureShopRepository, AdventureShopRepository>();
+        builder.Services.AddScoped<AdventureShopCatalog>();
+        builder.Services.AddScoped<IChatLogRepository, ChatLogRepository>();
+        builder.Services.AddScoped<IReportTicketRepository, ReportTicketRepository>();
         builder.Services.AddScoped<INicotvRepository, NicotvRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();
         builder.Services.AddScoped<IMapRepository, MapRepository>();
@@ -140,7 +145,9 @@ internal class Program
         builder
             .Services.AddOptions<ApiSettings>()
             .Bind(builder.Configuration.GetSection("ApiSettings"));
+        builder.Services.AddSingleton<ScreenAssignments>();
         builder.Services.AddSingleton<BroadcastService>();
+        builder.Services.AddScoped<ModerationService>();
         builder.Services.AddScoped<UserAdminService>();
         builder.Services.AddSingleton<ServerTypeSessionService>();
         builder.Services.AddSingleton<GameServerHealthRegistry>();
@@ -190,14 +197,11 @@ internal class Program
                         {
                             var authApi =
                                 context.HttpContext.RequestServices.GetRequiredService<AuthPortalApiClient>();
-                            if (
-                                (
-                                    await authApi.GetUserAsync(
-                                        userId,
-                                        context.HttpContext.RequestAborted
-                                    )
-                                ).IsBanned
-                            )
+                            var portalUser = await authApi.GetUserAsync(
+                                userId,
+                                context.HttpContext.RequestAborted
+                            );
+                            if (portalUser.IsBanned)
                             {
                                 context.RejectPrincipal();
                                 await context.HttpContext.SignOutAsync(
@@ -205,6 +209,34 @@ internal class Program
                                 );
                                 return;
                             }
+
+                            var shouldBeAdmin = portalUser.Role.HasPortalAccess();
+                            var roleText = ((byte)portalUser.Role).ToString();
+                            var hasAdminClaim = identity.HasClaim("portal_admin", "true");
+                            var currentRole = identity.FindFirst("portal_role")?.Value;
+                            if (hasAdminClaim == shouldBeAdmin && currentRole == roleText)
+                                return;
+
+                            var claims = identity
+                                .Claims.Where(claim =>
+                                    claim.Type is not "portal_admin" and not "portal_role"
+                                )
+                                .ToList();
+                            claims.Add(new System.Security.Claims.Claim("portal_role", roleText));
+                            if (shouldBeAdmin)
+                                claims.Add(
+                                    new System.Security.Claims.Claim("portal_admin", "true")
+                                );
+
+                            context.ReplacePrincipal(
+                                new System.Security.Claims.ClaimsPrincipal(
+                                    new System.Security.Claims.ClaimsIdentity(
+                                        claims,
+                                        identity.AuthenticationType
+                                    )
+                                )
+                            );
+                            context.ShouldRenew = true;
                         }
                         catch (PortalApiException)
                         {
@@ -214,31 +246,6 @@ internal class Program
                             );
                             return;
                         }
-
-                        // Recompute admin membership from live config so removed AdminUsernames lose access.
-                        var portalOptions = context.HttpContext.RequestServices.GetRequiredService<
-                            IOptionsMonitor<PortalOptions>
-                        >();
-                        var shouldBeAdmin = portalOptions.CurrentValue.IsAdmin(username);
-                        var hasAdminClaim = identity.HasClaim("portal_admin", "true");
-                        if (hasAdminClaim == shouldBeAdmin)
-                            return;
-
-                        var claims = identity
-                            .Claims.Where(claim => claim.Type != "portal_admin")
-                            .ToList();
-                        if (shouldBeAdmin)
-                            claims.Add(new System.Security.Claims.Claim("portal_admin", "true"));
-
-                        context.ReplacePrincipal(
-                            new System.Security.Claims.ClaimsPrincipal(
-                                new System.Security.Claims.ClaimsIdentity(
-                                    claims,
-                                    identity.AuthenticationType
-                                )
-                            )
-                        );
-                        context.ShouldRenew = true;
                     };
                 });
             builder
@@ -298,8 +305,13 @@ internal class Program
                 )
             );
 
+        builder
+            .Services.AddOptions<ChatLogOptions>()
+            .Bind(builder.Configuration.GetSection(ChatLogOptions.SectionName));
         builder.Services.AddHostedService<GameServerSchedulerService>();
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
+        builder.Services.AddHostedService<AdventureSettlementService>();
+        builder.Services.AddHostedService<ChatLogPruneService>();
 
         var app = builder.Build();
         var configuredApiKey = app
@@ -312,6 +324,9 @@ internal class Program
 
         app.UseApiKeyAuthForApiRoutes();
         app.MapAispEmuHttpEndpoints();
+        app.MapAdventureHttpEndpoints();
+        app.MapAdventureAdminEndpoints();
+        app.MapScreenEndpoints();
         if (portalEnabled)
         {
             app.UseStaticFiles();
@@ -381,6 +396,21 @@ internal class Program
             var localiser = scope.ServiceProvider.GetRequiredService<ITextLocaliser>();
             await localiser.ReloadAsync();
             await scope.ServiceProvider.GetRequiredService<IItemBaseListCache>().WarmAsync();
+            if (portalEnabled)
+            {
+                var portalOptions = scope
+                    .ServiceProvider.GetRequiredService<IOptions<PortalOptions>>()
+                    .Value;
+                var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+                await UserRoleBootstrapService.PromoteAllListedAsync(
+                    users,
+                    portalOptions.AdminUsernames
+                );
+            }
+
+            await scope
+                .ServiceProvider.GetRequiredService<ModerationService>()
+                .SyncAllStaffCirclesAsync();
         }
 
         await app.RunAsync();

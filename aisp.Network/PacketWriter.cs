@@ -66,6 +66,18 @@ public class PacketWriter : IPacketWriter
         _stream.Write(buffer);
     }
 
+    /// <summary>Fixed-width field that always keeps its last byte as a NUL terminator (the client copies exactly <paramref name="length"/> bytes and reads a C string from them).</summary>
+    public void WriteFixedStringNulTerminated(
+        string value,
+        int length,
+        string encoderName = "utf-8"
+    ) =>
+        WriteFixedString(
+            TruncateToBytes(value, length - 1, PacketEncoding.GetEncoding(encoderName)),
+            length,
+            encoderName
+        );
+
     public void WriteFixedJisString(string value, int length) =>
         WriteFixedString(value, length, "Shift_JIS");
 

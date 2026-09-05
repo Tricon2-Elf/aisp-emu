@@ -27,3 +27,12 @@ public sealed class FriendRequest
     public DateTime CreatedAt { get; set; }
     public DateTime? ResolvedAt { get; set; }
 }
+
+/// <summary>One of the five custom Friend Link placard tags owned by a character.</summary>
+public sealed class FriendLinkTag
+{
+    public int CharacterId { get; set; }
+    public Character Character { get; set; } = default!;
+    public uint Slot { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
