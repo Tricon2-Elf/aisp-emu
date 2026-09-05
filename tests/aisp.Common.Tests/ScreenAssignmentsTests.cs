@@ -463,6 +463,20 @@ public sealed class ScreenAssignmentsTests
     }
 
     [Fact]
+    public void NicotvTag_IsFoundAsAnExtraAndAsTheWholeMovieId()
+    {
+        // The server appends n:<id> to a TV's movie id; with no typed movie the tag is the whole
+        // id, which is the movieid= a powered-off-and-on channel TV comes back with.
+        Assert.True(ScreenAssignments.TryGetNicotvId("channel:2 n:9", out var tagged));
+        Assert.Equal(9u, tagged);
+        Assert.True(ScreenAssignments.TryGetNicotvId("n:3", out var alone));
+        Assert.Equal(3u, alone);
+        Assert.False(ScreenAssignments.TryGetNicotvId("sm11273499", out _));
+        Assert.False(ScreenAssignments.TryGetNicotvId("n:", out _));
+        Assert.False(ScreenAssignments.TryGetNicotvId(null, out _));
+    }
+
+    [Fact]
     public void Channels_AreSharedByNumber_LivestreamOnlyAndIndirectFromRoomTvsAndMaps()
     {
         // Livestream sources are valid channel content; a video (needs a timeline) or another

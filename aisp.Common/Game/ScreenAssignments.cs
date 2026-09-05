@@ -83,7 +83,10 @@ public sealed class ScreenAssignments(TimeProvider? time = null)
         nicotvId = 0;
         if (source is null)
             return false;
-        foreach (var word in ExtrasOf(source))
+        // Every word, the first included: a TV with no typed movie carries the tag alone (see
+        // NicotvMapper.WithNicotvId), and that is the movieid= its client comes back with after a
+        // power cycle, when its stored channel is all the server has to go on.
+        foreach (var word in Normalize(source).Split(' '))
             if (
                 word.StartsWith("n:", StringComparison.OrdinalIgnoreCase)
                 && uint.TryParse(
