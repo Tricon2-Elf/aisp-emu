@@ -1103,11 +1103,15 @@ public class CmdExecHandler(
         // Every room TV already tuned to this channel reloads at once: its own Nicotv id and
         // channel number are unchanged, so this is exactly the notify AreaNicotvSetChannelHandler
         // sends for a player's own "ai ch" press, and the resolve-time database lookup it
-        // triggers picks up the content just assigned above.
+        // triggers picks up the content just assigned above. Not a TV that is switched off: the
+        // client takes the notify as the TV showing its channel and turns it on, which only its
+        // owner's power button should do; it reads the channel's new content when opened.
         var tuned = await nicotvRepository.GetByChannelAsync(channelNumber, ct);
         var roomsNotified = 0;
         foreach (var nicotv in tuned)
         {
+            if (nicotv.PlaybackState == NicotvPlaybackState.Closed)
+                continue;
             var recipients = state
                 .AreaClients.Where(c => c.MyRoomId == (uint)nicotv.RoomId)
                 .ToList();

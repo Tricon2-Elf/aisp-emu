@@ -1210,6 +1210,132 @@ public class CmdExecHandlerTests
     }
 
     [Fact]
+    public async Task ChannelCommand_ReloadsTunedTvsThatAreOn_NotOnesSwitchedOff()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var mod = CreateUserWithCharacter(1, 8004, "channel-mod", "Channel Mod", 20_000_000);
+            mod.Role = UserRole.Moderator;
+            await TestDb.SeedCharacterAsync(options, 42, ct);
+            int onTvId;
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(mod);
+                db.Items.Add(
+                    new Item
+                    {
+                        Id = 11_000_591,
+                        Name = "ブラウン管TV（１９インチ）",
+                        IconId = 11_000_591,
+                    }
+                );
+                db.Furniture.Add(
+                    new Furniture
+                    {
+                        ItemId = 11_000_591,
+                        PlacementFlags = FurniturePlacementFlags.Floor,
+                    }
+                );
+                db.MyRoomFurniture.Add(
+                    new MyRoomFurniture
+                    {
+                        RoomId = 42,
+                        FurnitureId = 2,
+                        ItemId = 11_000_591,
+                    }
+                );
+                db.MyRoomFurniture.Add(
+                    new MyRoomFurniture
+                    {
+                        RoomId = 42,
+                        FurnitureId = 3,
+                        ItemId = 11_000_591,
+                    }
+                );
+                // Two TVs on channel 1 in the same room: one showing it, one switched off.
+                var on = new Nicotv
+                {
+                    RoomId = 42,
+                    FurnitureId = 2,
+                    ChannelId = 1,
+                    PlaybackState = NicotvPlaybackState.Playing,
+                };
+                db.Nicotvs.Add(on);
+                db.Nicotvs.Add(
+                    new Nicotv
+                    {
+                        RoomId = 42,
+                        FurnitureId = 3,
+                        ChannelId = 1,
+                        PlaybackState = NicotvPlaybackState.Closed,
+                    }
+                );
+                await db.SaveChangesAsync(ct);
+                onTvId = on.Id;
+            }
+
+            var state = new SharedState();
+            var viewer = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 8004,
+                MapId = 20_000_000,
+                MyRoomId = 42,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, viewer);
+            var msgSession = new CapturingPlayerSession { User = mod, UserId = mod.Id };
+
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
+                new StubItemBaseListCache(DefaultClothingItems.Male),
+                CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
+                TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                Options.Create(new ServerOptions()),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("channel", "1", "tw:someone"),
+                msgSession,
+                ct
+            );
+
+            // Only the TV that is on reloads; the one switched off would have been turned on by it.
+            var notify = Assert.Single(
+                viewer.Sent,
+                p => p.Type == PacketType.NotifyNicotvSetChannel
+            );
+            var reader = new PacketReader(notify.Payload);
+            Assert.Equal((uint)onTvId, reader.ReadUInt());
+            Assert.Equal(1u, reader.ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task GiveCommand_AddsItemToInventoryAndSendsItemCreateNotify()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
