@@ -116,10 +116,22 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
         var rowsById = distinctRows.ToDictionary(row => row.Id);
         foreach (var item in existingItems)
         {
-            if (item.CatalogCategory is not null || !rowsById.TryGetValue(item.Id, out var row))
+            var resolved = (int)
+                ItemEntityMapper.ResolvePersistedCatalogCategory(item.Id, item.Name, null);
+            if (item.CatalogCategory is int persisted)
+            {
+                // Pre-accessory-prefix seeds stored 114xxxxx backpacks as furniture (12-14).
+                if (
+                    ItemEntityMapper.IsWardrobeAccessoryItem(item.Id)
+                    && ItemEntityMapper.IsFurnitureCatalogCategory(persisted)
+                )
+                    item.CatalogCategory = resolved;
                 continue;
-            item.CatalogCategory = (int)
-                ItemEntityMapper.ResolvePersistedCatalogCategory(item.Id, row.Name.Canonical, null);
+            }
+
+            if (!rowsById.ContainsKey(item.Id))
+                continue;
+            item.CatalogCategory = resolved;
         }
 
         if (missing.Count == 0 && !db.ChangeTracker.HasChanges())

@@ -66,6 +66,34 @@ public class ItemEntityMapperTests
     }
 
     [Fact]
+    public void ResolveEquipSocket_keeps_114_wings_backpacks_and_tails_on_distinct_cells()
+    {
+        var backpack = new CharacterEquipSlot(
+            (byte)CharacterEquipmentSlotIndex.LeftShoulderBag,
+            11400020
+        );
+        var wings = new CharacterEquipSlot((byte)CharacterEquipmentSlotIndex.Wings, 11400001);
+        var tail = new CharacterEquipSlot((byte)CharacterEquipmentSlotIndex.Tail, 11400070);
+
+        Assert.Equal(
+            (uint)WardrobeSocketBit.LeftShoulderBag,
+            ItemEntityMapper.ResolveEquipSocket(backpack)
+        );
+        Assert.Equal((uint)WardrobeSocketBit.Wings, ItemEntityMapper.ResolveEquipSocket(wings));
+        Assert.Equal((uint)WardrobeSocketBit.Tail, ItemEntityMapper.ResolveEquipSocket(tail));
+        Assert.Equal(1u << 28, ItemEntityMapper.ResolveEquipSocket(tail));
+        Assert.NotEqual(1u << 25, ItemEntityMapper.ResolveEquipSocket(tail));
+        Assert.NotEqual(
+            ItemEntityMapper.ResolveEquipSocket(backpack),
+            ItemEntityMapper.ResolveEquipSocket(wings)
+        );
+        Assert.NotEqual(
+            ItemEntityMapper.ResolveEquipSocket(wings),
+            ItemEntityMapper.ResolveEquipSocket(tail)
+        );
+    }
+
+    [Fact]
     public void ToItemBaseListData_sets_dual_shoe_catalog_sockets()
     {
         var item = new Item
@@ -116,6 +144,7 @@ public class ItemEntityMapperTests
     [InlineData(10800000, 108)]
     [InlineData(10900000, 109)]
     [InlineData(11200000, 112)]
+    [InlineData(11400020, 114)]
     [InlineData(11600060, 116)]
     [InlineData(11700020, 117)]
     [InlineData(11800030, 118)]
@@ -142,6 +171,7 @@ public class ItemEntityMapperTests
     [InlineData(10500070, 8)] // shoes
     [InlineData(10600000, 9)] // bra
     [InlineData(10800000, 11)] // accessory
+    [InlineData(11400020, 11)] // backpack / wings
     [InlineData(11600060, 11)] // necklace
     [InlineData(11700020, 11)] // hair ribbon
     [InlineData(11800030, 11)] // mask
@@ -301,5 +331,47 @@ public class ItemEntityMapperTests
 
         var data = ItemEntityMapper.ToItemBaseListData(item);
         Assert.Equal(12u, data.Category);
+    }
+
+    [Theory]
+    [InlineData(11400020, 26, (uint)WardrobeSocketBit.LeftShoulderBag)]
+    [InlineData(11400001, 26, (uint)WardrobeSocketBit.Wings)]
+    [InlineData(11400150, 0, (uint)WardrobeSocketBit.Wings)]
+    [InlineData(11400070, 27, (uint)WardrobeSocketBit.Tail)]
+    [InlineData(11400070, 26, (uint)WardrobeSocketBit.Tail)]
+    public void ResolveBodyspot_maps_114_backpacks_wings_and_tails(
+        int itemId,
+        int storedSocket,
+        uint expectedBit
+    )
+    {
+        Assert.Equal(expectedBit, ItemEntityMapper.ResolveBodyspot(itemId, storedSocket));
+    }
+
+    [Fact]
+    public void ToItemBaseListData_keeps_114_backpacks_as_accessories_even_when_persisted_as_furniture()
+    {
+        var item = new Item
+        {
+            Id = 11400020,
+            Socket = 26,
+            Name = "スクールリュック",
+            CatalogCategory = (int)WardrobeCategoryId.FurnitureFloor,
+            Furniture = new Furniture
+            {
+                ItemId = 11400020,
+                PlacementFlags = FurniturePlacementFlags.Floor,
+                Type = 0,
+            },
+        };
+
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal((uint)WardrobeCategoryId.Accessory, data.Category);
+        Assert.Equal((uint)WardrobeSocketBit.LeftShoulderBag, data.Socket1);
+        Assert.Equal(114u, data.PlacementTypeId);
+        Assert.Equal(
+            (uint)WardrobeCategoryId.Accessory,
+            ItemEntityMapper.ResolveInventoryTabCategory(item)
+        );
     }
 }

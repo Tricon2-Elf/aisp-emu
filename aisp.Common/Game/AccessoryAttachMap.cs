@@ -8,8 +8,9 @@ namespace aisp.Common.Game;
 /// Seed JSON sockets are attach IDs, not those cells. Item-id prefix picks the family; the overlap
 /// bit is always 1&lt;&lt;cell for cells 12-29 (bits 0-11 are clothing).
 /// Confirmed cells: 12 glasses, 13 wig, 14 necklace, 15 right hair ribbon, 16 hair ribbon,
-/// 17 right earring, 18 left earring, 19 right handbag, 24 left shoulder band, 26 left shoulder bag.
-/// Prefixes: 108 face, 109 wig, 112 handheld/bags, 116 necklace, 117 hair ribbon, 118 mask.
+/// 17 right earring, 18 left earring, 19 right handbag, 24 left shoulder band, 25 tail
+/// (unequip bit 1&lt;&lt;28), 26 left shoulder bag, 27 wings.
+/// Prefixes: 108 face, 109 wig, 112 handheld/bags, 114 wings/backpacks/tails, 116 necklace, 117 hair ribbon, 118 mask.
 /// </summary>
 internal static class AccessoryAttachMap
 {
@@ -17,15 +18,21 @@ internal static class AccessoryAttachMap
 
     public static uint ToSocketBit(int itemId, uint seedOrBit)
     {
-        var slot = (byte)WindowSlot(itemId, seedOrBit);
-        if (slot >= 12)
-            return 1u << slot;
+        var slot = WindowSlot(itemId, seedOrBit);
+        // Tail sits in window cell 25, but the client attach/unequip bit is 1<<28
+        // (GetItemBodySpot: 0x10000000 → PART_HIP_ACCESSORY). 1<<25 is a different cell.
+        if (slot == CharacterEquipmentSlotIndex.Tail)
+            return (uint)WardrobeSocketBit.Tail;
+
+        var index = (byte)slot;
+        if (index >= 12)
+            return 1u << index;
 
         // Cells 10-11 overlap bra/underwear bits; keep a high unique bit.
         return slot switch
         {
-            10 => (uint)WardrobeSocketBit.Headband,
-            11 => (uint)WardrobeSocketBit.Glasses,
+            CharacterEquipmentSlotIndex.Headband => (uint)WardrobeSocketBit.Headband,
+            CharacterEquipmentSlotIndex.Glasses => (uint)WardrobeSocketBit.Glasses,
             _ => 0,
         };
     }
@@ -43,7 +50,7 @@ internal static class AccessoryAttachMap
             109 => CharacterEquipmentSlotIndex.Wig,
             108 => Face108(itemId, seed),
             112 => BagOrHandheld(seed),
-            114 => seed == 27 ? CharacterEquipmentSlotIndex.Tail : CharacterEquipmentSlotIndex.Wings,
+            114 => Prefix114(itemId),
             115 => Wrist115(seed),
             116 => CharacterEquipmentSlotIndex.Necklace,
             117 => Hair117(seed),
@@ -52,6 +59,23 @@ internal static class AccessoryAttachMap
             _ => SeedFallback(seed),
         };
     }
+
+    private static CharacterEquipmentSlotIndex Prefix114(int itemId)
+    {
+        if (Is114Wing(itemId))
+            return CharacterEquipmentSlotIndex.Wings;
+        if (Is114Tail(itemId))
+            return CharacterEquipmentSlotIndex.Tail;
+        return CharacterEquipmentSlotIndex.LeftShoulderBag;
+    }
+
+    private static bool Is114Wing(int itemId) =>
+        itemId is >= 11400000 and <= 11400005
+        || itemId is >= 11400010 and <= 11400013
+        || itemId == 11400150;
+
+    private static bool Is114Tail(int itemId) =>
+        itemId is 11400070 or 11400074 or 11400080 or 11400090 or 11400100 or 11400110;
 
     private static CharacterEquipmentSlotIndex Hair117(uint seed) =>
         seed == 10 ? CharacterEquipmentSlotIndex.Headband : CharacterEquipmentSlotIndex.HairRibbon;
@@ -96,8 +120,9 @@ internal static class AccessoryAttachMap
             22 => CharacterEquipmentSlotIndex.Armband,
             23 => CharacterEquipmentSlotIndex.WristCharm,
             24 => CharacterEquipmentSlotIndex.LeftShoulderBand,
-            26 => CharacterEquipmentSlotIndex.Wings,
-            27 => CharacterEquipmentSlotIndex.Tail,
+            25 => CharacterEquipmentSlotIndex.Tail,
+            26 => CharacterEquipmentSlotIndex.LeftShoulderBag,
+            27 => CharacterEquipmentSlotIndex.Wings,
             _ => CharacterEquipmentSlotIndex.Accessory,
         };
 
