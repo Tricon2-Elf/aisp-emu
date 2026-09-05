@@ -1179,19 +1179,363 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
     UInt {RatePercent}
 ```
 
+## recv_adventure_shop_started (AdventureShopStartedNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x03EA
+- **Packet Size:** variable (45 bytes when empty; client buffer 0x294E0)
+- **Description:** Pushed after the player talks to the drama disc shop's 販売担当 clerk (はっぴぃ・すとぉりぃ販売). Not the 8-byte shape of upload-started: the client parser (case 0x7BC061) reads a catalog snapshot and never an NPC id. The window sends nothing on open, so this is the only source of its initial lineup (newest first, up to 50), the ranking tab (up to 5, by sales) and the buyer's 購入履歴 (up to 50, sent oldest first because the client inserts each row at the front). The client bails out silently on a short or over-cap body. Item records are 1589 bytes (see the item record layout below); the same record is used by recv_adventure_shop_item and the history push. Seeded on all three island 商店街 maps.
+
+**Layout:**
+
+```text
+    ULong  {AllCount}
+    String {Word}          // NUL-terminated, max 385 bytes incl. NUL
+    UInt   {Filter}
+    UInt   {Sort}
+    UInt   {Index}
+    ULong  {SearchCount}
+    UInt   {ItemCount}     // max 50
+    Item   {Items}[ItemCount]
+    UInt   {RankSort}
+    UInt   {RankingCount}  // max 5
+    Item + UShort + UInt {Rankings}[RankingCount]
+    UInt   {HistoryCount}  // max 50
+    Item + Byte + UInt   {Historys}[HistoryCount]   // Byte ignored; UInt = purchase time (Unix seconds)
+```
+
+Item record (parser 0x799BC0, 1589 bytes; fixed-width strings carry their NUL inside the field). Meanings follow the client's row builder (0x5C6FF0), detail pane (0x5C3720) and buy check (0x5CF0BD):
+
+```text
+    Long      {ScriptId}
+    Char[37]  {AuthorName}
+    Char[121] {Title}
+    Long      {Price}        // checked against the デレ purse and sent back by send_adventure_shop_buy with price type 0
+    Long      {PriceAi}      // second (ニコニコポイント) price; shown instead of Price when non-zero. The emulator sends 0
+    Char[61]  {Tags}[10]     // only Tags[GenreTagIndex] is read: its text is matched against the client's 10 genre names
+    UShort    {TagFlags}     // parsed, never read
+    Byte      {GenreTagIndex}
+    Char[768] {Comment}
+    Byte      {Official}     // 公式配信: copied into the client's download-list entry; the PC library's ribbon tab (verified live)
+    Byte      {Reserved}     // never read
+    UInt      {UploadedAt}   // Unix seconds; shown as a date on the rows
+    UInt      {Reserved}     // stored, never read
+    UInt      {Purchases}    // 購入数 on the rows and the detail card
+    UInt      {Pages}        // ページ (manuscript sheets); copied into the client's download-list entry
+    Long      {ContentBytes} // アップロード容量 on the detail card
+```
+
+The ranking rows' trailing UShort + UInt are ignored by the client. The genre names (message ids 0x640FC400-0x640FC409) are 総合, オフィシャル, 学園もの, ラブストーリー, ホラー, サスペンス, SF, ミステリー, テスト, その他; the emulator sends the listing's genre name as Tags[0].
+
+## send_adventure_shop_end (AdventureShopEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xB34F
+- **Packet Size:** 0
+- **Description:** Sent when the drama disc shop window is closed. The client keeps the window open until the reply arrives.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_adventure_shop_end_r (AdventureShopEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xC605
+- **Packet Size:** 4
+- **Description:** Acknowledges the close. On its own it does not close the window; recv_adventure_shop_ended follows.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## recv_adventure_shop_ended (AdventureShopEndedNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xAD2D
+- **Packet Size:** 0
+- **Description:** Sent right after recv_adventure_shop_end_r; the client tears the drama disc shop window down on this, the same pairing as recv_shop_end_r / recv_shop_ended.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## send_adventure_shop_genre_search (AdventureShopGenreSearchRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x157F
+- **Packet Size:** 16
+- **Description:** A genre tab click, a sort combo change or a page combo change in the drama disc shop window (wrapper 0x7A80F0). Filter is always 0 in this client; Genre is the tab index: 0 総合 (every genre), then オフィシャル, 学園もの, ラブストーリー, ホラー, サスペンス, SF, ミステリー, テスト, その他; Sort is the combo index 新着順 / ダウンロード数が多い順 / 購入数が多い順; Index is the 0-based page of 50. A sort change resets the page to 0. There is no keyword or tag search sender in the client, and send_adventure_shop_ranking_search (0xD861, one UInt) is dead code: its reply never releases the window.
+
+**Layout:**
+
+```text
+    UInt {Genre}   // 0-9
+    UInt {Filter}
+    UInt {Sort}
+    UInt {Index}   // page
+```
+
+## recv_adventure_shop_item (AdventureShopItemNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x9B08
+- **Packet Size:** variable (client buffer 0x13D0C)
+- **Description:** One lineup page (case 0x7DE878). No result field. The client replaces its lineup with the items, derives the page combo from SearchCount (ceil / 50, min 1) and selects Sort and Index in its combos, so the emulator echoes the request. Sent in answer to a genre search, before recv_adventure_shop_genre_search_r.
+
+**Layout:**
+
+```text
+    String {Word}         // NUL-terminated, max 385 bytes incl. NUL
+    UInt   {Filter}
+    UInt   {Sort}
+    UInt   {Index}
+    ULong  {SearchCount}  // total hits
+    UInt   {ItemCount}    // max 50
+    Item   {Items}[ItemCount]
+```
+
+## recv_adventure_shop_genre_search_r (AdventureShopGenreSearchResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x6DC0
+- **Packet Size:** 4
+- **Description:** Releases the window's busy state after a genre search (case 0x7D33C3); it refreshes the lineup from the page it holds, so recv_adventure_shop_item has to arrive first. Non-zero shows the error dialog with the code. recv_adventure_shop_tag_search_r (0x53D5), recv_adventure_shop_keyword_search_r (0x0AE8) and recv_adventure_shop_ranking_search_r (0x9EA9: UInt result, UInt count ≤ 5, ranking rows) exist in the client but nothing requests them.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_adventure_shop_buy (AdventureShopBuyRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x0289
+- **Packet Size:** 17
+- **Description:** The buy button (wrapper 0x7A7D00). The window sends the item's first price with price type 0 after checking it against the デレ (AI point) purse, and only the second price with type 1 (ニコニコポイント) when the first is 0. It refuses locally when a 購入履歴 entry for the disc is younger than 7 days or the history already holds 50 entries. The emulator accepts type 0 only and requires the price to match the listing.
+
+**Layout:**
+
+```text
+    Long {ScriptId}
+    Long {Price}
+    Byte {PriceType}   // 0 = デレ
+```
+
+## recv_adventure_shop_buy_r (AdventureShopBuyResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xFAA8
+- **Packet Size:** 4
+- **Description:** Releases the window after a purchase (case 0x7F4C0E); 0 shows the completion dialog, non-zero the error dialog with the code. The client never fetches the disc on its own after buying and the reply carries no ticket, so on success the emulator pushes recv_adventure_shop_added_buy_history and recv_money_updated_aipoint, then this acknowledgement; the client then sends send_adventure_shop_download_request on its own (pushing a ticket reply before the acknowledgement made it download twice). Failure codes are the emulator's AdventureBuyOutcome values (1 unknown, 2 not for sale, 3 own listing, 4 bought within 7 days, 5 price mismatch or currency, 6 not enough デレ).
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## recv_adventure_shop_added_buy_history (AdventureShopAddedBuyHistoryNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xEEE8
+- **Packet Size:** 1594
+- **Description:** One 購入履歴 row appended to the client's history (case 0x7F2F8D). The purchase time drives the client's own 7-day rule: it shows purchase + 7 days as the re-download deadline and refuses to buy the disc again before then.
+
+**Layout:**
+
+```text
+    Item {Item}
+    Byte {Flag}         // ignored
+    UInt {PurchasedAt}  // Unix seconds
+```
+
+## send_adventure_shop_download_request (AdventureShopDownloadRequestRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x9F15
+- **Packet Size:** 8
+- **Description:** Re-download of a 購入履歴 entry (wrapper 0x7A7F40).
+
+**Layout:**
+
+```text
+    Long {ScriptId}
+```
+
+## recv_adventure_shop_download_request_r (AdventureShopDownloadRequestResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x46BC
+- **Packet Size:** 53
+- **Description:** Fixed 53 bytes (case 0x7CCB89). On result 0 the client POSTs userid / scriptid / ticket to the download host (`/ai-sp/download.php`) synchronously inside the handler and expects the same XML shape as the upload reply, with the actor table in `datalist` and the script in `contents` (CDATA); it packs those two texts into dl/drama/ai{ScriptId}.txt itself (routine 0x4B1D10: "ADV0" header, UTF-16LE payloads, 20-byte jammer), adds the disc to its download list and, if missing, to its purchase history. A non-XML body or an HTTP failure shows 「接続、もしくはデータ解析に失敗しました。」. The client sends the request by itself right after recv_adventure_shop_buy_r. The emulator issues the ticket to buyers and to the author; it is single use and valid for 15 minutes.
+
+**Layout:**
+
+```text
+    UInt     {Result}
+    Long     {ScriptId}
+    Char[41] {Ticket}
+```
+
+## send_adventure_upload_delete_request (AdventureUploadDeleteRequestRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xCB22
+- **Packet Size:** 8
+- **Description:** Taking a disc off sale from the upload window (wrapper 0x7A9460). send_adventure_download_delete_request (0x628C, wrapper 0x7AF480) and send_adventure_shop_remove_buy_history (0x454B, wrapper 0x7A8530) have the same body; send_adventure_shop_remove_all_buy_history (0xB7A0) is empty.
+
+**Layout:**
+
+```text
+    Long {ScriptId}
+```
+
+## recv_adventure_upload_delete_request_r (AdventureUploadDeleteRequestResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xFEF7
+- **Packet Size:** 12
+- **Description:** Result 0 makes the client drop the entry from its upload list (case 0x7F61E6). The emulator delists the listing (buyers keep their copies), clears the work's Uploaded flag and then re-sends recv_adventure_upload_started for the 買取 clerk on the player's map: the open window never renders an unsolicited work list (it stores it, and it can release the window's wait early), but the upload-started push runs the window's open sequence, so the client re-requests and rebuilds both lists itself. recv_adventure_download_delete_request_r (0x35CA) and recv_adventure_shop_remove_buy_history_r (0x1915) have the same layout and drop the entry from the download list / history; recv_adventure_shop_remove_all_buy_history_r (0xB736) is a lone UInt result that clears the history. Removed downloads and hidden history rows only hide the purchase; the copy can still be downloaded through the other list.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    Long {ScriptId}
+```
+
 ## recv_adventure_upload_started (AdventureUploadStartedNotify)
 
 - **Server:** Area
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x90BD
 - **Packet Size:** 8
-- **Description:** Pushed after the player talks to the drama disc shop's 買取担当 clerk. The client looks up the NPC object by NpcObjectId (name and position go on the window), opens the drama upload window (ドラマショップ) and then sends get_adventure_work_list and get_adventure_upload_list. Not sent by the emulator yet: the shop map and its clerk are not in the seed data.
+- **Description:** Pushed after the player talks to the drama disc shop's 買取担当 clerk (はっぴぃ・すとぉりぃ買取). The client looks up the NPC object by NpcObjectId (name and position go on the window), opens the drama upload window (ドラマショップ) and then sends get_adventure_work_list and get_adventure_upload_list. Seeded on all three island 商店街 maps.
 
 **Layout:**
 
 ```text
     UInt {NpcObjectId}
     UInt {Value}  // second field, not read by the window
+```
+
+## send_adventure_upload_end (AdventureUploadEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xB592
+- **Packet Size:** 0
+- **Description:** Sent when the drama upload window is closed. The client keeps the window open until the reply arrives.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_adventure_upload_end_r (AdventureUploadEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x2562
+- **Packet Size:** 4
+- **Description:** Acknowledges the close.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## send_adventure_upload_request (AdventureUploadRequestRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x89F8
+- **Packet Size:** variable
+- **Description:** Sent from the drama upload window's 説明事項 dialog (同意する). Listing metadata only; the manuscript itself is POSTed to upload.php over HTTP after a success reply. The emulator registers a pending listing for the work (script ids start at 10001 so they never collide with the legacy service's discs) and answers with a one-time upload ticket; an unknown work id is refused with result 1.
+
+**Layout:**
+
+```text
+    UShort {WorkId}
+    String {Title}       // NUL-terminated, max 121
+    UInt   {Genre}
+    String {Comment}     // NUL-terminated, max 769
+    String {AuthorName}  // NUL-terminated, max 37
+    Long   {Price}       // デレ
+    Byte   {ContentsPublic} // 「ダウンロード時に内容を公開する」: buyers may open the manuscript; logger name publish
+    Long   {ContentSize} // byte size of drama_N.csv + datalist_N.txt, the two parts of the HTTP upload
+```
+
+## recv_adventure_upload_request_r (AdventureUploadRequestResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xF857
+- **Packet Size:** 55
+- **Description:** Fixed 55-byte reply (client case 0x7F41D1). Result 0 makes the client POST the manuscript to the upload host (`/ai-sp/upload.php`, served by the emulator's Kestrel listener; see docs on the proxy for port 80) as multipart form fields userid / scriptid / ticket plus the uccadv and datalist file parts (the command script and the actor table as plain UTF-8 text; download.php returns the same texts and the client packs its own cache file), and then send send_adventure_upload_request_report. Non-zero shows an error dialog. The ticket is 40 characters plus the NUL, single use, valid for 15 minutes. Every upload.php / download.php reply must close the connection (`Connection: close`; behind nginx, `keepalive_timeout 0` on the location, since nginx rewrites the upstream header): the client's transfer object is only closed on its next transfer and that close wipes the new job's pointer, which shows 「原因不明のエラー」 on every second upload (verified in the client). The XML the client accepts back (parser 0x4B0F80, no NULL checks) is a root element with a `status` attribute and text-bearing children: `<result status="ok"><cms>ok</cms><scriptid>N</scriptid><contents>N</contents></result>`, or `<result status="fail"><error><code>N</code><description>…</description></error></result>`. A `<status>` child element instead of the attribute, or a child without text, crashes the client.
+
+**Layout:**
+
+```text
+    UInt   {Result}
+    UShort {WorkId}
+    Long   {ScriptId}
+    Char[41] {Ticket}    // one-time token for upload.php
+```
+
+## send_adventure_upload_request_report (AdventureUploadRequestReportRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x2494
+- **Packet Size:** 14
+- **Description:** The client's verdict on the HTTP upload: the reply parser's boolean, 1 after 「アップロードに成功しました！」 (verified live; the first guess of 0 = ok was wrong). Sent right after the HTTP call; the client then re-requests the work and upload lists on its own.
+
+**Layout:**
+
+```text
+    UInt   {Report}
+    UShort {WorkId}
+    Long   {ScriptId}
+```
+
+## recv_adventure_upload_request_report_r (AdventureUploadRequestReportResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x1F30
+- **Packet Size:** 12
+- **Description:** Report 1 puts the pending listing on sale, marks the work Uploaded and takes down any older listing of the same work; result 1 means upload.php never stored a manuscript for that script id. Any other report abandons the pending listing so the work can be uploaded again (result 0); the row is kept so its script id is never reused, because the client remembers a failed id and answers a later upload that gets the same one with 「原因不明のエラーが発生しました」 (seen live).
+
+**Layout:**
+
+```text
+    UInt {Result}
+    Long {ScriptId}
 ```
 
 ## send_get_adventure_upload_list (GetAdventureUploadListRequest)
@@ -1214,14 +1558,59 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0x49B5
 - **Packet Size:** 8 + Count × 0x630
-- **Description:** Uploaded dramas of the account. Count is at most 100; each record is 0x630 bytes (a 64-bit id, a 37-byte name, a 121-byte intro, a 64-bit field, a 769-byte description, a byte, a UInt, a 64-bit field, a UInt, ten 61-byte tags and a UInt). The emulator answers an empty list.
+- **Description:** The account's discs currently on sale (case 0x7CD994, parser 0x7998A0). Count is at most 100; records are packed 1574 bytes on the wire (0x630 in memory). The field names after the title follow the upload request's order; the client only stores the record.
 
 **Layout:**
 
 ```text
     UInt {Result}
     UInt {Count}
-    Record[Count]  // 0x630 bytes each, see description
+    Record[Count]:
+        Long      {ScriptId}
+        Char[37]  {AuthorName}
+        Char[121] {Title}
+        Long      {Price}
+        Char[769] {Comment}
+        Byte      {ContentsPublic}
+        UInt      {Genre}
+        Long      {FileSize}
+        UInt      {Sales}       // unnamed in the client
+        Char[61]  {Tags}[10]
+        UInt      {UploadedAt}  // unnamed in the client
+```
+
+## send_get_adventure_download_list (GetAdventureDownloadListRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x3FE2
+- **Packet Size:** 0
+- **Description:** Sent by the PC play window for the purchased-disc cache list.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_get_adventure_download_list_r (GetAdventureDownloadListResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xA39A
+- **Packet Size:** 8 + Count × 17
+- **Description:** The discs the account holds copies of (case 0x7DFF50, parser 0x799A80). Count is at most 1000; records are packed 17 bytes. The client never reads the two u32 fields; the u8 clears the PC library's lock (中身を見る) when non-zero, so it carries the listing's contents-public flag. A local entry missing from this list is erased by the client, so every disc the account may keep must be listed. Purchases removed with send_adventure_download_delete_request are left out.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    UInt {Count}
+    Record[Count]:
+        Long {ScriptId}
+        UInt {PurchasedAt}  // Unix seconds
+        UInt {Pages}
+        Byte {ContentsPublic} // 1 clears the lock in the PC library, 0 keeps it (verified live)
 ```
 
 ## send_get_adventure_work_list (GetAdventureWorkListRequest)
@@ -1337,7 +1726,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 - **Server:** Area
 - **Direction:** ServerToClient
-- **Packet ID (hex):** 0xCEF4
+- **Packet ID (hex):** 0xCE6A
 - **Packet Size:** 10
 - **Description:** Delta is the applied count: the client adds it to its local sheet count for WorkId rather than replacing it (`add [work+0x3C], delta` at 0x4A82F9). It does not touch CAdvMgr+0x1BC or +0x1C0 and does not paint the 原稿用紙 caption. Preceded by recv_adventure_updated_sheet_stack so +0x1BC is already the new stock. Adding a page in the editor increments +0x1C0 immediately (caption = 1BC−1C0) and redraws; deleting a page does not replenish stock until save, when sub_sheet returns pages and 0xABE0 writes +0x1BC. The caption stays stale across save and catches up on the next local add/remove. The editor sends add_sheet on save with the pages added since the last save, then sub_sheet with the pages deleted, never netted; the work-list window sends one of them before 編集 when its local page count differs from the server record.
 
@@ -1368,7 +1757,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 
 - **Server:** Area
 - **Direction:** ServerToClient
-- **Packet ID (hex):** 0x216E
+- **Packet ID (hex):** 0x203C
 - **Packet Size:** 10
 - **Description:** Same shape as recv_adventure_work_add_sheet_r.
 

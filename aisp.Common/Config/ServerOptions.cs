@@ -49,6 +49,8 @@ public class ServerOptions
 
     /// <summary>Price of one 原稿用紙 (manuscript sheet) in デレ (the in-game currency) at the sheet shop the drama editor's 通販 button opens.</summary>
     public long AdventureSheetPriceAi { get; set; } = 10;
+    /// <summary>Weekly settlement of drama disc sales: when the author's share of each sale, in デレ (the in-game currency), becomes collectable from the shop's 売上 clerk.</summary>
+    public AdventureSettlementOptions AdventureSettlement { get; set; } = new();
 
     public GameServerConfig AuthServer { get; set; } = new() { Port = 50050 };
     public GameServerConfig MsgServer { get; set; } = new() { Port = 50052 };

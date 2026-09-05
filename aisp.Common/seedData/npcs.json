@@ -345,6 +345,282 @@
       ]
     },
     {
+      "mapId": 10030200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177330,
+      "modelId": 1002031,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ売上",
+        "en": "Happy・Story Payout"
+      },
+      "x": -5460,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "Decorative",
+      "eventKind": "ServerScript",
+      "eventKey": "adventure_shop_sales",
+      "isEnabled": true,
+      "sortOrder": 112,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930041, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10030200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177331,
+      "modelId": 1002021,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ買取",
+        "en": "Happy・Story Buyer"
+      },
+      "x": -5610,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "AdventureShopUpload",
+      "isEnabled": true,
+      "sortOrder": 111,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930020, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10030200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177332,
+      "modelId": 1002011,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ販売",
+        "en": "Happy・Story Sales"
+      },
+      "x": -5760,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "AdventureShopBuy",
+      "isEnabled": true,
+      "sortOrder": 110,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930014, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10010200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177333,
+      "modelId": 1002031,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ売上",
+        "en": "Happy・Story Payout"
+      },
+      "x": -5460,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "Decorative",
+      "eventKind": "ServerScript",
+      "eventKey": "adventure_shop_sales",
+      "isEnabled": true,
+      "sortOrder": 112,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930041, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10010200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177334,
+      "modelId": 1002021,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ買取",
+        "en": "Happy・Story Buyer"
+      },
+      "x": -5610,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "AdventureShopUpload",
+      "isEnabled": true,
+      "sortOrder": 111,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930020, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10010200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177335,
+      "modelId": 1002011,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ販売",
+        "en": "Happy・Story Sales"
+      },
+      "x": -5760,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "AdventureShopBuy",
+      "isEnabled": true,
+      "sortOrder": 110,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930014, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10020200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177336,
+      "modelId": 1002031,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ売上",
+        "en": "Happy・Story Payout"
+      },
+      "x": -5460,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "Decorative",
+      "eventKind": "ServerScript",
+      "eventKey": "adventure_shop_sales",
+      "isEnabled": true,
+      "sortOrder": 112,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930041, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10020200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177337,
+      "modelId": 1002021,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ買取",
+        "en": "Happy・Story Buyer"
+      },
+      "x": -5610,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "AdventureShopUpload",
+      "isEnabled": true,
+      "sortOrder": 111,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930020, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
+      "mapId": 10020200,
+      "channelId": -1,
+      "dayPhase": -1,
+      "dateStartUtc": "1970-01-01T00:00:00Z",
+      "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+      "npcObjectId": 1342177338,
+      "modelId": 1002011,
+      "name": {
+        "ja": "はっぴぃ・すとぉりぃ販売",
+        "en": "Happy・Story Sales"
+      },
+      "x": -5760,
+      "y": 10,
+      "z": 1020,
+      "rotation": 180,
+      "interactionType": "AdventureShopBuy",
+      "isEnabled": true,
+      "sortOrder": 110,
+      "equipment": [
+        { "slotIndex": 0, "itemId": 10100320, "sortOrder": 0 },
+        { "slotIndex": 1, "itemId": 10200030, "sortOrder": 1 },
+        { "slotIndex": 2, "itemId": 10400000, "sortOrder": 2 },
+        { "slotIndex": 3, "itemId": 10500130, "sortOrder": 3 },
+        { "slotIndex": 4, "itemId": 10700000, "sortOrder": 4 },
+        { "slotIndex": 5, "itemId": 10600000, "sortOrder": 5 },
+        { "slotIndex": 6, "itemId": 10930014, "sortOrder": 6 },
+        { "slotIndex": 8, "itemId": 10100340, "sortOrder": 7 }
+      ]
+    },
+    {
       "mapId": 10010200,
       "channelId": -1,
       "dayPhase": -1,

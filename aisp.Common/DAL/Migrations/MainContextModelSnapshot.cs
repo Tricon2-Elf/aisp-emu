@@ -17,6 +17,187 @@ namespace aisp.Common.DAL.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListing", b =>
+                {
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(768)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ContentSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ContentsPublic")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime?>("DelistedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DownloadCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Genre")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ListedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Official")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Pages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SalesCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("State")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WorkId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ScriptId");
+
+                    b.HasIndex("State", "Genre");
+
+                    b.HasIndex("UserId", "WorkId");
+
+                    b.ToTable("AdventureListings", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListingContent", b =>
+                {
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Datalist")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<byte[]>("Script")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.HasKey("ScriptId");
+
+                    b.ToTable("AdventureListingContents", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventurePurchase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("AuthorShare")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BuyerCharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BuyerUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("HiddenFromDownloads")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("HiddenFromHistory")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Price")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("SettledAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScriptId");
+
+                    b.HasIndex("SettledAt");
+
+                    b.HasIndex("BuyerUserId", "ScriptId");
+
+                    b.ToTable("AdventurePurchases", (string)null);
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureTicket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ScriptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.ToTable("AdventureTickets", (string)null);
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureWork", b =>
                 {
                     b.Property<int>("Id")
@@ -1541,6 +1722,11 @@ namespace aisp.Common.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("AdventureSalesBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0L);
+
                     b.Property<int>("AdventureSheetStock")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -1691,6 +1877,47 @@ namespace aisp.Common.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Worlds");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListing", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListingContent", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.AdventureListing", "Listing")
+                        .WithOne("Content")
+                        .HasForeignKey("aisp.Common.DAL.Entities.AdventureListingContent", "ScriptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Listing");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventurePurchase", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.User", "BuyerUser")
+                        .WithMany()
+                        .HasForeignKey("BuyerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("aisp.Common.DAL.Entities.AdventureListing", "Listing")
+                        .WithMany()
+                        .HasForeignKey("ScriptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BuyerUser");
+
+                    b.Navigation("Listing");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureWork", b =>
@@ -2081,6 +2308,11 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("Item");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.AdventureListing", b =>
+                {
+                    b.Navigation("Content");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Character", b =>

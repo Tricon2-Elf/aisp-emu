@@ -14,6 +14,7 @@ public class AreaEventAccessNpcHandler(
     INpcRepository npcRepository,
     IShopRepository shopRepository,
     ServerScriptDispatcher serverScriptDispatcher,
+    AdventureShopCatalog adventureShopCatalog,
     ITextLocaliser localiser,
     ILogger<AreaEventAccessNpcHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
@@ -148,6 +149,45 @@ public class AreaEventAccessNpcHandler(
                         npc.EventKey,
                         context,
                         serverScriptDispatcher.GetCompletionPolicy(npc.EventKey),
+                        ct
+                    );
+                    return;
+            }
+        }
+
+        if (
+            npc.InteractionType
+            is NpcInteractionType.AdventureShopBuy
+                or NpcInteractionType.AdventureShopUpload
+        )
+        {
+            session.ActiveShopId = null;
+            var adventureNpcObjectId = checked((uint)npc.NpcObjectId);
+            await session.SendAsync(ResponseType, new EventAccessNpcResponse(0).ToBytes(), ct);
+            await session.SendAsync(
+                PacketType.NotifySupplyNpcExec,
+                new NotifySupplyNpcExec(adventureNpcObjectId).ToBytes(),
+                ct
+            );
+
+            switch (npc.InteractionType)
+            {
+                case NpcInteractionType.AdventureShopBuy:
+                    // The client wants the catalog snapshot, not the NPC id.
+                    var snapshot = await adventureShopCatalog.BuildSnapshotAsync(
+                        session.User?.Id ?? session.UserId,
+                        ct
+                    );
+                    await session.SendAsync(
+                        PacketType.AdventureShopStartedNotify,
+                        snapshot.ToBytes(),
+                        ct
+                    );
+                    return;
+                case NpcInteractionType.AdventureShopUpload:
+                    await session.SendAsync(
+                        PacketType.AdventureUploadStartedNotify,
+                        new AdventureUploadStartedNotify(adventureNpcObjectId, 0).ToBytes(),
                         ct
                     );
                     return;
