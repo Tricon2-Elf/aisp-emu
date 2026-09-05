@@ -23,6 +23,11 @@ public class SharedState
     > _roboLastMovement = new();
 
     private readonly ConcurrentDictionary<Guid, int> _circleChatSessions = new();
+    private readonly ConcurrentDictionary<int, ActivePlacardComment> _activePlacardComments = new();
+    private readonly object _friendLinkPlacardLock = new();
+    private readonly Dictionary<uint, ActiveFriendLinkPlacard> _friendLinkPlacardsById = [];
+    private readonly Dictionary<uint, uint> _friendLinkPlacardIdsByOwner = [];
+    private uint _nextFriendLinkPlacardId = 100_000;
 
     private readonly Channel<(string Id, string Message)> _messages = Channel.CreateUnbounded<(
         string Id,
@@ -111,6 +116,21 @@ public class SharedState
 
     public void UnregisterClient(ServerType serverType, Guid clientId)
     {
+        IPlayerSession? areaSession = null;
+        IReadOnlyList<IPlayerSession> placardViewers = [];
+        ActiveFriendLinkPlacard? removedPlacard = null;
+        if (serverType == ServerType.Area)
+        {
+            if (!_sessionStore.TryGetSession(clientId, out areaSession) || areaSession is null)
+                areaSession = GetServerClients(serverType)
+                    .FirstOrDefault(x => x.ConnectionId == clientId);
+            if (areaSession is not null && areaSession.CharacterId != 0)
+            {
+                placardViewers = GetAreaPeers(areaSession);
+                TryRemoveFriendLinkPlacard(areaSession.CharacterId, out removedPlacard);
+            }
+        }
+
         _circleChatSessions.TryRemove(clientId, out _);
 
         if (_sessionPresenceRepository == null)
@@ -119,6 +139,9 @@ public class SharedState
             _sessionPresenceRepository.Remove(serverType, clientId);
 
         _sessionStore.RemoveSession(clientId);
+
+        if (removedPlacard is not null && placardViewers.Count > 0)
+            _ = NotifyPlacardRemoveToPeersAsync(removedPlacard.PlacardId, placardViewers);
     }
 
     public void EnterCircleChat(Guid connectionId, int circleId) =>
@@ -129,6 +152,145 @@ public class SharedState
 
     public bool LeaveCircleChat(Guid connectionId) =>
         _circleChatSessions.TryRemove(connectionId, out _);
+
+    public void BeginPlacardComment(int userId, uint placardId)
+    {
+        if (userId > 0)
+            _activePlacardComments[userId] = new ActivePlacardComment(
+                placardId,
+                DateTime.UtcNow.AddMinutes(2)
+            );
+    }
+
+    public bool TryTakePlacardComment(int userId, out uint placardId)
+    {
+        placardId = 0;
+        if (userId <= 0 || !_activePlacardComments.TryRemove(userId, out var active))
+            return false;
+        if (active.ExpiresAtUtc < DateTime.UtcNow)
+            return false;
+
+        placardId = active.PlacardId;
+        return true;
+    }
+
+    public (
+        ActiveFriendLinkPlacard Placard,
+        ActiveFriendLinkPlacard? Replaced
+    ) SetFriendLinkPlacard(
+        int ownerUserId,
+        uint ownerCharacterId,
+        string ownerName,
+        uint mapId,
+        int channelId,
+        uint myRoomId,
+        uint type,
+        uint tagId,
+        uint slot,
+        byte direction,
+        string tagName,
+        System.Numerics.Vector3 position
+    )
+    {
+        lock (_friendLinkPlacardLock)
+        {
+            ActiveFriendLinkPlacard? replaced = null;
+            if (
+                _friendLinkPlacardIdsByOwner.Remove(ownerCharacterId, out var previousId)
+                && _friendLinkPlacardsById.Remove(previousId, out var previous)
+            )
+                replaced = previous;
+
+            uint placardId;
+            do
+            {
+                placardId = ++_nextFriendLinkPlacardId;
+                if (placardId == 0)
+                    placardId = ++_nextFriendLinkPlacardId;
+            } while (_friendLinkPlacardsById.ContainsKey(placardId));
+
+            var placard = new ActiveFriendLinkPlacard(
+                placardId,
+                ownerUserId,
+                ownerCharacterId,
+                ownerName,
+                mapId,
+                channelId,
+                myRoomId,
+                type,
+                tagId,
+                slot,
+                direction,
+                tagName,
+                position
+            );
+            _friendLinkPlacardsById[placardId] = placard;
+            _friendLinkPlacardIdsByOwner[ownerCharacterId] = placardId;
+            replaced?.ClearComments();
+            RemovePlacardCommentContexts(replaced?.PlacardId);
+            return (placard, replaced);
+        }
+    }
+
+    public ActiveFriendLinkPlacard? GetFriendLinkPlacard(uint placardId)
+    {
+        lock (_friendLinkPlacardLock)
+            return _friendLinkPlacardsById.GetValueOrDefault(placardId);
+    }
+
+    public IReadOnlyList<ActiveFriendLinkPlacard> GetFriendLinkPlacards(
+        uint mapId,
+        int channelId,
+        uint myRoomId
+    )
+    {
+        lock (_friendLinkPlacardLock)
+            return
+            [
+                .. _friendLinkPlacardsById
+                    .Values.Where(x =>
+                        x.MapId == mapId
+                        && x.ChannelId == channelId
+                        && (myRoomId == 0 ? x.MyRoomId == 0 : x.MyRoomId == myRoomId)
+                    )
+                    .OrderBy(x => x.PlacardId)
+                    .Take(300),
+            ];
+    }
+
+    public bool TryRemoveFriendLinkPlacard(
+        uint ownerCharacterId,
+        out ActiveFriendLinkPlacard? placard
+    )
+    {
+        lock (_friendLinkPlacardLock)
+        {
+            placard = null;
+            if (!_friendLinkPlacardIdsByOwner.Remove(ownerCharacterId, out var placardId))
+                return false;
+            if (!_friendLinkPlacardsById.Remove(placardId, out placard))
+                return false;
+            placard.ClearComments();
+            RemovePlacardCommentContexts(placardId);
+            return true;
+        }
+    }
+
+    public ActiveFriendLinkPlacardComment? AddFriendLinkPlacardComment(
+        uint placardId,
+        int authorUserId,
+        uint authorCharacterId,
+        string authorName,
+        string message
+    )
+    {
+        if (string.IsNullOrWhiteSpace(message) || authorCharacterId == 0)
+            return null;
+        lock (_friendLinkPlacardLock)
+            return _friendLinkPlacardsById.TryGetValue(placardId, out var placard)
+                ? placard.AddComment(authorUserId, authorCharacterId, authorName, message)
+                : null;
+    }
 
     public IReadOnlyList<IPlayerSession> GetCircleChatClients(int circleId) =>
         [
@@ -269,10 +431,13 @@ public class SharedState
             return;
 
         var peers = GetAreaPeers(session);
-        if (peers.Count == 0)
-            return;
-
-        await NotifyDisappearToPeersAsync(session, peers, ct);
+        TryRemoveFriendLinkPlacard(session.CharacterId, out var placard);
+        if (peers.Count > 0)
+        {
+            if (placard is not null)
+                await NotifyPlacardRemoveToPeersAsync(placard.PlacardId, peers, ct);
+            await NotifyDisappearToPeersAsync(session, peers, ct);
+        }
     }
 
     private static async Task NotifyDisappearToPeersAsync(
@@ -289,6 +454,17 @@ public class SharedState
             foreach (var roboId in session.AccompanyingRoboIds)
                 await SendRoboDisappearAsync(peer, session.CharacterId, roboId, ct);
         }
+    }
+
+    private static async Task NotifyPlacardRemoveToPeersAsync(
+        uint placardId,
+        IReadOnlyList<IPlayerSession> peers,
+        CancellationToken ct = default
+    )
+    {
+        var payload = new NotifyPlacardRemove(placardId).ToBytes();
+        foreach (var peer in peers)
+            await peer.SendAsync(PacketType.NotifyPlacardRemove, payload, ct);
     }
 
     public async Task BroadcastRoboDisappearAsync(
@@ -446,6 +622,19 @@ public class SharedState
         }
 
         return sessions;
+    }
+
+    private sealed record ActivePlacardComment(uint PlacardId, DateTime ExpiresAtUtc);
+
+    private void RemovePlacardCommentContexts(uint? placardId)
+    {
+        if (placardId is null)
+            return;
+        foreach (var context in _activePlacardComments)
+        {
+            if (context.Value.PlacardId == placardId.Value)
+                _activePlacardComments.TryRemove(context.Key, out _);
+        }
     }
 
     public readonly record struct PendingMapTransfer(

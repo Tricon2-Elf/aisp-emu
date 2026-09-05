@@ -5,7 +5,9 @@ using aisp.Network.Packets.Msg;
 namespace aisp.Common.Handlers.Msg;
 
 /// <summary>Completes the placard interaction flow when no comments have been posted yet.</summary>
-public sealed class GetPlacardCommentLogHandler : IPacketHandler, IRequiresAuthenticatedSession
+public sealed class GetPlacardCommentLogHandler(SharedState state)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.GetPlacardCommentLogRequest;
     public PacketType ResponseType => PacketType.GetPlacardCommentLogResponse;
@@ -18,14 +20,26 @@ public sealed class GetPlacardCommentLogHandler : IPacketHandler, IRequiresAuthe
     )
     {
         var request = GetPlacardCommentLogRequest.FromBytes(payload.Span);
+        var placard = state.GetFriendLinkPlacard(request.PlacardId);
         await session.SendAsync(ResponseType, new GetPlacardCommentLogResponse(0).ToBytes(), ct);
+
+        if (placard is not null)
+            state.BeginPlacardComment(session.UserId, request.PlacardId);
+
+        var comments = placard?.GetComments() ?? [];
+        IReadOnlyList<PlacardCommentLogEntry> entries =
+            comments.Count == 0
+                ? [new PlacardCommentLogEntry(string.Empty, "No comments")]
+                :
+                [
+                    .. comments.Select(comment => new PlacardCommentLogEntry(
+                        comment.AuthorName,
+                        comment.Message
+                    )),
+                ];
         await session.SendAsync(
             PacketType.NotifyPlacardCommentLog,
-            new NotifyPlacardCommentLog(
-                0,
-                request.PlacardId,
-                [new PlacardCommentLogEntry(string.Empty, "No comments")]
-            ).ToBytes(),
+            new NotifyPlacardCommentLog(0, request.PlacardId, entries).ToBytes(),
             ct
         );
     }

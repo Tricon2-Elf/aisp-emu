@@ -1,4 +1,3 @@
-using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Game.ServerScripts;
 using aisp.Network;
@@ -10,7 +9,8 @@ namespace aisp.Common.Handlers.Area;
 
 public class AreaMapDataEnterEndHandler(
     ILogger<AreaMapDataEnterEndHandler> logger,
-    ServerScriptDispatcher? serverScriptDispatcher = null
+    ServerScriptDispatcher? serverScriptDispatcher = null,
+    SharedState? state = null
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapDataEnterEndRequest;
@@ -53,6 +53,22 @@ public class AreaMapDataEnterEndHandler(
             );
             await session.SendAsync(PacketType.AvatarNotifyData, spawnMeForSelfPacket, ct);
             session.NeedsPostLoadSelfAvatarNotify = false;
+        }
+
+        if (state is not null)
+        {
+            var mapPlacards = state.GetFriendLinkPlacards(
+                session.MapId,
+                session.ChannelId,
+                session.MyRoomId
+            );
+            await session.SendAsync(
+                PacketType.NotifyPlacardInMap,
+                new NotifyPlacardInMap(
+                    mapPlacards.Select(x => x.ToPacketData()).ToArray()
+                ).ToBytes(),
+                ct
+            );
         }
 
         // Resume server scripts only after the map load / avatar spawn sequence so client events can start safely.

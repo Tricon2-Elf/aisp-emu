@@ -5,7 +5,7 @@ using aisp.Network.Packets.Area;
 namespace aisp.Common.Handlers.Area;
 
 /// <summary>Accepts removal of the current player's Friend Link placard.</summary>
-public sealed class AreaPlacardRemoveHandler
+public sealed class AreaPlacardRemoveHandler(SharedState state)
     : PacketHandlerBase<PlacardRemoveRequest, PlacardRemoveResponse>,
         IRequiresAuthenticatedSession
 {
@@ -13,9 +13,25 @@ public sealed class AreaPlacardRemoveHandler
     public override PacketType ResponseType => PacketType.PlacardRemoveResponse;
     public override ServerType ServerType => ServerType.Area;
 
-    public override Task<PlacardRemoveResponse?> HandleAsync(
+    public override async Task<PlacardRemoveResponse?> HandleAsync(
         PlacardRemoveRequest request,
         IPlayerSession session,
         CancellationToken ct = default
-    ) => Task.FromResult<PlacardRemoveResponse?>(new PlacardRemoveResponse(0));
+    )
+    {
+        if (session.CharacterId == 0)
+            return new PlacardRemoveResponse(1);
+
+        if (state.TryRemoveFriendLinkPlacard(session.CharacterId, out var removed))
+        {
+            var notify = new NotifyPlacardRemove(removed!.PlacardId).ToBytes();
+            var viewers = state.GetAreaSessions(removed.MapId, removed.ChannelId);
+            if (MyRoomInfo.IsMyRoomMap(removed.MapId))
+                viewers = [.. viewers.Where(x => x.MyRoomId == removed.MyRoomId)];
+            foreach (var viewer in viewers.Where(x => x.ConnectionId != session.ConnectionId))
+                await viewer.SendAsync(PacketType.NotifyPlacardRemove, notify, ct);
+        }
+
+        return new PlacardRemoveResponse(0);
+    }
 }

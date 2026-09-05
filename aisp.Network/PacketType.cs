@@ -3929,6 +3929,14 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_notify_placard_remove",
+        ImplementationState.Implemented
+    )]
+    NotifyPlacardRemove = 0xD7F9,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_notify_remove_ai_palette",
         ImplementationState.NotImplemented
     )]
