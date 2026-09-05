@@ -78,6 +78,8 @@ internal class Program
         builder.Services.AddScoped<ICircleRepository, CircleRepository>();
         builder.Services.AddScoped<IFriendRepository, FriendRepository>();
         builder.Services.AddScoped<IAdventureWorkRepository, AdventureWorkRepository>();
+        builder.Services.AddScoped<IAdventureShopRepository, AdventureShopRepository>();
+        builder.Services.AddScoped<AdventureShopCatalog>();
         builder.Services.AddScoped<IChatLogRepository, ChatLogRepository>();
         builder.Services.AddScoped<IReportTicketRepository, ReportTicketRepository>();
         builder.Services.AddScoped<INicotvRepository, NicotvRepository>();
@@ -307,6 +309,7 @@ internal class Program
             .Bind(builder.Configuration.GetSection(ChatLogOptions.SectionName));
         builder.Services.AddHostedService<GameServerSchedulerService>();
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
+        builder.Services.AddHostedService<AdventureSettlementService>();
         builder.Services.AddHostedService<ChatLogPruneService>();
 
         var app = builder.Build();
@@ -320,6 +323,8 @@ internal class Program
 
         app.UseApiKeyAuthForApiRoutes();
         app.MapAispEmuHttpEndpoints();
+        app.MapAdventureHttpEndpoints();
+        app.MapAdventureAdminEndpoints();
         if (portalEnabled)
         {
             app.UseStaticFiles();

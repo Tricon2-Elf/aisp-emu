@@ -15,6 +15,7 @@
 | Format everything | `dotnet tool restore && dotnet tool run csharpier format .` |
 | EF migration | `./scripts/generate-migration.sh <Name>` |
 | Docker build | `docker compose up -d` |
+| Import legacy drama discs | `python3 scripts/import-dramas.py --dir <dl/drama> --owner <user> --api-key <key>` (see `--help`) |
 
 ## Toolchain
 

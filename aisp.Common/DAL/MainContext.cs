@@ -36,6 +36,11 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<CircleJoinRequest> CircleJoinRequests => Set<CircleJoinRequest>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<AdventureWork> AdventureWorks => Set<AdventureWork>();
+    public DbSet<AdventureListing> AdventureListings => Set<AdventureListing>();
+    public DbSet<AdventureListingContent> AdventureListingContents =>
+        Set<AdventureListingContent>();
+    public DbSet<AdventurePurchase> AdventurePurchases => Set<AdventurePurchase>();
+    public DbSet<AdventureTicket> AdventureTickets => Set<AdventureTicket>();
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
@@ -78,6 +83,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.IsBanned).HasDefaultValue(false);
             e.Property(x => x.AdventureSheetStock).HasDefaultValue(0);
             e.Property(x => x.NextAdventureWorkId).HasDefaultValue(1);
+            e.Property(x => x.AdventureSalesBalance).HasDefaultValue(0L);
             e.Property(x => x.BanReason).HasMaxLength(256);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.Property(x => x.Language)
@@ -433,6 +439,62 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.UserId, x.WorkId }).IsUnique();
+        });
+
+        b.Entity<AdventureListing>(e =>
+        {
+            e.ToTable("AdventureListings");
+            e.HasKey(x => x.ScriptId);
+            // Assigned by the repository (max + 1, starting at AdventureListing.FirstScriptId) so ids never
+            // collide with the legacy service's script ids, which players may still have cached under dl/drama/.
+            e.Property(x => x.ScriptId).ValueGeneratedNever();
+            e.Property(x => x.Title).HasMaxLength(120).IsRequired();
+            e.Property(x => x.AuthorName).HasMaxLength(36).IsRequired();
+            e.Property(x => x.Comment).HasMaxLength(768).IsRequired();
+            e.Property(x => x.Official).HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UserId, x.WorkId });
+            e.HasIndex(x => new { x.State, x.Genre });
+        });
+
+        b.Entity<AdventureListingContent>(e =>
+        {
+            e.ToTable("AdventureListingContents");
+            e.HasKey(x => x.ScriptId);
+            e.HasOne(x => x.Listing)
+                .WithOne(x => x.Content)
+                .HasForeignKey<AdventureListingContent>(x => x.ScriptId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<AdventurePurchase>(e =>
+        {
+            e.ToTable("AdventurePurchases");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.PurchasedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasOne(x => x.Listing)
+                .WithMany()
+                .HasForeignKey(x => x.ScriptId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.BuyerUser)
+                .WithMany()
+                .HasForeignKey(x => x.BuyerUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.BuyerUserId, x.ScriptId });
+            e.HasIndex(x => x.SettledAt);
+        });
+
+        b.Entity<AdventureTicket>(e =>
+        {
+            e.ToTable("AdventureTickets");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Token).HasMaxLength(40).IsRequired();
+            e.HasIndex(x => x.Token).IsUnique();
+            e.HasIndex(x => x.ExpiresAt);
         });
 
         b.Entity<Friendship>(e =>

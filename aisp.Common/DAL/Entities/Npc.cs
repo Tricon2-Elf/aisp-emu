@@ -4,6 +4,8 @@ public enum NpcInteractionType
 {
     Shop = 0,
     Decorative = 1,
+    AdventureShopBuy = 2,
+    AdventureShopUpload = 3,
 }
 
 public class Npc
