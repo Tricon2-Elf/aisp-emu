@@ -37,10 +37,11 @@ public sealed class AreaFriendLinkTagChangeHandler(
             request.Name,
             ct
         );
-        // Unlike most result packets, this response is consumed by the Friend Link edit
-        // dialog as a tag ID: values <= 0 are a failure, while a positive value is
-        // inserted into its local free-tag list. Slots are zero-based, so use a stable
-        // one-based ID for the tag itself.
-        return new FriendLinkResultResponse(result == FriendResult.Ok ? request.Slot + 1 : 0u);
+        // Unlike most result packets, this response is consumed as the tag's global ID.
+        return new FriendLinkResultResponse(
+            result == FriendResult.Ok
+                ? FriendLinkTagCatalog.GetFreeTagId(request.Name, request.Slot)
+                : 0u
+        );
     }
 }

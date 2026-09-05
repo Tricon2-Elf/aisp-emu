@@ -24,7 +24,7 @@ public sealed class FriendLinkPlacardHandlerTests
 
         await using var db = new MainContext(options);
         var friends = new FriendRepository(db);
-        Assert.Equal(FriendResult.Ok, await friends.SetLinkTagAsync(10, 0, "Anime", ct));
+        Assert.Equal(FriendResult.Ok, await friends.SetLinkTagAsync(10, 0, "Shuffle!", ct));
 
         var ownerCharacter = await db
             .Characters.Include(x => x.User)
@@ -152,7 +152,6 @@ public sealed class FriendLinkPlacardHandlerTests
             7,
             2,
             0,
-            0,
             1,
             0,
             0,
@@ -215,8 +214,32 @@ public sealed class FriendLinkPlacardHandlerTests
         Assert.Equal(3.75f, reader.ReadFloat());
         Assert.Equal((byte)4, reader.ReadByte());
         Assert.Equal(10u, reader.ReadUInt());
-        Assert.Equal(1u, reader.ReadUInt());
-        Assert.Equal("Anime", reader.ReadFixedString(61));
+        Assert.Equal(100_002u, reader.ReadUInt());
+        Assert.Equal("Shuffle!", reader.ReadFixedString(61));
         Assert.Equal(0u, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void TagTypeResolver_UsesFreeCatalogAndRejectsUnavailableQuestionnaireTag()
+    {
+        Assert.True(
+            FriendLinkTagCatalog.TryResolvePlacementTag(
+                (uint)FriendLinkPlacardTagType.Free,
+                1,
+                [],
+                out var freeTag
+            )
+        );
+        Assert.Equal(100_002u, freeTag.Id);
+        Assert.Equal("Shuffle!", freeTag.Name);
+
+        Assert.False(
+            FriendLinkTagCatalog.TryResolvePlacementTag(
+                (uint)FriendLinkPlacardTagType.Questionnaire,
+                0,
+                [],
+                out _
+            )
+        );
     }
 }

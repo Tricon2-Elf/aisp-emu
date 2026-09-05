@@ -36,7 +36,10 @@ public sealed class AreaFriendLinkTagGetHandler(IFriendRepository friends)
             .Where(tag => tag.Slot <= 4 && !string.IsNullOrWhiteSpace(tag.Name))
             .ToArray();
         var arbitraryTags = populatedTags
-            .Select(tag => new FriendLinkTagData(tag.Slot + 1, tag.Name))
+            .Select(tag => new FriendLinkTagData(
+                FriendLinkTagCatalog.GetFreeTagId(tag.Name, tag.Slot),
+                tag.Name
+            ))
             .ToArray();
         var arbitrarySlots = populatedTags.Select(tag => tag.Slot).ToArray();
 
@@ -44,7 +47,12 @@ public sealed class AreaFriendLinkTagGetHandler(IFriendRepository friends)
             0,
             req.TargetObjectId,
             arbitraryTags,
-            arbitrarySlots
+            arbitrarySlots,
+            FriendLinkTagCatalog.QuestionnaireTags,
+            Enumerable
+                .Range(0, FriendLinkTagCatalog.QuestionnaireTags.Count)
+                .Select(x => (uint)x)
+                .ToArray()
         );
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }

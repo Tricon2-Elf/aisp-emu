@@ -12,7 +12,6 @@ public sealed record ActiveFriendLinkPlacard(
     uint MapId,
     int ChannelId,
     uint MyRoomId,
-    uint Type,
     uint TagId,
     uint Slot,
     byte Direction,

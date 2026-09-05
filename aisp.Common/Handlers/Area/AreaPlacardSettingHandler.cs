@@ -26,9 +26,18 @@ public sealed class AreaPlacardSettingHandler(IFriendRepository friends, SharedS
             return new PlacardSettingResponse(1);
 
         var name = session.Character?.Name ?? string.Empty;
-        var tagId = request.Slot + 1;
         var tags = await friends.GetLinkTagsAsync((int)session.CharacterId, ct);
-        var tagName = tags.FirstOrDefault(x => x.Slot == request.Slot)?.Name ?? string.Empty;
+        if (
+            !FriendLinkTagCatalog.TryResolvePlacementTag(
+                request.Type,
+                request.Slot,
+                tags,
+                out var selectedTag
+            )
+        )
+            return new PlacardSettingResponse(1);
+        var tagId = selectedTag.Id;
+        var tagName = selectedTag.Name;
         var (placard, previous) = state.SetFriendLinkPlacard(
             session.UserId,
             session.CharacterId,
@@ -36,7 +45,6 @@ public sealed class AreaPlacardSettingHandler(IFriendRepository friends, SharedS
             session.MapId,
             session.ChannelId,
             session.MyRoomId,
-            request.Type,
             tagId,
             request.Slot,
             request.Direction,

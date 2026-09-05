@@ -39,7 +39,10 @@ public sealed class FriendHandlerTests
             );
 
             Assert.NotNull(result);
-            Assert.Equal(4u, new PacketReader(result!.ToBytes()).ReadUInt());
+            Assert.Equal(
+                FriendLinkTagCatalog.GetFreeTagId("Anime", 3),
+                new PacketReader(result!.ToBytes()).ReadUInt()
+            );
         }
 
         await using var reconnectDb = new MainContext(options);
@@ -62,7 +65,7 @@ public sealed class FriendHandlerTests
         Assert.Equal(0u, reader.ReadUInt());
         Assert.Equal(4u, reader.ReadUInt());
         Assert.Equal(1u, reader.ReadUInt());
-        Assert.Equal(4u, reader.ReadUInt());
+        Assert.Equal(FriendLinkTagCatalog.GetFreeTagId("Anime", 3), reader.ReadUInt());
         Assert.Equal("Anime", reader.ReadFixedString(61));
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(3u, reader.ReadUInt());
