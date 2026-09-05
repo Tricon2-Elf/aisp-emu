@@ -48,6 +48,71 @@ public class PostTalkHandler(
             return;
         }
 
+        if (
+            chatRequest.DistID == 0
+            && state.TryTakePlacardComment(session.UserId, out var placardId)
+        )
+        {
+            var placard = state.GetFriendLinkPlacard(placardId);
+            var authorCharacterId = session.CharacterId;
+            if (authorCharacterId == 0)
+                authorCharacterId = state.GetAreaSessionByUserId(session.UserId)?.CharacterId ?? 0;
+            var authorName =
+                session.Character?.Name
+                ?? state.GetAreaSessionByUserId(session.UserId)?.Character?.Name
+                ?? string.Empty;
+
+            var comment = state.AddFriendLinkPlacardComment(
+                placardId,
+                session.UserId,
+                authorCharacterId,
+                authorName,
+                chatRequest.Message
+            );
+            if (comment is not null)
+            {
+                // Placard comments use the normal talk-post packet, so record them here
+                // before this branch returns. DistId carries the placard ID for moderation.
+                await chatLog.AddAsync(
+                    ChatLogCapture.FromSession(
+                        session,
+                        state,
+                        ChatLogKind.Placard,
+                        chatRequest.Message,
+                        distId: placardId,
+                        balloonId: chatRequest.BalloonID
+                    ),
+                    ct
+                );
+            }
+            await session.SendAsync(
+                ResponseType,
+                new PostTalkResponse(chatRequest.MessageID, comment is null ? 1u : 0u).ToBytes(),
+                ct
+            );
+
+            if (comment is not null)
+            {
+                var notification = new NotifyPlacardCommentLog(
+                    0,
+                    placardId,
+                    [new PlacardCommentLogEntry(comment.AuthorName, comment.Message)]
+                ).ToBytes();
+                var recipients = state
+                    .GetServerClients(ServerType.Msg)
+                    .Where(client =>
+                        client.IsAuthenticated
+                        && placard is not null
+                        && client.UserId == placard.OwnerUserId
+                    )
+                    .Append(session)
+                    .DistinctBy(client => client.ConnectionId);
+                foreach (var recipient in recipients)
+                    await recipient.SendAsync(PacketType.NotifyPlacardCommentLog, notification, ct);
+            }
+            return;
+        }
+
         var response = new PostTalkResponse(chatRequest.MessageID, 0);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
 

@@ -84,10 +84,10 @@ public sealed class ChatLogRepository(MainContext db) : IChatLogRepository
         DateTime sinceUtc,
         CancellationToken ct = default
     ) =>
-        await db.ChatMessages
-            .AsNoTracking()
+        await db
+            .ChatMessages.AsNoTracking()
             .Where(x =>
-                x.Kind == ChatLogKind.Public
+                (x.Kind == ChatLogKind.Public || x.Kind == ChatLogKind.Placard)
                 && x.MapId == mapId
                 && x.ChannelId == channelId
                 && x.CreatedAt >= sinceUtc

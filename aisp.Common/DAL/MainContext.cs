@@ -42,6 +42,7 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<AdventurePurchase> AdventurePurchases => Set<AdventurePurchase>();
     public DbSet<AdventureTicket> AdventureTickets => Set<AdventureTicket>();
     public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+    public DbSet<FriendLinkTag> FriendLinkTags => Set<FriendLinkTag>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
     public DbSet<Npc> Npcs => Set<Npc>();
@@ -528,6 +529,17 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => new { x.TargetCharacterId, x.Status });
             e.HasIndex(x => new { x.RequesterCharacterId, x.Status });
+        });
+
+        b.Entity<FriendLinkTag>(e =>
+        {
+            e.ToTable("FriendLinkTags");
+            e.HasKey(x => new { x.CharacterId, x.Slot });
+            e.Property(x => x.Name).HasMaxLength(61).IsRequired();
+            e.HasOne(x => x.Character)
+                .WithMany()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Map>(e =>

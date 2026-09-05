@@ -165,7 +165,7 @@ public sealed class ChatLogRepositoryTests
     }
 
     [Fact]
-    public async Task ListRecentOnMapAsync_ReturnsOnlyPublicChatOnMapSinceCutoff()
+    public async Task ListRecentOnMapAsync_ReturnsPublicAndPlacardChatOnMapSinceCutoff()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         await using var _ = connection;
@@ -219,6 +219,21 @@ public sealed class ChatLogRepositoryTests
         await repo.AddAsync(
             new ChatMessage
             {
+                Kind = ChatLogKind.Placard,
+                UserId = 3,
+                CharacterId = 3,
+                CharacterName = "c",
+                Message = "placard comment",
+                DistId = 42,
+                MapId = 10990100,
+                ChannelId = 1,
+                CreatedAt = now.AddMinutes(-1),
+            },
+            TestContext.Current.CancellationToken
+        );
+        await repo.AddAsync(
+            new ChatMessage
+            {
                 Kind = ChatLogKind.Public,
                 UserId = 2,
                 CharacterId = 2,
@@ -237,7 +252,6 @@ public sealed class ChatLogRepositoryTests
             now.AddMinutes(-5),
             TestContext.Current.CancellationToken
         );
-        Assert.Single(items);
-        Assert.Equal("recent", Assert.Single(items).Message);
+        Assert.Equal(["recent", "placard comment"], items.Select(x => x.Message).ToArray());
     }
 }

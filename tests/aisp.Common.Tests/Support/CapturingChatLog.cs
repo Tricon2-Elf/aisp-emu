@@ -62,7 +62,7 @@ internal sealed class CapturingChatLog : IChatLogRepository
     {
         var items = Entries
             .Where(x =>
-                x.Kind == ChatLogKind.Public
+                (x.Kind == ChatLogKind.Public || x.Kind == ChatLogKind.Placard)
                 && x.MapId == mapId
                 && x.ChannelId == channelId
                 && x.CreatedAt >= sinceUtc

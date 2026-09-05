@@ -37,6 +37,9 @@ public interface IFriendRepository
         CancellationToken ct = default
     );
     Task<IReadOnlyList<Character>> GetFriendsAsync(int characterId, CancellationToken ct = default);
+    Task<IReadOnlyList<FriendLinkTag>> GetLinkTagsAsync(int characterId, CancellationToken ct = default);
+    Task<FriendResult> SetLinkTagAsync(int characterId, uint slot, string name, CancellationToken ct = default);
+    Task<FriendOperationResult> DeleteAsync(int characterId, int targetCharacterId, CancellationToken ct = default);
 }
 
 public sealed class FriendRepository(MainContext db) : IFriendRepository
@@ -215,6 +218,61 @@ public sealed class FriendRepository(MainContext db) : IFriendRepository
             .Where(x => ids.Contains(x.Id))
             .OrderBy(x => x.Name)
             .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<FriendLinkTag>> GetLinkTagsAsync(
+        int characterId,
+        CancellationToken ct = default
+    ) => await db.FriendLinkTags.AsNoTracking().Where(x => x.CharacterId == characterId).OrderBy(x => x.Slot).ToListAsync(ct);
+
+    public async Task<FriendResult> SetLinkTagAsync(
+        int characterId,
+        uint slot,
+        string name,
+        CancellationToken ct = default
+    )
+    {
+        // The client has five visible tag positions (0 through 4).
+        if (slot > 4 || !await db.Characters.AnyAsync(x => x.Id == characterId, ct))
+            return FriendResult.InvalidTarget;
+
+        var tag = await db.FriendLinkTags.FindAsync([characterId, slot], ct);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            if (tag is not null)
+                db.FriendLinkTags.Remove(tag);
+        }
+        else if (tag is null)
+        {
+            db.FriendLinkTags.Add(new FriendLinkTag { CharacterId = characterId, Slot = slot, Name = name });
+        }
+        else
+        {
+            tag.Name = name;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return FriendResult.Ok;
+    }
+
+    public async Task<FriendOperationResult> DeleteAsync(
+        int characterId,
+        int targetCharacterId,
+        CancellationToken ct = default
+    )
+    {
+        var low = Math.Min(characterId, targetCharacterId);
+        var high = Math.Max(characterId, targetCharacterId);
+        var friendship = await db.Friendships.SingleOrDefaultAsync(
+            x => x.CharacterIdLow == low && x.CharacterIdHigh == high,
+            ct
+        );
+        if (friendship is null)
+            return new FriendOperationResult(FriendResult.InvalidTarget);
+
+        db.Friendships.Remove(friendship);
+        await db.SaveChangesAsync(ct);
+        return new FriendOperationResult(FriendResult.Ok);
     }
 
     private Task<int> CountFriendsAsync(int characterId, CancellationToken ct) =>
