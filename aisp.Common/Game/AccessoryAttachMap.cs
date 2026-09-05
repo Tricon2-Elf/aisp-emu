@@ -10,7 +10,8 @@ namespace aisp.Common.Game;
 /// Confirmed cells: 12 glasses, 13 wig, 14 necklace, 15 right hair ribbon, 16 hair ribbon,
 /// 17 right earring, 18 left earring, 19 right handbag, 24 left shoulder band, 25 tail
 /// (unequip bit 1&lt;&lt;28), 26 left shoulder bag, 27 wings.
-/// Prefixes: 108 face, 109 wig, 112 handheld/bags, 114 wings/backpacks/tails, 116 necklace, 117 hair ribbon, 118 mask.
+/// Prefixes: 108 face, 109 wig, 112 handheld/bags, 114 wings/backpacks/tails, 116 necklace,
+/// 117 head accessories and 118 masks occupy the hat cell.
 /// </summary>
 internal static class AccessoryAttachMap
 {
@@ -23,6 +24,8 @@ internal static class AccessoryAttachMap
         // (GetItemBodySpot: 0x10000000 → PART_HIP_ACCESSORY). 1<<25 is a different cell.
         if (slot == CharacterEquipmentSlotIndex.Tail)
             return (uint)WardrobeSocketBit.Tail;
+        if (slot == CharacterEquipmentSlotIndex.Hat)
+            return (uint)WardrobeSocketBit.Head;
 
         var index = (byte)slot;
         if (index >= 12)
@@ -53,8 +56,7 @@ internal static class AccessoryAttachMap
             114 => Prefix114(itemId),
             115 => Wrist115(seed),
             116 => CharacterEquipmentSlotIndex.Necklace,
-            117 => Hair117(seed),
-            118 => Mask118(seed),
+            117 or 118 => CharacterEquipmentSlotIndex.Hat,
             122 or 123 or 124 => CharacterEquipmentSlotIndex.Handheld,
             _ => SeedFallback(seed),
         };
@@ -76,17 +78,6 @@ internal static class AccessoryAttachMap
 
     private static bool Is114Tail(int itemId) =>
         itemId is 11400070 or 11400074 or 11400080 or 11400090 or 11400100 or 11400110;
-
-    private static CharacterEquipmentSlotIndex Hair117(uint seed) =>
-        seed == 10 ? CharacterEquipmentSlotIndex.Headband : CharacterEquipmentSlotIndex.HairRibbon;
-
-    private static CharacterEquipmentSlotIndex Mask118(uint seed) =>
-        seed switch
-        {
-            50 => CharacterEquipmentSlotIndex.Headband,
-            80 => CharacterEquipmentSlotIndex.KigurumiHead,
-            _ => CharacterEquipmentSlotIndex.Glasses,
-        };
 
     private static CharacterEquipmentSlotIndex BagOrHandheld(uint seed) =>
         seed switch

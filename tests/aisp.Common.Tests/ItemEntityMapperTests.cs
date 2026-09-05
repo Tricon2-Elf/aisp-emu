@@ -173,8 +173,8 @@ public class ItemEntityMapperTests
     [InlineData(10800000, 11)] // accessory
     [InlineData(11400020, 11)] // backpack / wings
     [InlineData(11600060, 11)] // necklace
-    [InlineData(11700020, 11)] // hair ribbon
-    [InlineData(11800030, 11)] // mask
+    [InlineData(11700020, 11)] // head accessory (hat cell)
+    [InlineData(11800030, 11)] // mask (hat cell)
     public void ToItemBaseListData_maps_wardrobe_category_by_item_type(
         int itemId,
         uint expectedCategory
@@ -211,8 +211,8 @@ public class ItemEntityMapperTests
     [InlineData(10930050, 11, (uint)WardrobeSocketBit.Wig)]
     [InlineData(11600060, 12, (uint)WardrobeSocketBit.Necklace)]
     [InlineData(11600010, 0, (uint)WardrobeSocketBit.Necklace)]
-    [InlineData(11700020, 14, (uint)WardrobeSocketBit.HairRibbon)]
-    [InlineData(11800030, 11, (uint)WardrobeSocketBit.Glasses)]
+    [InlineData(11700020, 14, (uint)WardrobeSocketBit.Head)]
+    [InlineData(11800030, 11, (uint)WardrobeSocketBit.Head)]
     [InlineData(11200000, 0, (uint)WardrobeSocketBit.RightHandbag)]
     public void ResolveBodyspot_maps_accessory_seed_ids_to_one_hot_bits(
         int itemId,
@@ -223,7 +223,8 @@ public class ItemEntityMapperTests
         const uint clothingMask = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048;
         var bit = ItemEntityMapper.ResolveBodyspot(itemId, storedSocket);
         Assert.Equal(expectedBit, bit);
-        Assert.Equal(0u, bit & clothingMask);
+        // 117/118 share the hat/head clothing bit so they replace a worn hat.
+        Assert.Equal(0u, bit & (clothingMask & ~expectedBit));
         Assert.Equal(0u, bit & (1u << 26));
     }
 
