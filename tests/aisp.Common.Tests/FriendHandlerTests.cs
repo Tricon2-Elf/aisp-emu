@@ -215,7 +215,8 @@ public sealed class FriendHandlerTests
         );
         var requestReader = new PacketReader(requestNotify.Payload);
         Assert.Equal(1u, requestReader.ReadUInt());
-        Assert.Equal("character-1", requestReader.ReadFixedString(37));
+        Assert.Equal("character-1", requestReader.ReadString());
+        Assert.Equal(16, requestNotify.Payload.Length);
 
         var answerHandler = new AreaRequestFriendListAnswerHandler(friends, state);
         var answerWriter = new PacketWriter();

@@ -2,13 +2,13 @@ namespace aisp.Network.Packets.Area;
 
 public sealed class NotifyRequestFriendList(uint fromAvatarId, string fromName) : IOutgoingPacket
 {
-    public const int NameLength = 37;
+    public const int MaxNameBytes = 36;
 
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
         writer.Write(fromAvatarId);
-        writer.WriteFixedString(fromName, NameLength);
+        writer.Write(fromName, MaxNameBytes);
         return writer.ToBytes();
     }
 }
