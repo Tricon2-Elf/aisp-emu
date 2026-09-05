@@ -1,5 +1,6 @@
 using System.Numerics;
 using aisp.Common.DAL;
+using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
@@ -82,14 +83,20 @@ public sealed class FriendLinkPlacardHandlerTests
         commentRequest.Write(0u);
         commentRequest.Write("Nice placard!");
         commentRequest.Write(0u);
+        var chatLog = new CapturingChatLog();
         await new PostTalkHandler(
             state,
             WordFilter.FromTerms([]),
             TestTextLocaliser.English,
-            new CapturingChatLog()
+            chatLog
         ).HandleAsync(commentRequest.ToBytes(), visitorMsg, ct);
 
         Assert.Equal("Nice placard!", Assert.Single(placard.GetComments()).Message);
+        var loggedComment = Assert.Single(chatLog.Entries);
+        Assert.Equal(ChatLogKind.Placard, loggedComment.Kind);
+        Assert.Equal(placard.PlacardId, loggedComment.DistId);
+        Assert.Equal("Nice placard!", loggedComment.Message);
+        Assert.False(loggedComment.Rejected);
         var ownerNotification = Assert.Single(
             ownerMsg.Sent,
             x => x.Type == PacketType.NotifyPlacardCommentLog

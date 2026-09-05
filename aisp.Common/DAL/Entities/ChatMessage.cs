@@ -4,6 +4,7 @@ public enum ChatLogKind : byte
 {
     Public = 0,
     Circle = 1,
+    Placard = 2,
 }
 
 public sealed class ChatMessage

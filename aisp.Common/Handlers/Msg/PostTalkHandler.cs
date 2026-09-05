@@ -69,6 +69,22 @@ public class PostTalkHandler(
                 authorName,
                 chatRequest.Message
             );
+            if (comment is not null)
+            {
+                // Placard comments use the normal talk-post packet, so record them here
+                // before this branch returns. DistId carries the placard ID for moderation.
+                await chatLog.AddAsync(
+                    ChatLogCapture.FromSession(
+                        session,
+                        state,
+                        ChatLogKind.Placard,
+                        chatRequest.Message,
+                        distId: placardId,
+                        balloonId: chatRequest.BalloonID
+                    ),
+                    ct
+                );
+            }
             await session.SendAsync(
                 ResponseType,
                 new PostTalkResponse(chatRequest.MessageID, comment is null ? 1u : 0u).ToBytes(),
