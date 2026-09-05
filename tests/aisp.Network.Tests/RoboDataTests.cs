@@ -41,7 +41,7 @@ public class RoboDataTests
     {
         var character = new CharaData(2_000_000_001, 1_002_011, "Robo")
         {
-            JobId = 21,
+            NamePlate = 21,
             Progress = new LevelProgressData
             {
                 Level = 12,
@@ -107,7 +107,7 @@ public class RoboDataTests
         Assert.Equal(0x10203040u, parsed.ClientReserved);
         Assert.Equal(303, parsed.AiScriptId);
         Assert.Equal(2_000_000_001u, parsed.Character.SlotId);
-        Assert.Equal(21u, parsed.Character.JobId);
+        Assert.Equal(21u, parsed.Character.NamePlate);
         Assert.Equal(12, parsed.Character.Progress.Level);
         Assert.Equal(501u, parsed.ItemUseEffects[0].ItemSerialId);
         Assert.Equal([601u, 602u, 603u, 604u, 605u], parsed.ItemUseEffects[0].Parameters);

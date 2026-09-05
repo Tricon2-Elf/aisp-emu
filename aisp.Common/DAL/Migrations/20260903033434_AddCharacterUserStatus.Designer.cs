@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aisp.Common.DAL;
 
@@ -10,9 +11,11 @@ using aisp.Common.DAL;
 namespace aisp.Common.DAL.Migrations
 {
     [DbContext(typeof(MainContext))]
-    partial class MainContextModelSnapshot : ModelSnapshot
+    [Migration("20260903033434_AddCharacterUserStatus")]
+    partial class AddCharacterUserStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -619,24 +622,6 @@ namespace aisp.Common.DAL.Migrations
                     b.ToTable("FriendRequests", (string)null);
                 });
 
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.Property<int>("CharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("Slot")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(61)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("CharacterId", "Slot");
-
-                    b.ToTable("FriendLinkTags", (string)null);
-                });
-
             modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
                 {
                     b.Property<int>("CharacterIdLow")
@@ -985,11 +970,6 @@ namespace aisp.Common.DAL.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("TEXT");
 
-                    b.Property<uint>("NamePlate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(4u);
-
                     b.Property<long>("NpcObjectId")
                         .HasColumnType("INTEGER");
 
@@ -1268,6 +1248,9 @@ namespace aisp.Common.DAL.Migrations
                     b.Property<uint>("Hairstyle")
                         .HasColumnType("INTEGER");
 
+                    b.Property<uint>("JobId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<byte>("Level")
                         .HasColumnType("INTEGER");
 
@@ -1314,9 +1297,6 @@ namespace aisp.Common.DAL.Migrations
                         .IsRequired()
                         .HasMaxLength(37)
                         .HasColumnType("TEXT");
-
-                    b.Property<uint>("NamePlate")
-                        .HasColumnType("INTEGER");
 
                     b.Property<uint>("ParameterId")
                         .HasColumnType("INTEGER");
@@ -2114,17 +2094,6 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("CharacterHigh");
 
                     b.Navigation("CharacterLow");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
-                        .WithMany()
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>

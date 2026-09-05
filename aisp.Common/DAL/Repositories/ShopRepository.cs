@@ -194,6 +194,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                 npc.DateStartUtc = dateStartUtc;
                 npc.DateEndUtc = dateEndUtc;
                 npc.ModelId = npcRow.ModelId;
+                npc.NamePlate = npcRow.NamePlate ?? Npc.DefaultNamePlate;
                 npc.Name = npcRow.Name.Canonical;
                 npc.X = npcRow.X;
                 npc.Y = npcRow.Y;
@@ -310,6 +311,7 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
         public string? DateEndUtc { get; set; }
         public long NpcObjectId { get; set; }
         public long ModelId { get; set; }
+        public uint? NamePlate { get; set; }
         public LocalisedString Name { get; set; } = new();
         public float X { get; set; }
         public float Y { get; set; }

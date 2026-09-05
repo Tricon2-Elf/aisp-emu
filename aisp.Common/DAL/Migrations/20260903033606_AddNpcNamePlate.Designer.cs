@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aisp.Common.DAL;
 
@@ -10,9 +11,11 @@ using aisp.Common.DAL;
 namespace aisp.Common.DAL.Migrations
 {
     [DbContext(typeof(MainContext))]
-    partial class MainContextModelSnapshot : ModelSnapshot
+    [Migration("20260903033606_AddNpcNamePlate")]
+    partial class AddNpcNamePlate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -617,24 +620,6 @@ namespace aisp.Common.DAL.Migrations
                     b.HasIndex("TargetCharacterId", "Status");
 
                     b.ToTable("FriendRequests", (string)null);
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.Property<int>("CharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("Slot")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(61)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("CharacterId", "Slot");
-
-                    b.ToTable("FriendLinkTags", (string)null);
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
@@ -2114,17 +2099,6 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("CharacterHigh");
 
                     b.Navigation("CharacterLow");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
-                        .WithMany()
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>

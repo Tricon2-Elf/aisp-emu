@@ -1776,10 +1776,10 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
-        "send_get_avatar_profile_data",
+        "send_user_status_update",
         ImplementationState.Implemented
     )]
-    AvatarProfileGetDataRequest = 0xCF9A,
+    UserStatusUpdateRequest = 0xCF9A,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4177,8 +4177,16 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_notify_update_nameplate",
+        ImplementationState.Implemented
+    )]
+    NotifyUpdateNameplate = 0x64AD,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_notify_user_status_update",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyUserStatusUpdate = 0x7016,
 
@@ -4706,7 +4714,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_user_status_update_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     UserStatusUpdateResponse = 0xD824,
 

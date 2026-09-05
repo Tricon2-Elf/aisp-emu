@@ -80,7 +80,7 @@ public sealed class AreaRoboMyProfileHandlerTests
                 Assert.Equal(editedProfile.AvatarDesc, stored.ProfileDescription);
                 Assert.Equal(0x11223344u, stored.ProfileUnknownDword04);
                 Assert.Equal(0x55667788u, stored.ProfileUnknownDword08);
-                Assert.Equal(44u, stored.JobId);
+                Assert.Equal(44u, stored.NamePlate);
                 Assert.True(stored.UpdatedAt > previousUpdatedAt);
             }
 
@@ -190,7 +190,7 @@ public sealed class AreaRoboMyProfileHandlerTests
             Assert.Equal("Secret like", stored.Like1);
             Assert.Equal("Secret profile", stored.ProfileDescription);
             Assert.Equal(123u, stored.ProfileUnknownDword04);
-            Assert.Equal(44u, stored.JobId);
+            Assert.Equal(44u, stored.NamePlate);
         }
         finally
         {
@@ -299,14 +299,14 @@ public sealed class AreaRoboMyProfileHandlerTests
         DbContextOptions<MainContext> options,
         int characterId,
         uint roboId,
-        uint jobId
+        uint namePlate
     )
     {
         var objectId = RoboRepository.GetObjectId(checked((uint)characterId), roboId);
         var character = new CharaData(objectId, 1002011, $"Robo {roboId}")
         {
             Visual = new CharaVisual(BloodType.A, 1, 1, 0, objectId, 0, 10930010),
-            JobId = jobId,
+            NamePlate = namePlate,
         };
         await using var db = new MainContext(options);
         await new RoboRepository(db).UpsertAsync(

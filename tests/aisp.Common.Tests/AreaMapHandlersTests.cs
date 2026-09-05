@@ -2839,62 +2839,6 @@ public class AreaMapHandlersTests
         Assert.Empty(sameAreaPeer.Sent);
     }
 
-    [Fact]
-    public async Task AvatarProfileGetDataHandler_OnlyResolvesTargetsInSameMapAndChannel()
-    {
-        var state = new SharedState();
-        var requester = CreateSession(
-            CreateUserWithCharacter(1, 6001, "profile-user", "Profile User", 10990100),
-            10990100,
-            1
-        );
-        var visibleTarget = CreateSession(
-            CreateUserWithCharacter(
-                2,
-                6002,
-                "visible-target",
-                "Visible",
-                10990100,
-                like1: "Apples"
-            ),
-            10990100,
-            1
-        );
-        var hiddenTarget = CreateSession(
-            CreateUserWithCharacter(3, 6003, "hidden-target", "Hidden", 10990100, like1: "Secret"),
-            10990100,
-            2
-        );
-
-        state.RegisterClient(ServerType.Area, requester);
-        state.RegisterClient(ServerType.Area, visibleTarget);
-        state.RegisterClient(ServerType.Area, hiddenTarget);
-
-        var handler = new AreaAvatarProfileGetDataHandler(state);
-
-        await handler.HandleAsync(
-            BuildUIntPayload(visibleTarget.CharacterId),
-            requester,
-            TestContext.Current.CancellationToken
-        );
-        var visibleReader = new PacketReader(requester.Sent[^1].Payload);
-        Assert.Equal(0u, visibleReader.ReadUInt());
-        Assert.Equal(visibleTarget.CharacterId, visibleReader.ReadUInt());
-        Assert.Equal("Apples", visibleReader.ReadFixedString(31, "shift_jis"));
-
-        requester.Sent.Clear();
-
-        await handler.HandleAsync(
-            BuildUIntPayload(hiddenTarget.CharacterId),
-            requester,
-            TestContext.Current.CancellationToken
-        );
-        var hiddenReader = new PacketReader(requester.Sent[^1].Payload);
-        Assert.Equal(0u, hiddenReader.ReadUInt());
-        Assert.Equal(hiddenTarget.CharacterId, hiddenReader.ReadUInt());
-        Assert.Equal(string.Empty, hiddenReader.ReadFixedString(31, "shift_jis"));
-    }
-
     private static CapturingPlayerSession CreateSession(
         User user,
         uint mapId,

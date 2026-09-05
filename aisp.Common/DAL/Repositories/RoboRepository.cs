@@ -547,7 +547,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         entity.Hairstyle = visual.Hairstyle;
         entity.ParameterId = character.CharacterParameterId;
 
-        entity.JobId = character.JobId;
+        entity.NamePlate = character.NamePlate;
 
         tpsBattleData.ActionReferenceX = character.TpsActionReferenceX;
         tpsBattleData.ActionReferenceY = character.TpsActionReferenceY;
@@ -744,7 +744,7 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
             CharacterParameterId = entity.ParameterId,
             TpsActionReferenceX = tpsBattleData.ActionReferenceX,
             TpsActionReferenceY = tpsBattleData.ActionReferenceY,
-            JobId = entity.JobId,
+            NamePlate = entity.NamePlate,
             TpsActionProfileId = tpsBattleData.ActionProfileId,
             CollisionRadius = tpsBattleData.CollisionRadius,
             TpsActionVerticalRange = tpsBattleData.ActionVerticalRange,

@@ -25,6 +25,12 @@ public class Character
     public string LikeDesc3 { get; set; } = string.Empty;
     public string AvatarDesc { get; set; } = string.Empty;
 
+    /// <summary>The one-line status shown with the avatar (set from the status window with send_user_status_update).</summary>
+    public string UserStatusText { get; set; } = string.Empty;
+
+    /// <summary>Status icon / colour choice that goes with <see cref="UserStatusText"/>.</summary>
+    public uint UserStatusIconId { get; set; }
+
     public int UserId { get; set; }
     public User User { get; set; } = default!;
 

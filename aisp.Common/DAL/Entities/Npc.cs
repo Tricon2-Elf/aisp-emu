@@ -18,6 +18,12 @@ public class Npc
     public DateTime DateEndUtc { get; set; } = DateTime.MaxValue;
     public long NpcObjectId { get; set; }
     public long ModelId { get; set; }
+
+    /// <summary>The purple plate the original service drew behind NPC names (verified live: variant 4 is purple, 5 blue).</summary>
+    public const uint DefaultNamePlate = 4;
+
+    /// <summary>Name plate variant behind the NPC's name (CharaData.NamePlate: 0 none, 1-6 and 0xFFFFFFFF the client's role plates, 4 being its ordinary-NPC plate); seeds default to <see cref="DefaultNamePlate"/>.</summary>
+    public uint NamePlate { get; set; } = DefaultNamePlate;
     public string Name { get; set; } = string.Empty;
     public float X { get; set; }
     public float Y { get; set; }

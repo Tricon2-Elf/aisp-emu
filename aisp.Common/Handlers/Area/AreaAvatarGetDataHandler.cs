@@ -55,7 +55,10 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger)
             ItemEntityMapper.ResolveEquipSocket
         );
 
-        var avatarData = new AvatarData((uint)cha.Id, cd);
+        var avatarData = new AvatarData((uint)cha.Id, cd)
+        {
+            UserStatus = AreasvEnterHandler.UserStatusOf(cha),
+        };
         logger.LogInformation(
             "Sending AvatarNotifyData to {ConnectionId} for character {CharacterId}",
             session.ConnectionId,

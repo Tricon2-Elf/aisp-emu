@@ -43,7 +43,7 @@ public class RoboRepositoryTests
                 Assert.Equal(7, entity.CharacterId);
                 Assert.Equal(2u, entity.RoboId);
                 Assert.Equal("Persistent Robo", entity.Name);
-                Assert.Equal(44u, entity.JobId);
+                Assert.Equal(44u, entity.NamePlate);
                 Assert.Equal(21u, entity.TpsBattleData.ActionProfileId);
                 Assert.Equal(24u, entity.TpsBattleData.HitPointsCurrent);
                 Assert.Equal(30, entity.Equipment.Count);
@@ -63,7 +63,7 @@ public class RoboRepositoryTests
             Assert.Equal(2u, loaded.RoboId);
             Assert.Equal(7u, loaded.OwnerAvatarId);
             Assert.Equal("Persistent Robo", loaded.Character.Name);
-            Assert.Equal(44u, loaded.Character.JobId);
+            Assert.Equal(44u, loaded.Character.NamePlate);
             Assert.Equal(0u, loaded.Character.Map.ChannelId);
             Assert.Equal(0u, loaded.Character.Map.MapId);
             Assert.Equal(0u, loaded.Character.Map.MapSerialId);
@@ -347,7 +347,7 @@ public class RoboRepositoryTests
             },
             TpsActionReferenceX = 18.5f,
             TpsActionReferenceY = 19.5f,
-            JobId = 44,
+            NamePlate = 44,
             TpsActionProfileId = 21,
             CollisionRadius = 22.5f,
             TpsActionVerticalRange = 23.5f,
