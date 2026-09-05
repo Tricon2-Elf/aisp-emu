@@ -30,10 +30,10 @@ internal enum CharacterEquipmentSlotIndex : byte
     Armband = 22,
     WristCharm = 23,
     LeftShoulderBand = 24,
-    Wings = 26,
+    Tail = 25,
     LeftShoulderBag = 26,
-    Tail = 27,
-    KigurumiHead = 28,
+    Wings = 27,
+    KigurumiHead = 29,
 }
 
 internal static class EquipSlotMapper

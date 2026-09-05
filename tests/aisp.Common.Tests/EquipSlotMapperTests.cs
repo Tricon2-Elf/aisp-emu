@@ -26,11 +26,24 @@ public class EquipSlotMapperTests
     [InlineData(10899999u, 23u, (byte)CharacterEquipmentSlotIndex.WristCharm)]
     [InlineData(11600060u, 12u, (byte)CharacterEquipmentSlotIndex.Necklace)]
     [InlineData(11600010u, 0u, (byte)CharacterEquipmentSlotIndex.Necklace)]
-    [InlineData(11700020u, 14u, (byte)CharacterEquipmentSlotIndex.HairRibbon)]
-    [InlineData(11700030u, 10u, (byte)CharacterEquipmentSlotIndex.Headband)]
-    [InlineData(11800030u, 11u, (byte)CharacterEquipmentSlotIndex.Glasses)]
+    [InlineData(11700020u, 14u, (byte)CharacterEquipmentSlotIndex.Hat)]
+    [InlineData(11700030u, 10u, (byte)CharacterEquipmentSlotIndex.Hat)]
+    [InlineData(11800030u, 11u, (byte)CharacterEquipmentSlotIndex.Hat)]
+    [InlineData(11800010u, 0u, (byte)CharacterEquipmentSlotIndex.Hat)]
     [InlineData(11200000u, 0u, (byte)CharacterEquipmentSlotIndex.RightHandbag)]
     [InlineData(11200000u, 26u, (byte)CharacterEquipmentSlotIndex.LeftShoulderBag)]
+    [InlineData(11400001u, 26u, (byte)CharacterEquipmentSlotIndex.Wings)]
+    [InlineData(11400013u, 0u, (byte)CharacterEquipmentSlotIndex.Wings)]
+    [InlineData(11400150u, 26u, (byte)CharacterEquipmentSlotIndex.Wings)]
+    [InlineData(11400020u, 26u, (byte)CharacterEquipmentSlotIndex.LeftShoulderBag)]
+    [InlineData(
+        11400020u,
+        (uint)WardrobeSocketBit.Wings,
+        (byte)CharacterEquipmentSlotIndex.LeftShoulderBag
+    )]
+    [InlineData(11400070u, 27u, (byte)CharacterEquipmentSlotIndex.Tail)]
+    [InlineData(11400070u, (uint)WardrobeSocketBit.Wings, (byte)CharacterEquipmentSlotIndex.Tail)]
+    [InlineData(11400110u, 0u, (byte)CharacterEquipmentSlotIndex.Tail)]
     [InlineData(12200000u, 60u, (byte)CharacterEquipmentSlotIndex.Handheld)]
     [InlineData(10900000u, 51u, (byte)CharacterEquipmentSlotIndex.Wig)]
     [InlineData(10900000u, (uint)WardrobeSocketBit.Wig, (byte)CharacterEquipmentSlotIndex.Wig)]
@@ -60,14 +73,26 @@ public class EquipSlotMapperTests
         Assert.True(EquipSlotMapper.TryResolveSlotIndex(11700020, 14, out var hairRibbon));
         Assert.True(EquipSlotMapper.TryResolveSlotIndex(11800030, 11, out var mask));
         Assert.True(EquipSlotMapper.TryResolveSlotIndex(11200000, 0, out var bag));
+        Assert.True(EquipSlotMapper.TryResolveSlotIndex(11400020, 26, out var backpack));
+        Assert.True(EquipSlotMapper.TryResolveSlotIndex(11400001, 26, out var wings));
+        Assert.True(EquipSlotMapper.TryResolveSlotIndex(11400150, 26, out var wingsFrom150));
+        Assert.True(EquipSlotMapper.TryResolveSlotIndex(11400070, 26, out var tail));
         Assert.True(EquipSlotMapper.TryResolveSlotIndex(12200000, 60, out var handheld));
 
         Assert.Equal(wig, wigFromBackpackSocket);
         Assert.Equal(14, necklace);
         Assert.Equal(necklace, necktie);
-        Assert.Equal(16, hairRibbon);
-        Assert.Equal(12, mask);
+        Assert.Equal((byte)CharacterEquipmentSlotIndex.Hat, hairRibbon);
+        Assert.Equal((byte)CharacterEquipmentSlotIndex.Hat, mask);
+        Assert.Equal(hairRibbon, mask);
         Assert.Equal(19, bag);
+        Assert.Equal(26, backpack);
+        Assert.Equal(27, wings);
+        Assert.Equal(wings, wingsFrom150);
+        Assert.Equal(25, tail);
+        Assert.NotEqual(backpack, wings);
+        Assert.NotEqual(wings, tail);
+        Assert.NotEqual(backpack, tail);
         Assert.Equal(19, handheld);
         Assert.Equal(13, wig);
         Assert.Equal(12, glasses);
@@ -83,8 +108,9 @@ public class EquipSlotMapperTests
         Assert.Equal(1u << 12, ItemEntityMapper.ResolveBodyspot(10800000, 11));
         Assert.Equal(1u << 14, ItemEntityMapper.ResolveBodyspot(11600060, 12));
         Assert.Equal(1u << 14, ItemEntityMapper.ResolveBodyspot(11600010, 0));
-        Assert.Equal(1u << 16, ItemEntityMapper.ResolveBodyspot(11700020, 14));
-        Assert.Equal(1u << 12, ItemEntityMapper.ResolveBodyspot(11800030, 11));
+        Assert.Equal((uint)WardrobeSocketBit.Head, ItemEntityMapper.ResolveBodyspot(11700020, 14));
+        Assert.Equal((uint)WardrobeSocketBit.Head, ItemEntityMapper.ResolveBodyspot(11800030, 11));
+        Assert.Equal((uint)WardrobeSocketBit.Head, ItemEntityMapper.ResolveBodyspot(10000050));
         Assert.Equal(1u << 19, ItemEntityMapper.ResolveBodyspot(11200000, 0));
         Assert.Equal(1u << 18, ItemEntityMapper.ResolveBodyspot(10800080, 15));
         Assert.Equal(1u << 17, ItemEntityMapper.ResolveBodyspot(10800150, 16));
