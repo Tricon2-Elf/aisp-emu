@@ -260,11 +260,13 @@ public sealed class AreaNicotvHandlersTests
 
             await using var db = new MainContext(options);
             var repository = new NicotvRepository(db);
+            // The TV starts switched off: tuning it is done without an open (open/close is the
+            // power toggle alone), and the client shows the channel at once.
             var nicotv = Assert.IsType<Nicotv>(
                 await repository.UpdateForFurnitureAsync(
                     42,
                     2,
-                    new NicotvData(playbackState: NicotvPlaybackState.Playing),
+                    new NicotvData(playbackState: NicotvPlaybackState.Closed),
                     ct
                 )
             );
@@ -294,6 +296,7 @@ public sealed class AreaNicotvHandlersTests
             Assert.Equal(PacketType.NotifyNicotvSetChannel, notification.Type);
             Assert.Equal(BuildUIntPayload(nicotvId, 1), notification.Payload);
             Assert.Equal(1u, nicotv.ChannelId);
+            Assert.Equal(NicotvPlaybackState.Playing, nicotv.PlaybackState);
 
             actor.Sent.Clear();
             peer.Sent.Clear();
@@ -439,6 +442,9 @@ public sealed class AreaNicotvHandlersTests
             );
             Assert.Equal(PacketType.NotifyNicotvSetMovie, Assert.Single(peer.Sent).Type);
             Assert.Equal("sm9", nicotv.MovieId);
+            // Setting a movie starts it: the TV was paused, and the client plays the new movie
+            // without any open or play request of its own.
+            Assert.Equal(NicotvPlaybackState.Playing, nicotv.PlaybackState);
 
             // Setting the movie also starts that room's shared timeline for it at zero. The
             // screen page round-trips the n: tag the handler appended, so that is how a

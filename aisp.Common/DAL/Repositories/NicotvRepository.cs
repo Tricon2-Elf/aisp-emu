@@ -145,6 +145,9 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         // channel clears it, and re-entering the room shows the tuned channel.
         nicotv.ChannelId = channelId;
         nicotv.MovieId = "";
+        // Tuning implies the TV is on: the client shows the channel at once and sends no open
+        // for it (open/close is the power toggle alone), so the stored state follows.
+        nicotv.PlaybackState = NicotvPlaybackState.Playing;
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;
@@ -187,6 +190,8 @@ public sealed class NicotvRepository(MainContext db) : INicotvRepository
         // Exclusive with a channel selection; see the matching note in SetChannelAsync.
         nicotv.MovieId = movieId;
         nicotv.ChannelId = 0;
+        // Same as SetChannelAsync: setting a movie turns the TV on and starts it playing.
+        nicotv.PlaybackState = NicotvPlaybackState.Playing;
         nicotv.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return nicotv;
