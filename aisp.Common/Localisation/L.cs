@@ -78,6 +78,11 @@ public static class L
         public static readonly LocKey SlurRejected = new("chat.slur_rejected");
     }
 
+    public static class FriendLink
+    {
+        public static readonly LocKey NoComments = new("friend_link.placard.no_comments");
+    }
+
     public static class Maintenance
     {
         public static readonly LocKey Warning = new("maintenance.warning");

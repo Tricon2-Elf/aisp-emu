@@ -70,7 +70,7 @@ public sealed class FriendLinkPlacardHandlerTests
 
         var logRequest = new PacketWriter();
         logRequest.Write(placard.PlacardId);
-        await new GetPlacardCommentLogHandler(state).HandleAsync(
+        await new GetPlacardCommentLogHandler(state, TestTextLocaliser.English).HandleAsync(
             logRequest.ToBytes(),
             visitorMsg,
             ct

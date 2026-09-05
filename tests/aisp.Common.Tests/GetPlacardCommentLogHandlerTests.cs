@@ -1,5 +1,6 @@
 using aisp.Common.Game;
 using aisp.Common.Handlers.Msg;
+using aisp.Common.Localisation;
 using aisp.Common.Tests.Support;
 using aisp.Network;
 using aisp.Network.Packets.Msg;
@@ -8,8 +9,15 @@ namespace aisp.Common.Tests;
 
 public sealed class GetPlacardCommentLogHandlerTests
 {
-    [Fact]
-    public async Task EmptyLog_ReturnsNoCommentsMessageWithoutDefaultAuthor()
+    [Theory]
+    [InlineData(GameLanguage.Japanese, "コメントはありません。")]
+    [InlineData(GameLanguage.English, "No comments")]
+    [InlineData(GameLanguage.ChineseSimplified, "暂无评论")]
+    [InlineData(GameLanguage.ChineseTraditional, "暫無評論")]
+    public async Task EmptyLog_ReturnsLocalisedNoCommentsMessageWithoutDefaultAuthor(
+        GameLanguage language,
+        string expected
+    )
     {
         var state = new SharedState();
         var (placard, _) = state.SetFriendLinkPlacard(
@@ -25,11 +33,11 @@ public sealed class GetPlacardCommentLogHandlerTests
             "Anime",
             default
         );
-        var session = new CapturingPlayerSession { UserId = 4 };
+        var session = new CapturingPlayerSession { UserId = 4, Language = language };
         var request = new PacketWriter();
         request.Write(placard.PlacardId);
 
-        await new GetPlacardCommentLogHandler(state).HandleAsync(
+        await new GetPlacardCommentLogHandler(state, TestTextLocaliser.English).HandleAsync(
             request.ToBytes(),
             session,
             TestContext.Current.CancellationToken
@@ -45,6 +53,6 @@ public sealed class GetPlacardCommentLogHandlerTests
         Assert.Equal(placard.PlacardId, reader.ReadUInt());
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(string.Empty, reader.ReadFixedString(PlacardCommentLogEntry.AuthorNameBytes));
-        Assert.Equal("No comments", reader.ReadFixedString(PlacardCommentLogEntry.CommentBytes));
+        Assert.Equal(expected, reader.ReadFixedString(PlacardCommentLogEntry.CommentBytes));
     }
 }

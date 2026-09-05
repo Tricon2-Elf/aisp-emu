@@ -41,6 +41,12 @@
     "zh-Hans": "该消息未发送。请不要使用歧视性用语。",
     "zh-Hant": "該訊息未發送。請不要使用歧視性用語。"
   },
+  "friend_link.placard.no_comments": {
+    "ja": "コメントはありません。",
+    "en": "No comments",
+    "zh-Hans": "暂无评论",
+    "zh-Hant": "暫無評論"
+  },
   "maintenance.warning": {
     "ja": "サーバーメンテナンスまであと{0}分です。切断されます。",
     "en": "Server maintenance in {0} minute(s). You will be disconnected.",

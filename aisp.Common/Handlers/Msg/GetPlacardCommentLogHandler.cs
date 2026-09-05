@@ -1,11 +1,12 @@
 using aisp.Common.Game;
+using aisp.Common.Localisation;
 using aisp.Network;
 using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
 /// <summary>Completes the placard interaction flow when no comments have been posted yet.</summary>
-public sealed class GetPlacardCommentLogHandler(SharedState state)
+public sealed class GetPlacardCommentLogHandler(SharedState state, ITextLocaliser localiser)
     : IPacketHandler,
         IRequiresAuthenticatedSession
 {
@@ -29,7 +30,13 @@ public sealed class GetPlacardCommentLogHandler(SharedState state)
         var comments = placard?.GetComments() ?? [];
         IReadOnlyList<PlacardCommentLogEntry> entries =
             comments.Count == 0
-                ? [new PlacardCommentLogEntry(string.Empty, "No comments")]
+                ?
+                [
+                    new PlacardCommentLogEntry(
+                        string.Empty,
+                        localiser.Get(session, L.FriendLink.NoComments)
+                    ),
+                ]
                 :
                 [
                     .. comments.Select(comment => new PlacardCommentLogEntry(
