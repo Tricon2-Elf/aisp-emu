@@ -15,7 +15,8 @@ public sealed class ShinjuRegistrationServerScript(
     IMapRepository mapRepository,
     ServerScriptSession serverScriptSession,
     ITextLocaliser localiser,
-    ILogger<ShinjuRegistrationServerScript> logger
+    ILogger<ShinjuRegistrationServerScript> logger,
+    IQuestService? quests = null
 ) : IServerScript
 {
     private static readonly uint[] FranchiseHubMapIds = [10010100, 10020100, 10030100];
@@ -52,6 +53,8 @@ public sealed class ShinjuRegistrationServerScript(
         }
 
         session.Character = character;
+        if (quests is not null)
+            await quests.CompleteAsync(session, QuestIds.TalkToShinju, ct: ct);
 
         if (
             await characterEventRepository.HasCompletedAsync((int)session.CharacterId, EventKey, ct)

@@ -73,6 +73,8 @@ internal class Program
         builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
         builder.Services.AddScoped<ICharacterEventRepository, CharacterEventRepository>();
+        builder.Services.AddScoped<IQuestRepository, QuestRepository>();
+        builder.Services.AddScoped<IQuestService, QuestService>();
         builder.Services.AddScoped<IRoboRepository, RoboRepository>();
         builder.Services.AddScoped<IMyRoomRepository, MyRoomRepository>();
         builder.Services.AddScoped<ICircleRepository, CircleRepository>();
@@ -391,6 +393,11 @@ internal class Program
                 db,
                 Path.Combine(seedDir, "npcs.json"),
                 app.Logger
+            );
+            await QuestRepository.SeedQuestsIfEmptyAsync(db, Path.Combine(seedDir, "quests.json"));
+            await QuestRepository.EnsureSeedQuestsPresentAsync(
+                db,
+                Path.Combine(seedDir, "quests.json")
             );
             await LocalisationCatalogSeeder.SeedFromDirectoryAsync(db, seedDir, app.Logger);
             var localiser = scope.ServiceProvider.GetRequiredService<ITextLocaliser>();

@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": {
+      "ja": "シンジュに話しかけよう",
+      "en": "Talk to Shinju"
+    },
+    "shortName": {
+      "ja": "シンジュ",
+      "en": "Shinju"
+    },
+    "note": {
+      "ja": "外神田ビルの中にいるシンジュに話しかけよう。",
+      "en": "Go talk to Shinju inside the Sotokanda Building."
+    },
+    "location": {
+      "ja": "外神田ビルの中",
+      "en": "Sotokanda Building"
+    },
+    "target": {
+      "ja": "シンジュに話しかける",
+      "en": "Talk to Shinju"
+    },
+    "chapter": 1,
+    "restSec": 0,
+    "targetRequired": 1,
+    "autoStartOnConnect": true
+  }
+]

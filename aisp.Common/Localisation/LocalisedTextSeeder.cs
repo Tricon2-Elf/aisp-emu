@@ -43,6 +43,48 @@ public static class LocalisedTextSeeder
         await db.SaveChangesAsync(ct);
     }
 
+    public static async Task UpsertValuesAsync(
+        MainContext db,
+        IEnumerable<(string Key, GameLanguage Language, string Value)> rows,
+        CancellationToken ct = default
+    )
+    {
+        var incoming = rows.Where(row => !string.IsNullOrWhiteSpace(row.Key))
+            .DistinctBy(row => (row.Key, row.Language))
+            .ToList();
+        if (incoming.Count == 0)
+            return;
+
+        var keys = incoming.Select(row => row.Key).Distinct().ToList();
+        var existing = await db.LocalisedTexts.Where(row => keys.Contains(row.Key)).ToListAsync(ct);
+        var byKey = existing.ToDictionary(row => (row.Key, row.Language));
+        var changed = false;
+        foreach (var row in incoming)
+        {
+            if (byKey.TryGetValue((row.Key, row.Language), out var current))
+            {
+                if (current.Value == row.Value)
+                    continue;
+                current.Value = row.Value;
+                changed = true;
+                continue;
+            }
+
+            db.LocalisedTexts.Add(
+                new LocalisedText
+                {
+                    Key = row.Key,
+                    Language = row.Language,
+                    Value = row.Value,
+                }
+            );
+            changed = true;
+        }
+
+        if (changed)
+            await db.SaveChangesAsync(ct);
+    }
+
     public static IEnumerable<(string Key, GameLanguage Language, string Value)> FromLocalised(
         string key,
         LocalisedString? value

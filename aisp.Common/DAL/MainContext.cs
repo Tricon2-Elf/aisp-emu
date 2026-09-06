@@ -28,6 +28,9 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<RoboDistributedStatusPoint> RoboDistributedStatusPoints =>
         Set<RoboDistributedStatusPoint>();
     public DbSet<CharacterEventStatus> CharacterEventStatuses => Set<CharacterEventStatus>();
+    public DbSet<Quest> Quests => Set<Quest>();
+    public DbSet<CharacterQuestWork> CharacterQuestWorks => Set<CharacterQuestWork>();
+    public DbSet<CharacterQuestHistory> CharacterQuestHistories => Set<CharacterQuestHistory>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<MyRoomFurniture> MyRoomFurniture => Set<MyRoomFurniture>();
     public DbSet<Nicotv> Nicotvs => Set<Nicotv>();
@@ -55,7 +58,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<ReportTicket> ReportTickets => Set<ReportTicket>();
     public DbSet<ReportTicketPlayer> ReportTicketPlayers => Set<ReportTicketPlayer>();
-    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages => Set<ReportTicketChatMessage>();
+    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages =>
+        Set<ReportTicketChatMessage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -675,7 +679,12 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasIndex(x => new { x.UserId, x.CreatedAt });
             e.HasIndex(x => new { x.Kind, x.CreatedAt });
             e.HasIndex(x => new { x.CircleId, x.CreatedAt });
-            e.HasIndex(x => new { x.MapId, x.ChannelId, x.CreatedAt });
+            e.HasIndex(x => new
+            {
+                x.MapId,
+                x.ChannelId,
+                x.CreatedAt,
+            });
         });
 
         b.Entity<ReportTicket>(e =>
@@ -687,7 +696,9 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.Reason).HasMaxLength(1024).IsRequired();
             e.Property(x => x.MapName).HasMaxLength(128).IsRequired();
             e.Property(x => x.ResolutionAction).HasMaxLength(1024);
-            e.Property(x => x.Status).HasConversion<byte>().HasDefaultValue(ReportTicketStatus.Open);
+            e.Property(x => x.Status)
+                .HasConversion<byte>()
+                .HasDefaultValue(ReportTicketStatus.Open);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.Status, x.CreatedAt });
@@ -718,6 +729,51 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.ReportTicketId);
             e.HasIndex(x => new { x.ReportTicketId, x.CreatedAt });
+        });
+
+        b.Entity<Quest>(e =>
+        {
+            e.ToTable("Quests");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.Title).HasMaxLength(193).IsRequired();
+            e.Property(x => x.ShortName).HasMaxLength(37).IsRequired();
+            e.Property(x => x.Note).HasMaxLength(769).IsRequired();
+            e.Property(x => x.LocationName).HasMaxLength(97).IsRequired();
+            e.Property(x => x.DefaultTargetName).HasMaxLength(37).IsRequired();
+            e.Property(x => x.DefaultChapter).HasDefaultValue((ushort)1);
+            e.Property(x => x.DefaultTargetRequired).HasDefaultValue((ushort)1);
+            e.Property(x => x.AutoStartOnConnect).HasDefaultValue(false);
+        });
+
+        b.Entity<CharacterQuestWork>(e =>
+        {
+            e.ToTable("CharacterQuestWorks");
+            e.HasKey(x => new { x.CharacterId, x.QuestId });
+            e.HasOne(x => x.Character)
+                .WithMany()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Quest)
+                .WithMany()
+                .HasForeignKey(x => x.QuestId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.CharacterId);
+        });
+
+        b.Entity<CharacterQuestHistory>(e =>
+        {
+            e.ToTable("CharacterQuestHistories");
+            e.HasKey(x => new { x.CharacterId, x.QuestId });
+            e.HasOne(x => x.Character)
+                .WithMany()
+                .HasForeignKey(x => x.CharacterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Quest)
+                .WithMany()
+                .HasForeignKey(x => x.QuestId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.CharacterId);
         });
     }
 }

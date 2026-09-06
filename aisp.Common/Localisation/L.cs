@@ -78,6 +78,19 @@ public static class L
         public static readonly LocKey SlurRejected = new("chat.slur_rejected");
     }
 
+    public static class Quest
+    {
+        public static LocKey Title(int questId) => new($"quest.{questId}.title");
+
+        public static LocKey ShortName(int questId) => new($"quest.{questId}.short_name");
+
+        public static LocKey Note(int questId) => new($"quest.{questId}.note");
+
+        public static LocKey Location(int questId) => new($"quest.{questId}.location");
+
+        public static LocKey Target(int questId) => new($"quest.{questId}.target");
+    }
+
     public static class FriendLink
     {
         public static readonly LocKey NoComments = new("friend_link.placard.no_comments");

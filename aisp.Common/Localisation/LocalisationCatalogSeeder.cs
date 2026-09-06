@@ -32,6 +32,7 @@ public static class LocalisationCatalogSeeder
         CollectNpcs(Path.Combine(seedDirectory, "npcs.json"), rows, logger);
         CollectShops(Path.Combine(seedDirectory, "starterShop.json"), rows, logger);
         CollectShops(Path.Combine(seedDirectory, "furnitureShop.json"), rows, logger);
+        CollectQuests(Path.Combine(seedDirectory, "quests.json"), rows, logger);
         CollectStandalone(Path.Combine(seedDirectory, "localisation.json"), rows, logger);
         return rows;
     }
@@ -112,6 +113,29 @@ public static class LocalisationCatalogSeeder
                 continue;
             rows.AddRange(LocalisedTextSeeder.FromLocalised(L.World.Name(code), name));
             AddField(rows, L.World.Description(code), item, "description");
+        }
+    }
+
+    private static void CollectQuests(
+        string path,
+        List<(string Key, GameLanguage Language, string Value)> rows,
+        ILogger? logger
+    )
+    {
+        if (!TryReadArray(path, logger, out var array))
+            return;
+        foreach (var item in array)
+        {
+            if (
+                !item.TryGetProperty("id", out var idProperty)
+                || !idProperty.TryGetInt32(out var id)
+            )
+                continue;
+            AddField(rows, L.Quest.Title(id), item, "title");
+            AddField(rows, L.Quest.ShortName(id), item, "shortName");
+            AddField(rows, L.Quest.Note(id), item, "note");
+            AddField(rows, L.Quest.Location(id), item, "location");
+            AddField(rows, L.Quest.Target(id), item, "target");
         }
     }
 

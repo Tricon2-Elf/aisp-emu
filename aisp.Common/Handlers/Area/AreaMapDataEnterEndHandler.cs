@@ -10,7 +10,8 @@ namespace aisp.Common.Handlers.Area;
 public class AreaMapDataEnterEndHandler(
     ILogger<AreaMapDataEnterEndHandler> logger,
     ServerScriptDispatcher? serverScriptDispatcher = null,
-    SharedState? state = null
+    SharedState? state = null,
+    IQuestService? quests = null
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapDataEnterEndRequest;
@@ -43,6 +44,15 @@ public class AreaMapDataEnterEndHandler(
                 ct
             );
         }
+
+        // Always grant auto-start quests; only push started/target notifies on the first load
+        // after AreasvEnter so later map changes do not replay the "quest started" UI.
+        if (quests is not null)
+            await quests.OnPlayerConnectedAsync(
+                session,
+                ct,
+                pushTracker: session.NeedsPostLoadSelfAvatarNotify
+            );
 
         // Self avatar only here. Peer/robo presence waits for MapEnter so the client
         // finishes map load before remote avatars arrive (room-functions 2-player crash).
