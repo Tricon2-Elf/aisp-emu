@@ -1849,34 +1849,18 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
-        "send_get_quest_work",
-        ImplementationState.NotImplemented
+        "send_quest_get_work",
+        ImplementationState.Implemented
     )]
     QuestWorkGetRequest = 0xF582,
 
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
-        "send_get_quest_history",
-        ImplementationState.NotImplemented
+        "send_quest_get_history",
+        ImplementationState.Implemented
     )]
     QuestHistoryGetRequest = 0x4BED,
-
-    [PacketMetadata(
-        PacketServerType.Area,
-        PacketDirection.ServerToClient,
-        "recv_get_quest_work_r",
-        ImplementationState.NotImplemented
-    )]
-    QuestWorkGetResponse = 0x7162,
-
-    [PacketMetadata(
-        PacketServerType.Area,
-        PacketDirection.ServerToClient,
-        "recv_get_quest_history_r",
-        ImplementationState.NotImplemented
-    )]
-    QuestHistoryGetResponse = 0xF8D9,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -2610,7 +2594,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_event_quest_select_exec",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     EventQuestSelectExecNotify = 0x7640,
 
@@ -3060,7 +3044,7 @@ public enum PacketType : ushort
         "recv_item_try_removed",
         ImplementationState.NotImplemented
     )]
-    ItemTryRemovedNotify = 0xD46E,
+    ItemTryRemovedNotify = 0xD316,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4250,7 +4234,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_quest_ended",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     QuestEndedNotify = 0xB02C,
 
@@ -4258,7 +4242,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_quest_get_history_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     QuestGetHistoryResponse = 0x32A4,
 
@@ -4266,15 +4250,47 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_quest_get_work_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     QuestGetWorkResponse = 0x8D0C,
 
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_quest_started",
+        ImplementationState.Implemented
+    )]
+    QuestStartedNotify = 0xD46E,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_quest_add_history",
+        ImplementationState.Implemented
+    )]
+    QuestAddHistoryNotify = 0xA8E1,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_quest_set_target",
+        ImplementationState.Implemented
+    )]
+    QuestSetTargetNotify = 0xE279,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_quest_remove_target",
+        ImplementationState.Implemented
+    )]
+    QuestRemoveTargetNotify = 0xCB08,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_quest_update_target",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     QuestUpdateTargetNotify = 0x710C,
 
@@ -4282,9 +4298,17 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_quest_updated_chapter",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     QuestUpdatedChapterNotify = 0xA25C,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_quest_updated_restsec",
+        ImplementationState.Implemented
+    )]
+    QuestUpdatedRestsecNotify = 0x433A,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -5061,6 +5085,14 @@ public enum PacketType : ushort
         ImplementationState.Implemented
     )]
     EventSelectExecRRequest = 0x6439,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_event_quest_select_exec_r",
+        ImplementationState.Implemented
+    )]
+    EventQuestSelectExecRRequest = 0x84E1,
 
     [PacketMetadata(
         PacketServerType.Area,
