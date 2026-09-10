@@ -371,7 +371,8 @@ public sealed class DirectMapLinkTransitionService(
     public async Task<bool> TryTeleportToMapAsync(
         IPlayerSession session,
         uint destinationMapId,
-        CancellationToken ct = default
+        CancellationToken ct = default,
+        bool tpsFlag = false
     )
     {
         var character = await ResolveCharacterAsync(session, ct);
@@ -397,8 +398,9 @@ public sealed class DirectMapLinkTransitionService(
             channelId.Value,
             ct
         );
+        // tpsFlag forces a change-map even when already on the destination (re-enter TPS).
         var notifyChangeMap =
-            destinationMapId == session.MapId
+            destinationMapId == session.MapId && !tpsFlag
                 ? null
                 : CreateNotifyChangeMap(
                     (uint)channelId.Value,
@@ -406,6 +408,27 @@ public sealed class DirectMapLinkTransitionService(
                     destinationMap,
                     areaServerInfo
                 );
+
+        if (notifyChangeMap is not null && tpsFlag)
+        {
+            // Decompiled transition handling checks bit 0x2 on Flag; emu2 TPS entry sets Flag=2
+            // and uses the prototype escalator spawn instead of maps.json's wall-facing default.
+            notifyChangeMap = new NotifyChangeMap
+            {
+                ChannelId = notifyChangeMap.ChannelId,
+                MapId = notifyChangeMap.MapId,
+                MapSerialId = notifyChangeMap.MapSerialId,
+                RouteState = notifyChangeMap.RouteState,
+                PositionX = TpsPrototypeConstants.PlayerSpawnX,
+                PositionY = TpsPrototypeConstants.PlayerSpawnY,
+                PositionZ = TpsPrototypeConstants.PlayerSpawnZ,
+                Rotation = 0,
+                Animation = notifyChangeMap.Animation,
+                Flag = 2,
+                AreaServerInfo = notifyChangeMap.AreaServerInfo,
+                FadeFlag = notifyChangeMap.FadeFlag,
+            };
+        }
 
         await CompleteMapTransitionAsync(
             session,
@@ -542,7 +565,14 @@ public sealed class DirectMapLinkTransitionService(
 
         if (!needsTransition)
         {
-            await RelocateWithinAreaAsync(session, target.X, target.Y, target.Z, target.Rotation, ct);
+            await RelocateWithinAreaAsync(
+                session,
+                target.X,
+                target.Y,
+                target.Z,
+                target.Rotation,
+                ct
+            );
             return true;
         }
 
@@ -736,6 +766,9 @@ public sealed class DirectMapLinkTransitionService(
         session.HasMovedSinceMapLoad = false;
         session.IsMapTransitionPending = notifyChangeMap != null;
         session.PendingAreaMapSelection = null;
+        // Charadoll control is re-established after Flag=2 map load via EventGetTpsMode.
+        session.IsTpsMode = false;
+        session.LockedTargetId = 0;
 
         state.RegisterClient(ServerType.Area, session);
 

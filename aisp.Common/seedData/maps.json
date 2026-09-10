@@ -423,10 +423,10 @@
     "name": {
       "ja": "TPS(UDX)"
     },
-    "spawnX": -8696,
+    "spawnX": -9200,
     "spawnY": 0.1,
-    "spawnZ": -15219,
-    "spawnRotation": 180
+    "spawnZ": -14485,
+    "spawnRotation": 0
   },
   {
     "mapId": 40010100,
