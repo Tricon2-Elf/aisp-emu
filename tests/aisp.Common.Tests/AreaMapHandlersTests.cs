@@ -1857,6 +1857,7 @@ public class AreaMapHandlersTests
         Assert.Collection(
             session.Sent,
             packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type),
+            packet => Assert.Equal(PacketType.EventEndNotify, packet.Type),
             packet => Assert.Equal(PacketType.MoneyUpdatedAipoint, packet.Type),
             packet => Assert.Equal(PacketType.MoneyUpdatedNicopoint, packet.Type),
             packet =>
@@ -1906,6 +1907,7 @@ public class AreaMapHandlersTests
         Assert.Collection(
             session.Sent,
             packet => Assert.Equal(PacketType.MapDataEnterEndResponse, packet.Type),
+            packet => Assert.Equal(PacketType.EventEndNotify, packet.Type),
             packet => Assert.Equal(PacketType.MoneyUpdatedAipoint, packet.Type),
             packet => Assert.Equal(PacketType.MoneyUpdatedNicopoint, packet.Type)
         );
