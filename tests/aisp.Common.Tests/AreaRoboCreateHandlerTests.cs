@@ -78,8 +78,13 @@ public class AreaRoboCreateHandlerTests
             await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
             await using var db = new MainContext(options);
             var repository = new RoboRepository(db);
+            var characterRepository = new CharacterRepository(
+                db,
+                NullLogger<CharacterRepository>.Instance
+            );
             var handler = new AreaRoboCreateHandler(
                 repository,
+                characterRepository,
                 WordFilter.FromTerms(Array.Empty<string>()),
                 NullLogger<AreaRoboCreateHandler>.Instance
             );
@@ -119,8 +124,7 @@ public class AreaRoboCreateHandlerTests
 
             await handler.HandleAsync(payload, session, TestContext.Current.CancellationToken);
 
-            var sent = Assert.Single(session.Sent);
-            Assert.Equal(PacketType.RoboCreateResponse, sent.Type);
+            var sent = Assert.Single(session.Sent, p => p.Type == PacketType.RoboCreateResponse);
             Assert.Equal(sizeof(uint) + RoboData.WireSize, sent.Payload.Length);
             var reader = new PacketReader(sent.Payload);
             Assert.Equal(0u, reader.ReadUInt()); // result
@@ -154,8 +158,13 @@ public class AreaRoboCreateHandlerTests
             await TestDb.SeedCharacterAsync(options, 42, TestContext.Current.CancellationToken);
             await using var db = new MainContext(options);
             var repository = new RoboRepository(db);
+            var characterRepository = new CharacterRepository(
+                db,
+                NullLogger<CharacterRepository>.Instance
+            );
             var handler = new AreaRoboCreateHandler(
                 repository,
+                characterRepository,
                 WordFilter.FromTerms(["faggot"]),
                 NullLogger<AreaRoboCreateHandler>.Instance
             );

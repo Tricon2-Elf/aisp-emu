@@ -30,6 +30,7 @@ internal sealed class CapturingPlayerSession : IPlayerSession
     public bool HasMovedSinceMapLoad { get; set; }
     public bool IsMapTransitionPending { get; set; }
     public bool NeedsPostLoadSelfAvatarNotify { get; set; }
+    public bool IsTpsMode { get; set; }
     public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     public int? ActiveShopId { get; set; }
     public bool PendingEventEndAfterFade { get; set; }
@@ -40,6 +41,7 @@ internal sealed class CapturingPlayerSession : IPlayerSession
     public ServerScriptState? ServerScriptState { get; set; }
     public ISet<uint> AccompanyingRoboIds { get; } = new HashSet<uint>();
     public ISet<uint> VisibleRemoteRoboObjectIds { get; } = new HashSet<uint>();
+    public uint LockedTargetId { get; set; }
     public bool IsAuthenticated => User != null;
 
     public bool HangOnSend { get; set; }
