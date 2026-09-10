@@ -3,12 +3,14 @@ using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Data;
 using aisp.Network.Packets.Area;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Area;
 
 public class AreaRoboCreateHandler(
     IRoboRepository roboRepository,
+    ICharacterRepository characterRepository,
     IWordFilter wordFilter,
     ILogger<AreaRoboCreateHandler> logger
 ) : IPacketHandler, IRequiresAuthenticatedSession
@@ -79,6 +81,16 @@ public class AreaRoboCreateHandler(
             _ => 0
         );
 
+        // Water gun for TPS combat prototype.
+        while (chara.Equips.Count <= TpsPrototypeConstants.WaterGunEquipSlot)
+            chara.AddEquip(0, 0);
+        chara.Equips[TpsPrototypeConstants.WaterGunEquipSlot] = new ItemSlotInfo(
+            TpsPrototypeConstants.WaterGunItemId,
+            ItemEntityMapper.ResolveBodyspot((int)TpsPrototypeConstants.WaterGunItemId)
+        );
+
+        chara.Battle = CreateDefaultTpsBattleData();
+
         // The doll-making UI calls the newly created Robo after this response.
         var robo = new RoboData(roboId, chara, state: (uint)RoboState.Resting)
         {
@@ -86,7 +98,56 @@ public class AreaRoboCreateHandler(
         };
         await roboRepository.UpsertAsync(characterId, robo, ct);
 
+        try
+        {
+            await characterRepository.AddInventoryAsync(
+                characterId,
+                (int)TpsPrototypeConstants.WaterGunItemId,
+                1,
+                ct
+            );
+            await CharacterItemSync.SendInventoryItemAsync(
+                session,
+                (int)TpsPrototypeConstants.WaterGunItemId,
+                1,
+                ct
+            );
+        }
+        catch (DbUpdateException ex)
+        {
+            // Prototype water gun may be absent from the item catalog in empty/test DBs.
+            logger.LogWarning(
+                ex,
+                "Could not add water gun {ItemId} to inventory for character {CharacterId}",
+                TpsPrototypeConstants.WaterGunItemId,
+                characterId
+            );
+        }
+
         var response = new RoboCreateResponse(0, robo);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
+
+    private static TpsBattleData CreateDefaultTpsBattleData() =>
+        new()
+        {
+            HitPoints = new HitPointData
+            {
+                Current = TpsPrototypeConstants.DefaultHitPoints,
+                BaseMaximum = TpsPrototypeConstants.DefaultHitPoints,
+                MaximumHearts = 5,
+                CurrentHearts = 5,
+            },
+            Stamina = new StaminaData { Current = 100f, RecoveryRate = 10f },
+            Tank = new TankData
+            {
+                Current = TpsPrototypeConstants.DefaultTank,
+                BaseMaximum = TpsPrototypeConstants.DefaultTank,
+            },
+            BaseAbilities = new BattleAbilityValues { Values = [50, 50, 50, 50, 50] },
+            AbilityModifierType0 = new BattleAbilityValues
+            {
+                Values = [200090, 200000, 200020, 0, 0],
+            },
+        };
 }

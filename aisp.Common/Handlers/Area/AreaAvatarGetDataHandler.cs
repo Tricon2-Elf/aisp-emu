@@ -1,3 +1,4 @@
+using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Data;
@@ -6,9 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Area;
 
-public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class AreaAvatarGetDataHandler(
+    ILogger<AreaAvatarGetDataHandler> logger,
+    IRoboRepository? roboRepository = null
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.AvatarGetDataRequest;
     public PacketType ResponseType => PacketType.AvatarNotifyData;
@@ -22,7 +24,6 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger)
     {
         session.NeedsPostLoadSelfAvatarNotify = false;
 
-        var cha = session.User!.Characters.First();
         var pos = new MovementData(
             session.X,
             session.Y,
@@ -31,6 +32,41 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger)
             (MovementType)session.MovementTypeId
         );
 
+        if (
+            roboRepository is not null
+            && (
+                session.IsTpsMode
+                || (
+                    session.MapId >= TpsPrototypeConstants.MapIdMinInclusive
+                    && session.MapId < TpsPrototypeConstants.MapIdMaxExclusive
+                )
+            )
+        )
+        {
+            var myRobo = await roboRepository.GetAsync(checked((int)session.CharacterId), 1u, ct);
+            if (myRobo is not null)
+            {
+                var doll = TpsCombatEnter.BuildControllableCharadoll(session, myRobo, pos);
+                logger.LogInformation(
+                    "Sending TPS Charadoll AvatarNotifyData to {ConnectionId} for character {CharacterId}",
+                    session.ConnectionId,
+                    session.CharacterId
+                );
+                await session.SendAsync(
+                    ResponseType,
+                    new AvatarNotifyData(0, new AvatarData(session.CharacterId, doll)).ToBytes(),
+                    ct
+                );
+                return;
+            }
+
+            logger.LogWarning(
+                "TPS map/mode but Charadoll missing for character {CharacterId}; falling back to avatar",
+                session.CharacterId
+            );
+        }
+
+        var cha = session.User!.Characters.First();
         var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name)
         {
             Map = new CharacterMapData
