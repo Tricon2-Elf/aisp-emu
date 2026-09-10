@@ -90,6 +90,45 @@ public class CmdExecHandler(
             return;
         }
 
+        if (cmd is "tps")
+        {
+            var areaClient = ResolveAreaClient(session);
+            if (areaClient == null || areaClient.CharacterId == 0)
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: tps requires an active area session for user {UserId}",
+                    session.User?.Id ?? session.UserId
+                );
+                return;
+            }
+
+            const uint destinationMapId = TpsPrototypeConstants.TpsUdxMapId;
+            logger.LogInformation(
+                "CmdExecHandler: teleporting user {UserId} (character {CharacterId}) to TPS map {MapId}",
+                session.User?.Id ?? session.UserId,
+                areaClient.CharacterId,
+                destinationMapId
+            );
+
+            if (
+                !await directMapLinkTransitionService.TryTeleportToMapAsync(
+                    areaClient,
+                    destinationMapId,
+                    ct,
+                    tpsFlag: true
+                )
+            )
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: tps teleport to map {MapId} failed for user {UserId}",
+                    destinationMapId,
+                    session.User?.Id ?? session.UserId
+                );
+            }
+
+            return;
+        }
+
         if (cmd is "tele" or "tp" or "teleport")
         {
             var destinationMapId = 10990100u;

@@ -30,6 +30,10 @@ public interface IPlayerSession
     bool HasMovedSinceMapLoad { get; set; }
     bool IsMapTransitionPending { get; set; }
     bool NeedsPostLoadSelfAvatarNotify { get; set; }
+
+    /// <summary>True while the local player is in TPS combat as their Charadoll.</summary>
+    bool IsTpsMode { get; set; }
+
     PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     int? ActiveShopId { get; set; }
     bool PendingEventEndAfterFade { get; set; }
@@ -42,6 +46,10 @@ public interface IPlayerSession
     ServerScriptState? ServerScriptState { get; set; }
     ISet<uint> AccompanyingRoboIds { get; }
     ISet<uint> VisibleRemoteRoboObjectIds { get; }
+
+    /// <summary>TPS combat target currently locked by this session (0 = none).</summary>
+    uint LockedTargetId { get; set; }
+
     bool IsAuthenticated { get; }
 
     Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default);
