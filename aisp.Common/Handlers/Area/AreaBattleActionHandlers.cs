@@ -29,7 +29,9 @@ public class AreaBattleTargetLockHandler(
             req.TargetObjectId
         );
 
-        await session.SendAsync(ResponseType, new BattleTargetLockResponse(1).ToBytes(), ct);
+        // recv_battle_target_lock_r treats a non-zero value as the object id whose
+        // pending lock must be discarded. Zero acknowledges a successful lock.
+        await session.SendAsync(ResponseType, new BattleTargetLockResponse(0).ToBytes(), ct);
 
         var lockNotify = new BattleTargetLockNotify(
             session.CharacterId,
@@ -55,10 +57,20 @@ public class AreaBattleTargetUnlockHandler(ILogger<AreaBattleTargetUnlockHandler
         CancellationToken ct = default
     )
     {
-        logger.LogDebug(
-            "Client released button, keeping lock active on target {TargetId}",
-            session.LockedTargetId
-        );
+        // Do NOT echo NotifyBattleTargetUnlock here. Client recv path is:
+        //   notify → sub_4F7E10(id!=0) → sub_4F7710(null) → send unlock again
+        // while the local sticky target ptr (this+36) is still set → 60 Hz ping-pong.
+        // Official/emu2 ignore the request; clear server lock state only.
+        if (session.LockedTargetId != 0)
+        {
+            logger.LogDebug(
+                "TPS Combat: Character {Id} unlock request (was target {TargetId}); no notify echo",
+                session.CharacterId,
+                session.LockedTargetId
+            );
+            session.LockedTargetId = 0;
+        }
+
         return Task.CompletedTask;
     }
 }
@@ -148,7 +160,8 @@ public class AreaBattleAttackExecHandler(
 
         session.LockedTargetId = 0;
         var unlockNotify = new NotifyBattleTargetUnlock(session.CharacterId).ToBytes();
-        foreach (var client in state.GetAreaPeers(session, includeSelf: true))
+        // Sending this back to the acting client invokes its unlock-send path again.
+        foreach (var client in state.GetAreaPeers(session, includeSelf: false))
             await client.SendAsync(PacketType.NotifyBattleTargetUnlock, unlockNotify, ct);
 
         _ = Task.Run(

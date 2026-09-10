@@ -199,6 +199,7 @@ public static class TpsCombatEnter
         doll.Battle.HitPoints.Current = doll.Battle.HitPoints.BaseMaximum;
         doll.Battle.Cosplay.CosplayId = 0;
         doll.Battle.ActionFlags = 1;
+        doll.Battle.ActiveSkillId = TpsPrototypeConstants.DefaultSkills[0];
         return doll;
     }
 
@@ -272,7 +273,8 @@ public static class TpsCombatEnter
             TpsActionReferenceY = 20f,
             CollisionRadius = 60f,
             TpsActionVerticalRange = 60f,
-            TpsActionProfileId = 1,
+            // Hostile filter: target action+12 >= 2 and != local (1).
+            TpsActionProfileId = TpsPrototypeConstants.MobModelId,
             NamePlate = 1,
             Battle = new TpsBattleData
             {
@@ -300,12 +302,17 @@ public static class TpsCombatEnter
 
         TpsCombatTestState.ResetMonster(mobObjId);
 
-        var monsterData = new MonsterData(mobChara)
-        {
-            MonsterId = 1,
-            TeamId = 2,
-            AiScriptId = 0,
-        };
+        // NpcNotifyData instantiates the collidable CChara. InitChara127 then
+        // deletes that slot and recreates it as controller type 128.
+        await session.SendAsync(
+            PacketType.NpcNotifyData,
+            new NpcNotifyData(0, mobObjId, mobChara).ToBytes(),
+            ct
+        );
+
+        // First MonsterData dword is not the slot id (that is Chara.SlotId).
+        // uint at +628 is m_Type; default 1 selects the enemy controller path.
+        var monsterData = new MonsterData(0, mobChara);
         await session.SendAsync(
             PacketType.NotifyMonsterData,
             new NotifyMonsterData(monsterData).ToBytes(),
