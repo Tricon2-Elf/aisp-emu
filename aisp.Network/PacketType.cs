@@ -1561,7 +1561,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_get_obtained_skill_list",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     RoboGetObtainedSkillListRequest = 0xDCBF,
 
@@ -1569,7 +1569,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_get_obtained_skill_list_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     RoboGetObtainedSkillListResponse = 0x1159,
 
@@ -3370,9 +3370,17 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_battle_raise_start",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyBattleRaiseStart = 0x1CC8,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_battle_raise_end",
+        ImplementationState.Implemented
+    )]
+    NotifyBattleRaiseEnd = 0x0D9A,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -3602,9 +3610,17 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_mission_action",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyMissionAction = 0xF7CD,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_mission_data",
+        ImplementationState.Implemented
+    )]
+    NotifyMissionData = 0x1AB4,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -3666,7 +3682,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_mission_party_start_ok_update",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyMissionPartyStartOkUpdate = 0x16AB,
 
@@ -3685,6 +3701,14 @@ public enum PacketType : ushort
         ImplementationState.NotImplemented
     )]
     NotifyMissionSituationMessage = 0x39C6,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_mission_start_data",
+        ImplementationState.Implemented
+    )]
+    NotifyMissionStartData = 0xF349,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4058,7 +4082,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_timelimit_show",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyTimelimitShow = 0x1D2F,
 
@@ -4114,7 +4138,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_update_hitpoint",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyUpdateHitpoint = 0x9CC0,
 
@@ -4165,6 +4189,14 @@ public enum PacketType : ushort
         ImplementationState.NotImplemented
     )]
     NotifyUpdateStatusPoint = 0xE943,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_notify_update_tank",
+        ImplementationState.Implemented
+    )]
+    NotifyUpdateTank = 0x0F5E,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4530,9 +4562,17 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_skill_exec_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     SkillExecResponse = 0x1C6C,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_skill_start_cast_r",
+        ImplementationState.Implemented
+    )]
+    SkillStartCastResponse = 0xE4B2,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4961,6 +5001,22 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
+        "send_skill_exec",
+        ImplementationState.Implemented
+    )]
+    SkillExecRequest = 0xC815,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_skill_start_cast",
+        ImplementationState.Implemented
+    )]
+    SkillStartCastRequest = 0x958F,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
         "send_delete_friend_list",
         ImplementationState.Implemented
     )]
@@ -4986,7 +5042,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_get_tps_use_item_list",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     GetTpsUseItemListRequest = 0x96B9,
 
