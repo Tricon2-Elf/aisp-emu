@@ -1,42 +1,40 @@
 namespace aisp.Network.Data;
 
-public class MonsterData(CharaData chara, uint result = 0)
+public class MonsterData(uint objectId, CharaData chara)
 {
-    // 606 bytes (+ 2 bytes VCE HeaderSize = 608 bytes in code)
+    // uint object id + CharaData + float[3] + uint[3] + float + uint[2]
     public const int WireSize = 606;
 
-    public uint Result { get; set; } = result; // 4-byte header
-    public CharaData Chara { get; set; } = chara; // 566-byte CharaData
+    public uint ObjectId { get; set; } = objectId;
+    public CharaData Chara { get; set; } = chara;
 
-    // Unclear what this does
-    public uint SpawnState { get; set; } = 1;
-
-    public uint MonsterId { get; set; } = 1;
-    public uint TeamId { get; set; } = 2; // team
-    public uint AiScriptId { get; set; } = 7001010; // Unclear what this affects, but if it diverges from enterendhandler a different model appears
-    public uint Experience { get; set; } = 10;
-    public uint DropTableId { get; set; } = 0;
-
-    // Unclear how it works, but it does — model scale, though it does not change any further above
-    public float ScaleX { get; set; } = 1.0f;
-    public float ScaleY { get; set; } = 1.0f;
-    public float ScaleZ { get; set; } = 1.0f;
+    // ReadMonsterData: vec3 at +616, then uint[3], float, uint[2].
+    // InitChara127 treats the uint at +628 as m_Type; case 1 is the enemy controller.
+    public float Field616 { get; set; } = 1.0f;
+    public float Field620 { get; set; } = 1.0f;
+    public float Field624 { get; set; } = 1.0f;
+    public uint Field628 { get; set; } = 1;
+    public uint Field632 { get; set; } = 1;
+    public uint Field636 { get; set; } = 2;
+    public float Scale { get; set; } = 1.0f;
+    public uint Field644 { get; set; }
+    public uint Field648 { get; set; }
 
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
 
-        writer.Write(Result);
+        writer.Write(ObjectId);
         writer.Write(Chara.ToBytes());
-        writer.Write(1.0f); // Field_0x238
-        writer.Write(MonsterId); // 4 bytes
-        writer.Write(TeamId); // 4 bytes
-        writer.Write(AiScriptId); // 4 bytes
-        writer.Write(Experience); // 4 bytes
-        writer.Write(DropTableId); // 4 bytes
-        writer.Write(ScaleX); // 4 bytes
-        writer.Write(ScaleY); // 4 bytes
-        writer.Write(ScaleZ); // 4 bytes
+        writer.Write(Field616);
+        writer.Write(Field620);
+        writer.Write(Field624);
+        writer.Write(Field628);
+        writer.Write(Field632);
+        writer.Write(Field636);
+        writer.Write(Scale);
+        writer.Write(Field644);
+        writer.Write(Field648);
 
         var finalBytes = writer.ToBytes();
         if (finalBytes.Length != WireSize)

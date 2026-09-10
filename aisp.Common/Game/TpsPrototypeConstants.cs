@@ -18,9 +18,9 @@ public static class TpsPrototypeConstants
     public const float PlayerSpawnY = 0.1f;
     public const float PlayerSpawnZ = -14485f;
 
-    public const float MobSpawnX = -9020f;
+    public const float MobSpawnX = PlayerSpawnX;
     public const float MobSpawnY = 0.1f;
-    public const float MobSpawnZ = -13275f;
+    public const float MobSpawnZ = PlayerSpawnZ + 200f;
     public const int MobSpawnRotation = 180;
 
     public const uint MissionTimeLimitSeconds = 300;
