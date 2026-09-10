@@ -76,11 +76,45 @@ public static class TpsCombatEnter
             ct
         );
 
+        // RaiseStart CChara::SetEquipment looks up item_equip_t serials in the
+        // client item table. Clothes come from the paper-doll array; 123xxxxx
+        // weapons do not attach unless recv_item_create ran for that serial.
+        await CharacterItemSync.SendInventoryItemAsync(
+            session,
+            (int)TpsPrototypeConstants.WaterGunItemId,
+            1,
+            ct
+        );
+
         await session.SendAsync(
             PacketType.NotifyBattleRaiseStart,
             new NotifyBattleRaiseStart(
                 playerObjId,
-                [new ItemEquipEntry(TpsPrototypeConstants.WaterGunItemId, 0)]
+                [
+                    new ItemEquipEntry(
+                        TpsPrototypeConstants.WaterGunItemId,
+                        TpsPrototypeConstants.WaterGunSocketBit
+                    ),
+                ]
+            ).ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.NotifyUpdateRoboEquip,
+            new NotifyUpdateRoboEquip(
+                1,
+                playerObjId,
+                doll.Equips.Where(e => e.ItemId != 0)
+                    .Select(e => new ItemEquipEntry(e.ItemId, e.Socket))
+            ).ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.ItemEquippedNotify,
+            new ItemEquippedNotify(
+                playerObjId,
+                TpsPrototypeConstants.WaterGunItemId,
+                TpsPrototypeConstants.WaterGunSocketBit
             ).ToBytes(),
             ct
         );
@@ -193,7 +227,7 @@ public static class TpsCombatEnter
         doll.CollisionRadius = 10f;
         doll.TpsActionVerticalRange = 10f;
 
-        EnsureWaterGunEquip(doll);
+        ForceWaterGunEquip(doll);
         EnsureBattleDefaults(doll);
 
         doll.Battle.HitPoints.Current = doll.Battle.HitPoints.BaseMaximum;
@@ -203,17 +237,20 @@ public static class TpsCombatEnter
         return doll;
     }
 
-    private static void EnsureWaterGunEquip(CharaData doll)
+    private static void ForceWaterGunEquip(CharaData doll)
     {
         while (doll.Equips.Count < CharaData.EquipmentSlotCount)
             doll.Equips.Add(new ItemSlotInfo(0, 0));
 
-        if (doll.Equips.Any(e => e.ItemId == TpsPrototypeConstants.WaterGunItemId))
-            return;
+        for (var i = 0; i < doll.Equips.Count; i++)
+        {
+            if (doll.Equips[i].ItemId == TpsPrototypeConstants.WaterGunItemId)
+                doll.Equips[i] = new ItemSlotInfo(0, 0);
+        }
 
         doll.Equips[TpsPrototypeConstants.WaterGunEquipSlot] = new ItemSlotInfo(
             TpsPrototypeConstants.WaterGunItemId,
-            0
+            TpsPrototypeConstants.WaterGunSocketBit
         );
     }
 

@@ -86,7 +86,7 @@ public class AreaRoboCreateHandler(
             chara.AddEquip(0, 0);
         chara.Equips[TpsPrototypeConstants.WaterGunEquipSlot] = new ItemSlotInfo(
             TpsPrototypeConstants.WaterGunItemId,
-            ItemEntityMapper.ResolveBodyspot((int)TpsPrototypeConstants.WaterGunItemId)
+            TpsPrototypeConstants.WaterGunSocketBit
         );
 
         chara.Battle = CreateDefaultTpsBattleData();

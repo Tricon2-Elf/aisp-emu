@@ -48,4 +48,20 @@ public static class TpsCombatTestState
         uint mobObjId,
         int hitPoints = TpsPrototypeConstants.DefaultHitPoints
     ) => MonsterHp[mobObjId] = hitPoints;
+
+    /// <summary>
+    /// Damage is applied on AttackExec. Collapse repeats within one client frame
+    /// so a duplicated Exec does not double-hit.
+    /// </summary>
+    public static bool TryAcceptShot(uint characterId)
+    {
+        var now = Environment.TickCount64;
+        if (LastShotAt.TryGetValue(characterId, out var last) && now - last < 120)
+            return false;
+
+        LastShotAt[characterId] = now;
+        return true;
+    }
+
+    private static readonly ConcurrentDictionary<uint, long> LastShotAt = new();
 }

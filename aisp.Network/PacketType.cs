@@ -3394,9 +3394,9 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_battle_report_target_obj",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
-    NotifyBattleReportTargetObj = 0x733E,
+    NotifyBattleReportTargetObj = 0x6A63,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4196,7 +4196,7 @@ public enum PacketType : ushort
         "recv_notify_update_tank",
         ImplementationState.Implemented
     )]
-    NotifyUpdateTank = 0x0F5E,
+    NotifyUpdateTank = 0x566,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -4948,7 +4948,7 @@ public enum PacketType : ushort
         "send_battle_attack_exec",
         ImplementationState.Implemented
     )]
-    BattleAttackExecRequest = 0xC395,
+    BattleAttackExecRequest = 0xC38D,
 
     [PacketMetadata(
         PacketServerType.Area,
