@@ -75,9 +75,10 @@ public class AreaBattleTargetUnlockHandler(ILogger<AreaBattleTargetUnlockHandler
     }
 }
 
-public class AreaBattleAttackStartHandler(ILogger<AreaBattleAttackStartHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class AreaBattleAttackStartHandler(
+    ILogger<AreaBattleAttackStartHandler> logger,
+    SharedState state
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.BattleAttackStartRequest;
     public PacketType ResponseType => PacketType.BattleAttackStartResponse;
@@ -89,8 +90,37 @@ public class AreaBattleAttackStartHandler(ILogger<AreaBattleAttackStartHandler> 
         CancellationToken ct = default
     )
     {
-        logger.LogDebug("TPS Combat: Attack start from Character {Id}", session.CharacterId);
+        logger.LogInformation("TPS Combat: Attack start from Character {Id}", session.CharacterId);
         await session.SendAsync(ResponseType, new BattleAttackStartResponse(0).ToBytes(), ct);
+
+        // start_r(0) leaves the local TPS phase at 4. The fire motion and
+        // send_battle_attack_exec callback are queued by CTPSActionReport
+        // (recv_notify_battle_report_target_obj), not by the start reply.
+        await TpsBattleReports.SendAsync(
+            state,
+            session,
+            TpsPrototypeConstants.BattleReportAttackAction,
+            ct
+        );
+    }
+}
+
+public class AreaBattleAttackCancelHandler(ILogger<AreaBattleAttackCancelHandler> logger)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
+{
+    public PacketType RequestType => PacketType.BattleAttackCancelRequest;
+    public PacketType ResponseType => PacketType.BattleAttackCancelResponse;
+    public ServerType ServerType => ServerType.Area;
+
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
+    {
+        logger.LogDebug("TPS Combat: Attack cancel from Character {Id}", session.CharacterId);
+        await session.SendAsync(ResponseType, new BattleAttackCancelResponse(0).ToBytes(), ct);
     }
 }
 
@@ -112,6 +142,25 @@ public class AreaBattleAttackExecHandler(
         logger.LogInformation("TPS Combat: Character {Id} fired water gun!", session.CharacterId);
 
         await session.SendAsync(ResponseType, new BattleAttackExecResponse(0).ToBytes(), ct);
+        await ApplyPrototypeShotAsync(logger, state, session, ct);
+        // Action 4 leaves TPS phase at 5 (start is rejected). Action 8 queues phase 0.
+        await TpsBattleReports.SendAsync(
+            state,
+            session,
+            TpsPrototypeConstants.BattleReportRecoverAction,
+            ct
+        );
+    }
+
+    internal static async Task ApplyPrototypeShotAsync(
+        ILogger logger,
+        SharedState state,
+        IPlayerSession session,
+        CancellationToken ct
+    )
+    {
+        if (!TpsCombatTestState.TryAcceptShot(session.CharacterId))
+            return;
 
         var remainingTank = TpsCombatTestState.ConsumeTank(session.CharacterId);
         await session.SendAsync(
@@ -160,7 +209,6 @@ public class AreaBattleAttackExecHandler(
 
         session.LockedTargetId = 0;
         var unlockNotify = new NotifyBattleTargetUnlock(session.CharacterId).ToBytes();
-        // Sending this back to the acting client invokes its unlock-send path again.
         foreach (var client in state.GetAreaPeers(session, includeSelf: false))
             await client.SendAsync(PacketType.NotifyBattleTargetUnlock, unlockNotify, ct);
 
@@ -214,5 +262,31 @@ public class AreaBattleDashFinishHandler(ILogger<AreaBattleDashFinishHandler> lo
     {
         logger.LogDebug("TPS Combat: Character {Id} finished dash", session.CharacterId);
         await session.SendAsync(ResponseType, new BattleDashFinishResponse(0).ToBytes(), ct);
+    }
+}
+
+internal static class TpsBattleReports
+{
+    public static async Task SendAsync(
+        SharedState state,
+        IPlayerSession session,
+        uint actionType,
+        CancellationToken ct
+    )
+    {
+        uint targetId =
+            session.LockedTargetId != 0
+                ? session.LockedTargetId
+                : TpsPrototypeConstants.MobObjectId;
+        var report = new NotifyBattleReportTargetObj(
+            session.CharacterId,
+            actionType,
+            0,
+            TpsPrototypeConstants.DefaultSkills[0],
+            targetId
+        ).ToBytes();
+        await session.SendAsync(PacketType.NotifyBattleReportTargetObj, report, ct);
+        foreach (var peer in state.GetAreaPeers(session, includeSelf: false))
+            await peer.SendAsync(PacketType.NotifyBattleReportTargetObj, report, ct);
     }
 }

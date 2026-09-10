@@ -10,7 +10,7 @@ public class NotifyBattleRaiseStart(
 ) : IOutgoingPacket
 {
     private readonly List<ItemEquipEntry> _equips =
-        equips?.ToList() ?? [new ItemEquipEntry(12300010, 0)];
+        equips?.ToList() ?? [new ItemEquipEntry(12300010, 1u << 19)];
 
     public byte[] ToBytes()
     {

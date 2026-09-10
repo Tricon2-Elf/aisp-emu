@@ -57,7 +57,7 @@ public class EquipOrderListResponseTests
         Assert.Equal(CharaOrderData.ControllerAvatarOrRobo, wig.LimitByte1);
         Assert.Equal(CharaOrderData.GenderUnrestricted, wig.LimitByte2);
 
-        foreach (var category in new uint[] { 112, 116, 117, 118 })
+        foreach (var category in new uint[] { 112, 116, 117, 118, 122, 123 })
         {
             var order = CharaOrderData.WardrobeOrders.First(o => o.Category == category);
             Assert.Equal(CharaOrderData.ControllerAvatarOrRobo, order.LimitByte1);

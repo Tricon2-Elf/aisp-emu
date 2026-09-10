@@ -54,6 +54,7 @@ public class CharaOrderData(uint category, byte limitByte1 = 0, byte limitByte2 
         new(117, ControllerAvatarOrRobo, GenderUnrestricted), // head accessories (117xxxxx) — hat cell
         new(118, ControllerAvatarOrRobo, GenderUnrestricted), // masks (118xxxxx) — hat cell
         new(122, ControllerAvatarOrRobo, GenderUnrestricted), // held items (122xxxxx)
+        new(123, ControllerAvatarOrRobo, GenderUnrestricted), // water guns / TPS handheld (123xxxxx)
         new(200), // leftover prefixes
     ];
 
