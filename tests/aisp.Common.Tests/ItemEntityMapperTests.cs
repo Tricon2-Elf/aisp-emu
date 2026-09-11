@@ -109,6 +109,29 @@ public class ItemEntityMapperTests
     }
 
     [Fact]
+    public void ToItemBaseListData_maps_water_gun_to_handheld_socket_bit()
+    {
+        var item = new Item
+        {
+            Id = (int)TpsPrototypeConstants.WaterGunItemId,
+            Socket = 18,
+            IconId = (int)TpsPrototypeConstants.WaterGunItemId,
+            Name = "N/A",
+        };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(TpsPrototypeConstants.WaterGunCatalogSocket, data.Socket1);
+        Assert.Equal((uint)WardrobeCategoryId.Accessory, data.Category);
+        Assert.Equal(
+            TpsPrototypeConstants.WaterGunCatalogSocket,
+            TpsCombatEnter.BuildWaterGunItemBase().Socket1
+        );
+        Assert.Equal(
+            TpsPrototypeConstants.WaterGunWeaponAttachBit,
+            data.Socket1 & TpsPrototypeConstants.WaterGunWeaponAttachBit
+        );
+    }
+
+    [Fact]
     public void ToItemBaseListData_sets_socket2_zero_for_single_slot_clothing()
     {
         var item = new Item

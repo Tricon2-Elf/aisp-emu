@@ -346,6 +346,9 @@ internal static class ItemEntityMapper
         if (itemId / 100_000 == 105)
             return ((uint)WardrobeSocketBit.ShoesPrimary, (uint)WardrobeSocketBit.ShoesSecondary);
 
+        if (itemId == (int)TpsPrototypeConstants.WaterGunItemId)
+            return (socket | TpsPrototypeConstants.WaterGunWeaponAttachBit, 0);
+
         return (socket, 0);
     }
 

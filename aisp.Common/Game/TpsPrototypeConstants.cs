@@ -13,6 +13,16 @@ public static class TpsPrototypeConstants
     /// <summary>Client attach bit 1&lt;&lt;19 for the handheld/right-hand cell.</summary>
     public const uint WaterGunSocketBit = 1u << 19;
 
+    /// <summary>
+    /// <c>CCharaEquip::CreateItemEquipment</c> selects <c>CHandAttachEquipment</c> (weapon grip)
+    /// when catalog Socket1 has this bit. Without it the client takes <c>CHandAttachEquipment2</c>
+    /// (bag/prop), which can play the fire motion with no visible handheld mesh.
+    /// </summary>
+    public const uint WaterGunWeaponAttachBit = 0x20000000;
+
+    /// <summary>Catalog Socket1 sent for 12300010 so the live mesh uses the weapon-hand class.</summary>
+    public const uint WaterGunCatalogSocket = WaterGunSocketBit | WaterGunWeaponAttachBit;
+
     /// <summary>Seeded TPS(UDX) combat test map.</summary>
     public const uint TpsUdxMapId = 40_990_200;
 

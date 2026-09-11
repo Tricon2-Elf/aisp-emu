@@ -1,3 +1,4 @@
+using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Network;
 using aisp.Network.Data;
@@ -45,6 +46,21 @@ public static class TpsCombatEnter
 
         var doll = BuildControllableCharadoll(session, myRobo, myPos);
 
+        // CreateItemEquipment picks CHandAttachEquipment only when CItemTable
+        // Socket1 has 0x20000000. Login item_base may omit 12300010 or only
+        // have the bag bit (SeedItemsIfEmpty). Upsert the catalog row first.
+        await session.SendAsync(
+            PacketType.NotifyItemBase,
+            new NotifyItemBase(BuildWaterGunItemBase()).ToBytes(),
+            ct
+        );
+        await CharacterItemSync.SendInventoryItemAsync(
+            session,
+            (int)TpsPrototypeConstants.WaterGunItemId,
+            1,
+            ct
+        );
+
         await session.SendAsync(
             PacketType.NotifyDisappearChara,
             new NotifyDisappearChara(playerObjId).ToBytes(),
@@ -76,45 +92,13 @@ public static class TpsCombatEnter
             ct
         );
 
-        // RaiseStart CChara::SetEquipment looks up item_equip_t serials in the
-        // client item table. Clothes come from the paper-doll array; 123xxxxx
-        // weapons do not attach unless recv_item_create ran for that serial.
-        await CharacterItemSync.SendInventoryItemAsync(
-            session,
-            (int)TpsPrototypeConstants.WaterGunItemId,
-            1,
-            ct
-        );
-
+        // Socket 0 lets CreateItemEquipment use catalog Socket1 (1<<19) for the
+        // hand-attach class. A packet bit that is not in the catalog skips that path.
         await session.SendAsync(
             PacketType.NotifyBattleRaiseStart,
             new NotifyBattleRaiseStart(
                 playerObjId,
-                [
-                    new ItemEquipEntry(
-                        TpsPrototypeConstants.WaterGunItemId,
-                        TpsPrototypeConstants.WaterGunSocketBit
-                    ),
-                ]
-            ).ToBytes(),
-            ct
-        );
-        await session.SendAsync(
-            PacketType.NotifyUpdateRoboEquip,
-            new NotifyUpdateRoboEquip(
-                1,
-                playerObjId,
-                doll.Equips.Where(e => e.ItemId != 0)
-                    .Select(e => new ItemEquipEntry(e.ItemId, e.Socket))
-            ).ToBytes(),
-            ct
-        );
-        await session.SendAsync(
-            PacketType.ItemEquippedNotify,
-            new ItemEquippedNotify(
-                playerObjId,
-                TpsPrototypeConstants.WaterGunItemId,
-                TpsPrototypeConstants.WaterGunSocketBit
+                [new ItemEquipEntry(TpsPrototypeConstants.WaterGunItemId, 0)]
             ).ToBytes(),
             ct
         );
@@ -161,6 +145,16 @@ public static class TpsCombatEnter
                     await session.SendAsync(
                         PacketType.EventEndNotify,
                         new EventEndNotify(0).ToBytes(),
+                        ct
+                    );
+                    // Socket 0: SetItem uses catalog Socket1 (weapon + hand bits).
+                    await session.SendAsync(
+                        PacketType.ItemEquippedNotify,
+                        new ItemEquippedNotify(
+                            playerObjId,
+                            TpsPrototypeConstants.WaterGunItemId,
+                            0
+                        ).ToBytes(),
                         ct
                     );
 
@@ -250,7 +244,7 @@ public static class TpsCombatEnter
 
         doll.Equips[TpsPrototypeConstants.WaterGunEquipSlot] = new ItemSlotInfo(
             TpsPrototypeConstants.WaterGunItemId,
-            TpsPrototypeConstants.WaterGunSocketBit
+            0
         );
     }
 
@@ -369,4 +363,15 @@ public static class TpsCombatEnter
             TpsPrototypeConstants.MobSpawnZ
         );
     }
+
+    internal static ItemData BuildWaterGunItemBase() =>
+        ItemEntityMapper.ToItemBaseListData(
+            new Item
+            {
+                Id = (int)TpsPrototypeConstants.WaterGunItemId,
+                Socket = 18,
+                IconId = (int)TpsPrototypeConstants.WaterGunItemId,
+                Name = "N/A",
+            }
+        );
 }
