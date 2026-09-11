@@ -3562,7 +3562,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_item_base",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyItemBase = 0x737F,
 
