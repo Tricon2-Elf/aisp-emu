@@ -55,9 +55,27 @@ public static class TpsPrototypeConstants
 
     /// <summary>
     /// CTPSActionReport switch value that queues <c>CTPSActStateAction</c> phase 0
-    /// (decomp <c>sub_4E63C0</c> case 8). Required after exec so the player can fire again.
+    /// (decomp <c>sub_4E63C0</c> case 8). Required after attack exec (phase 5)
+    /// so the player can fire again. Does not clear the dash run flag.
     /// </summary>
     public const uint BattleReportRecoverAction = 8;
+
+    /// <summary>
+    /// CTPSActionReport dash-begin (decomp <c>sub_4E63C0</c> case 0x1C): TPS phase 8
+    /// plus the local dash motion callback.
+    /// </summary>
+    public const uint BattleReportDashAction = 0x1C;
+
+    /// <summary>
+    /// CTPSActionReport dash-end (decomp <c>sub_4E63C0</c> case 0x1D). Skill id must
+    /// be 0, 1, or 2 — any other value is a no-op. Skill 0 queues phase 12, the
+    /// dash-end motion, <c>sub_4E06E0</c> (clears controller dash-run flag +224),
+    /// then phase 0.
+    /// </summary>
+    public const uint BattleReportDashEndAction = 0x1D;
+
+    /// <summary>Skill field that selects the skill-0 branch of action 0x1D.</summary>
+    public const uint BattleReportDashEndSkillId = 0;
 
     public static readonly uint[] DefaultSkills = [200090, 200000, 200020];
 }
