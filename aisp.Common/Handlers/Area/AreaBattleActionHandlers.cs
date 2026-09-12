@@ -227,9 +227,10 @@ public class AreaBattleAttackExecHandler(
     }
 }
 
-public class AreaBattleDashExecHandler(ILogger<AreaBattleDashExecHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class AreaBattleDashExecHandler(
+    ILogger<AreaBattleDashExecHandler> logger,
+    SharedState state
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.BattleDashExecRequest;
     public PacketType ResponseType => PacketType.BattleDashExecResponse;
@@ -243,12 +244,23 @@ public class AreaBattleDashExecHandler(ILogger<AreaBattleDashExecHandler> logger
     {
         logger.LogDebug("TPS Combat: Character {Id} executed dash", session.CharacterId);
         await session.SendAsync(ResponseType, new BattleDashExecResponse(0).ToBytes(), ct);
+
+        // Right-click sets controller+224=1 (keep sliding forward) and phase 7.
+        // Action 0x1C queues phase 8 + the dash motion so the local machine can
+        // advance and later send finish.
+        await TpsBattleReports.SendAsync(
+            state,
+            session,
+            TpsPrototypeConstants.BattleReportDashAction,
+            ct
+        );
     }
 }
 
-public class AreaBattleDashFinishHandler(ILogger<AreaBattleDashFinishHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class AreaBattleDashFinishHandler(
+    ILogger<AreaBattleDashFinishHandler> logger,
+    SharedState state
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.BattleDashFinishRequest;
     public PacketType ResponseType => PacketType.BattleDashFinishResponse;
@@ -262,15 +274,33 @@ public class AreaBattleDashFinishHandler(ILogger<AreaBattleDashFinishHandler> lo
     {
         logger.LogDebug("TPS Combat: Character {Id} finished dash", session.CharacterId);
         await session.SendAsync(ResponseType, new BattleDashFinishResponse(0).ToBytes(), ct);
+
+        // Action 8 only sets phase 0. Right-click dash keeps sliding until
+        // action 0x1D / skill 0 runs sub_4E06E0 (clears controller+224).
+        await TpsBattleReports.SendAsync(
+            state,
+            session,
+            TpsPrototypeConstants.BattleReportDashEndAction,
+            TpsPrototypeConstants.BattleReportDashEndSkillId,
+            ct
+        );
     }
 }
 
 internal static class TpsBattleReports
 {
+    public static Task SendAsync(
+        SharedState state,
+        IPlayerSession session,
+        uint actionType,
+        CancellationToken ct
+    ) => SendAsync(state, session, actionType, TpsPrototypeConstants.DefaultSkills[0], ct);
+
     public static async Task SendAsync(
         SharedState state,
         IPlayerSession session,
         uint actionType,
+        uint skillId,
         CancellationToken ct
     )
     {
@@ -282,7 +312,7 @@ internal static class TpsBattleReports
             session.CharacterId,
             actionType,
             0,
-            TpsPrototypeConstants.DefaultSkills[0],
+            skillId,
             targetId
         ).ToBytes();
         await session.SendAsync(PacketType.NotifyBattleReportTargetObj, report, ct);
