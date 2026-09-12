@@ -28,12 +28,17 @@ public sealed record ReportTicketChatSnapshot(
     int CharacterId,
     string CharacterName,
     string Message,
-    bool Rejected
+    bool Rejected,
+    bool Toxicity = false,
+    string ToxicityReason = ""
 );
 
 public interface IReportTicketRepository
 {
-    Task<ReportTicket> CreateAsync(ReportTicketCreateRequest request, CancellationToken ct = default);
+    Task<ReportTicket> CreateAsync(
+        ReportTicketCreateRequest request,
+        CancellationToken ct = default
+    );
 
     Task<(IReadOnlyList<ReportTicket> Items, int Total)> ListAsync(
         ReportTicketStatus? status = null,
@@ -90,6 +95,8 @@ public sealed class ReportTicketRepository(MainContext db) : IReportTicketReposi
                     CharacterName = chat.CharacterName,
                     Message = chat.Message,
                     Rejected = chat.Rejected,
+                    Toxicity = chat.Toxicity,
+                    ToxicityReason = chat.ToxicityReason,
                 })
                 .ToList(),
         };

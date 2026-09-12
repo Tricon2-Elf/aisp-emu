@@ -59,7 +59,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<ReportTicket> ReportTickets => Set<ReportTicket>();
     public DbSet<ReportTicketPlayer> ReportTicketPlayers => Set<ReportTicketPlayer>();
-    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages => Set<ReportTicketChatMessage>();
+    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages =>
+        Set<ReportTicketChatMessage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -699,13 +700,20 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
             e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
             e.Property(x => x.Rejected).HasDefaultValue(false);
+            e.Property(x => x.Toxicity).HasDefaultValue(false);
+            e.Property(x => x.ToxicityReason).HasMaxLength(1024).IsRequired().HasDefaultValue("");
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.CharacterId, x.CreatedAt });
             e.HasIndex(x => new { x.UserId, x.CreatedAt });
             e.HasIndex(x => new { x.Kind, x.CreatedAt });
             e.HasIndex(x => new { x.CircleId, x.CreatedAt });
-            e.HasIndex(x => new { x.MapId, x.ChannelId, x.CreatedAt });
+            e.HasIndex(x => new
+            {
+                x.MapId,
+                x.ChannelId,
+                x.CreatedAt,
+            });
         });
 
         b.Entity<ReportTicket>(e =>
@@ -717,7 +725,9 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.Reason).HasMaxLength(1024).IsRequired();
             e.Property(x => x.MapName).HasMaxLength(128).IsRequired();
             e.Property(x => x.ResolutionAction).HasMaxLength(1024);
-            e.Property(x => x.Status).HasConversion<byte>().HasDefaultValue(ReportTicketStatus.Open);
+            e.Property(x => x.Status)
+                .HasConversion<byte>()
+                .HasDefaultValue(ReportTicketStatus.Open);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.Status, x.CreatedAt });
@@ -742,6 +752,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
             e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
+            e.Property(x => x.Toxicity).HasDefaultValue(false);
+            e.Property(x => x.ToxicityReason).HasMaxLength(1024).IsRequired().HasDefaultValue("");
             e.HasOne(x => x.ReportTicket)
                 .WithMany(x => x.ChatMessages)
                 .HasForeignKey(x => x.ReportTicketId)

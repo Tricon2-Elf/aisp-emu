@@ -186,6 +186,8 @@ public sealed record PortalChatMessageDto(
     uint? MapId,
     int? ChannelId,
     bool Rejected,
+    bool Toxicity,
+    string ToxicityReason,
     DateTime CreatedAt
 );
 
@@ -206,10 +208,7 @@ public sealed record PortalReportSummaryDto(
     string Status
 );
 
-public sealed record PortalReportPageDto(
-    IReadOnlyList<PortalReportSummaryDto> Reports,
-    int Total
-);
+public sealed record PortalReportPageDto(IReadOnlyList<PortalReportSummaryDto> Reports, int Total);
 
 public sealed record PortalReportPlayerDto(
     int UserId,
@@ -223,7 +222,9 @@ public sealed record PortalReportChatMessageDto(
     int CharacterId,
     string CharacterName,
     string Message,
-    bool Rejected
+    bool Rejected,
+    bool Toxicity,
+    string ToxicityReason
 );
 
 public sealed record PortalReportDetailDto(

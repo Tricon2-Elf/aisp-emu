@@ -1540,7 +1540,9 @@ public class CmdExecHandler(
                             chat.CharacterId,
                             chat.CharacterName,
                             chat.Message,
-                            chat.Rejected
+                            chat.Rejected,
+                            chat.Toxicity,
+                            chat.ToxicityReason
                         ))
                         .ToArray()
                 ),

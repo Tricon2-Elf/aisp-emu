@@ -21,5 +21,7 @@ public sealed class ChatMessage
     public uint? MapId { get; set; }
     public int? ChannelId { get; set; }
     public bool Rejected { get; set; }
+    public bool Toxicity { get; set; }
+    public string ToxicityReason { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }

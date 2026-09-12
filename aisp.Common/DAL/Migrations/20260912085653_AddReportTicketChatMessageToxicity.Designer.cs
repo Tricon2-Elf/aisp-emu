@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aisp.Common.DAL;
 
@@ -10,9 +11,11 @@ using aisp.Common.DAL;
 namespace aisp.Common.DAL.Migrations
 {
     [DbContext(typeof(MainContext))]
-    partial class MainContextModelSnapshot : ModelSnapshot
+    [Migration("20260912085653_AddReportTicketChatMessageToxicity")]
+    partial class AddReportTicketChatMessageToxicity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -597,108 +600,6 @@ namespace aisp.Common.DAL.Migrations
                     b.HasIndex("CharacterId");
 
                     b.ToTable("CircleMembers", (string)null);
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaAudioDefinition", b =>
-                {
-                    b.Property<int>("Kind")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Kind", "Id");
-
-                    b.HasIndex("ItemId");
-
-                    b.ToTable("DramaAudio");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureBox", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("DramaFigureBoxes");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureDefinition", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("AlwaysGranted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("BoxId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Face")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Gender")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Hairstyle")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("ItemId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ModelId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("PackageId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("People")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BoxId");
-
-                    b.HasIndex("ItemId");
-
-                    b.ToTable("DramaFigures");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureEquipment", b =>
-                {
-                    b.Property<int>("FigureId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SlotIndex")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ItemId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("FigureId", "SlotIndex");
-
-                    b.ToTable("DramaFigureEquipment");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
@@ -2204,46 +2105,6 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("Circle");
                 });
 
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaAudioDefinition", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.Item", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Item");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureDefinition", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.DramaFigureBox", "Box")
-                        .WithMany()
-                        .HasForeignKey("BoxId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("aisp.Common.DAL.Entities.Item", "Item")
-                        .WithMany()
-                        .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Box");
-
-                    b.Navigation("Item");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureEquipment", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.DramaFigureDefinition", "Figure")
-                        .WithMany("Equipment")
-                        .HasForeignKey("FigureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Figure");
-                });
-
             modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
                 {
                     b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
@@ -2516,11 +2377,6 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("JoinRequests");
 
                     b.Navigation("Members");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureDefinition", b =>
-                {
-                    b.Navigation("Equipment");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Item", b =>

@@ -622,6 +622,8 @@ internal static class PortalApiEndpointsExtensions
             row.MapId,
             row.ChannelId,
             row.Rejected,
+            row.Toxicity,
+            row.ToxicityReason,
             row.CreatedAt
         );
 
@@ -689,8 +691,7 @@ internal static class PortalApiEndpointsExtensions
 
     private static PortalReportSummaryDto MapReportSummary(ReportTicket ticket)
     {
-        var preview =
-            ticket.Reason.Length <= 120 ? ticket.Reason : $"{ticket.Reason[..117]}...";
+        var preview = ticket.Reason.Length <= 120 ? ticket.Reason : $"{ticket.Reason[..117]}...";
         return new(
             ticket.Id,
             ticket.CreatedAt,
@@ -739,7 +740,9 @@ internal static class PortalApiEndpointsExtensions
                     chat.CharacterId,
                     chat.CharacterName,
                     chat.Message,
-                    chat.Rejected
+                    chat.Rejected,
+                    chat.Toxicity,
+                    chat.ToxicityReason
                 ))
                 .ToArray()
         );
