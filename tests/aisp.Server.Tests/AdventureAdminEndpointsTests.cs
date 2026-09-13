@@ -73,7 +73,7 @@ public sealed class AdventureAdminEndpointsTests
             var owner = new User { Username = "official" };
             owner.SetPassword("pw");
             db.Users.Add(owner);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
             var pack = AdventureScriptPacker.Pack(Script, Datalist);
             var fields = new Dictionary<string, string>
@@ -93,7 +93,7 @@ public sealed class AdventureAdminEndpointsTests
 
             var listing = await db
                 .AdventureListings.Include(l => l.Content)
-                .SingleAsync(l => l.ScriptId == 1729);
+                .SingleAsync(l => l.ScriptId == 1729, TestContext.Current.CancellationToken);
             Assert.Equal(AdventureListingState.Listed, listing.State);
             Assert.Equal(owner.Id, listing.UserId);
             Assert.Equal(1, listing.Genre);
@@ -103,21 +103,21 @@ public sealed class AdventureAdminEndpointsTests
             // The listing consumes the owner's next work id but gets no work row, like a work deleted from the
             // notebook: no slot of the 100, no sheets, and 新規作成 can never hand the id out again.
             Assert.Equal(1, listing.WorkId);
-            Assert.Empty(await db.AdventureWorks.Where(w => w.UserId == owner.Id).ToListAsync());
+            Assert.Empty(await db.AdventureWorks.Where(w => w.UserId == owner.Id).ToListAsync(TestContext.Current.CancellationToken));
             db.ChangeTracker.Clear();
-            var ownerAfter = await db.Users.SingleAsync(u => u.Id == owner.Id);
+            var ownerAfter = await db.Users.SingleAsync(u => u.Id == owner.Id, TestContext.Current.CancellationToken);
             Assert.Equal(2, ownerAfter.NextAdventureWorkId);
             Assert.Equal(0, ownerAfter.AdventureSheetStock);
             Assert.Equal(new DateTime(2009, 2, 19, 19, 45, 34), listing.ListedAt);
             Assert.Equal(Script, listing.Content!.Script);
             Assert.Equal(Datalist, listing.Content.Datalist);
             // What the shop hands out for it is the same text again.
-            Assert.Single(await new AdventureShopRepository(db).GetUploadListAsync(owner.Id));
+            Assert.Single(await new AdventureShopRepository(db).GetUploadListAsync(owner.Id, TestContext.Current.CancellationToken));
 
             // Same id again, an id the server allocates itself, an unknown owner, and a non-pack.
             Assert.Equal(409, (await RunAsync(1729, Request(fields, pack), db)).Status);
             // A content refresh keeps the id, swaps the text and metadata, and re-lists a delisted disc.
-            Assert.True(await new AdventureShopRepository(db).DelistAnyAsync(1729));
+            Assert.True(await new AdventureShopRepository(db).DelistAnyAsync(1729, TestContext.Current.CancellationToken));
             var refreshed = new Dictionary<string, string>(fields)
             {
                 ["replace"] = "1",
@@ -137,11 +137,11 @@ public sealed class AdventureAdminEndpointsTests
             db.ChangeTracker.Clear();
             var replacedListing = await db
                 .AdventureListings.Include(l => l.Content)
-                .SingleAsync(l => l.ScriptId == 1729);
+                .SingleAsync(l => l.ScriptId == 1729, TestContext.Current.CancellationToken);
             Assert.Equal(AdventureListingState.Listed, replacedListing.State);
             Assert.Equal("Refreshed.", replacedListing.Comment);
             Assert.Equal(1, replacedListing.WorkId);
-            Assert.Empty(await db.AdventureWorks.Where(w => w.UserId == owner.Id).ToListAsync());
+            Assert.Empty(await db.AdventureWorks.Where(w => w.UserId == owner.Id).ToListAsync(TestContext.Current.CancellationToken));
             Assert.Contains("Rue", Encoding.UTF8.GetString(replacedListing.Content!.Datalist));
             var sealedFields = new Dictionary<string, string>(fields)
             {
@@ -149,7 +149,7 @@ public sealed class AdventureAdminEndpointsTests
                 ["official"] = "no",
             };
             Assert.Equal(200, (await RunAsync(1936, Request(sealedFields, pack), db)).Status);
-            var sealedListing = await db.AdventureListings.SingleAsync(l => l.ScriptId == 1936);
+            var sealedListing = await db.AdventureListings.SingleAsync(l => l.ScriptId == 1936, TestContext.Current.CancellationToken);
             Assert.False(sealedListing.ContentsPublic);
             Assert.False(sealedListing.Official);
             Assert.Equal(400, (await RunAsync(10001, Request(fields, pack), db)).Status);

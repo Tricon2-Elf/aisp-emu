@@ -23,8 +23,8 @@ public sealed class AdventureShopBuyHandlersTests
         var buyer = new User { Username = "buyer", AiPoints = 250 };
         buyer.SetPassword("pw");
         db.Users.AddRange(author, buyer);
-        await db.SaveChangesAsync();
-        await new AdventureWorkRepository(db).RegisterAsync(author.Id, 1, 4, 2);
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await new AdventureWorkRepository(db).RegisterAsync(author.Id, 1, 4, 2, TestContext.Current.CancellationToken);
         var shop = new AdventureShopRepository(db);
         var started = await shop.BeginUploadAsync(
             author.Id,
@@ -38,11 +38,12 @@ public sealed class AdventureShopBuyHandlersTests
                 100,
                 false,
                 20348
-            )
+            ),
+            TestContext.Current.CancellationToken
         );
-        await shop.RedeemUploadTicketAsync(started!.Value.Ticket);
-        await shop.StoreContentAsync(started.Value.Listing.ScriptId, "ADV0"u8.ToArray(), []);
-        var listing = await shop.ConfirmUploadAsync(author.Id, started.Value.Listing.ScriptId);
+        await shop.RedeemUploadTicketAsync(started!.Value.Ticket, TestContext.Current.CancellationToken);
+        await shop.StoreContentAsync(started.Value.Listing.ScriptId, "ADV0"u8.ToArray(), [], ct: TestContext.Current.CancellationToken);
+        var listing = await shop.ConfirmUploadAsync(author.Id, started.Value.Listing.ScriptId, TestContext.Current.CancellationToken);
         return (author, buyer, listing!);
     }
 
@@ -102,9 +103,9 @@ public sealed class AdventureShopBuyHandlersTests
             Assert.Equal(150, buyer.AiPoints);
             Assert.Equal([0, 0, 0, 0], session.Sent[2].Payload);
             // The client asks for the download itself; the ticket it gets really downloads the disc.
-            var ticket = await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId);
+            var ticket = await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId, TestContext.Current.CancellationToken);
             Assert.NotNull(ticket);
-            var content = await shop.RedeemDownloadTicketAsync(ticket);
+            var content = await shop.RedeemDownloadTicketAsync(ticket, TestContext.Current.CancellationToken);
             Assert.NotNull(content);
             Assert.Equal("ADV0"u8.ToArray(), content.Script);
 
@@ -215,7 +216,7 @@ public sealed class AdventureShopBuyHandlersTests
 
             Assert.Equal(
                 AdventureBuyOutcome.Bought,
-                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 100, 70)).Outcome
+                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 100, 70, TestContext.Current.CancellationToken)).Outcome
             );
             var buyerSession = new CapturingPlayerSession { UserId = buyer.Id, CharacterId = 2 };
             await new AreaGetAdventureDownloadListHandler(shop).HandleAsync(
@@ -264,7 +265,7 @@ public sealed class AdventureShopBuyHandlersTests
             Assert.Equal(0u, dr.ReadUInt());
             Assert.Equal((ulong)listing.ScriptId, dr.ReadULong());
             Assert.Equal(1342177331u, new PacketReader(session.Sent[1].Payload).ReadUInt());
-            var (_, worksAfter) = await works.GetWorksAsync(author.Id);
+            var (_, worksAfter) = await works.GetWorksAsync(author.Id, TestContext.Current.CancellationToken);
             Assert.False(Assert.Single(worksAfter).Uploaded);
 
             // Buyers keep their copy after the delisting; removing it from the download list hides it there only.
@@ -283,10 +284,10 @@ public sealed class AdventureShopBuyHandlersTests
             );
             Assert.Equal(8, Assert.Single(buyerSession.Sent).Payload.Length);
             // Re-downloading from the history brings it back to the download list.
-            var again = await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId);
+            var again = await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId, TestContext.Current.CancellationToken);
             Assert.NotNull(again);
-            Assert.NotNull(await shop.RedeemDownloadTicketAsync(again));
-            Assert.Single(await shop.GetDownloadListAsync(buyer.Id));
+            Assert.NotNull(await shop.RedeemDownloadTicketAsync(again, TestContext.Current.CancellationToken));
+            Assert.Single(await shop.GetDownloadListAsync(buyer.Id, TestContext.Current.CancellationToken));
 
             buyerSession.Sent.Clear();
             await new AreaAdventureShopRemoveAllBuyHistoryHandler(shop).HandleAsync(
@@ -295,7 +296,7 @@ public sealed class AdventureShopBuyHandlersTests
                 TestContext.Current.CancellationToken
             );
             Assert.Equal([0, 0, 0, 0], Assert.Single(buyerSession.Sent).Payload);
-            Assert.Empty(await shop.GetHistoryAsync(buyer.Id, 50));
+            Assert.Empty(await shop.GetHistoryAsync(buyer.Id, 50, TestContext.Current.CancellationToken));
         }
         finally
         {

@@ -21,8 +21,8 @@ public sealed class AdventureShopCatalogTests
         var buyer = new User { Username = "buyer", AiPoints = 5000 };
         buyer.SetPassword("pw");
         db.Users.AddRange(author, buyer);
-        await db.SaveChangesAsync();
-        await new AdventureWorkRepository(db).RegisterAsync(author.Id, 1, 4, 2);
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await new AdventureWorkRepository(db).RegisterAsync(author.Id, 1, 4, 2, TestContext.Current.CancellationToken);
         var shop = new AdventureShopRepository(db);
         var started = await shop.BeginUploadAsync(
             author.Id,
@@ -36,11 +36,12 @@ public sealed class AdventureShopCatalogTests
                 100,
                 false,
                 20348
-            )
+            ),
+            TestContext.Current.CancellationToken
         );
-        await shop.RedeemUploadTicketAsync(started!.Value.Ticket);
-        await shop.StoreContentAsync(started.Value.Listing.ScriptId, "ADV0"u8.ToArray(), []);
-        var listing = await shop.ConfirmUploadAsync(author.Id, started.Value.Listing.ScriptId);
+        await shop.RedeemUploadTicketAsync(started!.Value.Ticket, TestContext.Current.CancellationToken);
+        await shop.StoreContentAsync(started.Value.Listing.ScriptId, "ADV0"u8.ToArray(), [], ct: TestContext.Current.CancellationToken);
+        var listing = await shop.ConfirmUploadAsync(author.Id, started.Value.Listing.ScriptId, TestContext.Current.CancellationToken);
         return (author, buyer, listing!);
     }
 
@@ -80,10 +81,10 @@ public sealed class AdventureShopCatalogTests
             var shop = new AdventureShopRepository(db);
             Assert.Equal(
                 AdventureBuyOutcome.Bought,
-                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 100, 70)).Outcome
+                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 100, 70, TestContext.Current.CancellationToken)).Outcome
             );
 
-            var snapshot = await new AdventureShopCatalog(shop).BuildSnapshotAsync(buyer.Id);
+            var snapshot = await new AdventureShopCatalog(shop).BuildSnapshotAsync(buyer.Id, TestContext.Current.CancellationToken);
             var bytes = snapshot.ToBytes();
             // 45-byte header/counters + one item + one ranking row + one history row.
             Assert.Equal(45 + 1589 + 1595 + 1594, bytes.Length);
