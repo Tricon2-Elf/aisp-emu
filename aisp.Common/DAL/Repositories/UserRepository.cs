@@ -240,7 +240,10 @@ public class UserRepository(MainContext db) : IUserRepository
         var query = _db.Users.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(u => EF.Functions.Like(u.Username, $"%{search}%"));
+        {
+            var matchedIds = await FindUserIdsMatchingSearchAsync(search);
+            query = query.Where(u => matchedIds.Contains(u.Id));
+        }
 
         query = query.OrderBy(u => u.Id);
 
@@ -254,12 +257,38 @@ public class UserRepository(MainContext db) : IUserRepository
 
     public async Task<int> CountAsync(string? search = null)
     {
-        var query = _db.Users.AsQueryable();
+        if (string.IsNullOrWhiteSpace(search))
+            return await _db.Users.CountAsync();
 
-        if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(u => EF.Functions.Like(u.Username, $"%{search}%"));
+        var matchedIds = await FindUserIdsMatchingSearchAsync(search);
+        return matchedIds.Count;
+    }
 
-        return await query.CountAsync();
+    /// <summary>
+    /// SQLite LIKE/lower() only case-fold ASCII, so Cyrillic (and character-name) search is done
+    /// with ordinal-ignore-case in process after projecting id/name pairs.
+    /// </summary>
+    private async Task<HashSet<int>> FindUserIdsMatchingSearchAsync(string search)
+    {
+        var term = search.Trim();
+        var rows = await _db
+            .Users.AsNoTracking()
+            .Select(u => new
+            {
+                u.Id,
+                u.Username,
+                CharacterNames = u.Characters.Select(c => c.Name).ToList(),
+            })
+            .ToListAsync();
+
+        return rows.Where(u =>
+                u.Username.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || u.CharacterNames.Any(name =>
+                    name.Contains(term, StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            .Select(u => u.Id)
+            .ToHashSet();
     }
 
     public async Task<User?> AddMoneyAsync(
