@@ -179,29 +179,29 @@
             <strong>@Model.Account.StorageDeposit.ToString("N0")</strong>
         </div>
     </div>
-    <div class="section-heading">
-        <div>
-            <h2>Wardrobe storage</h2>
-        </div>
-        <span class="section-count">@Model.Account.StorageItems.Count)</span>
-    </div>
-    @if (Model.Account.StorageItems.Count == 0)
-    {
-        <p class="empty-state">No items are currently stored here.</p>
-    }
-    else
-    {
-        <div class="inventory-list">
-            @foreach (var item in Model.Account.StorageItems)
-            {
-                <div class="inventory-row">
-                    <img class="item-icon" src="@(itemIconBaseUrl + item.IconId.ToString("D8") + ".png")" alt="" loading="lazy" />
-                    <span class="inventory-name">@item.Name</span>
-                    <span class="inventory-quantity">× @item.Quantity</span>
-                </div>
-            }
-        </div>
-    }
+    <details class="collection-panel">
+        <summary class="section-heading">
+            <h3>Wardrobe storage</h3>
+            <span class="section-count">@Model.Account.StorageItems.Count</span>
+        </summary>
+        @if (Model.Account.StorageItems.Count == 0)
+        {
+            <p class="empty-state">No items are currently stored here.</p>
+        }
+        else
+        {
+            <div class="inventory-list">
+                @foreach (var item in Model.Account.StorageItems)
+                {
+                    <div class="inventory-row">
+                        <img class="item-icon" src="@(itemIconBaseUrl + item.IconId.ToString("D8") + ".png")" alt="" loading="lazy" />
+                        <span class="inventory-name">@item.Name</span>
+                        <span class="inventory-quantity">× @item.Quantity</span>
+                    </div>
+                }
+            </div>
+        }
+    </details>
 </section>
 @if (Model.Account.Characters.Count == 0)
 {
