@@ -29,6 +29,11 @@ services:
       - Server__DbOptions__ConnectionString=Data Source=/data/main.db;Cache=Shared;Default Timeout=5
       # Opt-in chat toxicity (downloads ONNX models to /data/models on first enable):
       # - ChatToxicity__Enabled=true
+      # MOTD shown in the System Message box on Area connect:
+      # - Motd__Enabled=true
+      # - Motd__Message=Welcome to the server!
+      # - Motd__Messages__en=Welcome to the server!
+      # - Motd__Messages__ja=サーバーへようこそ！
       - ApiSettings__ApiKey=${AISPEMU_API_KEY:?set AISPEMU_API_KEY}
       - PortalBackend__ServiceToken=${AISPEMU_PORTAL_SERVICE_TOKEN:?set AISPEMU_PORTAL_SERVICE_TOKEN}
     volumes:

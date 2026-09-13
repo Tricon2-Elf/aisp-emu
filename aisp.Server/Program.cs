@@ -145,6 +145,9 @@ internal class Program
             .Services.AddOptions<MaintenanceOptions>()
             .Bind(builder.Configuration.GetSection("Maintenance"));
         builder
+            .Services.AddOptions<MotdOptions>()
+            .Bind(builder.Configuration.GetSection(MotdOptions.SectionName));
+        builder
             .Services.AddOptions<ApiSettings>()
             .Bind(builder.Configuration.GetSection("ApiSettings"));
         builder.Services.AddSingleton(sp => new ScreenAssignments(

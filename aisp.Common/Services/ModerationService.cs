@@ -3,6 +3,7 @@ using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Network;
+using aisp.Network.Packets.Area;
 using aisp.Network.Packets.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -297,6 +298,7 @@ public sealed class ModerationService(
 
         await userRepo.SetRoleAsync(target.Id, UserRole.Moderator, ct);
         await SyncModeratorsCircleForUserAsync(target.Id, ct);
+        await ApplyRoleLiveAsync(target.Id, UserRole.Moderator, ct);
         logger.LogInformation(
             "User {TargetUsername} promoted to Moderator by actor {ActorUserId}",
             target.Username,
@@ -325,6 +327,7 @@ public sealed class ModerationService(
 
         await userRepo.SetRoleAsync(target.Id, UserRole.User, ct);
         await SyncModeratorsCircleForUserAsync(target.Id, ct);
+        await ApplyRoleLiveAsync(target.Id, UserRole.User, ct);
         logger.LogInformation(
             "User {TargetUsername} demoted from Moderator by actor {ActorUserId}",
             target.Username,
@@ -386,6 +389,7 @@ public sealed class ModerationService(
 
         await userRepo.SetRoleAsync(target.Id, newRole, ct);
         await SyncModeratorsCircleForUserAsync(target.Id, ct);
+        await ApplyRoleLiveAsync(target.Id, newRole, ct);
         logger.LogInformation(
             "User {TargetUsername} role changed to {NewRole} by actor {ActorUserId}",
             target.Username,
@@ -485,6 +489,31 @@ public sealed class ModerationService(
 
             await RemoveCharacterFromModeratorsCircleAsync(circle, characterId, ct);
         }
+    }
+
+    /// <summary>
+    /// Updates online sessions' <see cref="User.Role"/> and pushes a live Area name-plate change.
+    /// </summary>
+    public async Task ApplyRoleLiveAsync(int userId, UserRole role, CancellationToken ct = default)
+    {
+        foreach (var serverType in AllServerTypes)
+        {
+            foreach (var session in state.GetServerClients(serverType))
+            {
+                if (session.UserId != userId || session.User is null)
+                    continue;
+                session.User.Role = role;
+            }
+        }
+
+        var area = state.GetAreaSessionByUserId(userId);
+        if (area is null || area.CharacterId == 0)
+            return;
+
+        var packet = new NotifyUpdateNameplate(area.CharacterId, role.ToNamePlate()).ToBytes();
+        await area.SendAsync(PacketType.NotifyUpdateNameplate, packet, ct);
+        foreach (var peer in state.GetAreaPeers(area))
+            await peer.SendAsync(PacketType.NotifyUpdateNameplate, packet, ct);
     }
 
     public async Task SyncModeratorsCircleForUserAsync(int userId, CancellationToken ct = default)

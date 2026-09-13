@@ -30,6 +30,7 @@ internal sealed class CapturingPlayerSession : IPlayerSession
     public bool HasMovedSinceMapLoad { get; set; }
     public bool IsMapTransitionPending { get; set; }
     public bool NeedsPostLoadSelfAvatarNotify { get; set; }
+    public bool NeedsMotd { get; set; }
     public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     public int? ActiveShopId { get; set; }
     public bool PendingEventEndAfterFade { get; set; }
