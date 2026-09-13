@@ -13,6 +13,12 @@
     <form method="get" class="search-form" role="search">
         <label class="visually-hidden" for="user-search">Search by username or character</label>
         <input id="user-search" class="form-control" name="search" value="@Model.Search" placeholder="Search by username or character" />
+        <label class="visually-hidden" for="online-filter">Online status</label>
+        <select id="online-filter" name="online" class="form-select" aria-label="Online status">
+            <option value="" selected="@(string.IsNullOrEmpty(Model.OnlineFilter))">Any status</option>
+            <option value="online" selected="@(Model.OnlineFilter == "online")">Online</option>
+            <option value="offline" selected="@(Model.OnlineFilter == "offline")">Offline</option>
+        </select>
         <label class="visually-hidden" for="page-size">Users per page</label>
         <select asp-for="PageSize" id="page-size" class="form-select" aria-label="Users per page">
             <option value="20">20 users</option>
@@ -36,11 +42,13 @@ else
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th class="ps-4">User</th>
+                        <th class="ps-4">User ID</th>
+                        <th>User</th>
                         <th>Characters</th>
                         <th>Dolls</th>
                         <th>Online</th>
                         <th>Location</th>
+                        <th>Age</th>
                         <th>Role</th>
                         <th class="pe-4">Account</th>
                     </tr>
@@ -49,11 +57,13 @@ else
                     @foreach (var user in Model.Users)
                     {
                         <tr>
-                            <td class="ps-4"><a class="user-link" href="/admin/users/@user.UserId">@user.Username</a></td>
+                            <td class="ps-4 text-secondary">@user.UserId</td>
+                            <td><a class="user-link" href="/admin/users/@user.UserId">@user.Username</a></td>
                             <td class="text-secondary">@(user.CharacterNames.Count == 0 ? "—" : string.Join(", ", user.CharacterNames))</td>
                             <td>@user.RoboCount</td>
                             <td><span class="status-pill @(user.IsOnline ? "status-active" : "status-offline")">@(user.IsOnline ? "Online" : "Offline")</span></td>
                             <td class="text-secondary">@user.Location</td>
+                            <td class="text-secondary" title="@user.CreatedAt.ToString("yyyy-MM-dd") UTC">@user.AccountAge</td>
                             <td>@user.Role</td>
                             <td class="pe-4"><span class="status-pill @(user.IsBanned ? "status-banned" : "status-active")">@(user.IsBanned ? "Banned" : "Active")</span></td>
                         </tr>
@@ -68,11 +78,11 @@ else
     <div class="d-flex gap-2">
         @if (Model.PageNumber > 1)
         {
-            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Users" asp-route-search="@Model.Search" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-pageSize="@Model.PageSize">Previous</a>
+            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Users" asp-route-search="@Model.Search" asp-route-online="@Model.OnlineFilter" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-pageSize="@Model.PageSize">Previous</a>
         }
         @if (Model.HasNextPage)
         {
-            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Users" asp-route-search="@Model.Search" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-pageSize="@Model.PageSize">Next</a>
+            <a class="btn btn-sm btn-ghost" asp-page="/Admin/Users" asp-route-search="@Model.Search" asp-route-online="@Model.OnlineFilter" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-pageSize="@Model.PageSize">Next</a>
         }
     </div>
 </nav>
