@@ -447,6 +447,18 @@ namespace aisp.Common.DAL.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("Toxicity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("ToxicityReason")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
@@ -587,6 +599,126 @@ namespace aisp.Common.DAL.Migrations
                     b.ToTable("CircleMembers", (string)null);
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaAudioDefinition", b =>
+                {
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Kind", "Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("DramaAudio");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureBox", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DramaFigureBoxes");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureDefinition", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AlwaysGranted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BoxId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Face")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Hairstyle")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ModelId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PackageId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("People")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoxId");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("DramaFigures");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureEquipment", b =>
+                {
+                    b.Property<int>("FigureId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SlotIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FigureId", "SlotIndex");
+
+                    b.ToTable("DramaFigureEquipment");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("Slot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(61)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CharacterId", "Slot");
+
+                    b.ToTable("FriendLinkTags", (string)null);
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.FriendRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -617,24 +749,6 @@ namespace aisp.Common.DAL.Migrations
                     b.HasIndex("TargetCharacterId", "Status");
 
                     b.ToTable("FriendRequests", (string)null);
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.Property<int>("CharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("Slot")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(61)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("CharacterId", "Slot");
-
-                    b.ToTable("FriendLinkTags", (string)null);
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
@@ -1183,6 +1297,18 @@ namespace aisp.Common.DAL.Migrations
 
                     b.Property<long>("ReportTicketId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Toxicity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("ToxicityReason")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
 
                     b.HasKey("Id");
 
@@ -2078,6 +2204,57 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("Circle");
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaAudioDefinition", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureDefinition", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.DramaFigureBox", "Box")
+                        .WithMany()
+                        .HasForeignKey("BoxId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("aisp.Common.DAL.Entities.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Box");
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureEquipment", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.DramaFigureDefinition", "Figure")
+                        .WithMany("Equipment")
+                        .HasForeignKey("FigureId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Figure");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.FriendRequest", b =>
                 {
                     b.HasOne("aisp.Common.DAL.Entities.Character", "RequesterCharacter")
@@ -2114,17 +2291,6 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("CharacterHigh");
 
                     b.Navigation("CharacterLow");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
-                        .WithMany()
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>
@@ -2350,6 +2516,11 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("JoinRequests");
 
                     b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("aisp.Common.DAL.Entities.DramaFigureDefinition", b =>
+                {
+                    b.Navigation("Equipment");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Item", b =>

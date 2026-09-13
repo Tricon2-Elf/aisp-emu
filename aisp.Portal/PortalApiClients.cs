@@ -216,6 +216,12 @@ public sealed class AreaPortalApiClient(
             throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
     }
 
+    public async Task<IReadOnlyList<int>> GetOnlineUserIdsAsync(CancellationToken ct)
+    {
+        using var response = await httpClient.GetAsync("api/area/portal/users/online-ids", ct);
+        return await ReadAsync<IReadOnlyList<int>>(response, ct);
+    }
+
     public async Task<IReadOnlyList<PortalCharacterRoboSummaryDto>> GetSummariesAsync(
         IReadOnlyList<int> userIds,
         CancellationToken ct
@@ -333,7 +339,9 @@ public sealed class MsgPortalApiClient(
         using var response = await httpClient.GetAsync($"api/msg/portal/reports/{id}", ct);
         if (!response.IsSuccessStatusCode)
             throw await AuthPortalApiClientError.ToExceptionAsync(response, ct);
-        return await response.Content.ReadFromJsonAsync<PortalReportDetailDto>(cancellationToken: ct)
+        return await response.Content.ReadFromJsonAsync<PortalReportDetailDto>(
+                cancellationToken: ct
+            )
             ?? throw new PortalApiException(
                 response.StatusCode,
                 "The backend returned an empty response."

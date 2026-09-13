@@ -4,6 +4,11 @@ public class UccAdvFigureBaseListRequest : IIncomingPacket<UccAdvFigureBaseListR
 {
     public static UccAdvFigureBaseListRequest FromBytes(ReadOnlySpan<byte> data)
     {
-        throw new NotImplementedException();
+        if (!data.IsEmpty)
+            throw new InvalidDataException(
+                $"{nameof(UccAdvFigureBaseListRequest)} requires an empty payload, received {data.Length} bytes."
+            );
+
+        return new UccAdvFigureBaseListRequest();
     }
 }

@@ -1,0 +1,337 @@
+{
+  "shops": [
+    {
+      "code": "niconi-commons",
+      "displayName": {
+        "ja": "ニコニ・コモンズショップ",
+        "en": "Niconi・Commons Shop"
+      },
+      "isEnabled": true,
+      "items": [
+        {
+          "itemId": 14100000,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 3,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100001,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 4,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100002,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 5,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100003,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 6,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100004,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 7,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100005,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 8,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100006,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 9,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100007,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 10,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100008,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 11,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100009,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 12,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100010,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 13,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14100011,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 14,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200000,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 15,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200001,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 16,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200002,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 17,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200003,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 18,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200004,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 19,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200005,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 20,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200006,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 21,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200007,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 22,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200008,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 23,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200009,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 24,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200010,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 25,
+          "isEnabled": true
+        },
+        {
+          "itemId": 14200011,
+          "aiPrice": 5000,
+          "nicoPrice": 0,
+          "sortOrder": 26,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001001,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 0,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001002,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 1,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001003,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 2,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001004,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 3,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001005,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 4,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001006,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 5,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001007,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 6,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001008,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 7,
+          "isEnabled": true
+        },
+        {
+          "itemId": 172001009,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 8,
+          "isEnabled": true
+        },
+        {
+          "itemId": 182001001,
+          "aiPrice": 100,
+          "nicoPrice": 0,
+          "sortOrder": 9,
+          "isEnabled": true
+        },
+        {
+          "itemId": 143010001,
+          "aiPrice": 500,
+          "nicoPrice": 0,
+          "sortOrder": 10,
+          "isEnabled": true
+        },
+        {
+          "itemId": 143010002,
+          "aiPrice": 500,
+          "nicoPrice": 0,
+          "sortOrder": 11,
+          "isEnabled": true
+        },
+        {
+          "itemId": 143010003,
+          "aiPrice": 500,
+          "nicoPrice": 0,
+          "sortOrder": 12,
+          "isEnabled": true
+        }
+      ],
+      "npcs": [
+        {
+          "mapId": 10990200,
+          "channelId": -1,
+          "dayPhase": -1,
+          "dateStartUtc": "1970-01-01T00:00:00Z",
+          "dateEndUtc": "9999-12-31T23:59:59.9999999Z",
+          "npcObjectId": 1342177339,
+          "modelId": 1002031,
+          "name": {
+            "ja": "ニコニ・コモンズショップ",
+            "en": "Niconi・Commons Shop"
+          },
+          "x": -8100.0,
+          "y": 0.0,
+          "z": -11350.0,
+          "rotation": 180,
+          "interactionType": "NiconiCommonsShop",
+          "isEnabled": true,
+          "sortOrder": 113,
+          "equipment": [
+            {
+              "slotIndex": 0,
+              "itemId": 10100320,
+              "sortOrder": 0
+            },
+            {
+              "slotIndex": 1,
+              "itemId": 10200030,
+              "sortOrder": 1
+            },
+            {
+              "slotIndex": 2,
+              "itemId": 10400000,
+              "sortOrder": 2
+            },
+            {
+              "slotIndex": 3,
+              "itemId": 10500130,
+              "sortOrder": 3
+            },
+            {
+              "slotIndex": 4,
+              "itemId": 10700000,
+              "sortOrder": 4
+            },
+            {
+              "slotIndex": 5,
+              "itemId": 10600000,
+              "sortOrder": 5
+            },
+            {
+              "slotIndex": 6,
+              "itemId": 10930034,
+              "sortOrder": 6
+            },
+            {
+              "slotIndex": 8,
+              "itemId": 10100340,
+              "sortOrder": 7
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

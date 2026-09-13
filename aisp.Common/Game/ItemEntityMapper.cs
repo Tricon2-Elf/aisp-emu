@@ -67,12 +67,24 @@ internal enum WardrobeCategoryId : uint
     FurnitureFloor = 12,
     FurnitureWall = 13,
     FurnitureCeiling = 14,
+
+    /// <summary>Drama figure boxes (141xxxxx and 142xxxxx). The client's tab mapping (0x519E60) puts
+    /// categories 15 and 16 in a tab group of their own, after fashion (0 to 11) and furniture (12 to 14).</summary>
+    DramaFigure = 16,
 }
 
 internal static class ItemEntityMapper
 {
+    // equipment2.csv defines the second clothing range with the same part families.
+    // Keep unrelated 410xxxxx assets out of the wardrobe mapping.
+    internal static bool IsCosplayWardrobeItem(int itemId) =>
+        itemId / 100_000 is >= 400 and <= 409 or 414 or 415 or 416 or 417 or 418 or 422;
+
     public static uint ResolveBodyspot(int itemId, int storedSocket = 0, string? name = null)
     {
+        if (IsDramaFigureItem(itemId))
+            return 0;
+
         if (itemId is >= 10_000_000 and < 200_000_000)
         {
             var derived = DeriveClothingBodyspot(itemId, name);
@@ -101,7 +113,7 @@ internal static class ItemEntityMapper
             return ResolveBodyspot((int)slot.ItemId);
 
         var prefix = slot.ItemId / 100_000;
-        if (prefix is >= 100 and <= 107)
+        if (prefix is >= 100 and <= 107 or >= 400 and <= 407)
             return 0;
 
         return ResolveBodyspot((int)slot.ItemId);
@@ -111,14 +123,14 @@ internal static class ItemEntityMapper
     {
         return (itemId / 100_000) switch
         {
-            100 => (uint)WardrobeSocketBit.Head,
-            101 => ResolveUpperBodyBodyspot(name),
-            102 => ResolveLowerBodyBodyspot(itemId, name),
-            103 => (uint)WardrobeSocketBit.Hands,
-            104 => (uint)WardrobeSocketBit.Socks,
-            105 => (uint)WardrobeSocketBit.ShoesPrimary,
-            106 => (uint)WardrobeSocketBit.Bra,
-            107 => (uint)WardrobeSocketBit.LowerUnderwear,
+            100 or 400 => (uint)WardrobeSocketBit.Head,
+            101 or 401 => ResolveUpperBodyBodyspot(name),
+            102 or 402 => ResolveLowerBodyBodyspot(itemId, name),
+            103 or 403 => (uint)WardrobeSocketBit.Hands,
+            104 or 404 => (uint)WardrobeSocketBit.Socks,
+            105 or 405 => (uint)WardrobeSocketBit.ShoesPrimary,
+            106 or 406 => (uint)WardrobeSocketBit.Bra,
+            107 or 407 => (uint)WardrobeSocketBit.LowerUnderwear,
             _ => (uint)WardrobeSocketBit.None,
         };
     }
@@ -126,7 +138,9 @@ internal static class ItemEntityMapper
     private static uint DeriveAccessoryBodyspot(int itemId, int storedSocket)
     {
         var prefix = itemId / 100_000;
-        if (prefix is >= 100 and <= 107)
+        if (prefix is >= 100 and <= 107 or >= 400 and <= 407)
+            return (uint)WardrobeSocketBit.None;
+        if (IsDramaFigureItem(itemId))
             return (uint)WardrobeSocketBit.None;
 
         return AccessoryAttachMap.ToSocketBit(itemId, (uint)storedSocket);
@@ -228,6 +242,9 @@ internal static class ItemEntityMapper
         if (IsWardrobeAccessoryItem(item.Id))
             return (uint)WardrobeCategoryId.Accessory;
 
+        if (IsDramaFigureItem(item.Id))
+            return (uint)WardrobeCategoryId.DramaFigure;
+
         return item.CatalogCategory is int persisted
             ? (uint)persisted
             : ResolveCatalogCategory(item);
@@ -245,15 +262,20 @@ internal static class ItemEntityMapper
         if (itemId is < 10_000_000 or >= 200_000_000)
             return (uint)WardrobeCategoryId.None;
 
+        var prefix = itemId / 100_000;
+
         // Furniture catalog IDs are 11xxxxxx except wardrobe accessory prefixes 112-118 / 122-124.
         // Check this before placement flags so backpacks / wings (114xxxxx) cannot be furniture.
-        if (IsWardrobeAccessoryPrefix(itemId / 100_000))
+        if (IsWardrobeAccessoryPrefix(prefix))
             return (uint)WardrobeCategoryId.Accessory;
+
+        if (IsDramaFigureItem(itemId))
+            return (uint)WardrobeCategoryId.DramaFigure;
 
         if (placementFlags is { } flags && flags != 0)
             return ResolveFurnitureCategory(flags);
 
-        if (itemId / 100_000 >= 110)
+        if (prefix is >= 110 and < 400 or >= 410)
             return (uint)WardrobeCategoryId.FurnitureFloor;
 
         if (
@@ -265,17 +287,17 @@ internal static class ItemEntityMapper
         )
             return (uint)WardrobeCategoryId.Coat;
 
-        return (itemId / 100_000) switch
+        return prefix switch
         {
-            100 => (uint)WardrobeCategoryId.Hat,
-            101 => ResolveUpperBodyCategory(name),
-            102 => ResolveLowerBodyCategory(itemId, name),
-            103 => (uint)WardrobeCategoryId.Gloves,
-            104 => (uint)WardrobeCategoryId.Socks,
-            105 => (uint)WardrobeCategoryId.Shoes,
-            106 => (uint)WardrobeCategoryId.Bra,
-            107 => (uint)WardrobeCategoryId.LowerUnderwear,
-            108 => (uint)WardrobeCategoryId.Accessory,
+            100 or 400 => (uint)WardrobeCategoryId.Hat,
+            101 or 401 => ResolveUpperBodyCategory(name),
+            102 or 402 => ResolveLowerBodyCategory(itemId, name),
+            103 or 403 => (uint)WardrobeCategoryId.Gloves,
+            104 or 404 => (uint)WardrobeCategoryId.Socks,
+            105 or 405 => (uint)WardrobeCategoryId.Shoes,
+            106 or 406 => (uint)WardrobeCategoryId.Bra,
+            107 or 407 => (uint)WardrobeCategoryId.LowerUnderwear,
+            108 or 408 => (uint)WardrobeCategoryId.Accessory,
             _ => (uint)WardrobeCategoryId.None,
         };
     }
@@ -328,7 +350,7 @@ internal static class ItemEntityMapper
 
     private static (uint Socket1, uint Socket2) GetCatalogSockets(int itemId, uint socket)
     {
-        if (itemId / 100_000 == 105)
+        if (itemId / 100_000 is 105 or 405)
             return ((uint)WardrobeSocketBit.ShoesPrimary, (uint)WardrobeSocketBit.ShoesSecondary);
 
         return (socket, 0);
@@ -339,8 +361,23 @@ internal static class ItemEntityMapper
 
     internal static bool IsFurnitureCatalogCategory(int category) => category is >= 12 and <= 14;
 
+    /// <summary>The drama figure boxes sold as bag items: 141xxxxx for the MEN dolls, 142xxxxx for the WOMEN dolls.</summary>
+    internal static bool IsDramaFigureItem(int itemId) => itemId / 100_000 is 141 or 142;
+
     private static bool IsWardrobeAccessoryPrefix(int prefix) =>
-        prefix is 108 or 109 or 112 or >= 114 and <= 118 or >= 122 and <= 124;
+        prefix
+            is 108
+                or 109
+                or 112
+                or >= 114
+                and <= 118
+                or >= 122
+                and <= 124
+                or 408
+                or 409
+                or >= 414
+                and <= 418
+                or 422;
 
     private static uint ResolveLimitMapKey(int itemId)
     {
@@ -369,6 +406,22 @@ internal static class ItemEntityMapper
             or 122
             or 123
             or 124 => (uint)prefix,
+            400 => 100u,
+            401 => 101u,
+            402 => 102u,
+            403 => 103u,
+            404 => 104u,
+            405 => 105u,
+            406 => 106u,
+            407 => 107u,
+            408 => 108u,
+            409 => 109u,
+            414 => 114u,
+            415 => 115u,
+            416 => 116u,
+            417 => 117u,
+            418 => 118u,
+            422 => 122u,
             _ => 200u,
         };
     }
@@ -380,10 +433,10 @@ internal static class ItemEntityMapper
 
         return (itemId / 100_000) switch
         {
-            101 => ItemFlags.PermitsUnderwearTop,
-            102 => ItemFlags.PermitsUnderwearBottom,
-            106 => ItemFlags.PermitsUnderwearTop,
-            107 => ItemFlags.PermitsUnderwearBottom,
+            101 or 401 => ItemFlags.PermitsUnderwearTop,
+            102 or 402 => ItemFlags.PermitsUnderwearBottom,
+            106 or 406 => ItemFlags.PermitsUnderwearTop,
+            107 or 407 => ItemFlags.PermitsUnderwearBottom,
             _ => ItemFlags.None,
         };
     }

@@ -10,6 +10,19 @@ public enum UserRole : byte
 
 public static class UserRoleExtensions
 {
+    /// <summary>Client name-plate variants: 0 none, 2 GM, 0xFFFFFFFF creator/staff, 5 official NPC.</summary>
+    public const uint NamePlatePlayer = 0;
+    public const uint NamePlateModerator = 2;
+    public const uint NamePlateAdmin = 0xFFFFFFFFu;
+
+    public static uint ToNamePlate(this UserRole role) =>
+        role switch
+        {
+            UserRole.Moderator => NamePlateModerator,
+            UserRole.Admin or UserRole.ServerAdmin => NamePlateAdmin,
+            _ => NamePlatePlayer,
+        };
+
     public static bool HasPortalAccess(this UserRole role) => role >= UserRole.Moderator;
 
     public static bool CanKickOrBan(this UserRole role) => role >= UserRole.Moderator;

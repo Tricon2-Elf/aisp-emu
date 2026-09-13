@@ -891,7 +891,8 @@ public class AreaShopNpcHandlersTests
                 dispatcher,
                 new AdventureShopCatalog(new AdventureShopRepository(runDb)),
                 TestTextLocaliser.English,
-                NullLogger<AreaEventAccessNpcHandler>.Instance
+                NullLogger<AreaEventAccessNpcHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(runDb, TestTextLocaliser.English)
             );
             var syncHandler = new AreaEventSyncRHandler(
                 dispatcher,
@@ -1072,7 +1073,8 @@ public class AreaShopNpcHandlersTests
             CreateServerScriptDispatcher(db),
             new AdventureShopCatalog(new AdventureShopRepository(db)),
             TestTextLocaliser.English,
-            NullLogger<AreaEventAccessNpcHandler>.Instance
+            NullLogger<AreaEventAccessNpcHandler>.Instance,
+            new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
         );
 
     private static ServerScriptDispatcher CreateServerScriptDispatcher(MainContext db)

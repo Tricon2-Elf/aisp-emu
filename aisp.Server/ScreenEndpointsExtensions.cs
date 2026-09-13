@@ -18,6 +18,7 @@ namespace aisp.Server;
 ///   /ai-sp/live-watch?liveid=...          the Nico Live billboard
 ///   /ai-sp/screen?url=...                 anything else the client asked aisp.jp for
 ///   /ai-sp/screen-source?route=..&map=..  JSON {src} the page polls for changes
+///   /ai-sp/yt-embed?v=..                   YouTube's player embed in a page (the yte: source)
 /// All of them serve the same page: it shows which route and parameters it got, implements the
 /// script contract the client drives (external_nico_0.ext_*), and publishes volume, mute and the
 /// source to play in its title for the hook. The source is decided here from ScreenAssignments.
@@ -89,6 +90,22 @@ internal static class ScreenEndpointsExtensions
                             ?? "",
                     }
                 );
+            }
+        );
+        // The page around YouTube's player embed for the yte: source, fetched by the hook's
+        // off-screen browser; the id is checked, the rest of the query is the page's own.
+        app.MapGet(
+            ScreenAssignments.YouTubeEmbedPage,
+            async (HttpContext context, IWebHostEnvironment environment) =>
+            {
+                if (!ScreenAssignments.IsYouTubeId(context.Request.Query["v"]))
+                    return Results.BadRequest("v: a YouTube video id");
+                var file = environment.WebRootFileProvider.GetFileInfo("screen/yt-embed.html");
+                if (!file.Exists || file.PhysicalPath is null)
+                    return Results.NotFound();
+                var html = await File.ReadAllTextAsync(file.PhysicalPath, context.RequestAborted);
+                context.Response.Headers.CacheControl = "no-store";
+                return Results.Content(html, "text/html; charset=utf-8");
             }
         );
         // Polled by the page so a changed assignment reaches screens that are already open.
@@ -225,8 +242,9 @@ internal static class ScreenEndpointsExtensions
         // one by a MyRoom map above) never needs the page to poll: the client re-navigates it on
         // every assignment change (movie set, channel switch, room re-entry). live-watch (the
         // Stage) is pushed too: both /screen and /channel on a map it is bound to send it
-        // notify_nicolive_reload (CmdExecHandler). A /channel-screen that did not resolve to a
-        // room TV is a town screen (confirmed on Akihabara) with neither guarantee, so it alone
+        // notify_nicolive_reload (CmdExecHandler), and so is a /channel-screen that did not
+        // resolve to a room TV, a town screen (confirmed on Akihabara): the launcher hook reloads
+        // its page on that same notify. Only the catch-all /screen page, which nothing pushes,
         // keeps polling. roomtv is a separate, narrower flag: only a genuine room TV shows the
         // comment overlay, never the Stage or a town screen, no matter what the page is told by
         // ext_setCommentVisible; the page cannot tell a room TV from anything else on its own,
@@ -234,7 +252,7 @@ internal static class ScreenEndpointsExtensions
         // (off when absent): the client never sets it, so the page must start from the server's
         // value, and it starts over on every re-navigation.
         var isRoomTv = effectiveRoute == "room-tv";
-        var noPoll = isRoomTv || effectiveRoute == "live-watch";
+        var noPoll = effectiveRoute != "screen";
         var titleSuffix =
             (isRoomTv ? ";roomtv=1" : "")
             + (noPoll ? ";nopoll=1" : "")

@@ -74,15 +74,16 @@ public sealed class AdventureHttpEndpointsTests
             var user = new User { Username = "author", AdventureSheetStock = 100 };
             user.SetPassword("pw");
             db.Users.Add(user);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
             // One sheet bought; the manuscript below has two PAGEHEADERs.
-            await new AdventureWorkRepository(db).RegisterAsync(user.Id, 1, 3, 1);
+            await new AdventureWorkRepository(db).RegisterAsync(user.Id, 1, 3, 1, TestContext.Current.CancellationToken);
             var shop = new AdventureShopRepository(db);
             var started = await shop.BeginUploadAsync(
                 user.Id,
                 1,
                 3,
-                new AdventureListingDraft("T", "A", 0, "", 100, true, 8)
+                new AdventureListingDraft("T", "A", 0, "", 100, true, 8),
+                TestContext.Current.CancellationToken
             );
             Assert.NotNull(started);
             var scriptId = started.Value.Listing.ScriptId;
@@ -109,7 +110,7 @@ public sealed class AdventureHttpEndpointsTests
 
             Assert.Contains("status=\"fail\"", body);
             Assert.Contains("<code>7</code>", body);
-            Assert.False(await db.AdventureListingContents.AnyAsync(c => c.ScriptId == scriptId));
+            Assert.False(await db.AdventureListingContents.AnyAsync(c => c.ScriptId == scriptId, TestContext.Current.CancellationToken));
             // The listing keeps the page count it was given from the work.
             Assert.Equal(
                 1,
@@ -117,7 +118,7 @@ public sealed class AdventureHttpEndpointsTests
                     .AdventureListings.AsNoTracking()
                     .Where(l => l.ScriptId == scriptId)
                     .Select(l => l.Pages)
-                    .SingleAsync()
+                    .SingleAsync(TestContext.Current.CancellationToken)
             );
         }
         finally
@@ -136,14 +137,15 @@ public sealed class AdventureHttpEndpointsTests
             var user = new User { Username = "author", AdventureSheetStock = 100 };
             user.SetPassword("pw");
             db.Users.Add(user);
-            await db.SaveChangesAsync();
-            await new AdventureWorkRepository(db).RegisterAsync(user.Id, 1, 3, 2);
+            await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+            await new AdventureWorkRepository(db).RegisterAsync(user.Id, 1, 3, 2, TestContext.Current.CancellationToken);
             var shop = new AdventureShopRepository(db);
             var started = await shop.BeginUploadAsync(
                 user.Id,
                 1,
                 3,
-                new AdventureListingDraft("T", "A", 0, "", 100, true, 8)
+                new AdventureListingDraft("T", "A", 0, "", 100, true, 8),
+                TestContext.Current.CancellationToken
             );
             Assert.NotNull(started);
             var scriptId = started.Value.Listing.ScriptId;
@@ -176,8 +178,9 @@ public sealed class AdventureHttpEndpointsTests
             Assert.Contains("<cms>ok</cms>", body);
             Assert.Contains($"<scriptid>{scriptId}</scriptid>", body);
             Assert.DoesNotContain("<contents></contents>", body);
-            var content = await db.AdventureListingContents.SingleAsync(c =>
-                c.ScriptId == scriptId
+            var content = await db.AdventureListingContents.SingleAsync(
+                c => c.ScriptId == scriptId,
+                TestContext.Current.CancellationToken
             );
             Assert.Equal(ScriptText, content.Script);
             Assert.Equal(DatalistText, content.Datalist);
@@ -187,7 +190,7 @@ public sealed class AdventureHttpEndpointsTests
                     .AdventureListings.AsNoTracking()
                     .Where(l => l.ScriptId == scriptId)
                     .Select(l => l.Pages)
-                    .SingleAsync()
+                    .SingleAsync(TestContext.Current.CancellationToken)
             );
 
             // The same ticket cannot be replayed.
@@ -212,8 +215,8 @@ public sealed class AdventureHttpEndpointsTests
             Assert.Contains("status=\"fail\"", replayBody);
 
             // After the report the buyer-side download returns both texts as XML for the client to pack.
-            Assert.NotNull(await shop.ConfirmUploadAsync(user.Id, scriptId));
-            var ticket = await shop.IssueDownloadTicketAsync(user.Id, scriptId);
+            Assert.NotNull(await shop.ConfirmUploadAsync(user.Id, scriptId, TestContext.Current.CancellationToken));
+            var ticket = await shop.IssueDownloadTicketAsync(user.Id, scriptId, TestContext.Current.CancellationToken);
             var download = MultipartRequest(
                 new()
                 {

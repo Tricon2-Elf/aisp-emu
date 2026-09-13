@@ -13,6 +13,7 @@ using aisp.Common.Game.ServerScripts;
 using aisp.Common.Handlers.Area;
 using aisp.Common.Localisation;
 using aisp.Common.Services;
+using aisp.Common.Services.Toxicity;
 using aisp.Portal;
 using aisp.Server.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -89,6 +90,7 @@ internal class Program
         builder.Services.AddScoped<IItemRepository, ItemRepository>();
         builder.Services.AddScoped<INpcRepository, NpcRepository>();
         builder.Services.AddScoped<IShopRepository, ShopRepository>();
+        builder.Services.AddScoped<DramaCatalog>();
         builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
         builder.Services.AddSingleton<
             IPendingMapTransferRepository,
@@ -143,9 +145,17 @@ internal class Program
             .Services.AddOptions<MaintenanceOptions>()
             .Bind(builder.Configuration.GetSection("Maintenance"));
         builder
+            .Services.AddOptions<MotdOptions>()
+            .Bind(builder.Configuration.GetSection(MotdOptions.SectionName));
+        builder
             .Services.AddOptions<ApiSettings>()
             .Bind(builder.Configuration.GetSection("ApiSettings"));
-        builder.Services.AddSingleton<ScreenAssignments>();
+        builder.Services.AddSingleton(sp => new ScreenAssignments(
+            TimeProvider.System,
+            ScreenSourceDefaults.FromOptions(
+                sp.GetRequiredService<IOptions<ServerOptions>>().Value.Screens
+            )
+        ));
         builder.Services.AddSingleton<BroadcastService>();
         builder.Services.AddScoped<ModerationService>();
         builder.Services.AddScoped<UserAdminService>();
@@ -308,6 +318,21 @@ internal class Program
         builder
             .Services.AddOptions<ChatLogOptions>()
             .Bind(builder.Configuration.GetSection(ChatLogOptions.SectionName));
+        builder
+            .Services.AddOptions<ChatToxicityOptions>()
+            .Bind(builder.Configuration.GetSection(ChatToxicityOptions.SectionName));
+        builder.Services.AddHttpClient(
+            ChatToxicityService.HttpClientName,
+            client =>
+            {
+                client.Timeout = TimeSpan.FromMinutes(30);
+            }
+        );
+        builder.Services.AddSingleton<ChatToxicityService>();
+        builder.Services.AddSingleton<IChatToxicityClassifier>(sp =>
+            sp.GetRequiredService<ChatToxicityService>()
+        );
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<ChatToxicityService>());
         builder.Services.AddHostedService<GameServerSchedulerService>();
         builder.Services.AddHostedService<ScheduledMaintenanceService>();
         builder.Services.AddHostedService<AdventureSettlementService>();
@@ -386,6 +411,11 @@ internal class Program
                 db,
                 Path.Combine(seedDir, "furnitureShop.json"),
                 app.Logger
+            );
+            await DramaCatalog.SeedAsync(db, seedDir);
+            await ShopRepository.SeedShopsFromJsonAsync(
+                db,
+                Path.Combine(seedDir, "niconiCommonsShop.json")
             );
             await NpcRepository.SeedFromJsonAsync(
                 db,

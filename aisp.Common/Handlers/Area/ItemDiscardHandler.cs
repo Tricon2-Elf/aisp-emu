@@ -13,7 +13,8 @@ namespace aisp.Common.Handlers.Area;
 /// </summary>
 public class ItemDiscardHandler(
     ICharacterRepository characterRepo,
-    ILogger<ItemDiscardHandler> logger
+    ILogger<ItemDiscardHandler> logger,
+    DramaCatalog dramaCatalog
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemDiscardRequest;
@@ -47,6 +48,7 @@ public class ItemDiscardHandler(
             session,
             [(request.SerialId, request.Num)],
             logger,
+            dramaCatalog,
             ct
         );
         await session.SendAsync(ResponseType, new ItemDiscardResponse(ok ? 0u : 1u).ToBytes(), ct);

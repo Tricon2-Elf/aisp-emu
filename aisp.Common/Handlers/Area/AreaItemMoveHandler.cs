@@ -12,7 +12,8 @@ namespace aisp.Common.Handlers.Area;
 /// </summary>
 public sealed class AreaItemMoveHandler(
     IUserRepository userRepo,
-    ILogger<AreaItemMoveHandler> logger
+    ILogger<AreaItemMoveHandler> logger,
+    DramaCatalog dramaCatalog
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.ItemMoveRequest;
@@ -110,6 +111,8 @@ public sealed class AreaItemMoveHandler(
             storageQuantity,
             ct
         );
+        if (toStorage ? inventoryQuantity == 0 : inventoryQuantity == request.Num)
+            await dramaCatalog.RefreshOwnershipForItemsAsync(session, [itemId], ct);
         await session.SendAsync(ResponseType, new ItemMoveResponse(0).ToBytes(), ct);
     }
 }

@@ -30,6 +30,7 @@ public interface IPlayerSession
     bool HasMovedSinceMapLoad { get; set; }
     bool IsMapTransitionPending { get; set; }
     bool NeedsPostLoadSelfAvatarNotify { get; set; }
+    bool NeedsMotd { get; set; }
     PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     int? ActiveShopId { get; set; }
     bool PendingEventEndAfterFade { get; set; }

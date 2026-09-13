@@ -73,7 +73,7 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
         }
     }
 
-    /// <summary>Adds any seed items that are missing from an existing Items table (idempotent).</summary>
+    /// <summary>Adds missing seed items and upgrades placeholder metadata (idempotent).</summary>
     public static async Task EnsureSeedItemsPresentAsync(
         MainContext db,
         string jsonPath,
@@ -116,14 +116,40 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
         var rowsById = distinctRows.ToDictionary(row => row.Id);
         foreach (var item in existingItems)
         {
+            if (
+                rowsById.TryGetValue(item.Id, out var identified)
+                && !string.IsNullOrWhiteSpace(identified.Name.Canonical)
+                && identified.Name.Canonical != "N/A"
+            )
+            {
+                if (item.Name == "N/A")
+                {
+                    var previousCategory = (int)
+                        ItemEntityMapper.ResolvePersistedCatalogCategory(item.Id, item.Name, null);
+                    item.Name = identified.Name.Canonical;
+                    if (item.CatalogCategory == previousCategory)
+                        item.CatalogCategory = (int)
+                            ItemEntityMapper.ResolvePersistedCatalogCategory(
+                                item.Id,
+                                item.Name,
+                                null
+                            );
+                }
+                if (item.Socket == 0)
+                    item.Socket = identified.Socket;
+            }
             var resolved = (int)
                 ItemEntityMapper.ResolvePersistedCatalogCategory(item.Id, item.Name, null);
             if (item.CatalogCategory is int persisted)
             {
-                // Pre-accessory-prefix seeds stored 114xxxxx backpacks as furniture (12-14).
+                // Older seeds filed backpacks, figure boxes, and the second clothing
+                // range as furniture, the fallback for every prefix from 110 up.
                 if (
-                    ItemEntityMapper.IsWardrobeAccessoryItem(item.Id)
-                    && ItemEntityMapper.IsFurnitureCatalogCategory(persisted)
+                    (
+                        ItemEntityMapper.IsWardrobeAccessoryItem(item.Id)
+                        || ItemEntityMapper.IsDramaFigureItem(item.Id)
+                        || ItemEntityMapper.IsCosplayWardrobeItem(item.Id)
+                    ) && ItemEntityMapper.IsFurnitureCatalogCategory(persisted)
                 )
                     item.CatalogCategory = resolved;
                 continue;
@@ -132,6 +158,24 @@ public sealed class ItemRepository(MainContext db) : IItemRepository
             if (!rowsById.ContainsKey(item.Id))
                 continue;
             item.CatalogCategory = resolved;
+        }
+
+        var namesByKey = distinctRows.ToDictionary(
+            row => L.Item.Name(row.Id).Value,
+            row => row.Name
+        );
+        var placeholderNames = await db
+            .LocalisedTexts.Where(text => text.Value == "N/A")
+            .ToListAsync(ct);
+        foreach (var text in placeholderNames)
+        {
+            if (
+                namesByKey.TryGetValue(text.Key, out var name)
+                && name[text.Language] is { } replacement
+                && !string.IsNullOrWhiteSpace(replacement)
+                && replacement != "N/A"
+            )
+                text.Value = replacement;
         }
 
         if (missing.Count == 0 && !db.ChangeTracker.HasChanges())

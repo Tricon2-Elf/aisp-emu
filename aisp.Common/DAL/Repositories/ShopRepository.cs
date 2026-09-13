@@ -74,6 +74,16 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
 
             await db.SaveChangesAsync(ct);
 
+            var isCommonsShop =
+                shopRow.Npcs.Any(x =>
+                    ParseInteractionType(x.InteractionType) == NpcInteractionType.NiconiCommonsShop
+                )
+                || await db.Npcs.AnyAsync(
+                    x =>
+                        x.ShopId == shop.Id
+                        && x.InteractionType == NpcInteractionType.NiconiCommonsShop,
+                    ct
+                );
             var expandedItems = new List<ShopItemSeedRow>(shopRow.Items);
             var catalogItemIds = new List<int>(shopRow.ItemIds);
             if (shopRow.IncludeAllFurniture)
@@ -125,9 +135,21 @@ public sealed class ShopRepository(MainContext db) : IShopRepository
                     throw new InvalidDataException(
                         $"Shop {shopRow.Code} has invalid item id {itemRow.ItemId}."
                     );
-                if (itemRow.AiPrice <= 0 || itemRow.NicoPrice <= 0)
+                if (itemRow.AiPrice <= 0)
                     throw new InvalidDataException(
-                        $"Shop {shopRow.Code} item {itemRow.ItemId} must have aiPrice and nicoPrice > 0."
+                        $"Shop {shopRow.Code} item {itemRow.ItemId} aiPrice must be greater than zero; got {itemRow.AiPrice}."
+                    );
+                if (isCommonsShop && itemRow.AiPrice > uint.MaxValue)
+                    throw new InvalidDataException(
+                        $"Commons shop {shopRow.Code} item {itemRow.ItemId} aiPrice must not exceed {uint.MaxValue}; got {itemRow.AiPrice}."
+                    );
+                if (isCommonsShop && itemRow.NicoPrice != 0)
+                    throw new InvalidDataException(
+                        $"Commons shop {shopRow.Code} item {itemRow.ItemId} nicoPrice must be zero because NP purchases are unsupported; got {itemRow.NicoPrice}."
+                    );
+                if (!isCommonsShop && itemRow.NicoPrice <= 0)
+                    throw new InvalidDataException(
+                        $"Shop {shopRow.Code} item {itemRow.ItemId} nicoPrice must be greater than zero; got {itemRow.NicoPrice}."
                     );
 
                 var itemExists = await db

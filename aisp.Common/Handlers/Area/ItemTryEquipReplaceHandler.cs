@@ -343,7 +343,8 @@ public class ItemTryEquipReplaceHandler(
             1,
             pos,
             checked((uint)session.ChannelId),
-            session.MapId
+            session.MapId,
+            session.User?.Role ?? UserRole.User
         );
     }
 }

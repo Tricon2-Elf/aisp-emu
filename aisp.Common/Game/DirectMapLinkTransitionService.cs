@@ -918,7 +918,8 @@ public sealed class DirectMapLinkTransitionService(
             1,
             newPos,
             checked((uint)session.ChannelId),
-            session.MapId
+            session.MapId,
+            session.User?.Role ?? UserRole.User
         );
 
         foreach (var other in state.GetAreaPeers(session))

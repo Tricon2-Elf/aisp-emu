@@ -212,6 +212,7 @@ public class AreasvEnterHandler(
         session.HasMovedSinceMapLoad = false;
         session.IsMapTransitionPending = false;
         session.NeedsPostLoadSelfAvatarNotify = true;
+        session.NeedsMotd = true;
         session.PendingAreaMapSelection = null;
         session.ActiveEventKey = null;
         session.ActiveEventKind = NpcEventKind.None;
@@ -254,11 +255,13 @@ public class AreasvEnterHandler(
         uint res,
         MovementData pos,
         uint channelId = 0,
-        uint mapId = 0
+        uint mapId = 0,
+        UserRole role = UserRole.User
     )
     {
         var cd = new CharaData(objId, cha.ModelId, cha.Name)
         {
+            NamePlate = role.ToNamePlate(),
             Map = new CharacterMapData
             {
                 ChannelId = channelId,

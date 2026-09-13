@@ -47,7 +47,8 @@ public static class AreaAvatarPresenceSync
             1,
             myPos,
             checked((uint)session.ChannelId),
-            session.MapId
+            session.MapId,
+            session.User?.Role ?? UserRole.User
         );
 
         foreach (var other in state.GetAreaPeers(session))
@@ -86,7 +87,8 @@ public static class AreaAvatarPresenceSync
                     1,
                     otherPos,
                     checked((uint)other.ChannelId),
-                    other.MapId
+                    other.MapId,
+                    other.User?.Role ?? UserRole.User
                 );
                 await session.SendAsync(PacketType.AvatarNotifyData, spawnOtherForMe, ct);
             }

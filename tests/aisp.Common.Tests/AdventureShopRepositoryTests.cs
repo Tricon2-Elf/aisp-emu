@@ -19,7 +19,7 @@ public sealed class AdventureShopRepositoryTests
         };
         user.SetPassword("secret");
         db.Users.Add(user);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
         return user;
     }
 
@@ -32,21 +32,22 @@ public sealed class AdventureShopRepositoryTests
         int genre = 0
     )
     {
-        await new AdventureWorkRepository(db).RegisterAsync(author.Id, 1, workId, 1);
+        await new AdventureWorkRepository(db).RegisterAsync(author.Id, 1, workId, 1, TestContext.Current.CancellationToken);
         var started = await shop.BeginUploadAsync(
             author.Id,
             1,
             workId,
-            new AdventureListingDraft($"Work {workId}", "Author", genre, "", price, true, 100)
+            new AdventureListingDraft($"Work {workId}", "Author", genre, "", price, true, 100),
+            TestContext.Current.CancellationToken
         );
         Assert.NotNull(started);
         var scriptId = started.Value.Listing.ScriptId;
-        Assert.NotNull(await shop.RedeemUploadTicketAsync(started.Value.Ticket));
+        Assert.NotNull(await shop.RedeemUploadTicketAsync(started.Value.Ticket, TestContext.Current.CancellationToken));
         Assert.Equal(
             AdventureStoreOutcome.Stored,
-            await shop.StoreContentAsync(scriptId, "ADV0"u8.ToArray(), [])
+            await shop.StoreContentAsync(scriptId, "ADV0"u8.ToArray(), [], ct: TestContext.Current.CancellationToken)
         );
-        var listing = await shop.ConfirmUploadAsync(author.Id, scriptId);
+        var listing = await shop.ConfirmUploadAsync(author.Id, scriptId, TestContext.Current.CancellationToken);
         Assert.NotNull(listing);
         return listing;
     }
@@ -65,14 +66,14 @@ public sealed class AdventureShopRepositoryTests
 
             Assert.Equal(
                 AdventureBuyOutcome.OwnListing,
-                (await shop.BuyAsync(author.Id, 1, listing.ScriptId, 1000, 70)).Outcome
+                (await shop.BuyAsync(author.Id, 1, listing.ScriptId, 1000, 70, TestContext.Current.CancellationToken)).Outcome
             );
             Assert.Equal(
                 AdventureBuyOutcome.PriceMismatch,
-                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 999, 70)).Outcome
+                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 999, 70, TestContext.Current.CancellationToken)).Outcome
             );
 
-            var bought = await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 1000, 70);
+            var bought = await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 1000, 70, TestContext.Current.CancellationToken);
             Assert.Equal(AdventureBuyOutcome.Bought, bought.Outcome);
             Assert.Equal(500, bought.AiPoints);
             Assert.NotNull(bought.Purchase);
@@ -80,7 +81,7 @@ public sealed class AdventureShopRepositoryTests
 
             Assert.Equal(
                 AdventureBuyOutcome.AlreadyOwned,
-                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 1000, 70)).Outcome
+                (await shop.BuyAsync(buyer.Id, 2, listing.ScriptId, 1000, 70, TestContext.Current.CancellationToken)).Outcome
             );
             Assert.Equal(
                 AdventureBuyOutcome.InsufficientFunds,
@@ -90,53 +91,54 @@ public sealed class AdventureShopRepositoryTests
                         2,
                         (await SeedListingAsync(db, shop, author, 2, 800)).ScriptId,
                         800,
-                        70
+                        70,
+                        TestContext.Current.CancellationToken
                     )
                 ).Outcome
             );
 
-            var history = await shop.GetHistoryAsync(buyer.Id, 50);
+            var history = await shop.GetHistoryAsync(buyer.Id, 50, TestContext.Current.CancellationToken);
             Assert.Equal(listing.ScriptId, Assert.Single(history).ScriptId);
             Assert.Equal("Work 1", history[0].Listing.Title);
 
             // Nothing is collectable until the weekly cutoff passes the purchase.
-            var before = await shop.GetBalancesAsync(author.Id);
+            var before = await shop.GetBalancesAsync(author.Id, TestContext.Current.CancellationToken);
             Assert.Equal(new AdventureSalesBalances(0, 700), before);
-            Assert.Equal(0, await shop.SettleAsync(DateTime.UtcNow.AddDays(-1)));
-            Assert.Equal(1, await shop.SettleAsync(DateTime.UtcNow.AddMinutes(1)));
-            Assert.Equal(0, await shop.SettleAsync(DateTime.UtcNow.AddMinutes(1)));
+            Assert.Equal(0, await shop.SettleAsync(DateTime.UtcNow.AddDays(-1), TestContext.Current.CancellationToken));
+            Assert.Equal(1, await shop.SettleAsync(DateTime.UtcNow.AddMinutes(1), TestContext.Current.CancellationToken));
+            Assert.Equal(0, await shop.SettleAsync(DateTime.UtcNow.AddMinutes(1), TestContext.Current.CancellationToken));
             Assert.Equal(
                 new AdventureSalesBalances(700, 0),
-                await shop.GetBalancesAsync(author.Id)
+                await shop.GetBalancesAsync(author.Id, TestContext.Current.CancellationToken)
             );
 
-            var paid = await shop.PayoutAsync(author.Id);
+            var paid = await shop.PayoutAsync(author.Id, TestContext.Current.CancellationToken);
             Assert.Equal((700, 700), paid);
-            Assert.Equal((0, 700), await shop.PayoutAsync(author.Id));
+            Assert.Equal((0, 700), await shop.PayoutAsync(author.Id, TestContext.Current.CancellationToken));
 
             // Download tickets go to the buyer and the author only.
-            Assert.NotNull(await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId));
-            Assert.NotNull(await shop.IssueDownloadTicketAsync(author.Id, listing.ScriptId));
+            Assert.NotNull(await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId, TestContext.Current.CancellationToken));
+            Assert.NotNull(await shop.IssueDownloadTicketAsync(author.Id, listing.ScriptId, TestContext.Current.CancellationToken));
             var stranger = await SeedUserAsync(db, "stranger");
-            Assert.Null(await shop.IssueDownloadTicketAsync(stranger.Id, listing.ScriptId));
-            var ticket = await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId);
-            var content = await shop.RedeemDownloadTicketAsync(ticket!);
+            Assert.Null(await shop.IssueDownloadTicketAsync(stranger.Id, listing.ScriptId, TestContext.Current.CancellationToken));
+            var ticket = await shop.IssueDownloadTicketAsync(buyer.Id, listing.ScriptId, TestContext.Current.CancellationToken);
+            var content = await shop.RedeemDownloadTicketAsync(ticket!, TestContext.Current.CancellationToken);
             Assert.NotNull(content);
             Assert.Equal("ADV0"u8.ToArray(), content.Script);
-            Assert.Null(await shop.RedeemDownloadTicketAsync(ticket!));
+            Assert.Null(await shop.RedeemDownloadTicketAsync(ticket!, TestContext.Current.CancellationToken));
             Assert.Equal(
                 1,
                 await db
                     .AdventureListings.AsNoTracking()
                     .Where(l => l.ScriptId == listing.ScriptId)
                     .Select(l => l.DownloadCount)
-                    .SingleAsync()
+                    .SingleAsync(TestContext.Current.CancellationToken)
             );
 
             // Hiding history keeps the copy.
-            Assert.True(await shop.HideHistoryAsync(buyer.Id, listing.ScriptId));
-            Assert.Empty(await shop.GetHistoryAsync(buyer.Id, 50));
-            Assert.Single(await shop.GetDownloadListAsync(buyer.Id));
+            Assert.True(await shop.HideHistoryAsync(buyer.Id, listing.ScriptId, TestContext.Current.CancellationToken));
+            Assert.Empty(await shop.GetHistoryAsync(buyer.Id, 50, TestContext.Current.CancellationToken));
+            Assert.Single(await shop.GetDownloadListAsync(buyer.Id, TestContext.Current.CancellationToken));
         }
         finally
         {
@@ -156,24 +158,27 @@ public sealed class AdventureShopRepositoryTests
             var a = await SeedListingAsync(db, shop, author, 1, 300, genre: 1);
             var b = await SeedListingAsync(db, shop, author, 2, 100, genre: 2);
             var c = await SeedListingAsync(db, shop, author, 3, 200, genre: 1);
-            await shop.DelistAsync(author.Id, c.ScriptId);
+            await shop.DelistAsync(author.Id, c.ScriptId, TestContext.Current.CancellationToken);
 
-            Assert.Equal(2, await shop.CountListedAsync());
+            Assert.Equal(2, await shop.CountListedAsync(TestContext.Current.CancellationToken));
             var (total, page) = await shop.SearchAsync(
-                new AdventureShopQuery(null, AdventureShopSort.Newest, 0)
+                new AdventureShopQuery(null, AdventureShopSort.Newest, 0),
+                TestContext.Current.CancellationToken
             );
             Assert.Equal(2, total);
             Assert.Equal([b.ScriptId, a.ScriptId], page.Select(l => l.ScriptId));
 
             (total, page) = await shop.SearchAsync(
-                new AdventureShopQuery(1, AdventureShopSort.Newest, 0, 50)
+                new AdventureShopQuery(1, AdventureShopSort.Newest, 0, 50),
+                TestContext.Current.CancellationToken
             );
             Assert.Equal(1, total);
             Assert.Equal(a.ScriptId, Assert.Single(page).ScriptId);
 
             // Second page of one, newest first: b then a.
             (_, page) = await shop.SearchAsync(
-                new AdventureShopQuery(null, AdventureShopSort.Newest, 1, 1)
+                new AdventureShopQuery(null, AdventureShopSort.Newest, 1, 1),
+                TestContext.Current.CancellationToken
             );
             Assert.Equal(a.ScriptId, Assert.Single(page).ScriptId);
 
@@ -181,10 +186,11 @@ public sealed class AdventureShopRepositoryTests
             var buyer = await SeedUserAsync(db, "buyer", aiPoints: 1000);
             Assert.Equal(
                 AdventureBuyOutcome.Bought,
-                (await shop.BuyAsync(buyer.Id, 2, a.ScriptId, 300, 70)).Outcome
+                (await shop.BuyAsync(buyer.Id, 2, a.ScriptId, 300, 70, TestContext.Current.CancellationToken)).Outcome
             );
             (_, page) = await shop.SearchAsync(
-                new AdventureShopQuery(null, AdventureShopSort.MostBought, 0, 50)
+                new AdventureShopQuery(null, AdventureShopSort.MostBought, 0, 50),
+                TestContext.Current.CancellationToken
             );
             Assert.Equal([a.ScriptId, b.ScriptId], page.Select(l => l.ScriptId));
         }

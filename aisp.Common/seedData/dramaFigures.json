@@ -1,0 +1,1050 @@
+{
+  "boxes": [
+    {
+      "id": 1,
+      "name": {
+        "ja": "ai sp@ce MEN"
+      },
+      "sortOrder": 0
+    },
+    {
+      "id": 2,
+      "name": {
+        "ja": "ai sp@ce WOMEN"
+      },
+      "sortOrder": 1
+    },
+    {
+      "id": 1000,
+      "name": {
+        "ja": "D.C.II"
+      },
+      "sortOrder": 2
+    },
+    {
+      "id": 1001,
+      "name": {
+        "ja": "CLANNAD"
+      },
+      "sortOrder": 3
+    },
+    {
+      "id": 1002,
+      "name": {
+        "ja": "SHUFFLE!"
+      },
+      "sortOrder": 4
+    }
+  ],
+  "figures": [
+    {
+      "id": 1000,
+      "boxId": 1000,
+      "name": {
+        "ja": "朝倉音姫モデル"
+      },
+      "gender": 2,
+      "people": 1,
+      "modelId": 2012011,
+      "hairstyle": 10900000,
+      "alwaysGranted": true,
+      "sortOrder": 0,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100260
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10100000
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 11500040
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500050
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600020
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700020
+        }
+      ]
+    },
+    {
+      "id": 1001,
+      "boxId": 1001,
+      "name": {
+        "ja": "古河渚モデル"
+      },
+      "gender": 2,
+      "people": 1,
+      "modelId": 2022011,
+      "hairstyle": 10900020,
+      "alwaysGranted": true,
+      "sortOrder": 1,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100010
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200000
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500040
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 1002,
+      "boxId": 1002,
+      "name": {
+        "ja": "リシアンサスモデル"
+      },
+      "gender": 2,
+      "people": 1,
+      "modelId": 2032011,
+      "hairstyle": 10900010,
+      "alwaysGranted": true,
+      "sortOrder": 2,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100020
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200010
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10500030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10400010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        },
+        {
+          "slotIndex": 6,
+          "itemId": 10000000
+        }
+      ]
+    },
+    {
+      "id": 257,
+      "boxId": 1,
+      "itemId": 14100000,
+      "gender": 1,
+      "people": 1,
+      "packageId": 0,
+      "face": 0,
+      "modelId": 1001021,
+      "hairstyle": 10920010,
+      "alwaysGranted": false,
+      "sortOrder": 3,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 258,
+      "boxId": 1,
+      "itemId": 14100001,
+      "gender": 1,
+      "people": 1,
+      "packageId": 1000,
+      "face": 0,
+      "modelId": 1001021,
+      "hairstyle": 10920024,
+      "alwaysGranted": false,
+      "sortOrder": 4,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 259,
+      "boxId": 1,
+      "itemId": 14100002,
+      "gender": 1,
+      "people": 1,
+      "packageId": 2000,
+      "face": 0,
+      "modelId": 1001021,
+      "hairstyle": 10920041,
+      "alwaysGranted": false,
+      "sortOrder": 5,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 260,
+      "boxId": 1,
+      "itemId": 14100003,
+      "gender": 1,
+      "people": 1,
+      "packageId": 3000,
+      "face": 0,
+      "modelId": 1001021,
+      "hairstyle": 10920012,
+      "alwaysGranted": false,
+      "sortOrder": 6,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 261,
+      "boxId": 1,
+      "itemId": 14100004,
+      "gender": 1,
+      "people": 1,
+      "packageId": 4000,
+      "face": 0,
+      "modelId": 1001011,
+      "hairstyle": 10920023,
+      "alwaysGranted": false,
+      "sortOrder": 7,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 262,
+      "boxId": 1,
+      "itemId": 14100005,
+      "gender": 1,
+      "people": 1,
+      "packageId": 5000,
+      "face": 0,
+      "modelId": 1001011,
+      "hairstyle": 10920040,
+      "alwaysGranted": false,
+      "sortOrder": 8,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 263,
+      "boxId": 1,
+      "itemId": 14100006,
+      "gender": 1,
+      "people": 1,
+      "packageId": 6000,
+      "face": 0,
+      "modelId": 1001011,
+      "hairstyle": 10920014,
+      "alwaysGranted": false,
+      "sortOrder": 9,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 264,
+      "boxId": 1,
+      "itemId": 14100007,
+      "gender": 1,
+      "people": 1,
+      "packageId": 7000,
+      "face": 0,
+      "modelId": 1001011,
+      "hairstyle": 10920031,
+      "alwaysGranted": false,
+      "sortOrder": 10,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 265,
+      "boxId": 1,
+      "itemId": 14100008,
+      "gender": 1,
+      "people": 1,
+      "packageId": 8000,
+      "face": 0,
+      "modelId": 1001031,
+      "hairstyle": 10920042,
+      "alwaysGranted": false,
+      "sortOrder": 11,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 266,
+      "boxId": 1,
+      "itemId": 14100009,
+      "gender": 1,
+      "people": 1,
+      "packageId": 9000,
+      "face": 0,
+      "modelId": 1001031,
+      "hairstyle": 10920013,
+      "alwaysGranted": false,
+      "sortOrder": 12,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 267,
+      "boxId": 1,
+      "itemId": 14100010,
+      "gender": 1,
+      "people": 1,
+      "packageId": 10000,
+      "face": 0,
+      "modelId": 1001031,
+      "hairstyle": 10920030,
+      "alwaysGranted": false,
+      "sortOrder": 13,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 268,
+      "boxId": 1,
+      "itemId": 14100011,
+      "gender": 1,
+      "people": 1,
+      "packageId": 11000,
+      "face": 0,
+      "modelId": 1001031,
+      "hairstyle": 10920044,
+      "alwaysGranted": false,
+      "sortOrder": 14,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100220
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200100
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400030
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500070
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10700030
+        }
+      ]
+    },
+    {
+      "id": 513,
+      "boxId": 2,
+      "itemId": 14200000,
+      "gender": 2,
+      "people": 1,
+      "packageId": 0,
+      "face": 0,
+      "modelId": 1002011,
+      "hairstyle": 10930010,
+      "alwaysGranted": false,
+      "sortOrder": 15,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 514,
+      "boxId": 2,
+      "itemId": 14200001,
+      "gender": 2,
+      "people": 1,
+      "packageId": 1000,
+      "face": 0,
+      "modelId": 1002011,
+      "hairstyle": 10930024,
+      "alwaysGranted": false,
+      "sortOrder": 16,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 515,
+      "boxId": 2,
+      "itemId": 14200002,
+      "gender": 2,
+      "people": 1,
+      "packageId": 2000,
+      "face": 0,
+      "modelId": 1002011,
+      "hairstyle": 10930041,
+      "alwaysGranted": false,
+      "sortOrder": 17,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 516,
+      "boxId": 2,
+      "itemId": 14200003,
+      "gender": 2,
+      "people": 1,
+      "packageId": 3000,
+      "face": 0,
+      "modelId": 1002011,
+      "hairstyle": 10930012,
+      "alwaysGranted": false,
+      "sortOrder": 18,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 517,
+      "boxId": 2,
+      "itemId": 14200004,
+      "gender": 2,
+      "people": 1,
+      "packageId": 4000,
+      "face": 0,
+      "modelId": 1002021,
+      "hairstyle": 10930023,
+      "alwaysGranted": false,
+      "sortOrder": 19,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 518,
+      "boxId": 2,
+      "itemId": 14200005,
+      "gender": 2,
+      "people": 1,
+      "packageId": 5000,
+      "face": 0,
+      "modelId": 1002021,
+      "hairstyle": 10930040,
+      "alwaysGranted": false,
+      "sortOrder": 20,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 519,
+      "boxId": 2,
+      "itemId": 14200006,
+      "gender": 2,
+      "people": 1,
+      "packageId": 6000,
+      "face": 0,
+      "modelId": 1002021,
+      "hairstyle": 10930014,
+      "alwaysGranted": false,
+      "sortOrder": 21,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 520,
+      "boxId": 2,
+      "itemId": 14200007,
+      "gender": 2,
+      "people": 1,
+      "packageId": 7000,
+      "face": 0,
+      "modelId": 1002021,
+      "hairstyle": 10930021,
+      "alwaysGranted": false,
+      "sortOrder": 22,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 521,
+      "boxId": 2,
+      "itemId": 14200008,
+      "gender": 2,
+      "people": 1,
+      "packageId": 8000,
+      "face": 0,
+      "modelId": 1002031,
+      "hairstyle": 10930042,
+      "alwaysGranted": false,
+      "sortOrder": 23,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 522,
+      "boxId": 2,
+      "itemId": 14200009,
+      "gender": 2,
+      "people": 1,
+      "packageId": 9000,
+      "face": 0,
+      "modelId": 1002031,
+      "hairstyle": 10930013,
+      "alwaysGranted": false,
+      "sortOrder": 24,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 523,
+      "boxId": 2,
+      "itemId": 14200010,
+      "gender": 2,
+      "people": 1,
+      "packageId": 10000,
+      "face": 0,
+      "modelId": 1002031,
+      "hairstyle": 10930020,
+      "alwaysGranted": false,
+      "sortOrder": 25,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    },
+    {
+      "id": 524,
+      "boxId": 2,
+      "itemId": 14200011,
+      "gender": 2,
+      "people": 1,
+      "packageId": 11000,
+      "face": 0,
+      "modelId": 1002031,
+      "hairstyle": 10930044,
+      "alwaysGranted": false,
+      "sortOrder": 26,
+      "equipment": [
+        {
+          "slotIndex": 0,
+          "itemId": 10100060
+        },
+        {
+          "slotIndex": 1,
+          "itemId": 10200090
+        },
+        {
+          "slotIndex": 2,
+          "itemId": 10400000
+        },
+        {
+          "slotIndex": 3,
+          "itemId": 10500010
+        },
+        {
+          "slotIndex": 4,
+          "itemId": 10600000
+        },
+        {
+          "slotIndex": 5,
+          "itemId": 10700000
+        }
+      ]
+    }
+  ]
+}

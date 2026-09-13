@@ -44,7 +44,8 @@ public class AreaItemMoveHandlerTests
             };
             var handler = new AreaItemMoveHandler(
                 new UserRepository(db),
-                NullLogger<AreaItemMoveHandler>.Instance
+                NullLogger<AreaItemMoveHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             var payload = new byte[18];
@@ -120,7 +121,8 @@ public class AreaItemMoveHandlerTests
             };
             var handler = new AreaItemMoveHandler(
                 new UserRepository(db),
-                NullLogger<AreaItemMoveHandler>.Instance
+                NullLogger<AreaItemMoveHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             // Attempt to warehouse the entire stack (including the placed copy).
@@ -189,7 +191,8 @@ public class AreaItemMoveHandlerTests
             };
             var handler = new AreaItemMoveHandler(
                 new UserRepository(db),
-                NullLogger<AreaItemMoveHandler>.Instance
+                NullLogger<AreaItemMoveHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             // Warehouse only the spare (unplaced) copy.
@@ -258,7 +261,8 @@ public class AreaItemMoveHandlerTests
             };
             var handler = new AreaItemMoveHandler(
                 new UserRepository(db),
-                NullLogger<AreaItemMoveHandler>.Instance
+                NullLogger<AreaItemMoveHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             var payload = new byte[18];

@@ -8,6 +8,78 @@ namespace aisp.Common.Tests;
 public class ItemEntityMapperTests
 {
     [Theory]
+    [InlineData(40100000, 0, 8u, 3u)]
+    [InlineData(40200000, 0, 16u, 4u)]
+    [InlineData(40300000, 0, 64u, 6u)]
+    [InlineData(40400000, 0, 128u, 7u)]
+    [InlineData(40500000, 0, 512u, 8u)]
+    [InlineData(40600000, 0, 1024u, 9u)]
+    [InlineData(40700000, 0, 2048u, 10u)]
+    [InlineData(40800000, 11, 4096u, 11u)]
+    [InlineData(40900000, 51, 8192u, 11u)]
+    [InlineData(41400000, 26, 67108864u, 11u)]
+    public void Second_clothing_range_uses_wardrobe_categories(
+        int id,
+        int storedSocket,
+        uint socket,
+        uint category
+    )
+    {
+        var item = new Item
+        {
+            Id = id,
+            Name = "N/A",
+            Socket = storedSocket,
+            IconId = id,
+        };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal(socket, data.Socket1);
+        Assert.Equal(category, data.Category);
+        Assert.Equal((uint)id, data.ItemId);
+    }
+
+    [Fact]
+    public void Second_range_does_not_reclassify_furniture_assets()
+    {
+        Assert.False(ItemEntityMapper.IsCosplayWardrobeItem(41000000));
+        Assert.Equal(12u, ItemEntityMapper.ResolveInventoryTabCategory(41000000));
+    }
+
+    [Theory]
+    [InlineData(40100040, 8u, 0u, 3u, 101u, ItemFlags.PermitsUnderwearTop)]
+    [InlineData(40200040, 16u, 0u, 4u, 102u, ItemFlags.PermitsUnderwearBottom)]
+    [InlineData(40500010, 512u, 256u, 8u, 105u, ItemFlags.None)]
+    public void Koko_casual_items_keep_asset_ids_and_use_clothing_metadata(
+        int id,
+        uint socket1,
+        uint socket2,
+        uint category,
+        uint placement,
+        ItemFlags flags
+    )
+    {
+        var item = new Item
+        {
+            Id = id,
+            Name = "N/A",
+            IconId = id,
+        };
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal((uint)id, data.ItemId);
+        Assert.Equal((uint)id, data.IconId);
+        Assert.Equal(socket1, data.Socket1);
+        Assert.Equal(socket2, data.Socket2);
+        Assert.Equal(category, data.Category);
+        Assert.Equal(category, ItemEntityMapper.ResolveInventoryTabCategory(item));
+        Assert.Equal(placement, data.PlacementTypeId);
+        Assert.Equal(flags, data.Flags);
+        Assert.Equal(
+            0u,
+            ItemEntityMapper.ResolveEquipSocket(new CharacterEquipSlot { ItemId = (uint)id })
+        );
+    }
+
+    [Theory]
     [InlineData(10100220, 8)] // shirt
     [InlineData(10200100, 32)] // pants
     [InlineData(10200000, 16)] // skirt
@@ -372,6 +444,52 @@ public class ItemEntityMapperTests
         Assert.Equal(114u, data.PlacementTypeId);
         Assert.Equal(
             (uint)WardrobeCategoryId.Accessory,
+            ItemEntityMapper.ResolveInventoryTabCategory(item)
+        );
+    }
+
+    [Theory]
+    [InlineData(14100000)]
+    [InlineData(14100011)]
+    [InlineData(14200000)]
+    [InlineData(14200011)]
+    public void Drama_figure_boxes_take_the_figure_tab(int itemId)
+    {
+        Assert.True(ItemEntityMapper.IsDramaFigureItem(itemId));
+        Assert.Equal(
+            (uint)WardrobeCategoryId.DramaFigure,
+            ItemEntityMapper.ResolveInventoryTabCategory(itemId)
+        );
+
+        var data = ItemEntityMapper.ToItemBaseListData(
+            new Item
+            {
+                Id = itemId,
+                Socket = 0,
+                Name = "テストフィギュア",
+            }
+        );
+        Assert.Equal((uint)WardrobeCategoryId.DramaFigure, data.Category);
+        Assert.Equal(0u, data.Socket1);
+        Assert.Equal(ItemFlags.None, data.Flags);
+        Assert.False(ItemEntityMapper.IsFurnitureCatalogCategory((int)data.Category));
+    }
+
+    [Fact]
+    public void ToItemBaseListData_keeps_141_figure_boxes_off_the_furniture_tab_even_when_persisted_as_furniture()
+    {
+        var item = new Item
+        {
+            Id = 14100000,
+            Socket = 0,
+            Name = "長身+りりしいモデル",
+            CatalogCategory = (int)WardrobeCategoryId.FurnitureFloor,
+        };
+
+        var data = ItemEntityMapper.ToItemBaseListData(item);
+        Assert.Equal((uint)WardrobeCategoryId.DramaFigure, data.Category);
+        Assert.Equal(
+            (uint)WardrobeCategoryId.DramaFigure,
             ItemEntityMapper.ResolveInventoryTabCategory(item)
         );
     }

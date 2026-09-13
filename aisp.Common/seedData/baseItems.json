@@ -11840,6 +11840,222 @@
     "iconId": 12400000
   },
   {
+    "id": 14100000,
+    "socket": 0,
+    "name": {
+      "ja": "長身+りりしいモデル",
+      "en": "Tall + gallant model"
+    },
+    "iconId": 14100000
+  },
+  {
+    "id": 14100001,
+    "socket": 0,
+    "name": {
+      "ja": "長身+つり目なモデル",
+      "en": "Tall + upturned-eye model"
+    },
+    "iconId": 14100001
+  },
+  {
+    "id": 14100002,
+    "socket": 0,
+    "name": {
+      "ja": "長身+たれ目なモデル",
+      "en": "Tall + drooping-eye model"
+    },
+    "iconId": 14100002
+  },
+  {
+    "id": 14100003,
+    "socket": 0,
+    "name": {
+      "ja": "長身+クールなモデル",
+      "en": "Tall + cool model"
+    },
+    "iconId": 14100003
+  },
+  {
+    "id": 14100004,
+    "socket": 0,
+    "name": {
+      "ja": "中背+りりしいモデル",
+      "en": "Medium + gallant model"
+    },
+    "iconId": 14100004
+  },
+  {
+    "id": 14100005,
+    "socket": 0,
+    "name": {
+      "ja": "中背+つり目なモデル",
+      "en": "Medium + upturned-eye model"
+    },
+    "iconId": 14100005
+  },
+  {
+    "id": 14100006,
+    "socket": 0,
+    "name": {
+      "ja": "中背+たれ目なモデル",
+      "en": "Medium + drooping-eye model"
+    },
+    "iconId": 14100006
+  },
+  {
+    "id": 14100007,
+    "socket": 0,
+    "name": {
+      "ja": "中背+クールなモデル",
+      "en": "Medium + cool model"
+    },
+    "iconId": 14100007
+  },
+  {
+    "id": 14100008,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+りりしいモデル",
+      "en": "Petite + gallant model"
+    },
+    "iconId": 14100008
+  },
+  {
+    "id": 14100009,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+つり目なモデル",
+      "en": "Petite + upturned-eye model"
+    },
+    "iconId": 14100009
+  },
+  {
+    "id": 14100010,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+たれ目なモデル",
+      "en": "Petite + drooping-eye model"
+    },
+    "iconId": 14100010
+  },
+  {
+    "id": 14100011,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+クールなモデル",
+      "en": "Petite + cool model"
+    },
+    "iconId": 14100011
+  },
+  {
+    "id": 14200000,
+    "socket": 0,
+    "name": {
+      "ja": "長身+かわいいモデル",
+      "en": "Tall + cute model"
+    },
+    "iconId": 14200000
+  },
+  {
+    "id": 14200001,
+    "socket": 0,
+    "name": {
+      "ja": "長身+つり目なモデル",
+      "en": "Tall + upturned-eye model"
+    },
+    "iconId": 14200001
+  },
+  {
+    "id": 14200002,
+    "socket": 0,
+    "name": {
+      "ja": "長身+たれ目なモデル",
+      "en": "Tall + drooping-eye model"
+    },
+    "iconId": 14200002
+  },
+  {
+    "id": 14200003,
+    "socket": 0,
+    "name": {
+      "ja": "長身+クールなモデル",
+      "en": "Tall + cool model"
+    },
+    "iconId": 14200003
+  },
+  {
+    "id": 14200004,
+    "socket": 0,
+    "name": {
+      "ja": "中背+かわいいモデル",
+      "en": "Medium + cute model"
+    },
+    "iconId": 14200004
+  },
+  {
+    "id": 14200005,
+    "socket": 0,
+    "name": {
+      "ja": "中背+つり目なモデル",
+      "en": "Medium + upturned-eye model"
+    },
+    "iconId": 14200005
+  },
+  {
+    "id": 14200006,
+    "socket": 0,
+    "name": {
+      "ja": "中背+たれ目なモデル",
+      "en": "Medium + drooping-eye model"
+    },
+    "iconId": 14200006
+  },
+  {
+    "id": 14200007,
+    "socket": 0,
+    "name": {
+      "ja": "中背+クールなモデル",
+      "en": "Medium + cool model"
+    },
+    "iconId": 14200007
+  },
+  {
+    "id": 14200008,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+かわいいモデル",
+      "en": "Petite + cute model"
+    },
+    "iconId": 14200008
+  },
+  {
+    "id": 14200009,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+つり目なモデル",
+      "en": "Petite + upturned-eye model"
+    },
+    "iconId": 14200009
+  },
+  {
+    "id": 14200010,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+たれ目なモデル",
+      "en": "Petite + drooping-eye model"
+    },
+    "iconId": 14200010
+  },
+  {
+    "id": 14200011,
+    "socket": 0,
+    "name": {
+      "ja": "小柄+クールなモデル",
+      "en": "Petite + cool model"
+    },
+    "iconId": 14200011
+  },
+  {
     "id": 40000000,
     "socket": 10,
     "name": {
@@ -11881,9 +12097,9 @@
   },
   {
     "id": 40100040,
-    "socket": 0,
+    "socket": 8,
     "name": {
-      "ja": "N/A"
+      "ja": "小恋とお揃いのトップス♀"
     },
     "iconId": 40100040
   },
@@ -12233,9 +12449,9 @@
   },
   {
     "id": 40200040,
-    "socket": 0,
+    "socket": 16,
     "name": {
-      "ja": "N/A"
+      "ja": "小恋とお揃いの黒スカート♀"
     },
     "iconId": 40200040
   },
@@ -12345,9 +12561,9 @@
   },
   {
     "id": 40500010,
-    "socket": 0,
+    "socket": 512,
     "name": {
-      "ja": "N/A"
+      "ja": "小恋とお揃いのストラップ付靴♀"
     },
     "iconId": 40500010
   },
@@ -12894,5 +13110,118 @@
       "ja": "N/A"
     },
     "iconId": 90000525
+  },
+  {
+    "id": 172001001,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM01・朝（登校）"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001002,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM02・夜"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001003,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM03・怪しい、不審"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001004,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM04・ノスタルジー"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001005,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM05・クライマックス！"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001006,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM06・ジャズ"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001007,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM07・８bit"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001008,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM08・ケルト調"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001009,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM09・雅楽風"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 182001001,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]SE01・ファンファーレ"
+    },
+    "iconId": 14300003
+  },
+  {
+    "id": 143010001,
+    "socket": 0,
+    "name": {
+      "ja": "少女ａ・タイトルコール１"
+    },
+    "description": {
+      "ja": "少女ａ・タイトルコール１"
+    },
+    "iconId": 14300001
+  },
+  {
+    "id": 143010002,
+    "socket": 0,
+    "name": {
+      "ja": "少女ａ・タイトルコール２"
+    },
+    "description": {
+      "ja": "少女ａ・タイトルコール２"
+    },
+    "iconId": 14300001
+  },
+  {
+    "id": 143010003,
+    "socket": 0,
+    "name": {
+      "ja": "少女ａ・出会い"
+    },
+    "description": {
+      "ja": "少女ａ・出会い"
+    },
+    "iconId": 14300001
   }
 ]

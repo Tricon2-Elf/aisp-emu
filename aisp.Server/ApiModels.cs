@@ -99,5 +99,7 @@ public record ChatLogEntryDto
     public uint? MapId { get; init; }
     public int? ChannelId { get; init; }
     public bool Rejected { get; init; }
+    public bool Toxicity { get; init; }
+    public string ToxicityReason { get; init; } = "";
     public DateTime CreatedAt { get; init; }
 }

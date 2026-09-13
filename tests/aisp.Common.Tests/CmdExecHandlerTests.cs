@@ -98,7 +98,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -232,7 +231,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -351,7 +349,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -454,7 +451,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -599,7 +595,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms(["faggot"]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -840,7 +835,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -921,7 +915,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1004,7 +997,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1079,7 +1071,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1172,7 +1163,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1197,10 +1187,7 @@ public class CmdExecHandlerTests
                 expectedItems.Count,
                 areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify)
             );
-            Assert.DoesNotContain(
-                areaSession.Sent,
-                p => p.Type == PacketType.ItemUpdateListNotify
-            );
+            Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemUpdateListNotify);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
         finally
@@ -1310,7 +1297,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1328,6 +1314,233 @@ public class CmdExecHandlerTests
             var reader = new PacketReader(notify.Payload);
             Assert.Equal((uint)onTvId, reader.ReadUInt());
             Assert.Equal(1u, reader.ReadUInt());
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    // The handler with only what the screen commands need; the rest is stock.
+    private static CmdExecHandler CreateScreenHandler(
+        Microsoft.EntityFrameworkCore.DbContextOptions<MainContext> options,
+        SharedState state,
+        ScreenAssignments? assignments = null
+    ) =>
+        new(
+            state,
+            new MapRepository(new MainContext(options)),
+            new UserRepository(new MainContext(options)),
+            new CharacterRepository(
+                new MainContext(options),
+                NullLogger<CharacterRepository>.Instance
+            ),
+            new MyRoomRepository(new MainContext(options)),
+            new CircleRepository(new MainContext(options)),
+            new StubItemBaseListCache(DefaultClothingItems.Male),
+            CreateDirectMapLinkTransitionService(options, state),
+            CreateModerationService(options, state),
+            new ChatLogRepository(new MainContext(options)),
+            new ReportTicketRepository(new MainContext(options)),
+            TestTextLocaliser.English,
+            new AdventureWorkRepository(new MainContext(options)),
+            WordFilter.FromTerms([]),
+            assignments ?? new ScreenAssignments(),
+            new NicotvRepository(new MainContext(options)),
+            NullLogger<CmdExecHandler>.Instance
+        );
+
+    [Fact]
+    public async Task ScreenCommand_TellsEveryClientOnTheMapToReload_NotOnlyTheStage()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            // A town map (Akihabara's id range), not the Stage: its screens reload through the
+            // launcher hook, so every client there is told.
+            var mod = CreateUserWithCharacter(1, 8010, "screen-mod", "Screen Mod", 10990100);
+            mod.Role = UserRole.Moderator;
+            var other = CreateUserWithCharacter(2, 8011, "screen-other", "Screen Other", 10990100);
+            var elsewhere = CreateUserWithCharacter(3, 8012, "screen-far", "Screen Far", 10990110);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(mod, other, elsewhere);
+                await db.SaveChangesAsync(ct);
+            }
+            var state = new SharedState();
+            var modArea = new CapturingPlayerSession
+            {
+                User = mod,
+                UserId = mod.Id,
+                Character = mod.Characters.First(),
+                CharacterId = 8010,
+                MapId = 10990100,
+            };
+            var otherArea = new CapturingPlayerSession
+            {
+                User = other,
+                UserId = other.Id,
+                Character = other.Characters.First(),
+                CharacterId = 8011,
+                MapId = 10990100,
+            };
+            var farArea = new CapturingPlayerSession
+            {
+                User = elsewhere,
+                UserId = elsewhere.Id,
+                Character = elsewhere.Characters.First(),
+                CharacterId = 8012,
+                MapId = 10990110,
+            };
+            state.RegisterClient(ServerType.Area, modArea);
+            state.RegisterClient(ServerType.Area, otherArea);
+            state.RegisterClient(ServerType.Area, farArea);
+            var msgSession = new CapturingPlayerSession { User = mod, UserId = mod.Id };
+            var handler = CreateScreenHandler(options, state);
+
+            await handler.HandleAsync(BuildCmdExecPayload("screen", "tw:someone"), msgSession, ct);
+
+            foreach (var onTheMap in new[] { modArea, otherArea })
+            {
+                var notify = Assert.Single(
+                    onTheMap.Sent,
+                    p => p.Type == PacketType.NotifyNicoliveReload
+                );
+                Assert.Equal(
+                    ScreenAssignments.ReloadEveryScreen,
+                    new PacketReader(notify.Payload).ReadString()
+                );
+            }
+            Assert.DoesNotContain(farArea.Sent, p => p.Type == PacketType.NotifyNicoliveReload);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ChannelCommand_ReloadsBoundMapsWholly_AndAutoMapsForThatChannelOnly()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var mod = CreateUserWithCharacter(1, 8020, "chan-mod", "Chan Mod", 10990100);
+            mod.Role = UserRole.Moderator;
+            var onAuto = CreateUserWithCharacter(2, 8021, "chan-auto", "Chan Auto", 10990100);
+            var onBound = CreateUserWithCharacter(3, 8022, "chan-bound", "Chan Bound", 10990110);
+            var onOther = CreateUserWithCharacter(4, 8023, "chan-other", "Chan Other", 10990120);
+            var inRoom = CreateUserWithCharacter(5, 8024, "chan-room", "Chan Room", 20_000_000);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(mod, onAuto, onBound, onOther, inRoom);
+                await db.SaveChangesAsync(ct);
+            }
+            var state = new SharedState();
+            CapturingPlayerSession Area(User user, uint characterId, uint mapId)
+            {
+                var area = new CapturingPlayerSession
+                {
+                    User = user,
+                    UserId = user.Id,
+                    Character = user.Characters.First(),
+                    CharacterId = characterId,
+                    MapId = mapId,
+                };
+                state.RegisterClient(ServerType.Area, area);
+                return area;
+            }
+            Area(mod, 8020, 10990100);
+            var autoArea = Area(onAuto, 8021, 10990100); // no assignment: screens follow their own tvid
+            var boundArea = Area(onBound, 8022, 10990110);
+            var otherArea = Area(onOther, 8023, 10990120);
+            var roomArea = Area(inRoom, 8024, 20_000_000);
+            var assignments = new ScreenAssignments();
+            assignments.Set(10990110, "channel:7");
+            assignments.Set(10990120, "tw:elsewhere");
+            var msgSession = new CapturingPlayerSession { User = mod, UserId = mod.Id };
+            var handler = CreateScreenHandler(options, state, assignments);
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("channel", "7", "tw:someone"),
+                msgSession,
+                ct
+            );
+
+            static string ReloadIdSentTo(CapturingPlayerSession area) =>
+                new PacketReader(
+                    Assert.Single(area.Sent, p => p.Type == PacketType.NotifyNicoliveReload).Payload
+                ).ReadString();
+            // Only the screens on channel 7 among those following their own number...
+            Assert.Equal("lv7", ReloadIdSentTo(autoArea));
+            // ...every screen on a map bound to the channel...
+            Assert.Equal(ScreenAssignments.ReloadEveryScreen, ReloadIdSentTo(boundArea));
+            // ...nothing on a map showing something else, or in a room (its TVs have their own notify).
+            Assert.DoesNotContain(otherArea.Sent, p => p.Type == PacketType.NotifyNicoliveReload);
+            Assert.DoesNotContain(roomArea.Sent, p => p.Type == PacketType.NotifyNicoliveReload);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ScreenReload_IsForAnyone_AndReloadsOnlyTheirOwnClient()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var player = CreateUserWithCharacter(1, 8013, "screen-user", "Screen User", 10990100);
+            var neighbour = CreateUserWithCharacter(2, 8014, "screen-nb", "Screen Nb", 10990100);
+            await using (var db = new MainContext(options))
+            {
+                db.Users.AddRange(player, neighbour);
+                await db.SaveChangesAsync(ct);
+            }
+            var state = new SharedState();
+            var playerArea = new CapturingPlayerSession
+            {
+                User = player,
+                UserId = player.Id,
+                Character = player.Characters.First(),
+                CharacterId = 8013,
+                MapId = 10990100,
+            };
+            var neighbourArea = new CapturingPlayerSession
+            {
+                User = neighbour,
+                UserId = neighbour.Id,
+                Character = neighbour.Characters.First(),
+                CharacterId = 8014,
+                MapId = 10990100,
+            };
+            state.RegisterClient(ServerType.Area, playerArea);
+            state.RegisterClient(ServerType.Area, neighbourArea);
+            var msgSession = new CapturingPlayerSession { User = player, UserId = player.Id };
+            var handler = CreateScreenHandler(options, state);
+
+            // A regular user: /screen itself is refused, /screen reload is not.
+            await handler.HandleAsync(BuildCmdExecPayload("screen", "tw:someone"), msgSession, ct);
+            Assert.DoesNotContain(playerArea.Sent, p => p.Type == PacketType.NotifyNicoliveReload);
+
+            await handler.HandleAsync(BuildCmdExecPayload("screen", "reload"), msgSession, ct);
+
+            var notify = Assert.Single(
+                playerArea.Sent,
+                p => p.Type == PacketType.NotifyNicoliveReload
+            );
+            Assert.Equal(
+                ScreenAssignments.ReloadEveryScreenHard,
+                new PacketReader(notify.Payload).ReadString()
+            );
+            Assert.DoesNotContain(
+                neighbourArea.Sent,
+                p => p.Type == PacketType.NotifyNicoliveReload
+            );
         }
         finally
         {
@@ -1394,7 +1607,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1412,10 +1624,7 @@ public class CmdExecHandlerTests
             Assert.Equal(1, inventory.Quantity);
 
             Assert.Equal(1, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
-            Assert.DoesNotContain(
-                areaSession.Sent,
-                p => p.Type == PacketType.ItemUpdateListNotify
-            );
+            Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemUpdateListNotify);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
         }
         finally
@@ -1489,7 +1698,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1565,7 +1773,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -1697,7 +1904,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 new ScreenAssignments(),
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -2258,7 +2464,6 @@ public class CmdExecHandlerTests
                 WordFilter.FromTerms([]),
                 screenAssignments,
                 new NicotvRepository(new MainContext(options)),
-                Options.Create(new ServerOptions()),
                 NullLogger<CmdExecHandler>.Instance
             );
 
@@ -2283,14 +2488,23 @@ public class CmdExecHandlerTests
                 StringComparison.OrdinalIgnoreCase
             );
 
-            // A video (needs a shared timeline, which channels do not have) is rejected too.
+            // Another channel is rejected too (no indirection chains).
             var modMsgSession = new CapturingPlayerSession { User = mod, UserId = mod.Id };
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/channel", "2", "channel:3"),
+                modMsgSession,
+                TestContext.Current.CancellationToken
+            );
+            Assert.Null(screenAssignments.GetChannelSource(2));
+
+            // A video sticks, looping on the channel's own timeline from the moment it is set.
             await handler.HandleAsync(
                 BuildCmdExecPayload("/channel", "2", "yt:dQw4w9WgXcQ"),
                 modMsgSession,
                 TestContext.Current.CancellationToken
             );
-            Assert.Null(screenAssignments.GetChannelSource(2));
+            Assert.Equal("yt:dQw4w9WgXcQ", screenAssignments.GetChannelSource(2));
+            Assert.NotNull(screenAssignments.GetChannelTimeline(2));
 
             // A moderator's livestream assignment sticks, normalised the same way /screen does.
             await handler.HandleAsync(
@@ -2298,12 +2512,13 @@ public class CmdExecHandlerTests
                 modMsgSession,
                 TestContext.Current.CancellationToken
             );
-            Assert.Equal("twitch:someone", screenAssignments.GetChannelSource(2));
+            Assert.Equal("tw:someone", screenAssignments.GetChannelSource(2));
 
             // A room TV tuned to that channel (via channel:2, the same word /screen channel:2
-            // would bind a map to) resolves the assigned stream, not the title card.
+            // would bind a map to) resolves the assigned stream (tw: as the embed, the default),
+            // not the title card.
             Assert.Equal(
-                "streamlink:https://twitch.tv/someone",
+                "electron:https://player.twitch.tv/?channel=someone&parent=aisp.moe",
                 screenAssignments.Resolve("room-tv", "channel:2 n:5", null)
             );
 
@@ -2345,7 +2560,6 @@ public class CmdExecHandlerTests
             WordFilter.FromTerms([]),
             new ScreenAssignments(),
             new NicotvRepository(new MainContext(options)),
-            Options.Create(new ServerOptions()),
             NullLogger<CmdExecHandler>.Instance
         );
 

@@ -50,14 +50,15 @@ internal static class AccessoryAttachMap
 
         return prefix switch
         {
-            109 => CharacterEquipmentSlotIndex.Wig,
-            108 => Face108(itemId, seed),
+            109 or 409 => CharacterEquipmentSlotIndex.Wig,
+            108 or 408 => Face108(itemId, seed),
             112 => BagOrHandheld(seed),
             114 => Prefix114(itemId),
-            115 => Wrist115(seed),
-            116 => CharacterEquipmentSlotIndex.Necklace,
-            117 or 118 => CharacterEquipmentSlotIndex.Hat,
-            122 or 123 or 124 => CharacterEquipmentSlotIndex.Handheld,
+            414 => CharacterEquipmentSlotIndex.LeftShoulderBag,
+            115 or 415 => Wrist115(seed),
+            116 or 416 => CharacterEquipmentSlotIndex.Necklace,
+            117 or 118 or 417 or 418 => CharacterEquipmentSlotIndex.Hat,
+            122 or 123 or 124 or 422 => CharacterEquipmentSlotIndex.Handheld,
             _ => SeedFallback(seed),
         };
     }

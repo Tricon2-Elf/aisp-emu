@@ -27,7 +27,8 @@ public class ItemDiscardHandlersTests
             var (session, character) = await SeedAsync(db);
             var handler = new ItemDiscardHandler(
                 new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
-                NullLogger<ItemDiscardHandler>.Instance
+                NullLogger<ItemDiscardHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             await handler.HandleAsync(
@@ -73,7 +74,8 @@ public class ItemDiscardHandlersTests
             var (session, character) = await SeedAsync(db);
             var handler = new ItemDiscardHandler(
                 new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
-                NullLogger<ItemDiscardHandler>.Instance
+                NullLogger<ItemDiscardHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             await handler.HandleAsync(
@@ -114,7 +116,8 @@ public class ItemDiscardHandlersTests
             var (session, character) = await SeedAsync(db);
             var handler = new ItemDiscardHandler(
                 new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
-                NullLogger<ItemDiscardHandler>.Instance
+                NullLogger<ItemDiscardHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             await handler.HandleAsync(
@@ -148,7 +151,8 @@ public class ItemDiscardHandlersTests
             var (session, character) = await SeedAsync(db);
             var handler = new AreaTrashboxDiscardItemHandler(
                 new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
-                NullLogger<AreaTrashboxDiscardItemHandler>.Instance
+                NullLogger<AreaTrashboxDiscardItemHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             // Two entries for the shirt (client can list a serial twice) and the chair's only copy.
@@ -202,7 +206,8 @@ public class ItemDiscardHandlersTests
             var (session, _) = await SeedAsync(db);
             var handler = new AreaTrashboxDiscardItemHandler(
                 new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
-                NullLogger<AreaTrashboxDiscardItemHandler>.Instance
+                NullLogger<AreaTrashboxDiscardItemHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
 
             var serials = Enumerable.Repeat((uint)ShirtId, 11).ToArray();

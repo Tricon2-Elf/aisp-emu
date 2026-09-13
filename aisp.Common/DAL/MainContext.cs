@@ -49,13 +49,18 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<NpcEquipment> NpcEquipments => Set<NpcEquipment>();
     public DbSet<Shop> Shops => Set<Shop>();
     public DbSet<ShopItem> ShopItems => Set<ShopItem>();
+    public DbSet<DramaFigureBox> DramaFigureBoxes => Set<DramaFigureBox>();
+    public DbSet<DramaFigureDefinition> DramaFigures => Set<DramaFigureDefinition>();
+    public DbSet<DramaFigureEquipment> DramaFigureEquipment => Set<DramaFigureEquipment>();
+    public DbSet<DramaAudioDefinition> DramaAudio => Set<DramaAudioDefinition>();
     public DbSet<SessionPresence> SessionPresences => Set<SessionPresence>();
     public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
     public DbSet<LocalisedText> LocalisedTexts => Set<LocalisedText>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<ReportTicket> ReportTickets => Set<ReportTicket>();
     public DbSet<ReportTicketPlayer> ReportTicketPlayers => Set<ReportTicketPlayer>();
-    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages => Set<ReportTicketChatMessage>();
+    public DbSet<ReportTicketChatMessage> ReportTicketChatMessages =>
+        Set<ReportTicketChatMessage>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -597,6 +602,32 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        b.Entity<DramaFigureBox>().Property(x => x.Id).ValueGeneratedNever();
+        b.Entity<DramaFigureDefinition>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.HasOne(x => x.Box)
+                .WithMany()
+                .HasForeignKey(x => x.BoxId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Item)
+                .WithMany()
+                .HasForeignKey(x => x.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<DramaFigureEquipment>(e =>
+        {
+            e.HasKey(x => new { x.FigureId, x.SlotIndex });
+            e.HasOne(x => x.Figure).WithMany(x => x.Equipment).HasForeignKey(x => x.FigureId);
+        });
+        b.Entity<DramaAudioDefinition>(e =>
+        {
+            e.HasKey(x => new { x.Kind, x.Id });
+            e.HasOne(x => x.Item)
+                .WithMany()
+                .HasForeignKey(x => x.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
         b.Entity<Npc>(e =>
         {
             e.ToTable("Npcs");
@@ -669,13 +700,20 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
             e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
             e.Property(x => x.Rejected).HasDefaultValue(false);
+            e.Property(x => x.Toxicity).HasDefaultValue(false);
+            e.Property(x => x.ToxicityReason).HasMaxLength(1024).IsRequired().HasDefaultValue("");
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.CharacterId, x.CreatedAt });
             e.HasIndex(x => new { x.UserId, x.CreatedAt });
             e.HasIndex(x => new { x.Kind, x.CreatedAt });
             e.HasIndex(x => new { x.CircleId, x.CreatedAt });
-            e.HasIndex(x => new { x.MapId, x.ChannelId, x.CreatedAt });
+            e.HasIndex(x => new
+            {
+                x.MapId,
+                x.ChannelId,
+                x.CreatedAt,
+            });
         });
 
         b.Entity<ReportTicket>(e =>
@@ -687,7 +725,9 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.Property(x => x.Reason).HasMaxLength(1024).IsRequired();
             e.Property(x => x.MapName).HasMaxLength(128).IsRequired();
             e.Property(x => x.ResolutionAction).HasMaxLength(1024);
-            e.Property(x => x.Status).HasConversion<byte>().HasDefaultValue(ReportTicketStatus.Open);
+            e.Property(x => x.Status)
+                .HasConversion<byte>()
+                .HasDefaultValue(ReportTicketStatus.Open);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             e.HasIndex(x => x.CreatedAt);
             e.HasIndex(x => new { x.Status, x.CreatedAt });
@@ -712,6 +752,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
             e.HasKey(x => x.Id);
             e.Property(x => x.CharacterName).HasMaxLength(128).IsRequired();
             e.Property(x => x.Message).HasMaxLength(1024).IsRequired();
+            e.Property(x => x.Toxicity).HasDefaultValue(false);
+            e.Property(x => x.ToxicityReason).HasMaxLength(1024).IsRequired().HasDefaultValue("");
             e.HasOne(x => x.ReportTicket)
                 .WithMany(x => x.ChatMessages)
                 .HasForeignKey(x => x.ReportTicketId)

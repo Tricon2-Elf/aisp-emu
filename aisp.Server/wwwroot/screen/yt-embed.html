@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>aisp yt-embed</title>
+<!-- YouTube's player embed for the yte: source (ScreenAssignments), served at
+     /ai-sp/yt-embed?v=<id>[&start=<unix>&offset=<s>[&paused=<unix>]] and shown by the launcher
+     hook's off-screen browser (electron:), which fetches it from wherever it got the screen
+     page. The embed only plays inside a page, hence this one: it fills the window with the
+     player, autoplay with sound, looping the one video (loop needs the playlist set to it,
+     which is also what keeps it from moving on to anything else), no related videos, no
+     annotations. start/offset/paused are the video's shared timeline, the same numbers the
+     screen page publishes.
+     Startup is arranged to buffer once, at the right place: the embed iframe is written first
+     (cued, not playing) so it loads alongside the IFrame API script rather than after it; when
+     the player knows the duration (usually in the cued state) the position is worked out
+     modulo it and the video is loaded with that start, as a one-item playlist so the loop
+     stays. A position within kEdgeSeconds of either end plays from 0 instead (a start only
+     moments ago needs no seek, a tail would show for a moment and loop; the hook's ffmpeg path
+     has the same rule). Only when the duration is not known until playback does it fall back
+     to playing from 0 and seeking. A paused timeline pauses the player at its position once it
+     plays; a live stream (the player says so) is left at the live edge: no seek, no pause. The
+     hook's volume fader reaches the player's <video> through the frame. -->
+<style>html,body{margin:0;padding:0;background:#000;overflow:hidden;width:100%;height:100%}#p,#yt{position:absolute;left:0;top:0;width:100%;height:100%;border:0}</style>
+</head><body>
+<div id="p"></div>
+<script>
+(function(){
+  var q={}, search=(window.location.search||'').substring(1).split('&');
+  for(var i=0;i<search.length;i++){ if(!search[i]) continue; var kv=search[i].split('='); try{ q[decodeURIComponent(kv[0])]=decodeURIComponent(kv[1]||''); }catch(e){} }
+  var id=/^[A-Za-z0-9_-]{1,64}$/.test(q.v||'')?q.v:'';
+  if(!id){ document.body.innerHTML='<div style="color:#888;font:14px monospace;padding:12px">yt-embed: no video id</div>'; return; }
+  var start=+q.start||0, offset=+q.offset||0, paused=+q.paused||0;
+  var kEdgeSeconds=3;
+  // Where the shared timeline is now: the offset plus what has elapsed since start (or until
+  // the pause). Wrapped by the duration once the player knows it.
+  function target(){ var until=paused?paused:Math.floor(new Date().getTime()/1000); return offset+Math.max(0,until-start); }
+  // The position to begin at for a known duration: the timeline modulo it, or 0 near either end.
+  function startPosition(d){ if(!start||!(d>0)) return 0; var pos=target()%d; return (pos<kEdgeSeconds||pos>d-kEdgeSeconds)?0:pos; }
+  var player=null, started=false, live=false;
+  window.aispEmbed={id:id, live:false, started:false, mode:null, position:null};
+
+  // The embed itself, cued (autoplay off) so it loads now, in parallel with the API script;
+  // the player object attaches to it once that script is in.
+  var vars='enablejsapi=1&autoplay=0&loop=1&playlist='+id+'&rel=0&playsinline=1&iv_load_policy=3&controls=0&disablekb=1&fs=0&origin='+encodeURIComponent(window.location.protocol+'//'+window.location.host);
+  var frame=document.createElement('iframe');
+  frame.id='yt'; frame.setAttribute('allow','autoplay; encrypted-media'); frame.setAttribute('frameborder','0');
+  frame.src='https://www.youtube.com/embed/'+id+'?'+vars;
+  document.getElementById('p').appendChild(frame);
+
+  // The player knows whether this is a live stream (isLive; isWindowedLive with a DVR window):
+  // then the shared timeline means nothing, it plays at the live edge and never pauses.
+  // Also the video's title, as this page's own: the launcher hook reports a browser source's
+  // document.title, and the screen page shows it on the Stage banner.
+  function checkLive(){
+    if(!player||typeof player.getVideoData!=='function') return;
+    // A live stream has no duration to speak of; the player says isLive once it knows.
+    var data=player.getVideoData()||{};
+    if(data.title&&document.title!==data.title) document.title=data.title;
+    if(live) return;
+    if(data.isLive||data.isWindowedLive){ live=true; window.aispEmbed.live=true; }
+  }
+  function note(mode,pos){ started=true; window.aispEmbed.started=true; window.aispEmbed.mode=mode; window.aispEmbed.position=pos; }
+  // First play, once the duration is known (or the stream is live): one load at the position.
+  function begin(){
+    if(started||!player) return;
+    checkLive();
+    if(live){ note('live',null); player.playVideo(); return; }
+    var d=player.getDuration();
+    if(!(d>0)) return;
+    var pos=startPosition(d);
+    if(pos>0){ note('load',pos); player.loadPlaylist([id],0,pos); player.setLoop(true); }
+    else { note('play',0); player.playVideo(); }
+  }
+  // Playback began before the duration was known: a live stream (the player says so, or it
+  // still reports no duration while playing), else seek now, unless within the edges.
+  function beginPlaying(){
+    if(started||!player) return;
+    checkLive();
+    var d=player.getDuration();
+    if(live||!(d>0)){ live=true; window.aispEmbed.live=true; note('live',null); return; }
+    var pos=startPosition(d);
+    note('seek',pos);
+    if(pos>0) player.seekTo(pos,true);
+  }
+  // Nothing decided yet a moment after the player was ready (no duration in the cued state: a
+  // live stream, or metadata not in yet): play, and let PLAYING decide.
+  var kickTimer=null;
+  function kick(){ if(kickTimer) return; kickTimer=setTimeout(function(){ kickTimer=null; if(!started&&player) player.playVideo(); },800); }
+  window.onYouTubeIframeAPIReady=function(){
+    player=new YT.Player('yt',{
+      events:{
+        onReady:function(e){
+          if(!player) player=e.target;
+          e.target.setVolume(100);
+          begin();
+          if(!started) kick();
+        },
+        onStateChange:function(e){
+          if(!player) player=e.target;
+          checkLive();
+          if(e.data===YT.PlayerState.CUED){ begin(); if(!started) kick(); }
+          if(e.data===YT.PlayerState.PLAYING){
+            var was=started;
+            beginPlaying();
+            // A paused timeline still needs the media loaded to sit on its frame, so it plays
+            // until it is at its position, then pauses.
+            if(paused&&!live&&(was||started)) player.pauseVideo();
+          }
+          // The playlist loop restarts it; should the player stop at the end anyway, restart it.
+          if(e.data===YT.PlayerState.ENDED&&!paused&&!live){ player.seekTo(0,true); player.playVideo(); }
+        }
+      }
+    });
+  };
+  var s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api'; document.head.appendChild(s);
+})();
+</script>
+</body></html>

@@ -6,6 +6,11 @@ public class NiconiCommonsBaseListRequest : IIncomingPacket<NiconiCommonsBaseLis
 {
     public static NiconiCommonsBaseListRequest FromBytes(ReadOnlySpan<byte> data)
     {
-        throw new NotImplementedException();
+        if (!data.IsEmpty)
+            throw new InvalidDataException(
+                $"{nameof(NiconiCommonsBaseListRequest)} requires an empty payload, received {data.Length} bytes."
+            );
+
+        return new NiconiCommonsBaseListRequest();
     }
 }
