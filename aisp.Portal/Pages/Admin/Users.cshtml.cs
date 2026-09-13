@@ -46,7 +46,7 @@ public sealed class UsersModel(AuthPortalApiClient authApi, AreaPortalApiClient 
             _ => (bool?)null,
         };
 
-        // Presence lives on Area; when filtering by it, load the search set first, then page.
+        // Presence lives on Area. Filter against the full online-id set, then summarize only the page.
         var fetchAll = showAll || filterByOnline is not null;
         var result = await authApi.GetUsersAsync(
             search,
@@ -55,22 +55,34 @@ public sealed class UsersModel(AuthPortalApiClient authApi, AreaPortalApiClient 
             fetchAll,
             ct
         );
-        var rows = await BuildRowsAsync(result.Users, ct);
 
+        IReadOnlyList<PortalUserSummaryDto> pageUsers = result.Users;
         if (filterByOnline is { } wantOnline)
-            rows = rows.Where(user => user.IsOnline == wantOnline).ToArray();
-
-        if (fetchAll && !showAll)
         {
-            var total = rows.Count;
-            Users = rows.Skip((PageNumber - 1) * selectedPageSize).Take(selectedPageSize).ToArray();
-            HasNextPage = PageNumber * selectedPageSize < total;
+            var onlineUserIds = (await areaApi.GetOnlineUserIdsAsync(ct)).ToHashSet();
+            var filtered = result
+                .Users.Where(user => onlineUserIds.Contains(user.UserId) == wantOnline)
+                .ToArray();
+            if (showAll)
+            {
+                pageUsers = filtered;
+                HasNextPage = false;
+            }
+            else
+            {
+                pageUsers = filtered
+                    .Skip((PageNumber - 1) * selectedPageSize)
+                    .Take(selectedPageSize)
+                    .ToArray();
+                HasNextPage = PageNumber * selectedPageSize < filtered.Length;
+            }
         }
         else
         {
-            Users = rows;
             HasNextPage = !showAll && PageNumber * selectedPageSize < result.Total;
         }
+
+        Users = await BuildRowsAsync(pageUsers, ct);
     }
 
     private async Task<IReadOnlyList<UserRow>> BuildRowsAsync(

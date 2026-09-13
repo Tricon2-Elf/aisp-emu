@@ -61,6 +61,7 @@ internal static class PortalApiEndpointsExtensions
             ResetRoboAsync
         );
         area.MapPost("/users/summaries", GetSummariesAsync);
+        area.MapGet("/users/online-ids", GetOnlineUserIds);
         area.MapPost(
             "/users/{userId:int}/disconnect",
             (int userId, ServerTypeSessionService sessions, CancellationToken ct) =>
@@ -485,6 +486,22 @@ internal static class PortalApiEndpointsExtensions
         return false;
     }
 
+    private static IResult GetOnlineUserIds(SharedState state)
+    {
+        // Same presence rule as summaries: authenticated Area or Msg session with a character.
+        var onlineUserIds = state
+            .GetServerClients(ServerType.Area)
+            .Concat(state.GetServerClients(ServerType.Msg))
+            .Where(session =>
+                session.IsAuthenticated && session.UserId != 0 && session.CharacterId != 0
+            )
+            .Select(session => session.UserId)
+            .Distinct()
+            .OrderBy(userId => userId)
+            .ToArray();
+        return TypedResults.Ok<IReadOnlyList<int>>(onlineUserIds);
+    }
+
     private static async Task<IResult> GetSummariesAsync(
         PortalUserIdsRequest request,
         MainContext db,
@@ -492,15 +509,10 @@ internal static class PortalApiEndpointsExtensions
         CancellationToken ct
     )
     {
-        var ids = request.UserIds.Distinct().Take(100).ToArray();
+        var ids = request.UserIds.Distinct().ToArray();
         if (ids.Length == 0)
             return TypedResults.BadRequest(new PortalErrorDto("At least one user ID is required."));
-        var users = await db
-            .Users.AsNoTracking()
-            .Where(user => ids.Contains(user.Id))
-            .Include(user => user.Characters)
-                .ThenInclude(character => character.Robos)
-            .ToListAsync(ct);
+
         var areaSessions = state
             .GetServerClients(ServerType.Area)
             .Where(session => session.IsAuthenticated && session.CharacterId != 0)
@@ -545,9 +557,18 @@ internal static class PortalApiEndpointsExtensions
             return maps.GetValueOrDefault(session.MapId, $"Map {session.MapId}");
         }
 
-        return TypedResults.Ok<IReadOnlyList<PortalCharacterRoboSummaryDto>>(
-            users
-                .Select(user => new PortalCharacterRoboSummaryDto(
+        // Presence is complete above; batch only the DB user/character load (Contains size limit).
+        var summaries = new List<PortalCharacterRoboSummaryDto>(ids.Length);
+        foreach (var batch in ids.Chunk(100))
+        {
+            var users = await db
+                .Users.AsNoTracking()
+                .Where(user => batch.Contains(user.Id))
+                .Include(user => user.Characters)
+                    .ThenInclude(character => character.Robos)
+                .ToListAsync(ct);
+            summaries.AddRange(
+                users.Select(user => new PortalCharacterRoboSummaryDto(
                     user.Id,
                     user.Characters.Select(character => new PortalCharacterRoboEntryDto(
                             character.Id,
@@ -559,8 +580,10 @@ internal static class PortalApiEndpointsExtensions
                         ))
                         .ToArray()
                 ))
-                .ToArray()
-        );
+            );
+        }
+
+        return TypedResults.Ok<IReadOnlyList<PortalCharacterRoboSummaryDto>>(summaries);
     }
 
     private static PortalUserSummaryDto MapSummary(User user) =>
