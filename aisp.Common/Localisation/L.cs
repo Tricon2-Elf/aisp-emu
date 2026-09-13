@@ -2,6 +2,13 @@ namespace aisp.Common.Localisation;
 
 public static class L
 {
+    public static class Drama
+    {
+        public static LocKey BoxName(int id) => new($"drama.box.{id}.name");
+
+        public static LocKey FigureName(int id) => new($"drama.figure.{id}.name");
+    }
+
     public static class Item
     {
         public static LocKey Name(int itemId) => new($"item.{itemId}.name");

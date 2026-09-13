@@ -5,15 +5,13 @@ using aisp.Network.Packets.Area;
 
 namespace aisp.Common.Handlers.Area;
 
-/// <summary>The dolls the drama notebook's figure picker offers this character (see <see cref="DramaFigures"/>).</summary>
-public sealed class AreaUccAdvFigureBaseListHandler(ICharacterRepository characters)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public sealed class AreaUccAdvFigureBaseListHandler(
+    ICharacterRepository characters,
+    DramaCatalog catalog
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.UccAdvFigureBaseListRequest;
-
     public PacketType ResponseType => PacketType.UccAdvFigureBaseListResponse;
-
     public ServerType ServerType => ServerType.Area;
 
     public async Task HandleAsync(
@@ -26,7 +24,8 @@ public sealed class AreaUccAdvFigureBaseListHandler(ICharacterRepository charact
             session.CharacterId == 0
                 ? null
                 : await characters.GetByIdAsync(checked((int)session.CharacterId), ct);
-        var response = new UccAdvFigureBaseListResponse(0, DramaFigures.OwnedBy(character));
+        var rows = await catalog.FiguresAsync(character, session, ct);
+        var response = new UccAdvFigureBaseListResponse(0, rows);
         await session.SendAsync(ResponseType, response.ToBytes(), ct);
     }
 }

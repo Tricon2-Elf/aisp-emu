@@ -29,25 +29,29 @@ public class UccAdvFigurePacketTests
         new UccAdvFigure
         {
             FigureId = 1000,
+            IconId = 14100005,
             BoxId = 1000,
             Name = "朝倉音姫モデル",
+            Gender = 1,
             People = 1,
-            PackageId = 0,
+            Face = 2,
+            Hairstyle = 3,
+            PackageId = 5000,
             ModelId = 2012011,
         }.Write(writer);
         var bytes = writer.ToBytes();
         var reader = new PacketReader(bytes);
         Assert.Equal(1000u, reader.ReadUInt());
-        Assert.Equal(1000u, reader.ReadUInt());
-        reader.ReadFixedString(UccAdvFigure.NameBytes, "Shift_JIS");
+        Assert.Equal(14100005u, reader.ReadUInt());
+        reader.ReadFixedString(UccAdvFigure.NameBytes);
         Assert.Equal(1, reader.ReadByte());
-        Assert.Equal(0u, reader.ReadUInt()); // +0x6C
+        Assert.Equal(1u, reader.ReadUInt()); // +0x6C gender
         Assert.Equal(1u, reader.ReadUInt()); // +0x70 people
-        Assert.Equal(0u, reader.ReadUInt()); // +0x74 package
-        Assert.Equal(2012011u, reader.ReadUInt()); // +0x78 model
+        Assert.Equal(2u, reader.ReadUInt()); // +0x74 face
+        Assert.Equal(3u, reader.ReadUInt()); // +0x78 hairstyle
         Assert.Equal(2012011u, reader.ReadUInt()); // +0x7C the 3D doll's model
         Assert.Equal(1000u, reader.ReadUInt()); // +0x80 box
-        Assert.Equal(0u, reader.ReadUInt()); // +0x84 package index
+        Assert.Equal(5000u, reader.ReadUInt()); // +0x84 package index
         // No equipment given: thirty empty slots, then the reserved words.
         for (var i = 0; i < UccAdvFigure.EquipSlotCount * 2 + 1; i++)
             Assert.Equal(0u, reader.ReadUInt());
@@ -70,8 +74,8 @@ public class UccAdvFigurePacketTests
         Assert.Equal(0u, reader.ReadUInt());
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(1000u, reader.ReadUInt());
-        Assert.Equal(1000u, reader.ReadUInt());
-        Assert.Equal("朝倉音姫モデル", reader.ReadFixedString(UccAdvFigure.NameBytes, "Shift_JIS"));
+        Assert.Equal(0u, reader.ReadUInt()); // no shop icon for the included licensed figure
+        Assert.Equal("朝倉音姫モデル", reader.ReadFixedString(UccAdvFigure.NameBytes));
         Assert.Equal(1, reader.ReadByte());
     }
 
@@ -96,10 +100,7 @@ public class UccAdvFigurePacketTests
         Assert.Equal(1u, reader.ReadUInt());
         Assert.Equal(0u, reader.ReadUInt());
         Assert.Equal(0u, reader.ReadUInt());
-        Assert.Equal(
-            "ai sp@ce MEN",
-            reader.ReadFixedString(NiconiCommonsEntry.NameBytes, "Shift_JIS")
-        );
+        Assert.Equal("ai sp@ce MEN", reader.ReadFixedString(NiconiCommonsEntry.NameBytes));
         Assert.Equal(1, reader.ReadByte());
         Assert.Equal(0u, reader.ReadUInt());
     }

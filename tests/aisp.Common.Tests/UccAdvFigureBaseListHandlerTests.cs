@@ -14,16 +14,18 @@ namespace aisp.Common.Tests;
 public class UccAdvFigureBaseListHandlerTests
 {
     [Fact]
-    public async Task Empty_bag_returns_the_three_ip_figures()
+    public async Task Empty_bag_returns_the_three_ip_figures_and_unowned_shop_definitions()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
             await TestDb.SeedCharacterAsync(options, 7001, TestContext.Current.CancellationToken);
             await using var db = new MainContext(options);
+            await DramaTestCatalog.SeedAsync(db);
             var session = new CapturingPlayerSession { CharacterId = 7001 };
             var handler = new AreaUccAdvFigureBaseListHandler(
-                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance)
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new DramaCatalog(db, TestTextLocaliser.English)
             );
 
             await handler.HandleAsync(
@@ -36,12 +38,11 @@ public class UccAdvFigureBaseListHandlerTests
             Assert.Equal(PacketType.UccAdvFigureBaseListResponse, sent.Type);
             var reader = new PacketReader(sent.Payload);
             Assert.Equal(0u, reader.ReadUInt());
-            Assert.Equal((uint)DramaFigures.AlwaysGranted.Count, reader.ReadUInt());
-            Assert.Equal(DramaFigures.DcBoxId, reader.ReadUInt());
-            Assert.Equal(
-                8 + DramaFigures.AlwaysGranted.Count * UccAdvFigure.WireSize,
-                sent.Payload.Length
-            );
+            Assert.Equal(27u, reader.ReadUInt());
+            Assert.Equal(1000u, reader.ReadUInt());
+            Assert.Equal(8 + (27) * UccAdvFigure.WireSize, sent.Payload.Length);
+            AssertShopProbe(sent.Payload, owned: false);
+            AssertPaidFigureVisuals(sent.Payload);
         }
         finally
         {
@@ -78,9 +79,11 @@ public class UccAdvFigureBaseListHandlerTests
             }
 
             await using var verify = new MainContext(options);
+            await DramaTestCatalog.SeedAsync(verify);
             var session = new CapturingPlayerSession { CharacterId = 7002 };
             await new AreaUccAdvFigureBaseListHandler(
-                new CharacterRepository(verify, NullLogger<CharacterRepository>.Instance)
+                new CharacterRepository(verify, NullLogger<CharacterRepository>.Instance),
+                new DramaCatalog(verify, TestTextLocaliser.English)
             ).HandleAsync(
                 ReadOnlyMemory<byte>.Empty,
                 session,
@@ -89,15 +92,16 @@ public class UccAdvFigureBaseListHandlerTests
 
             var reader = new PacketReader(Assert.Single(session.Sent).Payload);
             Assert.Equal(0u, reader.ReadUInt());
-            Assert.Equal(4u, reader.ReadUInt());
-            Assert.Equal(DramaFigures.DcBoxId, reader.ReadUInt());
+            Assert.Equal(27u, reader.ReadUInt());
+            Assert.Equal(1000u, reader.ReadUInt());
             SkipFigureRest(ref reader);
-            Assert.Equal(DramaFigures.ClannadBoxId, reader.ReadUInt());
+            Assert.Equal(1001u, reader.ReadUInt());
             SkipFigureRest(ref reader);
-            Assert.Equal(DramaFigures.ShuffleBoxId, reader.ReadUInt());
+            Assert.Equal(1002u, reader.ReadUInt());
             SkipFigureRest(ref reader);
-            Assert.Equal((DramaFigures.MenBoxId << 8) | 1u, reader.ReadUInt());
-            Assert.Equal(DramaFigures.MenBoxId, reader.ReadUInt());
+            Assert.Equal((1u << 8) | 1u, reader.ReadUInt());
+            Assert.Equal(14100000u, reader.ReadUInt());
+            AssertShopProbe(Assert.Single(session.Sent).Payload, owned: true);
         }
         finally
         {
@@ -134,9 +138,11 @@ public class UccAdvFigureBaseListHandlerTests
             }
 
             await using var verify = new MainContext(options);
+            await DramaTestCatalog.SeedAsync(verify);
             var session = new CapturingPlayerSession { CharacterId = 7003 };
             await new AreaUccAdvFigureBaseListHandler(
-                new CharacterRepository(verify, NullLogger<CharacterRepository>.Instance)
+                new CharacterRepository(verify, NullLogger<CharacterRepository>.Instance),
+                new DramaCatalog(verify, TestTextLocaliser.English)
             ).HandleAsync(
                 ReadOnlyMemory<byte>.Empty,
                 session,
@@ -145,7 +151,8 @@ public class UccAdvFigureBaseListHandlerTests
 
             var reader = new PacketReader(Assert.Single(session.Sent).Payload);
             Assert.Equal(0u, reader.ReadUInt());
-            Assert.Equal(3u, reader.ReadUInt());
+            Assert.Equal(27u, reader.ReadUInt());
+            AssertShopProbe(Assert.Single(session.Sent).Payload, owned: false);
         }
         finally
         {
@@ -154,28 +161,107 @@ public class UccAdvFigureBaseListHandlerTests
     }
 
     [Fact]
-    public void OwnedBy_matches_purchasable_item_ids()
+    public async Task Ownership_uses_catalog_item_mappings()
     {
-        Assert.Equal(24, DramaFigures.Purchasable.Count);
-        Assert.Equal(14100000u, DramaFigures.Purchasable[0].ItemId);
-        Assert.True(DramaFigures.Purchasable[0].Figure.FigureId <= 0xFFFF);
-        Assert.Equal(0u, DramaFigures.Purchasable[0].Figure.PackageId);
-        Assert.Equal(14200011u, DramaFigures.Purchasable[^1].ItemId);
-        Assert.Equal(11000u, DramaFigures.Purchasable[^1].Figure.PackageId);
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var lifetime = connection;
+        await using var db = new MainContext(options);
+        await DramaTestCatalog.SeedAsync(db);
+        var catalog = new DramaCatalog(db, TestTextLocaliser.English);
+        var character = new Character();
+        character.Inventory.Add(new CharacterInventory { ItemId = 14100000, Quantity = 1 });
+        character.Inventory.Add(new CharacterInventory { ItemId = 14200004, Quantity = 1 });
+        character.Inventory.Add(new CharacterInventory { ItemId = 10100220, Quantity = 1 });
+        var session = new CapturingPlayerSession();
+        var figures = await catalog.FiguresAsync(
+            character,
+            session,
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(27, figures.Count);
+        Assert.Equal(5, figures.Count(x => x.Owned));
+        Assert.Contains(figures, x => x.FigureId == 257 && x.Owned);
+        Assert.Contains(figures, x => x.FigureId == 517 && x.Owned);
+        var titles = await catalog.CommonsAsync(
+            null,
+            session,
+            TestContext.Current.CancellationToken
+        );
+        Assert.DoesNotContain(titles, x => x.Id == 1);
+        Assert.Contains(titles, x => x.Id == 1000);
+    }
 
-        var owned = DramaFigures.OwnedBy([14100000, 14200004, 10100220]);
-        Assert.Equal(5, owned.Count);
-        Assert.Contains(owned, figure => figure.FigureId == ((DramaFigures.MenBoxId << 8) | 1u));
-        Assert.Contains(owned, figure => figure.FigureId == ((DramaFigures.WomenBoxId << 8) | 5u));
+    private static void AssertPaidFigureVisuals(ReadOnlySpan<byte> payload)
+    {
+        // Check the delivered registry, including later packages that previously lost
+        // their heads when 1000..11000 was sent as the face variant.
+        uint[] models = [1001021, 1001011, 1001031, 1002011, 1002021, 1002031];
+        // Package artwork specifies both cut and color, including different wigs
+        // for figures with the same face name at different heights.
+        uint[] wigs =
+        [
+            10920010,
+            10920024,
+            10920041,
+            10920012,
+            10920023,
+            10920040,
+            10920014,
+            10920031,
+            10920042,
+            10920013,
+            10920030,
+            10920044,
+            10930010,
+            10930024,
+            10930041,
+            10930012,
+            10930023,
+            10930040,
+            10930014,
+            10930021,
+            10930042,
+            10930013,
+            10930020,
+            10930044,
+        ];
+        for (var index = 0; index < 24; index++)
+        {
+            var reader = new PacketReader(
+                payload.Slice(8 + (3 + index) * UccAdvFigure.WireSize, UccAdvFigure.WireSize)
+            );
+            var box = index < 12 ? 1u : 2u;
+            var package = (uint)(index % 12);
+            Assert.Equal((box << 8) | (package + 1), reader.ReadUInt());
+            Assert.Equal((index < 12 ? 14100000u : 14200000u) + package, reader.ReadUInt());
+            reader.ReadBytes(UccAdvFigure.NameBytes);
+            Assert.Equal(0, reader.ReadByte());
+            Assert.Equal(index < 12 ? 1u : 2u, reader.ReadUInt()); // gender selects coverage rules
+            Assert.Equal(1u, reader.ReadUInt());
+            Assert.Equal(0u, reader.ReadUInt()); // default face, independent of package
+            Assert.Equal(wigs[index], reader.ReadUInt()); // base hair survives equipment changes
+            Assert.Equal(models[index / 4], reader.ReadUInt());
+            Assert.Equal(box, reader.ReadUInt());
+            Assert.Equal(package * 1000, reader.ReadUInt());
+            uint[] clothing =
+                box == 1
+                    ? [10100220, 10200100, 10400030, 10500070, 10700030]
+                    : [10100060, 10200090, 10400000, 10500010, 10600000, 10700000];
+            foreach (var itemId in clothing)
+                Assert.Equal(itemId, reader.ReadUInt());
+            // Base hair must not also appear as a removable wardrobe item.
+            for (var slot = clothing.Length; slot < UccAdvFigure.EquipSlotCount; slot++)
+                Assert.Equal(0u, reader.ReadUInt());
+        }
+    }
 
-        var emptyTitles = DramaFigures.TitlesOwnedBy([]);
-        Assert.Equal(3, emptyTitles.Count);
-        Assert.DoesNotContain(emptyTitles, title => title.Id == DramaFigures.MenBoxId);
-        Assert.Contains(emptyTitles, title => title.Id == DramaFigures.DcBoxId);
-
-        var menTitles = DramaFigures.TitlesOwnedBy([14100000]);
-        Assert.Equal(4, menTitles.Count);
-        Assert.Contains(menTitles, title => title.Id == DramaFigures.MenBoxId);
+    private static void AssertShopProbe(ReadOnlySpan<byte> payload, bool owned)
+    {
+        var reader = new PacketReader(payload[^(24 * UccAdvFigure.WireSize)..]);
+        Assert.Equal(0x101u, reader.ReadUInt());
+        Assert.Equal(14100000u, reader.ReadUInt());
+        reader.ReadBytes(UccAdvFigure.NameBytes);
+        Assert.Equal(owned ? (byte)1 : (byte)0, reader.ReadByte());
     }
 
     private static void SkipFigureRest(ref PacketReader reader)

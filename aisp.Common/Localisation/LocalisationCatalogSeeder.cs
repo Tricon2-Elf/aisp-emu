@@ -32,6 +32,7 @@ public static class LocalisationCatalogSeeder
         CollectNpcs(Path.Combine(seedDirectory, "npcs.json"), rows, logger);
         CollectShops(Path.Combine(seedDirectory, "starterShop.json"), rows, logger);
         CollectShops(Path.Combine(seedDirectory, "furnitureShop.json"), rows, logger);
+        CollectShops(Path.Combine(seedDirectory, "niconiCommonsShop.json"), rows, logger);
         CollectStandalone(Path.Combine(seedDirectory, "localisation.json"), rows, logger);
         return rows;
     }

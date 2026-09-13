@@ -49,6 +49,10 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<NpcEquipment> NpcEquipments => Set<NpcEquipment>();
     public DbSet<Shop> Shops => Set<Shop>();
     public DbSet<ShopItem> ShopItems => Set<ShopItem>();
+    public DbSet<DramaFigureBox> DramaFigureBoxes => Set<DramaFigureBox>();
+    public DbSet<DramaFigureDefinition> DramaFigures => Set<DramaFigureDefinition>();
+    public DbSet<DramaFigureEquipment> DramaFigureEquipment => Set<DramaFigureEquipment>();
+    public DbSet<DramaAudioDefinition> DramaAudio => Set<DramaAudioDefinition>();
     public DbSet<SessionPresence> SessionPresences => Set<SessionPresence>();
     public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
     public DbSet<LocalisedText> LocalisedTexts => Set<LocalisedText>();
@@ -597,6 +601,32 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        b.Entity<DramaFigureBox>().Property(x => x.Id).ValueGeneratedNever();
+        b.Entity<DramaFigureDefinition>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.HasOne(x => x.Box)
+                .WithMany()
+                .HasForeignKey(x => x.BoxId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Item)
+                .WithMany()
+                .HasForeignKey(x => x.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        b.Entity<DramaFigureEquipment>(e =>
+        {
+            e.HasKey(x => new { x.FigureId, x.SlotIndex });
+            e.HasOne(x => x.Figure).WithMany(x => x.Equipment).HasForeignKey(x => x.FigureId);
+        });
+        b.Entity<DramaAudioDefinition>(e =>
+        {
+            e.HasKey(x => new { x.Kind, x.Id });
+            e.HasOne(x => x.Item)
+                .WithMany()
+                .HasForeignKey(x => x.ItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
         b.Entity<Npc>(e =>
         {
             e.ToTable("Npcs");

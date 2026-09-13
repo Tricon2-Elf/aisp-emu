@@ -69,6 +69,7 @@ public sealed class NpcRepository(MainContext db) : INpcRepository
         return await db
             .Npcs.AsNoTracking()
             .Include(x => x.Shop)
+            .Include(x => x.Equipment)
             .FirstOrDefaultAsync(
                 x =>
                     x.IsEnabled

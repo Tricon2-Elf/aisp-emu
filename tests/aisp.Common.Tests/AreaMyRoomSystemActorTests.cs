@@ -152,7 +152,8 @@ public class AreaMyRoomSystemActorTests
                 dispatcher,
                 new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
-                NullLogger<AreaEventAccessNpcHandler>.Instance
+                NullLogger<AreaEventAccessNpcHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
             var scriptPlayHandler = new AreaEventScriptPlayHandler(
                 NullLogger<AreaEventScriptPlayHandler>.Instance,
@@ -323,7 +324,8 @@ public class AreaMyRoomSystemActorTests
                 dispatcher,
                 new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
-                NullLogger<AreaEventAccessNpcHandler>.Instance
+                NullLogger<AreaEventAccessNpcHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
             var selectHandler = new AreaEventSelectExecRHandler(
                 dispatcher,
@@ -470,7 +472,8 @@ public class AreaMyRoomSystemActorTests
                 dispatcher,
                 new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
-                NullLogger<AreaEventAccessNpcHandler>.Instance
+                NullLogger<AreaEventAccessNpcHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
             var selectHandler = new AreaEventSelectExecRHandler(
                 dispatcher,
@@ -539,7 +542,8 @@ public class AreaMyRoomSystemActorTests
                 dispatcher,
                 new AdventureShopCatalog(new AdventureShopRepository(db)),
                 TestTextLocaliser.English,
-                NullLogger<AreaEventAccessNpcHandler>.Instance
+                NullLogger<AreaEventAccessNpcHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
             );
             var selectHandler = new AreaEventSelectExecRHandler(
                 dispatcher,

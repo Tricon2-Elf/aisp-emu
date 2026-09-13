@@ -89,6 +89,7 @@ internal class Program
         builder.Services.AddScoped<IItemRepository, ItemRepository>();
         builder.Services.AddScoped<INpcRepository, NpcRepository>();
         builder.Services.AddScoped<IShopRepository, ShopRepository>();
+        builder.Services.AddScoped<DramaCatalog>();
         builder.Services.AddSingleton<ISessionPresenceRepository, SessionPresenceRepository>();
         builder.Services.AddSingleton<
             IPendingMapTransferRepository,
@@ -391,6 +392,11 @@ internal class Program
                 db,
                 Path.Combine(seedDir, "furnitureShop.json"),
                 app.Logger
+            );
+            await DramaCatalog.SeedAsync(db, seedDir);
+            await ShopRepository.SeedShopsFromJsonAsync(
+                db,
+                Path.Combine(seedDir, "niconiCommonsShop.json")
             );
             await NpcRepository.SeedFromJsonAsync(
                 db,

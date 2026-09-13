@@ -14,7 +14,8 @@ namespace aisp.Common.Handlers.Area;
 /// </summary>
 public class AreaTrashboxDiscardItemHandler(
     ICharacterRepository characterRepo,
-    ILogger<AreaTrashboxDiscardItemHandler> logger
+    ILogger<AreaTrashboxDiscardItemHandler> logger,
+    DramaCatalog dramaCatalog
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.TrashboxDiscardItemRequest;
@@ -60,6 +61,7 @@ public class AreaTrashboxDiscardItemHandler(
             session,
             request.SerialIds.Zip(request.Nums),
             logger,
+            dramaCatalog,
             ct
         );
         await session.SendAsync(

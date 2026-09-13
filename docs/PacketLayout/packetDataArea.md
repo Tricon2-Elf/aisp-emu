@@ -765,7 +765,7 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Packet ID (hex):** 0xE60C
 - **Packet ID (int):** 58892
 - **Packet Size:** 8 + (Count × 113)
-- **Description:** The titles of the drama notebook's figure picker, one per figure box the character has a doll in (at most 1024). Record parser 0x79B140, 0x74 apart in memory.
+- **Description:** Commons registry, including notebook box titles (type 0), BGM (type 2) and SE (type 3), at most 1024 entries. Definitions include unowned content so shop rows can resolve their names, icons and ownership.
 
 **Layout:**
 
@@ -773,12 +773,12 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
     UInt {Result}
     UInt {Count}
     foreach entry:
-        UInt {Id}                 // the figure box (1, 2, 1000, 1001, 1002)
+        UInt {Id}                 // registry ID; box ID for notebook titles
+        UInt {IconId}             // item/icon/%08d.dds
+        UInt {Type}               // registry category, 0–5
+        Bytes(96) {Name}           // UTF-8, NUL-terminated
+        Byte {Available}          // ownership flag for purchasable content
         UInt {Reserved}           // 0
-        UInt {Reserved}           // 0; the client keeps it as a pointer, anything else crashed the login
-        Bytes(96) {Name}          // Shift-JIS, NUL-terminated
-        Byte {Available}
-        UInt {Reserved}           // 0; a pointer in the client's record too
 ```
 
 ## send_get_monster_data (NpcGetDataRequest)
@@ -938,13 +938,13 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
     UInt {Count}
     foreach figure:
         UInt {FigureId}           // the picker looks it up as a 16-bit word
-        UInt {BoxId}              // the box: picker group, folder of the logo and package art
-        Bytes(96) {Name}          // Shift-JIS, NUL-terminated
+        UInt {IconId}             // item/icon/%08d.dds
+        Bytes(96) {Name}          // UTF-8, NUL-terminated
         Byte {Owned}
-        UInt {Unused}             // +0x6C; the ingest reads its low byte
+        UInt {Gender}             // +0x6C; low byte: 1 male, 2 female
         UInt {People}             // +0x70; 1, 2 or 3, anything else counts as none
-        UInt {PackageId}          // +0x74; handed to the doll's creation with +0x78 and +0x7C
-        UInt {ModelId}            // +0x78
+        UInt {Face}               // +0x74; face variant, independent of package artwork
+        UInt {Hairstyle}          // +0x78; base hair item ID, separate from equipped wigs
         UInt {ModelId}            // +0x7C; the doll's model (in-memory +0x2c, 0x57c452)
         UInt {BoxId}              // +0x80; folder of ./interface/figure/%d/logo.dds and package_%d.dds
         UInt {PackageId}          // +0x84; the package_%d index (0, 1000, … 11000 for boxes 1 and 2)
@@ -952,6 +952,15 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
         UInt {Reserved} × 30      // a second word per slot, passed along with the item id; 0
         UInt {Reserved}           // 0
 ```
+
+The client uses the explicit Gender field, rather than the model ID, to select
+its coverage rule. A value of 1 selects the male rule; other values require both
+upper and lower underwear. The figure's default equipment must include lower
+underwear (socket `0x800`) for male characters, and upper (`0x400`) plus lower
+underwear for female characters. The client checks this coverage when accepting
+a character and when opening the dressing curtain after equipment changes.
+Outer clothing alone does not satisfy the check. Base hair belongs in
+`Hairstyle`, independently of the removable equipment list.
 
 ## send_get_ucc_voice_base_list (UccVoiceBaseListRequest)
 
@@ -974,14 +983,21 @@ Client uses both in CAIProtoArea_vtbl__func_40 to size the trigger volume. HalfE
 - **Direction:** ServerToClient
 - **Packet ID (hex):** 0xBB8F
 - **Packet ID (int):** 48015
-- **Packet Size:** 8
-- **Description:** UCC voice base list result.
+- **Packet Size:** 8 + (Count × 874)
+- **Description:** Voice registry, at most 1500 entries, including unowned definitions used by the shop.
 
 **Layout:**
 
 ```text
     UInt {Result}
-    UInt {VoiceData}
+    UInt {Count}
+    foreach voice:
+        UInt {Id}
+        UInt {IconId}             // item/icon/%08d.dds
+        Bytes(96) {Name}          // UTF-8, NUL-terminated
+        Byte {Owned}
+        Bytes(765) {Description}  // UTF-8, NUL-terminated; used as the shop title
+        UInt {Reserved}          // 0
 ```
 
 ## send_update_option (UpdateOptionRequest)
@@ -2007,4 +2023,196 @@ The ranking rows' trailing UShort + UInt are ignored by the client. The genre na
 
 ```text
     UInt {Result}
+```
+
+## recv_niconi_commons_shop_started (NiconiCommonsShopStartedNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x7D98
+- **Packet ID (int):** 32152
+- **Packet Size:** 9 + UTF-8 name byte length
+- **Description:** Open the commons shop for an NPC. The name has at most 192 bytes before its terminator.
+
+**Layout:**
+
+```text
+    UInt {NpcObjectId}
+    String {Name}             // UTF-8, NUL-terminated
+    UInt {VisualId}
+```
+
+## recv_niconi_commons_shop_item (NiconiCommonsShopItemNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x8C47
+- **Packet ID (int):** 35911
+- **Packet Size:** 12 + 16 × (CommonsCount + FigureCount + VoiceCount)
+- **Description:** Three lists in commons, figure, voice order, each capped at 500 rows. Types: 0 figure, 1 voice, 2 BGM, 3 SE. IDs refer to the corresponding base-list registry.
+
+**Layout:**
+
+```text
+    foreach list in [Commons, Figures, Voices]:
+        UInt {Count}
+        foreach row:
+            UInt {Type}
+            UInt {Id}
+            UInt {AiPrice}        // D price
+            UInt {NicoPrice}      // NP price
+```
+
+## send_niconi_commons_shop_buy_commons (NiconiCommonsShopBuyCommonsRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x7438
+- **Packet ID (int):** 29752
+- **Packet Size:** 5
+- **Description:** Purchase a registry entry. Currency 0 selects D, 1 selects NP. The server validates the category, ownership, price and balance; current offers are D-only.
+
+**Layout:**
+
+```text
+    UInt {Id}
+    Byte {Currency}
+```
+
+## send_niconi_commons_shop_buy_figure (NiconiCommonsShopBuyFigureRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x78DF
+- **Packet ID (int):** 30943
+- **Packet Size:** 5
+- **Description:** Purchase a registry entry. Currency 0 selects D, 1 selects NP. The server validates the category, ownership, price and balance; current offers are D-only.
+
+**Layout:**
+
+```text
+    UInt {Id}
+    Byte {Currency}
+```
+
+## send_niconi_commons_shop_buy_voice (NiconiCommonsShopBuyVoiceRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0x2F55
+- **Packet ID (int):** 12117
+- **Packet Size:** 5
+- **Description:** Purchase a registry entry. Currency 0 selects D, 1 selects NP. The server validates the category, ownership, price and balance; current offers are D-only.
+
+**Layout:**
+
+```text
+    UInt {Id}
+    Byte {Currency}
+```
+
+## recv_niconi_commons_shop_buy_r (NiconiCommonsShopBuyResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x96BE
+- **Packet ID (int):** 38590
+- **Packet Size:** 12
+- **Description:** Purchase result and remaining D balance.
+
+**Layout:**
+
+```text
+    UInt {Result}
+    ULong {Remained}
+```
+
+## send_niconi_commons_shop_end (NiconiCommonsShopEndRequest)
+
+- **Server:** Area
+- **Direction:** ClientToServer
+- **Packet ID (hex):** 0xCDF2
+- **Packet ID (int):** 52722
+- **Packet Size:** 0
+- **Description:** Request to end the shop session.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_niconi_commons_shop_end_r (NiconiCommonsShopEndResponse)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xAA13
+- **Packet ID (int):** 43539
+- **Packet Size:** 4
+- **Description:** Acknowledge the end request; result 0 indicates success.
+
+**Layout:**
+
+```text
+    UInt {Result}
+```
+
+## recv_niconi_commons_shop_ended (NiconiCommonsShopEndedNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xC13B
+- **Packet ID (int):** 49467
+- **Packet Size:** 0
+- **Description:** Close the client shop window.
+
+**Layout:**
+
+```text
+    (empty)
+```
+
+## recv_niconi_commons_obtain (NiconiCommonsObtainNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xB2AE
+- **Packet ID (int):** 45742
+- **Packet Size:** 4
+- **Description:** Mark the matching registry entry owned after purchase. Figure IDs must fit in 16 bits for the notebook picker; ownership notifications use registry IDs, not inventory item IDs.
+
+**Layout:**
+
+```text
+    UInt {Id}
+```
+
+## recv_ucc_adv_figure_obtain (UccAdvFigureObtainNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0x13DE
+- **Packet ID (int):** 5086
+- **Packet Size:** 4
+- **Description:** Mark the matching registry entry owned after purchase. Figure IDs must fit in 16 bits for the notebook picker; ownership notifications use registry IDs, not inventory item IDs.
+
+**Layout:**
+
+```text
+    UInt {Id}
+```
+
+## recv_ucc_voice_obtain (UccVoiceObtainNotify)
+
+- **Server:** Area
+- **Direction:** ServerToClient
+- **Packet ID (hex):** 0xCDF6
+- **Packet ID (int):** 52726
+- **Packet Size:** 4
+- **Description:** Mark the matching registry entry owned after purchase. Figure IDs must fit in 16 bits for the notebook picker; ownership notifications use registry IDs, not inventory item IDs.
+
+**Layout:**
+
+```text
+    UInt {Id}
 ```

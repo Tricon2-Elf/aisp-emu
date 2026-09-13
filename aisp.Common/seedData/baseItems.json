@@ -13110,5 +13110,118 @@
       "ja": "N/A"
     },
     "iconId": 90000525
+  },
+  {
+    "id": 172001001,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM01・朝（登校）"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001002,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM02・夜"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001003,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM03・怪しい、不審"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001004,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM04・ノスタルジー"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001005,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM05・クライマックス！"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001006,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM06・ジャズ"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001007,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM07・８bit"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001008,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM08・ケルト調"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 172001009,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]BGM09・雅楽風"
+    },
+    "iconId": 14300002
+  },
+  {
+    "id": 182001001,
+    "socket": 0,
+    "name": {
+      "ja": "[ai sp@ce]SE01・ファンファーレ"
+    },
+    "iconId": 14300003
+  },
+  {
+    "id": 143010001,
+    "socket": 0,
+    "name": {
+      "ja": "少女ａ・タイトルコール１"
+    },
+    "description": {
+      "ja": "少女ａ・タイトルコール１"
+    },
+    "iconId": 14300001
+  },
+  {
+    "id": 143010002,
+    "socket": 0,
+    "name": {
+      "ja": "少女ａ・タイトルコール２"
+    },
+    "description": {
+      "ja": "少女ａ・タイトルコール２"
+    },
+    "iconId": 14300001
+  },
+  {
+    "id": 143010003,
+    "socket": 0,
+    "name": {
+      "ja": "少女ａ・出会い"
+    },
+    "description": {
+      "ja": "少女ａ・出会い"
+    },
+    "iconId": 14300001
   }
 ]

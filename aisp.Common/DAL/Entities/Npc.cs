@@ -6,6 +6,7 @@ public enum NpcInteractionType
     Decorative = 1,
     AdventureShopBuy = 2,
     AdventureShopUpload = 3,
+    NiconiCommonsShop = 4,
 }
 
 public class Npc

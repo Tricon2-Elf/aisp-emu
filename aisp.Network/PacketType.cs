@@ -1624,6 +1624,46 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ClientToServer,
+        "send_niconi_commons_shop_buy_commons",
+        ImplementationState.Implemented
+    )]
+    NiconiCommonsShopBuyCommonsRequest = 0x7438,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_niconi_commons_shop_buy_figure",
+        ImplementationState.Implemented
+    )]
+    NiconiCommonsShopBuyFigureRequest = 0x78DF,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_niconi_commons_shop_buy_voice",
+        ImplementationState.Implemented
+    )]
+    NiconiCommonsShopBuyVoiceRequest = 0x2F55,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_niconi_commons_shop_end",
+        ImplementationState.Implemented
+    )]
+    NiconiCommonsShopEndRequest = 0xCDF2,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_ucc_adv_figure_obtain",
+        ImplementationState.Implemented
+    )]
+    UccAdvFigureObtainNotify = 0x13DE,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
         "send_get_ucc_voice_base_list",
         ImplementationState.Implemented
     )]
@@ -3217,8 +3257,16 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_niconi_commons_obtain",
+        ImplementationState.Implemented
+    )]
+    NiconiCommonsObtainNotify = 0xB2AE,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_niconi_commons_shop_buy_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NiconiCommonsShopBuyResponse = 0x96BE,
 
@@ -3226,7 +3274,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_niconi_commons_shop_end_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NiconiCommonsShopEndResponse = 0xAA13,
 
@@ -3234,15 +3282,15 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_niconi_commons_shop_ended",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
-    NiconiCommonsShopEndedNotify = 0xBFAB,
+    NiconiCommonsShopEndedNotify = 0xC13B,
 
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_niconi_commons_shop_item",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NiconiCommonsShopItemNotify = 0x8C47,
 
@@ -3250,7 +3298,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_niconi_commons_shop_started",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NiconiCommonsShopStartedNotify = 0x7D98,
 
@@ -4706,7 +4754,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_ucc_voice_obtain",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     UccVoiceObtainNotify = 0xCDF6,
 

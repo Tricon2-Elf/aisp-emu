@@ -18,6 +18,7 @@ internal static class InventoryDiscardFlow
         IPlayerSession session,
         IEnumerable<(uint SerialId, ushort Num)> stacks,
         ILogger logger,
+        DramaCatalog dramaCatalog,
         CancellationToken ct
     )
     {
@@ -104,6 +105,11 @@ internal static class InventoryDiscardFlow
         if (applied.Count > 0)
             session.Character = await characterRepo.GetByIdAsync((int)session.CharacterId, ct);
 
+        await dramaCatalog.RefreshOwnershipForItemsAsync(
+            session,
+            applied.Where(x => x.Remaining == 0).Select(x => x.ItemId).ToArray(),
+            ct
+        );
         return ok;
     }
 }
