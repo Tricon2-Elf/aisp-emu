@@ -164,6 +164,7 @@ public class UserAdminService
 
         await _userRepo.SetRoleAsync(user.Id, role, ct);
         await _moderation.SyncModeratorsCircleForUserAsync(user.Id, ct);
+        await _moderation.ApplyRoleLiveAsync(user.Id, role, ct);
         _logger.LogInformation("API set role for user {UserId} to {Role}", user.Id, role);
         return (true, null);
     }
