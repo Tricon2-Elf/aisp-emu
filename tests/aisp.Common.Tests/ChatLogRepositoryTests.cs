@@ -46,6 +46,8 @@ public sealed class ChatLogRepositoryTests
             Assert.Equal(10990100u, row.MapId);
             Assert.Equal(1, row.ChannelId);
             Assert.False(row.Rejected);
+            Assert.False(row.Toxicity);
+            Assert.Equal(string.Empty, row.ToxicityReason);
         }
     }
 

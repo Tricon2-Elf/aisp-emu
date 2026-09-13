@@ -33,6 +33,7 @@ public class AreaAvatarGetDataHandler(ILogger<AreaAvatarGetDataHandler> logger)
 
         var cd = new CharaData((uint)cha.Id, cha.ModelId, cha.Name)
         {
+            NamePlate = (session.User?.Role ?? UserRole.User).ToNamePlate(),
             Map = new CharacterMapData
             {
                 ChannelId = checked((uint)session.ChannelId),

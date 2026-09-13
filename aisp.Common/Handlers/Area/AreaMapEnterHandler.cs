@@ -1,9 +1,11 @@
+using aisp.Common.Config;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Game.ServerScripts;
 using aisp.Network;
 using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace aisp.Common.Handlers.Area;
 
@@ -14,7 +16,8 @@ public class AreaMapEnterHandler(
     ILogger<AreaMapEnterHandler> logger,
     ServerScriptDispatcher? serverScriptDispatcher = null,
     IRoboRepository? roboRepository = null,
-    IMyRoomRepository? myRoomRepository = null
+    IMyRoomRepository? myRoomRepository = null,
+    IOptions<MotdOptions>? motdOptions = null
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapEnterRequest;
@@ -66,7 +69,7 @@ public class AreaMapEnterHandler(
                 myRoomRepository,
                 ct
             );
-            await TryNotifyServerScriptsAsync(payload, session, ct);
+            await OnSuccessfulMapEnterAsync(payload, session, ct);
             return;
         }
 
@@ -100,7 +103,7 @@ public class AreaMapEnterHandler(
                     myRoomRepository,
                     ct
                 );
-                await TryNotifyServerScriptsAsync(payload, session, ct);
+                await OnSuccessfulMapEnterAsync(payload, session, ct);
                 return;
             }
 
@@ -123,7 +126,7 @@ public class AreaMapEnterHandler(
                 session.Z
             );
             await session.SendAsync(ResponseType, new AreaMapEnterResponse(0).ToBytes(), ct);
-            await TryNotifyServerScriptsAsync(payload, session, ct);
+            await OnSuccessfulMapEnterAsync(payload, session, ct);
             return;
         }
 
@@ -145,6 +148,16 @@ public class AreaMapEnterHandler(
             sendMapEnterResponse: true,
             ct
         );
+        await OnSuccessfulMapEnterAsync(payload, session, ct);
+    }
+
+    private async Task OnSuccessfulMapEnterAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct
+    )
+    {
+        await MotdNotice.TrySendPendingAsync(session, state, motdOptions?.Value, logger, ct);
         await TryNotifyServerScriptsAsync(payload, session, ct);
     }
 

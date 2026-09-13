@@ -25,7 +25,7 @@ public sealed class AreaUserStatusUpdateHandlerTests
         var (connection, options) = TestDb.CreateInMemoryMainContext();
         try
         {
-            await TestDb.SeedCharacterAsync(options, 1);
+            await TestDb.SeedCharacterAsync(options, 1, TestContext.Current.CancellationToken);
             await using var db = new MainContext(options);
             var state = new SharedState();
             var session = new CapturingPlayerSession

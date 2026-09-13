@@ -48,10 +48,7 @@ public sealed class ReportTicketRepositoryTests
         await using (var db = new MainContext(options))
         {
             var repo = new ReportTicketRepository(db);
-            var loaded = await repo.GetByIdAsync(
-                created.Id,
-                TestContext.Current.CancellationToken
-            );
+            var loaded = await repo.GetByIdAsync(created.Id, TestContext.Current.CancellationToken);
             Assert.NotNull(loaded);
             Assert.Equal(ReportTicketStatus.Open, loaded.Status);
             Assert.Equal("Bob is being racist", loaded.Reason);
@@ -59,6 +56,8 @@ public sealed class ReportTicketRepositoryTests
             Assert.Equal(2, loaded.Players.Count);
             Assert.Single(loaded.ChatMessages);
             Assert.True(loaded.ChatMessages.First().Rejected);
+            Assert.False(loaded.ChatMessages.First().Toxicity);
+            Assert.Equal(string.Empty, loaded.ChatMessages.First().ToxicityReason);
         }
     }
 
@@ -78,7 +77,12 @@ public sealed class ReportTicketRepositoryTests
             CreateRequest("newer"),
             TestContext.Current.CancellationToken
         );
-        await repo.ResolveAsync(older.Id, 99, "No action required", TestContext.Current.CancellationToken);
+        await repo.ResolveAsync(
+            older.Id,
+            99,
+            "No action required",
+            TestContext.Current.CancellationToken
+        );
 
         var (openItems, openTotal) = await repo.ListAsync(
             ReportTicketStatus.Open,

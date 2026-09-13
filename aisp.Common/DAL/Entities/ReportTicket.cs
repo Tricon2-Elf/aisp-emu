@@ -48,4 +48,6 @@ public sealed class ReportTicketChatMessage
     public string CharacterName { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public bool Rejected { get; set; }
+    public bool Toxicity { get; set; }
+    public string ToxicityReason { get; set; } = string.Empty;
 }

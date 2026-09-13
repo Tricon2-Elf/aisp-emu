@@ -447,6 +447,18 @@ namespace aisp.Common.DAL.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<bool>("Toxicity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("ToxicityReason")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
@@ -689,6 +701,24 @@ namespace aisp.Common.DAL.Migrations
                     b.ToTable("DramaFigureEquipment");
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<uint>("Slot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(61)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("CharacterId", "Slot");
+
+                    b.ToTable("FriendLinkTags", (string)null);
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.FriendRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -719,24 +749,6 @@ namespace aisp.Common.DAL.Migrations
                     b.HasIndex("TargetCharacterId", "Status");
 
                     b.ToTable("FriendRequests", (string)null);
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.Property<int>("CharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("Slot")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(61)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("CharacterId", "Slot");
-
-                    b.ToTable("FriendLinkTags", (string)null);
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Friendship", b =>
@@ -1285,6 +1297,18 @@ namespace aisp.Common.DAL.Migrations
 
                     b.Property<long>("ReportTicketId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Toxicity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("ToxicityReason")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
 
                     b.HasKey("Id");
 
@@ -2220,6 +2244,17 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("Figure");
                 });
 
+            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
+                {
+                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("aisp.Common.DAL.Entities.FriendRequest", b =>
                 {
                     b.HasOne("aisp.Common.DAL.Entities.Character", "RequesterCharacter")
@@ -2256,17 +2291,6 @@ namespace aisp.Common.DAL.Migrations
                     b.Navigation("CharacterHigh");
 
                     b.Navigation("CharacterLow");
-                });
-
-            modelBuilder.Entity("aisp.Common.DAL.Entities.FriendLinkTag", b =>
-                {
-                    b.HasOne("aisp.Common.DAL.Entities.Character", "Character")
-                        .WithMany()
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("aisp.Common.DAL.Entities.Furniture", b =>

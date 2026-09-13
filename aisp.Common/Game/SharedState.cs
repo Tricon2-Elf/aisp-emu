@@ -560,6 +560,20 @@ public class SharedState
         return session;
     }
 
+    public IPlayerSession? GetMsgSessionByUserId(int userId)
+    {
+        if (userId <= 0)
+            return null;
+
+        foreach (var session in GetServerClients(ServerType.Msg))
+        {
+            if (BelongsToUser(session, userId))
+                return session;
+        }
+
+        return null;
+    }
+
     private void CloseSupersededClients(ServerType serverType, IPlayerSession session)
     {
         foreach (var existing in GetServerClients(serverType))

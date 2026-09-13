@@ -179,29 +179,29 @@
             <strong>@Model.Account.StorageDeposit.ToString("N0")</strong>
         </div>
     </div>
-    <div class="section-heading">
-        <div>
-            <h2>Wardrobe storage</h2>
-        </div>
-        <span class="section-count">@Model.Account.StorageItems.Count)</span>
-    </div>
-    @if (Model.Account.StorageItems.Count == 0)
-    {
-        <p class="empty-state">No items are currently stored here.</p>
-    }
-    else
-    {
-        <div class="inventory-list">
-            @foreach (var item in Model.Account.StorageItems)
-            {
-                <div class="inventory-row">
-                    <img class="item-icon" src="@(itemIconBaseUrl + item.IconId.ToString("D8") + ".png")" alt="" loading="lazy" />
-                    <span class="inventory-name">@item.Name</span>
-                    <span class="inventory-quantity">× @item.Quantity</span>
-                </div>
-            }
-        </div>
-    }
+    <details class="collection-panel">
+        <summary class="section-heading">
+            <h3>Wardrobe storage</h3>
+            <span class="section-count">@Model.Account.StorageItems.Count</span>
+        </summary>
+        @if (Model.Account.StorageItems.Count == 0)
+        {
+            <p class="empty-state">No items are currently stored here.</p>
+        }
+        else
+        {
+            <div class="inventory-list">
+                @foreach (var item in Model.Account.StorageItems)
+                {
+                    <div class="inventory-row">
+                        <img class="item-icon" src="@(itemIconBaseUrl + item.IconId.ToString("D8") + ".png")" alt="" loading="lazy" />
+                        <span class="inventory-name">@item.Name</span>
+                        <span class="inventory-quantity">× @item.Quantity</span>
+                    </div>
+                }
+            </div>
+        }
+    </details>
 </section>
 @if (Model.Account.Characters.Count == 0)
 {
@@ -385,12 +385,14 @@ else
                         <th class="chat-log-channel">Channel</th>
                         <th>Message</th>
                         <th class="chat-log-status">Status</th>
+                        <th class="chat-log-status">Toxicity</th>
+                        <th>Reason</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var message in Model.ChatMessages)
                     {
-                        <tr class="@(message.Rejected ? "chat-log-rejected" : null)">
+                        <tr class="@(message.Rejected ? "chat-log-rejected" : null)@(message.Toxicity ? " chat-log-toxic" : null)">
                             <td class="chat-log-time text-secondary">@message.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
                             <td class="chat-log-channel text-secondary">@(message.Kind == "Circle" ? (message.CircleId is int circleId ? $"Circle {circleId}" : "Circle") : "Public")</td>
                             <td class="chat-log-message">@message.Message</td>
@@ -404,6 +406,17 @@ else
                                     <span class="status-pill status-active">Sent</span>
                                 }
                             </td>
+                            <td class="chat-log-status">
+                                @if (message.Toxicity)
+                                {
+                                    <span class="status-pill status-toxic">Toxic</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill status-offline">Clear</span>
+                                }
+                            </td>
+                            <td class="chat-log-reason text-secondary">@(string.IsNullOrWhiteSpace(message.ToxicityReason) ? "—" : message.ToxicityReason)</td>
                         </tr>
                     }
                 </tbody>

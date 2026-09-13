@@ -693,6 +693,11 @@ body:has(.moderation-modal[open]) {
     color: var(--portal-danger);
 }
 
+.status-toxic {
+    background: #fff3e4;
+    color: #b15d12;
+}
+
 .pagination-bar {
     align-items: center;
     display: flex;
@@ -717,9 +722,14 @@ body:has(.moderation-modal[open]) {
     white-space: nowrap;
 }
 
-.chat-log-message {
+.chat-log-message,
+.chat-log-reason {
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.chat-log-toxic .chat-log-message {
+    color: #b15d12;
 }
 
 .chat-log-rejected .chat-log-message {

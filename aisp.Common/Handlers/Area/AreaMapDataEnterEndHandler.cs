@@ -67,7 +67,8 @@ public class AreaMapDataEnterEndHandler(
                 0,
                 myPos,
                 checked((uint)session.ChannelId),
-                session.MapId
+                session.MapId,
+                session.User?.Role ?? UserRole.User
             );
             await session.SendAsync(PacketType.AvatarNotifyData, spawnMeForSelfPacket, ct);
             session.NeedsPostLoadSelfAvatarNotify = false;

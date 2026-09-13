@@ -291,6 +291,8 @@ internal static class HttpEndpointsExtensions
                         MapId = row.MapId,
                         ChannelId = row.ChannelId,
                         Rejected = row.Rejected,
+                        Toxicity = row.Toxicity,
+                        ToxicityReason = row.ToxicityReason,
                         CreatedAt = row.CreatedAt,
                     })
                     .ToList();

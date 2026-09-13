@@ -69,58 +69,34 @@ public class WordFilterTests
     public void ParseTermLists_JsonSplitsSlursFromSwears()
     {
         var json = """
-            [
-              {"id":"fuck","match":"fuck","tags":["general"]},
-              {"id":"faggot","match":"faggot|fagot","tags":["lgbtq"]},
-              {"id":"nigger","match":"nigger","tags":["racial"]},
-              {"id":"retard","match":"retard|retarded","tags":["general"]},
-              {"id":"enby","match":"enby","tags":["lgbtq"]}
-            ]
+            {
+              "swears": ["fuck", "shit"],
+              "slurs": ["faggot", "fagot", "nigger", "retard"]
+            }
             """;
 
-        var policy = WordFilter.ParsePolicy(
+        var (blocked, slurs) = WordFilter.ParseTermLists(json);
+        Assert.Equal(
+            ["faggot", "fagot", "fuck", "nigger", "retard", "shit"],
+            blocked.OrderBy(t => t).ToArray()
+        );
+        Assert.Equal(["faggot", "fagot", "nigger", "retard"], slurs.OrderBy(t => t).ToArray());
+    }
+
+    [Fact]
+    public void ParseTermLists_UnionsSlursIntoCompleteList()
+    {
+        var (blocked, slurs) = WordFilter.ParseTermLists(
             """
             {
-              "chat": {
-                "slurTags": ["racial", "lgbtq"],
-                "extraSlurIds": ["retard", "raghead"],
-                "allowedIds": ["enby"]
-              }
+              "swears": ["fuck"],
+              "slurs": ["faggot"]
             }
             """
         );
-        var (blocked, slurs) = WordFilter.ParseTermLists(json, policy);
-        Assert.Equal(
-            ["enby", "faggot", "fagot", "fuck", "nigger", "retard", "retarded"],
-            blocked.OrderBy(t => t).ToArray()
-        );
-        Assert.Equal(
-            ["faggot", "fagot", "nigger", "retard", "retarded"],
-            slurs.OrderBy(t => t).ToArray()
-        );
-        Assert.True(WordFilter.IsChatSlurEntry("raghead", ["religious"], policy));
-        Assert.False(WordFilter.IsChatSlurEntry("enby", ["lgbtq"], policy));
-        Assert.False(WordFilter.IsChatSlurEntry("fuck", ["general"], policy));
-    }
 
-    [Fact]
-    public void PolicyFile_DefinesChatSlurTagsAndAllowedIds()
-    {
-        Assert.True(File.Exists(WordFilter.DefaultPolicyPath));
-        var policy = WordFilter.LoadPolicy(WordFilter.DefaultPolicyPath, logger: null);
-        Assert.Contains("racial", policy.ChatSlurTags);
-        Assert.Contains("lgbtq", policy.ChatSlurTags);
-        Assert.Contains("retard", policy.ChatExtraSlurIds);
-        Assert.Contains("enby", policy.ChatAllowedIds);
-        Assert.DoesNotContain("fuck", policy.ChatExtraSlurIds);
-    }
-
-    [Fact]
-    public void ParseTermLists_PlainTextUsesTheSameListForChat()
-    {
-        var (blocked, slurs) = WordFilter.ParseTermLists("fuck\nfaggot\n");
-        Assert.Equal(blocked, slurs);
         Assert.Equal(["faggot", "fuck"], blocked.OrderBy(t => t).ToArray());
+        Assert.Equal(["faggot"], slurs.ToArray());
     }
 
     [Fact]
@@ -134,29 +110,25 @@ public class WordFilterTests
     }
 
     [Fact]
-    public void ParseTerms_ReadsOneEntryPerLine()
+    public void LoadsTermsFromJsonFile()
     {
-        var terms = WordFilter.ParseTerms(
-            """
-            faggot
-            # comment
-            blow job
-
-            """
-        );
-
-        Assert.Equal(["blowjob", "faggot"], terms.OrderBy(t => t).ToArray());
-    }
-
-    [Fact]
-    public void LoadsTermsFromCachedTxtFile()
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"blocked-words-{Guid.NewGuid():N}.txt");
+        var path = Path.Combine(Path.GetTempPath(), $"blocked-words-{Guid.NewGuid():N}.json");
         try
         {
-            File.WriteAllText(path, "faggot\nfag\n");
-            var filter = new WordFilter(path, logger: null, fetchRemote: null);
+            File.WriteAllText(
+                path,
+                """
+                {
+                  "swears": ["blow job"],
+                  "slurs": ["faggot", "fag"]
+                }
+                """
+            );
+            var filter = new WordFilter(path, logger: null);
             Assert.True(filter.ContainsBlockedWord(WordFilterLevel.Complete, "fag"));
+            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.Complete, "blow-job"));
+            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "Faggot"));
+            Assert.False(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "blowjob"));
             Assert.False(filter.ContainsBlockedWord(WordFilterLevel.Complete, "clean"));
         }
         finally
@@ -166,75 +138,29 @@ public class WordFilterTests
     }
 
     [Fact]
-    public void MissingFile_WithoutRemote_DoesNotThrowAndBlocksNothing()
+    public void MissingFile_DoesNotThrowAndBlocksNothing()
     {
         var filter = new WordFilter(
-            Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.txt"),
-            logger: null,
-            fetchRemote: null
+            Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.json"),
+            logger: null
         );
         Assert.False(filter.ContainsBlockedWord(WordFilterLevel.Complete, "faggot"));
     }
 
     [Fact]
-    public void MissingFile_DownloadsAndCachesLocally()
+    public void SeedList_BlocksSlursInChatAndSwearsInNames()
     {
-        var dir = Path.Combine(Path.GetTempPath(), $"blocked-words-cache-{Guid.NewGuid():N}");
-        var path = Path.Combine(dir, "blockedWords.txt");
-        try
-        {
-            var filter = new WordFilter(
-                path,
-                logger: null,
-                fetchRemote: (_, _) => "faggot\nblow job\n"
-            );
+        Assert.True(File.Exists(WordFilter.DefaultListPath));
+        var filter = new WordFilter(WordFilter.DefaultListPath, logger: null);
 
-            Assert.True(File.Exists(path));
-            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.Complete, "Faggot"));
-            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.Complete, "blow-job"));
-            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "Faggot"));
-
-            // Second load uses cache; fetcher must not be required.
-            var cached = new WordFilter(path, logger: null, fetchRemote: null);
-            Assert.True(cached.ContainsBlockedWord(WordFilterLevel.Complete, "faggot"));
-        }
-        finally
-        {
-            if (Directory.Exists(dir))
-                Directory.Delete(dir, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void JsonCache_ChatAllowsSwearsAndBlocksSlurs()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), $"blocked-words-json-{Guid.NewGuid():N}");
-        var path = Path.Combine(dir, "blockedWords.json");
-        try
-        {
-            var filter = new WordFilter(
-                path,
-                logger: null,
-                fetchRemote: (_, _) =>
-                    """
-                    [
-                      {"id":"fuck","match":"fuck","tags":["general"]},
-                      {"id":"faggot","match":"faggot","tags":["lgbtq"]},
-                      {"id":"nigger","match":"nigger","tags":["racial"]}
-                    ]
-                    """
-            );
-
-            Assert.True(File.Exists(path));
-            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.Complete, "fuck"));
-            Assert.False(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "fuck"));
-            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "Faggot"));
-            Assert.True(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "nigger"));
-        }
-        finally
-        {
-            if (Directory.Exists(dir))
-                Directory.Delete(dir, recursive: true);
-        }
+        Assert.True(filter.ContainsBlockedWord(WordFilterLevel.Complete, "fuck"));
+        Assert.True(filter.ContainsBlockedWord(WordFilterLevel.Complete, "shit"));
+        Assert.False(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "fuck"));
+        Assert.False(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "holy shit"));
+        Assert.True(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "Faggot"));
+        Assert.True(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "nigger"));
+        Assert.True(filter.ContainsBlockedWord(WordFilterLevel.NoSlurs, "retard"));
+        Assert.False(filter.ContainsBlockedWord(WordFilterLevel.Complete, "enby"));
+        Assert.False(filter.ContainsBlockedWord(WordFilterLevel.Complete, "twink"));
     }
 }

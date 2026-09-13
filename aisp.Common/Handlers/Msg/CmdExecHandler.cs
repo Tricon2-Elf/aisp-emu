@@ -514,7 +514,12 @@ public class CmdExecHandler(
             await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
 
             var disappearPacket = new NotifyDisappearChara(areaClient.CharacterId).ToBytes();
-            var appearPacket = CreateTeleportNotify(chara, areaClient.CharacterId, newPos);
+            var appearPacket = CreateTeleportNotify(
+                chara,
+                areaClient.CharacterId,
+                newPos,
+                areaClient.User?.Role ?? UserRole.User
+            );
 
             foreach (var other in state.GetAreaPeers(areaClient))
             {
@@ -871,7 +876,12 @@ public class CmdExecHandler(
                 await areaClient.SendAsync(PacketType.AvatarNotifyMove, notifyMove, ct);
 
                 var disappearPacket = new NotifyDisappearChara(areaClient.CharacterId).ToBytes();
-                var appearPacket = CreateTeleportNotify(chara, areaClient.CharacterId, newPos);
+                var appearPacket = CreateTeleportNotify(
+                    chara,
+                    areaClient.CharacterId,
+                    newPos,
+                    areaClient.User?.Role ?? UserRole.User
+                );
 
                 foreach (var other in state.GetAreaPeers(areaClient))
                 {
@@ -1540,7 +1550,9 @@ public class CmdExecHandler(
                             chat.CharacterId,
                             chat.CharacterName,
                             chat.Message,
-                            chat.Rejected
+                            chat.Rejected,
+                            chat.Toxicity,
+                            chat.ToxicityReason
                         ))
                         .ToArray()
                 ),
@@ -1696,9 +1708,18 @@ public class CmdExecHandler(
         CancellationToken ct
     ) => SystemNotice.SendAsync(session, text, ct);
 
-    private static byte[] CreateTeleportNotify(Character cha, uint objId, MovementData pos)
+    private static byte[] CreateTeleportNotify(
+        Character cha,
+        uint objId,
+        MovementData pos,
+        UserRole role
+    )
     {
-        var cd = new CharaData(objId, cha.ModelId, cha.Name) { Movement = pos };
+        var cd = new CharaData(objId, cha.ModelId, cha.Name)
+        {
+            NamePlate = role.ToNamePlate(),
+            Movement = pos,
+        };
         cd.Visual.VisualId = objId;
         cd.Visual.BloodType = cha.BloodType;
         cd.Visual.Month = (byte)cha.Birthdate.Month;
