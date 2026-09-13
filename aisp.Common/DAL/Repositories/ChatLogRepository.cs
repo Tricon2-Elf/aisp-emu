@@ -1,4 +1,5 @@
 using aisp.Common.DAL.Entities;
+using aisp.Common.Services.Toxicity;
 using Microsoft.EntityFrameworkCore;
 
 namespace aisp.Common.DAL.Repositories;
@@ -6,6 +7,13 @@ namespace aisp.Common.DAL.Repositories;
 public interface IChatLogRepository
 {
     Task AddAsync(ChatMessage message, CancellationToken ct = default);
+
+    Task SetToxicityAsync(long id, bool toxicity, string reason, CancellationToken ct = default);
+
+    Task<IReadOnlyList<ChatMessage>> ListUnclassifiedAsync(
+        int take,
+        CancellationToken ct = default
+    );
 
     Task<(IReadOnlyList<ChatMessage> Items, int Total)> ListAsync(
         ChatLogKind? kind = null,
@@ -28,7 +36,8 @@ public interface IChatLogRepository
     );
 }
 
-public sealed class ChatLogRepository(MainContext db) : IChatLogRepository
+public sealed class ChatLogRepository(MainContext db, IChatToxicityClassifier? toxicity = null)
+    : IChatLogRepository
 {
     public const int MaxPageSize = 500;
 
@@ -38,6 +47,45 @@ public sealed class ChatLogRepository(MainContext db) : IChatLogRepository
             message.CreatedAt = DateTime.UtcNow;
         db.ChatMessages.Add(message);
         await db.SaveChangesAsync(ct);
+
+        if (!string.IsNullOrWhiteSpace(message.Message))
+            toxicity?.TryEnqueue(message.Id, message.Message);
+    }
+
+    public Task SetToxicityAsync(
+        long id,
+        bool toxicity,
+        string reason,
+        CancellationToken ct = default
+    )
+    {
+        var truncated =
+            reason.Length <= ChatToxicityReason.MaxLength
+                ? reason
+                : reason[..ChatToxicityReason.MaxLength];
+        return db
+            .ChatMessages.Where(x => x.Id == id)
+            .ExecuteUpdateAsync(
+                setters =>
+                    setters
+                        .SetProperty(x => x.Toxicity, toxicity)
+                        .SetProperty(x => x.ToxicityReason, truncated),
+                ct
+            );
+    }
+
+    public async Task<IReadOnlyList<ChatMessage>> ListUnclassifiedAsync(
+        int take,
+        CancellationToken ct = default
+    )
+    {
+        var pageSize = Math.Clamp(take, 1, MaxPageSize);
+        return await db
+            .ChatMessages.AsNoTracking()
+            .Where(x => x.ToxicityReason == "" && x.Message.Trim() != "")
+            .OrderByDescending(x => x.Id)
+            .Take(pageSize)
+            .ToListAsync(ct);
     }
 
     public async Task<(IReadOnlyList<ChatMessage> Items, int Total)> ListAsync(

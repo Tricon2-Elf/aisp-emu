@@ -27,6 +27,8 @@ services:
       - Server__UseDistributedSessionPresence=false
       - IP_OVERRIDE=host.docker.internal
       - Server__DbOptions__ConnectionString=Data Source=/data/main.db;Cache=Shared;Default Timeout=5
+      # Opt-in chat toxicity (downloads ONNX models to /data/models on first enable):
+      # - ChatToxicity__Enabled=true
       - ApiSettings__ApiKey=${AISPEMU_API_KEY:?set AISPEMU_API_KEY}
       - PortalBackend__ServiceToken=${AISPEMU_PORTAL_SERVICE_TOKEN:?set AISPEMU_PORTAL_SERVICE_TOKEN}
     volumes:

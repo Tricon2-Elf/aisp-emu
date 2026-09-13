@@ -372,3 +372,6 @@ aisp-decompiled.c
 localDocs
 internal-nlog.txt
 tools/
+models/
+*.onnx
+

@@ -16,6 +16,36 @@ internal sealed class CapturingChatLog : IChatLogRepository
         return Task.CompletedTask;
     }
 
+    public Task SetToxicityAsync(
+        long id,
+        bool toxicity,
+        string reason,
+        CancellationToken ct = default
+    )
+    {
+        var row = Entries.FirstOrDefault(x => x.Id == id);
+        if (row is not null)
+        {
+            row.Toxicity = toxicity;
+            row.ToxicityReason = reason;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<ChatMessage>> ListUnclassifiedAsync(
+        int take,
+        CancellationToken ct = default
+    )
+    {
+        var items = Entries
+            .Where(x => x.ToxicityReason == "" && !string.IsNullOrWhiteSpace(x.Message))
+            .OrderByDescending(x => x.Id)
+            .Take(Math.Clamp(take, 1, 500))
+            .ToList();
+        return Task.FromResult<IReadOnlyList<ChatMessage>>(items);
+    }
+
     public Task<(IReadOnlyList<ChatMessage> Items, int Total)> ListAsync(
         ChatLogKind? kind = null,
         int? userId = null,
