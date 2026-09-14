@@ -30,11 +30,9 @@ internal static class CharacterItemSync
         CancellationToken ct
     )
     {
-        var packets = new List<(PacketType Type, byte[] Payload)>
-        {
-            (PacketType.ItemGetListResponse, new ItemGetListResponse(0).ToBytes()),
-        };
+        var packets = new List<(PacketType Type, byte[] Payload)>();
         AppendBootstrapPackets(packets, session, character);
+        packets.Add((PacketType.ItemGetListResponse, new ItemGetListResponse(0).ToBytes()));
         return session.SendAsync(packets, ct);
     }
 
@@ -45,12 +43,10 @@ internal static class CharacterItemSync
         CancellationToken ct
     )
     {
-        var packets = new List<(PacketType Type, byte[] Payload)>
-        {
-            (PacketType.ItemGetListResponse, new ItemGetListResponse(0).ToBytes()),
-        };
+        var packets = new List<(PacketType Type, byte[] Payload)>();
         AppendBootstrapPackets(packets, session, character);
         AppendStorageBootstrapPackets(packets, storageItems);
+        packets.Add((PacketType.ItemGetListResponse, new ItemGetListResponse(0).ToBytes()));
         return session.SendAsync(packets, ct);
     }
 
