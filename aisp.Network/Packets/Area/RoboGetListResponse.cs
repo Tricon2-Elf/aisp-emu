@@ -3,7 +3,8 @@ using aisp.Network.Data;
 
 namespace aisp.Network.Packets.Area;
 
-public class RoboGetListResponse(IReadOnlyList<RoboData>? robos = null) : IOutgoingPacket
+public class RoboGetListResponse(IReadOnlyList<RoboData>? robos = null, uint result = 0)
+    : IOutgoingPacket
 {
     public const int MaximumRoboCount = 10;
 
@@ -16,7 +17,7 @@ public class RoboGetListResponse(IReadOnlyList<RoboData>? robos = null) : IOutgo
             );
 
         var writer = new PacketWriter();
-        writer.Write(0u); // Result
+        writer.Write(result);
         writer.Write((uint)list.Count);
         foreach (var robo in list)
             writer.Write(robo.ToBytes());
