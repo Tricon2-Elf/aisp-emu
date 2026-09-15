@@ -45,7 +45,13 @@ public class MailPostHandlerTests
             .Setup(c => c.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(senderChar);
 
-        var handler = new MailPostHandler(characters.Object, state, WordFilter.FromTerms([]));
+        var mailRepository = CreateMailRepository();
+        var handler = new MailPostHandler(
+            characters.Object,
+            mailRepository.Object,
+            state,
+            WordFilter.FromTerms([])
+        );
         var response = await handler.HandleAsync(
             new MailPostRequest(2, string.Empty, "[無題]", "hello"),
             sender,
@@ -70,6 +76,10 @@ public class MailPostHandlerTests
         Assert.Equal(response.Mail.MailId, mail.MailId);
 
         Assert.DoesNotContain(sender.Sent, packet => packet.Type == PacketType.NotifyNewMail);
+        mailRepository.Verify(
+            x => x.AddAsync(It.IsAny<MailMessage>(), It.IsAny<CancellationToken>()),
+            Times.Once
+        );
     }
 
     [Fact]
@@ -104,7 +114,12 @@ public class MailPostHandlerTests
             .Setup(c => c.GetByIdAsync(2, It.IsAny<CancellationToken>()))
             .ReturnsAsync(recipientChar);
 
-        var handler = new MailPostHandler(characters.Object, state, WordFilter.FromTerms([]));
+        var handler = new MailPostHandler(
+            characters.Object,
+            CreateMailRepository().Object,
+            state,
+            WordFilter.FromTerms([])
+        );
         var response = await handler.HandleAsync(
             new MailPostRequest(2, string.Empty, "subj", "body"),
             sender,
@@ -128,6 +143,7 @@ public class MailPostHandlerTests
 
         var handler = new MailPostHandler(
             characters.Object,
+            CreateMailRepository().Object,
             new SharedState(),
             WordFilter.FromTerms([])
         );
@@ -178,6 +194,7 @@ public class MailPostHandlerTests
 
         var handler = new MailPostHandler(
             characters.Object,
+            CreateMailRepository().Object,
             state,
             WordFilter.FromTerms(["faggot"])
         );
@@ -204,5 +221,20 @@ public class MailPostHandlerTests
         var user = new User { Id = id, Username = $"user-{id}" };
         user.SetPassword("pw");
         return user;
+    }
+
+    private static Mock<IMailRepository> CreateMailRepository()
+    {
+        long nextId = 1;
+        var mail = new Mock<IMailRepository>();
+        mail.Setup(x => x.AddAsync(It.IsAny<MailMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(
+                (MailMessage message, CancellationToken _) =>
+                {
+                    message.Id = nextId++;
+                    return Task.FromResult(message);
+                }
+            );
+        return mail;
     }
 }
