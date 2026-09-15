@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace aisp.Common.Handlers.Area;
 
 public sealed class AreaRoboTalkPostHandler(
+    SharedState state,
     IRoboRepository roboRepository,
     IWordFilter wordFilter,
     ILogger<AreaRoboTalkPostHandler> logger
@@ -59,11 +60,10 @@ public sealed class AreaRoboTalkPostHandler(
             session.CharacterId,
             request.RoboId
         );
-        await session.SendAsync(
-            ResponseType,
-            new RoboTalkForwardNotify(request.RoboId, request.Message).ToBytes(),
-            ct
-        );
+        var forward = new RoboTalkForwardNotify(request.RoboId, request.Message).ToBytes();
+        foreach (var peer in state.GetAreaPeers(session, includeSelf: true))
+            await peer.SendAsync(ResponseType, forward, ct);
+
         await session.SendAsync(
             PacketType.RoboGrantNextMessageNoticeNotify,
             new RoboGrantNextMessageNoticeNotify(request.RoboId).ToBytes(),
