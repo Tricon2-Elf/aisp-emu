@@ -2,12 +2,12 @@ using aisp.Network;
 
 namespace aisp.Network.Packets.Area;
 
-public class MissionDataResponse : IOutgoingPacket
+public class MissionDataResponse(uint result = 0) : IOutgoingPacket
 {
     public byte[] ToBytes()
     {
         var writer = new PacketWriter();
-        writer.Write((uint)0); //Result
+        writer.Write(result);
         return writer.ToBytes();
     }
 }
