@@ -1,4 +1,5 @@
 using aisp.Common.Config;
+using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
@@ -1600,22 +1601,38 @@ public class CmdExecHandler(
             return;
 
         var mapLabel = string.IsNullOrWhiteSpace(mapName) ? mapId.ToString() : mapName;
+        string MessageFor(GameLanguage language) =>
+            localiser.Get(
+                language,
+                L.Cmd.ReportModeratorsNotice,
+                ticketId,
+                reporterCharacterName,
+                reporterUsername,
+                mapLabel,
+                channelId,
+                reason
+            );
+
+        var leader = await characterRepo.GetByIdAsync(moderatorsCircle.LeaderCharacterId, ct);
+        await chatLogRepository.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Circle,
+                UserId = leader?.UserId ?? 0,
+                CharacterId = moderatorsCircle.LeaderCharacterId,
+                CharacterName = leader?.Name ?? string.Empty,
+                Message = MessageFor(GameLanguage.English),
+                CircleId = moderatorsCircle.Id,
+            },
+            ct
+        );
+
         await CircleNotifyHelper.BroadcastCircleChatAsync(
             circleRepository,
             state,
             moderatorsCircle.Id,
             (uint)moderatorsCircle.LeaderCharacterId,
-            language =>
-                localiser.Get(
-                    language,
-                    L.Cmd.ReportModeratorsNotice,
-                    ticketId,
-                    reporterCharacterName,
-                    reporterUsername,
-                    mapLabel,
-                    channelId,
-                    reason
-                ),
+            MessageFor,
             ct: ct
         );
     }
