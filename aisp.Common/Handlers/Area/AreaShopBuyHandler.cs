@@ -135,6 +135,28 @@ public sealed class AreaShopBuyHandler(
             _ => 0,
         };
 
+        var characterId = checked((int)session.CharacterId);
+        if (
+            !await characterRepository.CanAddInventoryItemsAsync(
+                characterId,
+                mergedQuantities.Keys.Select(itemId => checked((int)itemId)),
+                ct
+            )
+        )
+        {
+            logger.LogInformation(
+                "Shop purchase refused for character {CharacterId}: inventory would exceed {MaximumStacks} stacks",
+                characterId,
+                CharacterRepository.MaximumInventoryStacks
+            );
+            await session.SendAsync(
+                ResponseType,
+                new ShopBuyResponse(1, currentBalance).ToBytes(),
+                ct
+            );
+            return;
+        }
+
         if (currentBalance < totalCost)
         {
             await session.SendAsync(
@@ -148,7 +170,7 @@ public sealed class AreaShopBuyHandler(
         foreach (var (itemId, quantity) in mergedQuantities)
         {
             await characterRepository.AddInventoryAsync(
-                (int)session.CharacterId,
+                characterId,
                 (int)itemId,
                 checked((int)quantity),
                 ct

@@ -42,6 +42,7 @@ public sealed class AreaNiconiCommonsShopBuyCommonsHandler(
         if (
             !await NiconiCommonsShopPurchase.TryChargeAndGrantBagItemAsync(
                 db,
+                characters,
                 session,
                 product.Offer,
                 request.Extra,

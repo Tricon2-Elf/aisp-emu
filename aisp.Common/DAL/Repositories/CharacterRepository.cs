@@ -59,6 +59,11 @@ public interface ICharacterRepository
         int quantity,
         CancellationToken ct = default
     );
+    Task<bool> CanAddInventoryItemsAsync(
+        int characterId,
+        IEnumerable<int> itemIds,
+        CancellationToken ct = default
+    );
     Task EquipAsync(int characterId, byte slotIndex, int itemId, CancellationToken ct = default);
     Task UnequipAsync(int characterId, byte slotIndex, CancellationToken ct = default);
     Task RemoveInventoryAsync(
@@ -77,6 +82,8 @@ public interface ICharacterRepository
 public sealed class CharacterRepository(MainContext db, ILogger<CharacterRepository> _logger)
     : ICharacterRepository
 {
+    public const int MaximumInventoryStacks = 150;
+
     public async Task<Character?> GetByIdAsync(int id, CancellationToken ct = default) =>
         await db
             .Characters.Include(c => c.Inventory)
@@ -259,6 +266,25 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> CanAddInventoryItemsAsync(
+        int characterId,
+        IEnumerable<int> itemIds,
+        CancellationToken ct = default
+    )
+    {
+        var requestedItemIds = itemIds.Distinct().ToArray();
+        if (requestedItemIds.Length == 0)
+            return true;
+
+        var ownedItemIds = await db
+            .CharacterInventories.AsNoTracking()
+            .Where(x => x.CharacterId == characterId && x.Quantity > 0)
+            .Select(x => x.ItemId)
+            .ToHashSetAsync(ct);
+        var newStackCount = requestedItemIds.Count(itemId => !ownedItemIds.Contains(itemId));
+        return ownedItemIds.Count + newStackCount <= MaximumInventoryStacks;
     }
 
     public async Task EquipAsync(

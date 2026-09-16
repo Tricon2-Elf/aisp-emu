@@ -26,6 +26,7 @@ internal static class NiconiCommonsShopPurchase
     /// </summary>
     public static async Task<bool> TryChargeAndGrantBagItemAsync(
         MainContext db,
+        ICharacterRepository characters,
         IPlayerSession session,
         NiconiCommonsShopItemRecord row,
         byte currency,
@@ -46,6 +47,9 @@ internal static class NiconiCommonsShopPurchase
             ct
         );
         if (stack is { Quantity: > 0 })
+            return false;
+
+        if (!await characters.CanAddInventoryItemsAsync(characterId, [bagItemId], ct))
             return false;
 
         var price = row.AiPrice;
