@@ -2176,6 +2176,13 @@ public class CmdExecHandlerTests
             var text = reader.ReadString("utf-8");
             Assert.Contains("Reporter", text, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("some problem", text, StringComparison.OrdinalIgnoreCase);
+
+            await using var verifyDb = new MainContext(options);
+            var persisted = Assert.Single(
+                verifyDb.ChatMessages.Where(message => message.Kind == ChatLogKind.Circle)
+            );
+            Assert.Equal(9001, persisted.CharacterId);
+            Assert.Contains("some problem", persisted.Message, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

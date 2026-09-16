@@ -34,6 +34,13 @@ public interface IChatLogRepository
         DateTime sinceUtc,
         CancellationToken ct = default
     );
+
+    Task<IReadOnlyList<ChatMessage>> ListRecentCircleAsync(
+        int circleId,
+        DateTime sinceUtc,
+        int take,
+        CancellationToken ct = default
+    );
 }
 
 public sealed class ChatLogRepository(MainContext db, IChatToxicityClassifier? toxicity = null)
@@ -143,4 +150,29 @@ public sealed class ChatLogRepository(MainContext db, IChatToxicityClassifier? t
             .OrderBy(x => x.CreatedAt)
             .ThenBy(x => x.Id)
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<ChatMessage>> ListRecentCircleAsync(
+        int circleId,
+        DateTime sinceUtc,
+        int take,
+        CancellationToken ct = default
+    )
+    {
+        var pageSize = Math.Clamp(take, 1, MaxPageSize);
+        var newest = await db
+            .ChatMessages.AsNoTracking()
+            .Where(x =>
+                x.Kind == ChatLogKind.Circle
+                && x.CircleId == circleId
+                && !x.Rejected
+                && x.CreatedAt >= sinceUtc
+            )
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        newest.Reverse();
+        return newest;
+    }
 }

@@ -102,4 +102,26 @@ internal sealed class CapturingChatLog : IChatLogRepository
             .ToList();
         return Task.FromResult<IReadOnlyList<ChatMessage>>(items);
     }
+
+    public Task<IReadOnlyList<ChatMessage>> ListRecentCircleAsync(
+        int circleId,
+        DateTime sinceUtc,
+        int take,
+        CancellationToken ct = default
+    )
+    {
+        var items = Entries
+            .Where(x =>
+                x.Kind == ChatLogKind.Circle
+                && x.CircleId == circleId
+                && !x.Rejected
+                && x.CreatedAt >= sinceUtc
+            )
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
+            .Take(Math.Clamp(take, 1, 500))
+            .Reverse()
+            .ToList();
+        return Task.FromResult<IReadOnlyList<ChatMessage>>(items);
+    }
 }

@@ -14,6 +14,13 @@ namespace aisp.Common.Tests;
 
 public sealed class CircleHandlerTests
 {
+    private static string ReadCircleChatMessage(byte[] payload)
+    {
+        var reader = new PacketReader(payload);
+        _ = reader.ReadUInt();
+        return reader.ReadString("utf-8");
+    }
+
     [Fact]
     public async Task Create_PersistsCircleAndMembership()
     {
@@ -179,6 +186,102 @@ public sealed class CircleHandlerTests
         Assert.Equal("hello", logged.Message);
         Assert.Equal(created.Circle.Id, logged.CircleId);
         Assert.False(logged.Rejected);
+    }
+
+    [Fact]
+    public async Task ChatIn_ReplaysAcceptedHistorySinceMemberJoinedInChronologicalOrder()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        await using var _ = connection;
+        var ct = TestContext.Current.CancellationToken;
+        await TestDb.SeedCharacterAsync(options, 1, ct);
+
+        await using var db = new MainContext(options);
+        var circles = new CircleRepository(db);
+        var created = await circles.CreateAsync(1, "History", 0, ct);
+        var circleId = created.Circle!.Id;
+        var membership = await circles.GetMembershipAsync(circleId, 1, ct);
+        var chatLog = new ChatLogRepository(db);
+        db.ChatMessages.AddRange(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Circle,
+                CharacterId = 1,
+                CharacterName = "character-1",
+                CircleId = circleId,
+                Message = "before joining",
+                CreatedAt = membership!.JoinedAt.AddSeconds(-1),
+            },
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Circle,
+                CharacterId = 1,
+                CharacterName = "character-1",
+                CircleId = circleId,
+                Message = "first",
+                CreatedAt = membership.JoinedAt.AddSeconds(1),
+            },
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Circle,
+                CharacterId = 1,
+                CharacterName = "character-1",
+                CircleId = circleId,
+                Message = "rejected",
+                Rejected = true,
+                CreatedAt = membership.JoinedAt.AddSeconds(2),
+            },
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Circle,
+                CharacterId = 1,
+                CharacterName = "character-1",
+                CircleId = circleId,
+                Message = "second",
+                CreatedAt = membership.JoinedAt.AddSeconds(3),
+            }
+        );
+        await db.SaveChangesAsync(ct);
+
+        var state = new SharedState();
+        var session = new CapturingPlayerSession
+        {
+            CharacterId = 1,
+            Character = db.Characters.Single(x => x.Id == 1),
+            User = db.Users.Single(x => x.Id == 1),
+        };
+        state.RegisterClient(ServerType.Msg, session);
+        var request = new PacketWriter();
+        request.Write((ulong)circleId);
+
+        await new CircleChatInHandler(circles, state, chatLog).HandleAsync(
+            request.ToBytes(),
+            session,
+            ct
+        );
+
+        Assert.Equal(PacketType.CircleChatInResponse, session.Sent[0].Type);
+        var replayed = session
+            .Sent.Where(x => x.Type == PacketType.CircleChatForwardNotify)
+            .ToList();
+        Assert.Collection(
+            replayed,
+            first => Assert.Equal("first", ReadCircleChatMessage(first.Payload)),
+            second => Assert.Equal("second", ReadCircleChatMessage(second.Payload))
+        );
+
+        session.Sent.Clear();
+        await new CircleChatInHandler(circles, state, chatLog).HandleAsync(
+            request.ToBytes(),
+            session,
+            ct
+        );
+
+        Assert.Contains(session.Sent, packet => packet.Type == PacketType.CircleChatInResponse);
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type == PacketType.CircleChatForwardNotify
+        );
     }
 
     [Fact]

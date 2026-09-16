@@ -150,4 +150,35 @@ public class MailPacketTests
         Assert.Equal(0x01A036BFDDF2UL, reader.ReadULong());
         Assert.Equal(0u, reader.ReadUInt());
     }
+
+    [Fact]
+    public void MailDeletePackets_MatchClientLayout()
+    {
+        var writer = new PacketWriter();
+        writer.Write(0x01A036BFDDF2UL);
+        writer.Write(2u);
+        var request = MailDeleteRequest.FromBytes(writer.ToBytes());
+        Assert.Equal(0x01A036BFDDF2UL, request.MailId);
+        Assert.Equal(2u, request.Type);
+
+        var bytes = new MailDeleteResponse(0, request.MailId, request.Type).ToBytes();
+        Assert.Equal(16, bytes.Length);
+        var reader = new PacketReader(bytes);
+        Assert.Equal(0u, reader.ReadUInt());
+        Assert.Equal(request.MailId, reader.ReadULong());
+        Assert.Equal(request.Type, reader.ReadUInt());
+    }
+
+    [Fact]
+    public void MailProtectPackets_MatchClientLayout()
+    {
+        var writer = new PacketWriter();
+        writer.Write(0x01A036BFDDF2UL);
+        var protect = MailProtectRequest.FromBytes(writer.ToBytes());
+        var cancel = MailProtectCancelRequest.FromBytes(writer.ToBytes());
+        Assert.Equal(0x01A036BFDDF2UL, protect.MailId);
+        Assert.Equal(protect.MailId, cancel.MailId);
+        Assert.Equal(4, new MailProtectResponse(0).ToBytes().Length);
+        Assert.Equal(4, new MailProtectCancelResponse(0).ToBytes().Length);
+    }
 }
