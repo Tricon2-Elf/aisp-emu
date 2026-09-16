@@ -135,6 +135,7 @@ public sealed class AreaShopBuyHandler(
             _ => 0,
         };
 
+        var characterId = checked((int)session.CharacterId);
         if (currentBalance < totalCost)
         {
             await session.SendAsync(
@@ -145,14 +146,22 @@ public sealed class AreaShopBuyHandler(
             return;
         }
 
-        foreach (var (itemId, quantity) in mergedQuantities)
+        var itemsToAdd = mergedQuantities.ToDictionary(
+            item => checked((int)item.Key),
+            item => checked((int)item.Value)
+        );
+        if (!await characterRepository.AddInventoryAsync(characterId, itemsToAdd, ct))
         {
-            await characterRepository.AddInventoryAsync(
-                (int)session.CharacterId,
-                (int)itemId,
-                checked((int)quantity),
+            logger.LogInformation(
+                "Shop purchase refused for character {CharacterId}: inventory is full",
+                characterId
+            );
+            await session.SendAsync(
+                ResponseType,
+                new ShopBuyResponse(1, currentBalance).ToBytes(),
                 ct
             );
+            return;
         }
 
         var updatedBalance = checked((long)(currentBalance - totalCost));

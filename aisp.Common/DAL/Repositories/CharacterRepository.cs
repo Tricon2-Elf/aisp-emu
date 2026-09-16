@@ -53,10 +53,15 @@ public interface ICharacterRepository
         uint statusIconId,
         CancellationToken ct = default
     );
-    Task AddInventoryAsync(
+    Task<bool> AddInventoryAsync(
         int characterId,
         int itemId,
         int quantity,
+        CancellationToken ct = default
+    );
+    Task<bool> AddInventoryAsync(
+        int characterId,
+        IReadOnlyDictionary<int, int> items,
         CancellationToken ct = default
     );
     Task EquipAsync(int characterId, byte slotIndex, int itemId, CancellationToken ct = default);
@@ -77,6 +82,8 @@ public interface ICharacterRepository
 public sealed class CharacterRepository(MainContext db, ILogger<CharacterRepository> _logger)
     : ICharacterRepository
 {
+    public const int MaximumInventoryStacks = 150;
+
     public async Task<Character?> GetByIdAsync(int id, CancellationToken ct = default) =>
         await db
             .Characters.Include(c => c.Inventory)
@@ -228,37 +235,52 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task AddInventoryAsync(
+    public Task<bool> AddInventoryAsync(
         int characterId,
         int itemId,
         int quantity,
         CancellationToken ct = default
+    ) => AddInventoryAsync(characterId, new Dictionary<int, int> { [itemId] = quantity }, ct);
+
+    public async Task<bool> AddInventoryAsync(
+        int characterId,
+        IReadOnlyDictionary<int, int> items,
+        CancellationToken ct = default
     )
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(quantity);
+        if (items.Count == 0)
+            return true;
 
-        var existing = await db.CharacterInventories.SingleOrDefaultAsync(
-            x => x.CharacterId == characterId && x.ItemId == itemId,
-            ct
-        );
+        if (items.Any(item => item.Key <= 0 || item.Value <= 0))
+            return false;
 
-        if (existing is null)
+        var itemIds = items.Keys.ToArray();
+        var inventoryByItemId = await db
+            .CharacterInventories.Where(x =>
+                x.CharacterId == characterId && itemIds.Contains(x.ItemId)
+            )
+            .ToDictionaryAsync(x => x.ItemId, ct);
+
+        foreach (var (itemId, quantity) in items)
         {
-            db.CharacterInventories.Add(
-                new CharacterInventory
-                {
-                    CharacterId = characterId,
-                    ItemId = itemId,
-                    Quantity = quantity,
-                }
-            );
-        }
-        else
-        {
-            existing.Quantity += quantity;
+            if (inventoryByItemId.TryGetValue(itemId, out var existing))
+            {
+                existing.Quantity = checked(existing.Quantity + quantity);
+            }
+            else
+            {
+                db.CharacterInventories.Add(
+                    new CharacterInventory
+                    {
+                        CharacterId = characterId,
+                        ItemId = itemId,
+                        Quantity = quantity,
+                    }
+                );
+            }
         }
 
-        await db.SaveChangesAsync(ct);
+        return await CharacterInventoryRepository.TrySaveChangesAsync(db, ct);
     }
 
     public async Task EquipAsync(
@@ -555,7 +577,8 @@ public sealed class CharacterRepository(MainContext db, ILogger<CharacterReposit
             );
         }
 
-        await db.SaveChangesAsync(ct);
+        if (!await CharacterInventoryRepository.TrySaveChangesAsync(db, ct))
+            throw new InvalidOperationException("The inventory is full.");
         var countsByItemId = await db
             .CharacterInventories.Where(i =>
                 i.CharacterId == characterId && changedItemIds.Contains(i.ItemId)

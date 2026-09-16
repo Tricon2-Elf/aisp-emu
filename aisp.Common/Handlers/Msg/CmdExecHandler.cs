@@ -558,8 +558,20 @@ public class CmdExecHandler(
                 .WardrobeInventoryForGender(character.Gender)
                 .ToList();
 
-            foreach (var itemId in itemIds)
-                await characterRepo.AddInventoryAsync(characterId, itemId, 1, ct);
+            if (
+                !await characterRepo.AddInventoryAsync(
+                    characterId,
+                    itemIds.ToDictionary(itemId => itemId, _ => 1),
+                    ct
+                )
+            )
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: outfit failed because inventory is full for character {CharacterId}",
+                    characterId
+                );
+                return;
+            }
 
             var refreshed = await characterRepo.GetByIdAsync(characterId, ct);
             if (refreshed is null)
@@ -691,7 +703,16 @@ public class CmdExecHandler(
 
             try
             {
-                await characterRepo.AddInventoryAsync(characterId, itemId, quantity, ct);
+                if (!await characterRepo.AddInventoryAsync(characterId, itemId, quantity, ct))
+                {
+                    logger.LogWarning(
+                        "CmdExecHandler: give rejected item {ItemId} (qty {Quantity}) because inventory is full for character {CharacterId}",
+                        itemId,
+                        quantity,
+                        characterId
+                    );
+                    return;
+                }
             }
             catch (DbUpdateException ex)
             {
