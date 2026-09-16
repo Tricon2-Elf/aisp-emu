@@ -317,7 +317,8 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         }
 
         entity.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
+        if (!await CharacterInventoryRepository.TrySaveChangesAsync(db, ct))
+            return null;
 
         var countsByItemId = await db
             .CharacterInventories.Where(i =>
@@ -474,7 +475,9 @@ public sealed class RoboRepository(MainContext db) : IRoboRepository
         entity.Character.CharadollPersonality = personality;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        await db.SaveChangesAsync(ct);
+        if (!await CharacterInventoryRepository.TrySaveChangesAsync(db, ct))
+            return false;
+
         return true;
     }
 

@@ -57,6 +57,7 @@ public interface IUserRepository
     /// <summary>
     /// Move item stacks between character inventory (place 0) and account warehouse (place 1).
     /// Inventory→storage refuses quantities that would leave fewer owned copies than MyRoom placements.
+    /// Storage→inventory also refuses a new stack when the character inventory is full.
     /// Returns null on failure; otherwise the new inventory and storage quantities for the item.
     /// </summary>
     Task<(int InventoryQuantity, int StorageQuantity)?> TransferStorageItemAsync(
@@ -444,7 +445,9 @@ public class UserRepository(MainContext db) : IUserRepository
             inventoryQuantity = inventory.Quantity;
         }
 
-        await _db.SaveChangesAsync(ct);
+        if (!await CharacterInventoryRepository.TrySaveChangesAsync(_db, ct))
+            return null;
+
         await transaction.CommitAsync(ct);
         return (Math.Max(0, inventoryQuantity), Math.Max(0, storageQuantity));
     }

@@ -1,5 +1,4 @@
 using aisp.Common.DAL;
-using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Network;
 using aisp.Network.Data;
@@ -49,9 +48,6 @@ internal static class NiconiCommonsShopPurchase
         if (stack is { Quantity: > 0 })
             return false;
 
-        if (!await characters.CanAddInventoryItemsAsync(characterId, [bagItemId], ct))
-            return false;
-
         var price = row.AiPrice;
         var user = await db.Users.SingleAsync(u => u.Id == session.User.Id, ct);
         if (user.AiPoints < price)
@@ -60,20 +56,10 @@ internal static class NiconiCommonsShopPurchase
         if (!await db.Items.AnyAsync(i => i.Id == bagItemId, ct))
             return false;
 
-        if (stack is null)
-            db.CharacterInventories.Add(
-                new CharacterInventory
-                {
-                    CharacterId = characterId,
-                    ItemId = bagItemId,
-                    Quantity = 1,
-                }
-            );
-        else
-            stack.Quantity = 1;
-
         user.AiPoints -= price;
-        await db.SaveChangesAsync(ct);
+        if (!await characters.AddInventoryAsync(characterId, bagItemId, 1, ct))
+            return false;
+
         session.User.AiPoints = user.AiPoints;
         return true;
     }

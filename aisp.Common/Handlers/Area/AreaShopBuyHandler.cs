@@ -136,27 +136,6 @@ public sealed class AreaShopBuyHandler(
         };
 
         var characterId = checked((int)session.CharacterId);
-        if (
-            !await characterRepository.CanAddInventoryItemsAsync(
-                characterId,
-                mergedQuantities.Keys.Select(itemId => checked((int)itemId)),
-                ct
-            )
-        )
-        {
-            logger.LogInformation(
-                "Shop purchase refused for character {CharacterId}: inventory would exceed {MaximumStacks} stacks",
-                characterId,
-                CharacterRepository.MaximumInventoryStacks
-            );
-            await session.SendAsync(
-                ResponseType,
-                new ShopBuyResponse(1, currentBalance).ToBytes(),
-                ct
-            );
-            return;
-        }
-
         if (currentBalance < totalCost)
         {
             await session.SendAsync(
@@ -167,14 +146,22 @@ public sealed class AreaShopBuyHandler(
             return;
         }
 
-        foreach (var (itemId, quantity) in mergedQuantities)
+        var itemsToAdd = mergedQuantities.ToDictionary(
+            item => checked((int)item.Key),
+            item => checked((int)item.Value)
+        );
+        if (!await characterRepository.AddInventoryAsync(characterId, itemsToAdd, ct))
         {
-            await characterRepository.AddInventoryAsync(
-                characterId,
-                (int)itemId,
-                checked((int)quantity),
+            logger.LogInformation(
+                "Shop purchase refused for character {CharacterId}: inventory is full",
+                characterId
+            );
+            await session.SendAsync(
+                ResponseType,
+                new ShopBuyResponse(1, currentBalance).ToBytes(),
                 ct
             );
+            return;
         }
 
         var updatedBalance = checked((long)(currentBalance - totalCost));
