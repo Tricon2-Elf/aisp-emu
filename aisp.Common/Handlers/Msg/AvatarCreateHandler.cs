@@ -83,12 +83,17 @@ public class AvatarCreateHandler(
             for (byte slot = 0; slot < 4; slot++)
                 await charRepo.EquipAsync(newChar.Id, slot, DefaultClothingItems.Female[slot], ct);
 
-        foreach (
-            var itemId in DefaultClothingItems.WardrobeInventoryForGender(
-                (int)request.visual.Gender
-            )
-        )
-            await charRepo.AddInventoryAsync(newChar.Id, itemId, 1, ct);
+        var wardrobeItems = DefaultClothingItems
+            .WardrobeInventoryForGender((int)request.visual.Gender)
+            .ToDictionary(itemId => itemId, _ => 1);
+        if (!await charRepo.AddInventoryAsync(newChar.Id, wardrobeItems, ct))
+        {
+            _logger.LogError(
+                "Could not grant starter wardrobe to new character {CharacterId}",
+                newChar.Id
+            );
+            return new AvatarCreateResponse(1);
+        }
 
         // The authenticated Msg session was loaded before this character existed. Hydrate the
         // newly created character (including equipment) so this connection and later handlers

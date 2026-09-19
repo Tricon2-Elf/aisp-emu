@@ -102,6 +102,29 @@ public sealed class ToxicityModelDownloaderTests
     }
 
     [Fact]
+    public void RequiredFiles_PinsLid176OnnxExport()
+    {
+        Assert.Equal(9, ToxicityModelDownloader.RequiredFiles.Count);
+        var lid = ToxicityModelDownloader.RequiredFiles.Where(f =>
+            f.RelativePath.Replace('\\', '/').StartsWith("lid176/", StringComparison.Ordinal)
+        );
+        Assert.Equal(5, lid.Count());
+        Assert.All(
+            lid,
+            f =>
+                Assert.Contains(
+                    $"huggingface.co/{FastTextLanguageId.HfRepo}/resolve/{FastTextLanguageId.HfSha}/",
+                    f.Url,
+                    StringComparison.Ordinal
+                )
+        );
+        Assert.Contains(
+            ToxicityModelDownloader.RequiredFiles,
+            f => f.RelativePath.Replace('\\', '/') == "lid176/onnx/lid176.int8.onnx"
+        );
+    }
+
+    [Fact]
     public async Task EnsureModelsAsync_PropagatesHttpFailure()
     {
         var root = Path.Combine(Path.GetTempPath(), "tox-" + Guid.NewGuid().ToString("N"));

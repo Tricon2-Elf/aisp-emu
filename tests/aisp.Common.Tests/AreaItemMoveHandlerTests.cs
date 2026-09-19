@@ -12,6 +12,84 @@ namespace aisp.Common.Tests;
 public class AreaItemMoveHandlerTests
 {
     [Fact]
+    public async Task HandleAsync_StorageToFullInventory_RefusesNewStack()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            await TestDb.SeedCharacterAsync(options, 42, ct);
+            await using var db = new MainContext(options);
+            for (var index = 0; index < CharacterRepository.MaximumInventoryStacks; index++)
+            {
+                var itemId = 32_000_000 + index;
+                db.Items.Add(new Item { Id = itemId, Name = $"Full Inventory Item {index}" });
+                db.CharacterInventories.Add(
+                    new CharacterInventory
+                    {
+                        CharacterId = 42,
+                        ItemId = itemId,
+                        Quantity = 1,
+                    }
+                );
+            }
+
+            const int storedItemId = 33_000_000;
+            db.Items.Add(new Item { Id = storedItemId, Name = "Stored Item" });
+            db.UserStorageItems.Add(
+                new UserStorageItem
+                {
+                    UserId = 42,
+                    ItemId = storedItemId,
+                    Quantity = 1,
+                }
+            );
+            await db.SaveChangesAsync(ct);
+
+            var session = new CapturingPlayerSession
+            {
+                CharacterId = 42,
+                User = new User { Id = 42 },
+            };
+            var handler = new AreaItemMoveHandler(
+                new UserRepository(db),
+                NullLogger<AreaItemMoveHandler>.Instance,
+                new aisp.Common.Game.DramaCatalog(db, TestTextLocaliser.English)
+            );
+            var payload = new byte[18];
+            BitConverter.TryWriteBytes(payload.AsSpan(0), 1u);
+            BitConverter.TryWriteBytes(payload.AsSpan(4), (uint)storedItemId);
+            BitConverter.TryWriteBytes(payload.AsSpan(8), (ushort)1);
+            BitConverter.TryWriteBytes(payload.AsSpan(10), 0u);
+            BitConverter.TryWriteBytes(payload.AsSpan(14), 0u);
+
+            await handler.HandleAsync(payload, session, ct);
+
+            Assert.Contains(
+                session.Sent,
+                packet =>
+                    packet.Type == PacketType.ItemMoveResponse
+                    && new PacketReader(packet.Payload).ReadUInt() == 1
+            );
+            Assert.Equal(
+                CharacterRepository.MaximumInventoryStacks,
+                await db.CharacterInventories.CountAsync(x => x.CharacterId == 42, ct)
+            );
+            Assert.Equal(
+                1,
+                await db
+                    .UserStorageItems.Where(x => x.UserId == 42 && x.ItemId == storedItemId)
+                    .Select(x => x.Quantity)
+                    .SingleAsync(ct)
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task HandleAsync_InventoryToStorage_MovesStackAndSyncsBothPlaces()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();

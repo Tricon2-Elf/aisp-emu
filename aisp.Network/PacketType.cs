@@ -1089,7 +1089,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_delete_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailDeleteRequest = 0xF96D,
 
@@ -1097,7 +1097,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_delete_mail_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailDeleteResponse = 0xE501,
 
@@ -1137,7 +1137,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_cancel_protect_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailProtectCancelRequest = 0xFEAD,
 
@@ -1145,7 +1145,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_cancel_protect_mail_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailProtectCancelResponse = 0x05C3,
 
@@ -1153,7 +1153,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ClientToServer,
         "send_protect_mail",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailProtectRequest = 0x024C,
 
@@ -1161,7 +1161,7 @@ public enum PacketType : ushort
         PacketServerType.Msg,
         PacketDirection.ServerToClient,
         "recv_protect_mail_r",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     MailProtectResponse = 0xC3E4,
 

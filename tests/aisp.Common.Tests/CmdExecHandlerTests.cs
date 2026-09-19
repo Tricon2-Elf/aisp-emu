@@ -1197,6 +1197,87 @@ public class CmdExecHandlerTests
     }
 
     [Fact]
+    public async Task OutfitCommand_FullInventory_DoesNotNotifyAreaClient()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var user = CreateUserWithCharacter(
+                1,
+                8014,
+                "full-outfit-user",
+                "Full Outfit",
+                10990100
+            );
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                for (var index = 0; index < CharacterRepository.MaximumInventoryStacks; index++)
+                {
+                    var itemId = 40_000_000 + index;
+                    db.Items.Add(new Item { Id = itemId, Name = $"Full item {index}" });
+                    user.Characters.Single()
+                        .Inventory.Add(new CharacterInventory { ItemId = itemId, Quantity = 1 });
+                }
+                foreach (var itemId in DefaultClothingItems.Male)
+                    db.Items.Add(new Item { Id = itemId, Name = $"item-{itemId}" });
+                await db.SaveChangesAsync(ct);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8014,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
+                new StubItemBaseListCache(DefaultClothingItems.Male),
+                CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
+                TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(BuildCmdExecPayload("outfit"), msgSession, ct);
+
+            Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemGetListResponse);
+            Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemCreateNotify);
+            await using var verifyDb = new MainContext(options);
+            Assert.Equal(
+                CharacterRepository.MaximumInventoryStacks,
+                await verifyDb.CharacterInventories.CountAsync(i => i.CharacterId == 8014, ct)
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task ChannelCommand_ReloadsTunedTvsThatAreOn_NotOnesSwitchedOff()
     {
         var (connection, options) = TestDb.CreateInMemoryMainContext();
@@ -1626,6 +1707,89 @@ public class CmdExecHandlerTests
             Assert.Equal(1, areaSession.Sent.Count(p => p.Type == PacketType.ItemCreateNotify));
             Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemUpdateListNotify);
             Assert.Contains(msgSession.Sent, packet => packet.Type == PacketType.CmdExecResponse);
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GiveCommand_FullInventory_DoesNotSendInventoryNotify()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+
+        try
+        {
+            var ct = TestContext.Current.CancellationToken;
+            var user = CreateUserWithCharacter(1, 8015, "full-give-user", "Full Give", 10990100);
+            const int itemId = 1_201_099;
+            await using (var db = new MainContext(options))
+            {
+                db.Users.Add(user);
+                db.Items.Add(new Item { Id = itemId, Name = "Rejected Give Item" });
+                for (var index = 0; index < CharacterRepository.MaximumInventoryStacks; index++)
+                {
+                    var ownedItemId = 41_000_000 + index;
+                    db.Items.Add(new Item { Id = ownedItemId, Name = $"Full item {index}" });
+                    user.Characters.Single()
+                        .Inventory.Add(
+                            new CharacterInventory { ItemId = ownedItemId, Quantity = 1 }
+                        );
+                }
+                await db.SaveChangesAsync(ct);
+            }
+
+            var state = new SharedState();
+            var areaSession = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                Character = user.Characters.First(),
+                CharacterId = 8015,
+                MapId = 10990100,
+                ChannelId = 1,
+            };
+            state.RegisterClient(ServerType.Area, areaSession);
+            var msgSession = new CapturingPlayerSession { User = user, UserId = user.Id };
+            var handler = new CmdExecHandler(
+                state,
+                new MapRepository(new MainContext(options)),
+                new UserRepository(new MainContext(options)),
+                new CharacterRepository(
+                    new MainContext(options),
+                    NullLogger<CharacterRepository>.Instance
+                ),
+                new MyRoomRepository(new MainContext(options)),
+                new CircleRepository(new MainContext(options)),
+                new StubItemBaseListCache([itemId]),
+                CreateDirectMapLinkTransitionService(options, state),
+                CreateModerationService(options, state),
+                new ChatLogRepository(new MainContext(options)),
+                new ReportTicketRepository(new MainContext(options)),
+                TestTextLocaliser.English,
+                new AdventureWorkRepository(new MainContext(options)),
+                WordFilter.FromTerms([]),
+                new ScreenAssignments(),
+                new NicotvRepository(new MainContext(options)),
+                NullLogger<CmdExecHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildCmdExecPayload("/give", itemId.ToString()),
+                msgSession,
+                ct
+            );
+
+            Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemCreateNotify);
+            Assert.DoesNotContain(areaSession.Sent, p => p.Type == PacketType.ItemUpdateListNotify);
+            await using var verifyDb = new MainContext(options);
+            Assert.False(
+                await verifyDb.CharacterInventories.AnyAsync(
+                    i => i.CharacterId == 8015 && i.ItemId == itemId,
+                    ct
+                )
+            );
         }
         finally
         {
@@ -2176,6 +2340,13 @@ public class CmdExecHandlerTests
             var text = reader.ReadString("utf-8");
             Assert.Contains("Reporter", text, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("some problem", text, StringComparison.OrdinalIgnoreCase);
+
+            await using var verifyDb = new MainContext(options);
+            var persisted = Assert.Single(
+                verifyDb.ChatMessages.Where(message => message.Kind == ChatLogKind.Circle)
+            );
+            Assert.Equal(9001, persisted.CharacterId);
+            Assert.Contains("some problem", persisted.Message, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

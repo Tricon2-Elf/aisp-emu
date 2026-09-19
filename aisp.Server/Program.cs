@@ -82,6 +82,7 @@ internal class Program
         builder.Services.AddScoped<IAdventureShopRepository, AdventureShopRepository>();
         builder.Services.AddScoped<AdventureShopCatalog>();
         builder.Services.AddScoped<IChatLogRepository, ChatLogRepository>();
+        builder.Services.AddScoped<IMailRepository, MailRepository>();
         builder.Services.AddScoped<IReportTicketRepository, ReportTicketRepository>();
         builder.Services.AddScoped<INicotvRepository, NicotvRepository>();
         builder.Services.AddScoped<ScriptedEventTriggerService>();

@@ -30,13 +30,26 @@ public sealed record ToxicityClassifierOptions(
     public int BatchSize { get; init; } = 1;
     public int MaxConcurrency { get; init; } = Math.Clamp(Environment.ProcessorCount / 2, 1, 8);
 
+    public string LidModelPath { get; init; } = "";
+    public string LidVocabPath { get; init; } = "";
+    public string LidConfigPath { get; init; } = "";
+    public string LidLabelsPath { get; init; } = "";
+    public string LidHsTreePath { get; init; } = "";
+
     public static ToxicityClassifierOptions FromModelRoot(string modelRoot = "models") =>
         new(
             Path.Combine(modelRoot, "unbiased-roberta", "onnx", "model_quantized.onnx"),
             Path.Combine(modelRoot, "unbiased-roberta", "tokenizer.json"),
             Path.Combine(modelRoot, "distilbert", "onnx", "model_quantized.onnx"),
             Path.Combine(modelRoot, "distilbert", "tokenizer.json")
-        );
+        )
+        {
+            LidModelPath = Path.Combine(modelRoot, "lid176", "onnx", "lid176.int8.onnx"),
+            LidVocabPath = Path.Combine(modelRoot, "lid176", "vocab.txt"),
+            LidConfigPath = Path.Combine(modelRoot, "lid176", "config.json"),
+            LidLabelsPath = Path.Combine(modelRoot, "lid176", "labels.json"),
+            LidHsTreePath = Path.Combine(modelRoot, "lid176", "hs_tree.json"),
+        };
 }
 
 /// <summary>

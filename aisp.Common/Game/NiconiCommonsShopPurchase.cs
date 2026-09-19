@@ -1,5 +1,4 @@
 using aisp.Common.DAL;
-using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Network;
 using aisp.Network.Data;
@@ -26,6 +25,7 @@ internal static class NiconiCommonsShopPurchase
     /// </summary>
     public static async Task<bool> TryChargeAndGrantBagItemAsync(
         MainContext db,
+        ICharacterRepository characters,
         IPlayerSession session,
         NiconiCommonsShopItemRecord row,
         byte currency,
@@ -56,20 +56,10 @@ internal static class NiconiCommonsShopPurchase
         if (!await db.Items.AnyAsync(i => i.Id == bagItemId, ct))
             return false;
 
-        if (stack is null)
-            db.CharacterInventories.Add(
-                new CharacterInventory
-                {
-                    CharacterId = characterId,
-                    ItemId = bagItemId,
-                    Quantity = 1,
-                }
-            );
-        else
-            stack.Quantity = 1;
-
         user.AiPoints -= price;
-        await db.SaveChangesAsync(ct);
+        if (!await characters.AddInventoryAsync(characterId, bagItemId, 1, ct))
+            return false;
+
         session.User.AiPoints = user.AiPoints;
         return true;
     }

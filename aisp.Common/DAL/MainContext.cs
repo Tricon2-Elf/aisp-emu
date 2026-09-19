@@ -57,6 +57,8 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
     public DbSet<PendingMapTransfer> PendingMapTransfers => Set<PendingMapTransfer>();
     public DbSet<LocalisedText> LocalisedTexts => Set<LocalisedText>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<MailMessage> MailMessages => Set<MailMessage>();
+    public DbSet<MailRecipient> MailRecipients => Set<MailRecipient>();
     public DbSet<ReportTicket> ReportTickets => Set<ReportTicket>();
     public DbSet<ReportTicketPlayer> ReportTicketPlayers => Set<ReportTicketPlayer>();
     public DbSet<ReportTicketChatMessage> ReportTicketChatMessages =>
@@ -713,6 +715,40 @@ public class MainContext(DbContextOptions<MainContext> options) : DbContext(opti
                 x.MapId,
                 x.ChannelId,
                 x.CreatedAt,
+            });
+        });
+
+        b.Entity<MailMessage>(e =>
+        {
+            e.ToTable("MailMessages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.SenderName).HasMaxLength(37).IsRequired();
+            e.Property(x => x.DestinationType).HasConversion<byte>();
+            e.Property(x => x.DestinationName).HasMaxLength(46).IsRequired();
+            e.Property(x => x.Subject).HasMaxLength(91).IsRequired();
+            e.Property(x => x.Body).HasMaxLength(751).IsRequired();
+            e.Property(x => x.SenderDeleted).HasDefaultValue(false);
+            e.Property(x => x.CreatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.HasIndex(x => new { x.SenderCharacterId, x.CreatedAtUtc });
+        });
+
+        b.Entity<MailRecipient>(e =>
+        {
+            e.ToTable("MailRecipients");
+            e.HasKey(x => new { x.MailMessageId, x.CharacterId });
+            e.Property(x => x.IsRead).HasDefaultValue(false);
+            e.Property(x => x.IsProtected).HasDefaultValue(false);
+            e.Property(x => x.IsDeleted).HasDefaultValue(false);
+            e.Property(x => x.InboxType).HasDefaultValue((byte)0);
+            e.HasOne(x => x.MailMessage)
+                .WithMany(x => x.Recipients)
+                .HasForeignKey(x => x.MailMessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new
+            {
+                x.CharacterId,
+                x.IsDeleted,
+                x.MailMessageId,
             });
         });
 

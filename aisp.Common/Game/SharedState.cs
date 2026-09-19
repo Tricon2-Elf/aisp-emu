@@ -23,6 +23,7 @@ public class SharedState
     > _roboLastMovement = new();
 
     private readonly ConcurrentDictionary<Guid, int> _circleChatSessions = new();
+    private readonly ConcurrentDictionary<(Guid ConnectionId, int CircleId, long JoinedAtTicks), byte> _circleChatHistoryReplays = new();
     private readonly ConcurrentDictionary<int, ActivePlacardComment> _activePlacardComments = new();
     private readonly object _friendLinkPlacardLock = new();
     private readonly Dictionary<uint, ActiveFriendLinkPlacard> _friendLinkPlacardsById = [];
@@ -132,6 +133,11 @@ public class SharedState
         }
 
         _circleChatSessions.TryRemove(clientId, out _);
+        foreach (var replay in _circleChatHistoryReplays.Keys)
+        {
+            if (replay.ConnectionId == clientId)
+                _circleChatHistoryReplays.TryRemove(replay, out _);
+        }
 
         if (_sessionPresenceRepository == null)
             _sessionClientRegistry.Unregister(clientId);
@@ -152,6 +158,12 @@ public class SharedState
 
     public bool LeaveCircleChat(Guid connectionId) =>
         _circleChatSessions.TryRemove(connectionId, out _);
+
+    public bool TryBeginCircleChatHistoryReplay(
+        Guid connectionId,
+        int circleId,
+        DateTime joinedAt
+    ) => _circleChatHistoryReplays.TryAdd((connectionId, circleId, joinedAt.Ticks), 0);
 
     public void BeginPlacardComment(int userId, uint placardId)
     {

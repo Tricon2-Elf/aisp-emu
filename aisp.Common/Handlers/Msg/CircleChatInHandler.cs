@@ -5,32 +5,59 @@ using aisp.Network.Packets.Msg;
 
 namespace aisp.Common.Handlers.Msg;
 
-public class CircleChatInHandler(ICircleRepository circles, SharedState state)
-    : PacketHandlerBase<CircleChatInRequest, CircleChatInResponse>,
-        IRequiresAuthenticatedSession
+public class CircleChatInHandler(
+    ICircleRepository circles,
+    SharedState state,
+    IChatLogRepository chatLog
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
-    public override PacketType RequestType => PacketType.CircleChatInRequest;
-    public override PacketType ResponseType => PacketType.CircleChatInResponse;
-    public override ServerType ServerType => ServerType.Msg;
+    public const int HistoryLimit = 100;
 
-    public override async Task<CircleChatInResponse?> HandleAsync(
-        CircleChatInRequest request,
+    public PacketType RequestType => PacketType.CircleChatInRequest;
+    public PacketType ResponseType => PacketType.CircleChatInResponse;
+    public ServerType ServerType => ServerType.Msg;
+
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
         IPlayerSession session,
         CancellationToken ct = default
     )
     {
+        var request = CircleChatInRequest.FromBytes(payload.Span);
+        if (request.CircleId > int.MaxValue || session.CharacterId == 0)
+        {
+            await session.SendAsync(
+                ResponseType,
+                new CircleChatInResponse((uint)CircleResult.NotMember).ToBytes(),
+                ct
+            );
+            return;
+        }
+
         var circleId = checked((int)request.CircleId);
         var membership = await circles.GetMembershipAsync(circleId, (int)session.CharacterId, ct);
         if (membership is null)
-            return new CircleChatInResponse((uint)CircleResult.NotMember);
+        {
+            await session.SendAsync(
+                ResponseType,
+                new CircleChatInResponse((uint)CircleResult.NotMember).ToBytes(),
+                ct
+            );
+            return;
+        }
 
         state.EnterCircleChat(session.ConnectionId, circleId);
-        await CircleNotifyHelper.SendRosterAsync(circles, state, circleId, ct);
-
         uint[] onlineInChat =
         [
             .. state.GetCircleChatClients(circleId).Select(s => s.CharacterId).Distinct(),
         ];
+        await session.SendAsync(
+            ResponseType,
+            new CircleChatInResponse(0, 1, onlineInChat).ToBytes(),
+            ct
+        );
+
+        await CircleNotifyHelper.SendRosterAsync(circles, state, circleId, ct);
 
         var notify = new CircleNotifyChatIn(request.CircleId, session.CharacterId).ToBytes();
         foreach (var client in state.GetCircleChatClients(circleId))
@@ -39,6 +66,31 @@ public class CircleChatInHandler(ICircleRepository circles, SharedState state)
                 _ = client.SendAsync(PacketType.CircleNotifyChatIn, notify, ct);
         }
 
-        return new CircleChatInResponse(0, 1, onlineInChat);
+        if (
+            state.TryBeginCircleChatHistoryReplay(
+                session.ConnectionId,
+                circleId,
+                membership.JoinedAt
+            )
+        )
+        {
+            var history = await chatLog.ListRecentCircleAsync(
+                circleId,
+                membership.JoinedAt,
+                HistoryLimit,
+                ct
+            );
+            foreach (var message in history)
+            {
+                await session.SendAsync(
+                    PacketType.CircleChatForwardNotify,
+                    new CircleChatForwardNotify(
+                        checked((uint)message.CharacterId),
+                        message.Message
+                    ).ToBytes(),
+                    ct
+                );
+            }
+        }
     }
 }

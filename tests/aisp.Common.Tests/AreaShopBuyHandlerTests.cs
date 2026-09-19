@@ -387,6 +387,183 @@ public class AreaShopBuyHandlerTests
         }
     }
 
+    [Fact]
+    public async Task HandleAsync_FullInventory_RefusesNewStackWithoutCharging()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            const int userId = 6;
+            const int characterId = 9006;
+            const uint itemId = 10100220;
+            var user = CreateUserWithCharacter(userId, characterId, aiPoints: 500, nicoPoints: 0);
+
+            await using (var seed = new MainContext(options))
+            {
+                seed.Users.Add(user);
+                seed.Items.Add(new Item { Id = (int)itemId, Name = "New Shop Item" });
+                AddInventoryStacks(
+                    seed,
+                    user.Characters.Single(),
+                    CharacterRepository.MaximumInventoryStacks
+                );
+                await SeedShopDataAsync(seed, itemId);
+                await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var db = new MainContext(options);
+            var session = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                CharacterId = (uint)characterId,
+                Character = user.Characters.Single(),
+                MapId = StarterMapId,
+            };
+            var handler = new AreaShopBuyHandler(
+                db,
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new NpcRepository(db),
+                new ShopRepository(db),
+                NullLogger<AreaShopBuyHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildShopBuyPayload(
+                    [new ShopBuyRequestedItem(itemId, 0, 0, 0)],
+                    ShopPriceType.AiPoints
+                ),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var response = new PacketReader(
+                session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse).Payload
+            );
+            Assert.Equal(1u, response.ReadUInt());
+            Assert.Equal(500UL, response.ReadULong());
+
+            await using var verify = new MainContext(options);
+            Assert.Equal(
+                CharacterRepository.MaximumInventoryStacks,
+                await verify.CharacterInventories.CountAsync(
+                    x => x.CharacterId == characterId,
+                    TestContext.Current.CancellationToken
+                )
+            );
+            Assert.False(
+                await verify.CharacterInventories.AnyAsync(
+                    x => x.CharacterId == characterId && x.ItemId == (int)itemId,
+                    TestContext.Current.CancellationToken
+                )
+            );
+            Assert.Equal(
+                500,
+                (
+                    await verify.Users.SingleAsync(
+                        x => x.Id == userId,
+                        TestContext.Current.CancellationToken
+                    )
+                ).AiPoints
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task HandleAsync_FullInventory_AllowsPurchaseIntoExistingStack()
+    {
+        var (connection, options) = TestDb.CreateInMemoryMainContext();
+        try
+        {
+            const int userId = 7;
+            const int characterId = 9007;
+            const uint itemId = 10100220;
+            var user = CreateUserWithCharacter(userId, characterId, aiPoints: 500, nicoPoints: 0);
+
+            await using (var seed = new MainContext(options))
+            {
+                seed.Users.Add(user);
+                var purchasedItem = new Item { Id = (int)itemId, Name = "Owned Shop Item" };
+                seed.Items.Add(purchasedItem);
+                user.Characters.Single()
+                    .Inventory.Add(
+                        new CharacterInventory
+                        {
+                            CharacterId = characterId,
+                            ItemId = (int)itemId,
+                            Item = purchasedItem,
+                            Quantity = 1,
+                        }
+                    );
+                AddInventoryStacks(
+                    seed,
+                    user.Characters.Single(),
+                    CharacterRepository.MaximumInventoryStacks - 1
+                );
+                await SeedShopDataAsync(seed, itemId);
+                await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+            }
+
+            await using var db = new MainContext(options);
+            var session = new CapturingPlayerSession
+            {
+                User = user,
+                UserId = user.Id,
+                CharacterId = (uint)characterId,
+                Character = user.Characters.Single(),
+                MapId = StarterMapId,
+            };
+            var handler = new AreaShopBuyHandler(
+                db,
+                new CharacterRepository(db, NullLogger<CharacterRepository>.Instance),
+                new NpcRepository(db),
+                new ShopRepository(db),
+                NullLogger<AreaShopBuyHandler>.Instance
+            );
+
+            await handler.HandleAsync(
+                BuildShopBuyPayload(
+                    [new ShopBuyRequestedItem(itemId, 0, 0, 0)],
+                    ShopPriceType.AiPoints
+                ),
+                session,
+                TestContext.Current.CancellationToken
+            );
+
+            var response = new PacketReader(
+                session.Sent.Single(p => p.Type == PacketType.ShopBuyResponse).Payload
+            );
+            Assert.Equal(0u, response.ReadUInt());
+            Assert.Equal(450UL, response.ReadULong());
+
+            await using var verify = new MainContext(options);
+            Assert.Equal(
+                CharacterRepository.MaximumInventoryStacks,
+                await verify.CharacterInventories.CountAsync(
+                    x => x.CharacterId == characterId,
+                    TestContext.Current.CancellationToken
+                )
+            );
+            Assert.Equal(
+                2,
+                (
+                    await verify.CharacterInventories.SingleAsync(
+                        x => x.CharacterId == characterId && x.ItemId == (int)itemId,
+                        TestContext.Current.CancellationToken
+                    )
+                ).Quantity
+            );
+        }
+        finally
+        {
+            await connection.DisposeAsync();
+        }
+    }
+
     private static byte[] BuildShopBuyPayload(
         IReadOnlyList<ShopBuyRequestedItem> items,
         ShopPriceType priceType
@@ -437,6 +614,25 @@ public class AreaShopBuyHandlerTests
             }
         );
         return user;
+    }
+
+    private static void AddInventoryStacks(MainContext db, Character character, int count)
+    {
+        for (var index = 0; index < count; index++)
+        {
+            var itemId = 20_000_000 + index;
+            var item = new Item { Id = itemId, Name = $"Inventory Item {index}" };
+            db.Items.Add(item);
+            character.Inventory.Add(
+                new CharacterInventory
+                {
+                    CharacterId = character.Id,
+                    ItemId = itemId,
+                    Item = item,
+                    Quantity = 1,
+                }
+            );
+        }
     }
 
     private static async Task SeedShopDataAsync(MainContext db, uint itemId)

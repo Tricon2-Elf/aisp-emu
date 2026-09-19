@@ -1,4 +1,5 @@
 using aisp.Common.Config;
+using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
@@ -557,8 +558,20 @@ public class CmdExecHandler(
                 .WardrobeInventoryForGender(character.Gender)
                 .ToList();
 
-            foreach (var itemId in itemIds)
-                await characterRepo.AddInventoryAsync(characterId, itemId, 1, ct);
+            if (
+                !await characterRepo.AddInventoryAsync(
+                    characterId,
+                    itemIds.ToDictionary(itemId => itemId, _ => 1),
+                    ct
+                )
+            )
+            {
+                logger.LogWarning(
+                    "CmdExecHandler: outfit failed because inventory is full for character {CharacterId}",
+                    characterId
+                );
+                return;
+            }
 
             var refreshed = await characterRepo.GetByIdAsync(characterId, ct);
             if (refreshed is null)
@@ -690,7 +703,16 @@ public class CmdExecHandler(
 
             try
             {
-                await characterRepo.AddInventoryAsync(characterId, itemId, quantity, ct);
+                if (!await characterRepo.AddInventoryAsync(characterId, itemId, quantity, ct))
+                {
+                    logger.LogWarning(
+                        "CmdExecHandler: give rejected item {ItemId} (qty {Quantity}) because inventory is full for character {CharacterId}",
+                        itemId,
+                        quantity,
+                        characterId
+                    );
+                    return;
+                }
             }
             catch (DbUpdateException ex)
             {
@@ -1600,22 +1622,38 @@ public class CmdExecHandler(
             return;
 
         var mapLabel = string.IsNullOrWhiteSpace(mapName) ? mapId.ToString() : mapName;
+        string MessageFor(GameLanguage language) =>
+            localiser.Get(
+                language,
+                L.Cmd.ReportModeratorsNotice,
+                ticketId,
+                reporterCharacterName,
+                reporterUsername,
+                mapLabel,
+                channelId,
+                reason
+            );
+
+        var leader = await characterRepo.GetByIdAsync(moderatorsCircle.LeaderCharacterId, ct);
+        await chatLogRepository.AddAsync(
+            new ChatMessage
+            {
+                Kind = ChatLogKind.Circle,
+                UserId = leader?.UserId ?? 0,
+                CharacterId = moderatorsCircle.LeaderCharacterId,
+                CharacterName = leader?.Name ?? string.Empty,
+                Message = MessageFor(GameLanguage.English),
+                CircleId = moderatorsCircle.Id,
+            },
+            ct
+        );
+
         await CircleNotifyHelper.BroadcastCircleChatAsync(
             circleRepository,
             state,
             moderatorsCircle.Id,
             (uint)moderatorsCircle.LeaderCharacterId,
-            language =>
-                localiser.Get(
-                    language,
-                    L.Cmd.ReportModeratorsNotice,
-                    ticketId,
-                    reporterCharacterName,
-                    reporterUsername,
-                    mapLabel,
-                    channelId,
-                    reason
-                ),
+            MessageFor,
             ct: ct
         );
     }
