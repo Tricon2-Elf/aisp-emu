@@ -36,6 +36,26 @@ public sealed class ToxicityModelDownloader(
             HfUrl(DistilBertRepo, DistilBertSha, "tokenizer.json"),
             Path.Combine("distilbert", "tokenizer.json")
         ),
+        (
+            HfUrl(FastTextLanguageId.HfRepo, FastTextLanguageId.HfSha, "lid176.int8.onnx"),
+            Path.Combine("lid176", "onnx", "lid176.int8.onnx")
+        ),
+        (
+            HfUrl(FastTextLanguageId.HfRepo, FastTextLanguageId.HfSha, "vocab.txt"),
+            Path.Combine("lid176", "vocab.txt")
+        ),
+        (
+            HfUrl(FastTextLanguageId.HfRepo, FastTextLanguageId.HfSha, "config.json"),
+            Path.Combine("lid176", "config.json")
+        ),
+        (
+            HfUrl(FastTextLanguageId.HfRepo, FastTextLanguageId.HfSha, "labels.json"),
+            Path.Combine("lid176", "labels.json")
+        ),
+        (
+            HfUrl(FastTextLanguageId.HfRepo, FastTextLanguageId.HfSha, "hs_tree.json"),
+            Path.Combine("lid176", "hs_tree.json")
+        ),
     ];
 
     public static IReadOnlyList<(string Url, string RelativePath)> RequiredFiles => Files;

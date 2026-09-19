@@ -34,6 +34,7 @@ public sealed partial class ToxicityClassifier : IDisposable
     readonly ILogger? _logger;
     readonly LazyModelSlot _roberta;
     readonly LazyModelSlot _distilBert;
+    readonly FastTextLanguageId? _languageId;
     bool _disposed;
 
     public ToxicityClassifier(ToxicityClassifierOptions options, ILogger? logger = null)
@@ -61,6 +62,9 @@ public sealed partial class ToxicityClassifier : IDisposable
             options.MaxConcurrency,
             logger
         );
+        _languageId = FastTextLanguageId.TryLoad(options, logger);
+        if (_languageId is not null)
+            logger?.LogInformation("Language-id ready ({Repo})", FastTextLanguageId.HfRepo);
     }
 
     public static ToxicityClassifier Load(string modelRoot = "models", ILogger? logger = null) =>
@@ -72,12 +76,12 @@ public sealed partial class ToxicityClassifier : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
 
         string normalizedText = Normalize(text);
-        bool useRoberta = IsLatinScript(normalizedText);
-        string model = useRoberta ? "RoBERTa (en)" : "DistilBERT";
-        ScoreResult original = Score(text, useRoberta);
-        ScoreResult? normalized = normalizedText == text ? null : Score(normalizedText, useRoberta);
+        var route = Route(normalizedText);
+        ScoreResult original = Score(text, route.UseRoberta);
+        ScoreResult? normalized =
+            normalizedText == text ? null : Score(normalizedText, route.UseRoberta);
 
-        return new(model, original, normalized);
+        return new(route.ModelName, original, normalized);
     }
 
     public ToxicityResult[] ClassifyMany(IReadOnlyList<string> messages)
@@ -90,7 +94,7 @@ public sealed partial class ToxicityClassifier : IDisposable
 
         var originals = new ScoreResult?[messages.Count];
         var normalized = new ScoreResult?[messages.Count];
-        var useRoberta = new bool[messages.Count];
+        var modelNames = new string[messages.Count];
         var robertaWork = new List<WorkItem>(messages.Count);
         var distilBertWork = new List<WorkItem>(messages.Count);
 
@@ -100,8 +104,9 @@ public sealed partial class ToxicityClassifier : IDisposable
             ArgumentException.ThrowIfNullOrWhiteSpace(text);
 
             string normalizedText = Normalize(text);
-            useRoberta[i] = IsLatinScript(normalizedText);
-            List<WorkItem> work = useRoberta[i] ? robertaWork : distilBertWork;
+            var route = Route(normalizedText);
+            modelNames[i] = route.ModelName;
+            List<WorkItem> work = route.UseRoberta ? robertaWork : distilBertWork;
             work.Add(new(i, text, IsNormalized: false));
 
             if (normalizedText != text)
@@ -114,11 +119,7 @@ public sealed partial class ToxicityClassifier : IDisposable
         var results = new ToxicityResult[messages.Count];
         for (int i = 0; i < results.Length; i++)
         {
-            results[i] = new(
-                useRoberta[i] ? "RoBERTa (en)" : "DistilBERT",
-                originals[i]!,
-                normalized[i]
-            );
+            results[i] = new(modelNames[i], originals[i]!, normalized[i]);
         }
 
         return results;
@@ -135,6 +136,7 @@ public sealed partial class ToxicityClassifier : IDisposable
 
         _roberta.UnloadIfIdle(idle);
         _distilBert.UnloadIfIdle(idle);
+        _languageId?.UnloadIdle(idle);
     }
 
     /// <summary>Test/diagnostics: whether the RoBERTa session is currently loaded.</summary>
@@ -262,6 +264,29 @@ public sealed partial class ToxicityClassifier : IDisposable
             normalized[item.Index] = result;
         else
             originals[item.Index] = result;
+    }
+
+    LanguageIdRouter.ModelRoute Route(string normalizedText) =>
+        LanguageIdRouter.Route(normalizedText, DetectLanguage(normalizedText));
+
+    LanguageIdResult? DetectLanguage(string normalizedText)
+    {
+        if (
+            _languageId is null
+            || !IsLatinScript(normalizedText)
+            || LanguageIdRouter.LetterCount(normalizedText) < LanguageIdRouter.MinLetters
+        )
+            return null;
+
+        try
+        {
+            return _languageId.Detect(normalizedText);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Language-id failed; Latin text stays on RoBERTa");
+            return null;
+        }
     }
 
     static void Validate(ToxicityClassifierOptions options)
@@ -577,6 +602,7 @@ public sealed partial class ToxicityClassifier : IDisposable
 
         _roberta.Dispose();
         _distilBert.Dispose();
+        _languageId?.Dispose();
         _disposed = true;
     }
 
