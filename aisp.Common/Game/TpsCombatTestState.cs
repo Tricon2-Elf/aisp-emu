@@ -5,9 +5,12 @@ namespace aisp.Common.Game;
 
 public readonly record struct TpsPendingAim(Vector3 TargetPos, Vector3 NowPos);
 
+public readonly record struct TpsMobMove(Vector3 From, Vector3 To, long StartTick, int DurationMs);
+
 public static class TpsCombatTestState
 {
     private static readonly ConcurrentDictionary<uint, int> MonsterHp = new();
+    private static readonly ConcurrentDictionary<uint, TpsMobMove> MonsterMove = new();
     private static readonly ConcurrentDictionary<uint, uint> PlayerTank = new();
     private static readonly ConcurrentDictionary<uint, TpsPendingAim> PendingAim = new();
     private static uint _killCount;
@@ -51,7 +54,69 @@ public static class TpsCombatTestState
     public static void ResetMonster(
         uint mobObjId,
         int hitPoints = TpsPrototypeConstants.DefaultHitPoints
-    ) => MonsterHp[mobObjId] = hitPoints;
+    )
+    {
+        MonsterHp[mobObjId] = hitPoints;
+        SetMobPosition(
+            mobObjId,
+            new Vector3(
+                TpsPrototypeConstants.MobSpawnX,
+                TpsPrototypeConstants.MobSpawnY,
+                TpsPrototypeConstants.MobSpawnZ
+            )
+        );
+    }
+
+    public static Vector3 GetMobPosition(uint mobObjId = TpsPrototypeConstants.MobObjectId)
+    {
+        if (!MonsterMove.TryGetValue(mobObjId, out var move))
+        {
+            return new Vector3(
+                TpsPrototypeConstants.MobSpawnX,
+                TpsPrototypeConstants.MobSpawnY,
+                TpsPrototypeConstants.MobSpawnZ
+            );
+        }
+
+        if (move.DurationMs <= 0)
+            return move.To;
+
+        var t = (Environment.TickCount64 - move.StartTick) / (float)move.DurationMs;
+        if (t <= 0f)
+            return move.From;
+        if (t >= 1f)
+            return move.To;
+
+        return Vector3.Lerp(move.From, move.To, t);
+    }
+
+    public static bool TryGetMobPath(uint mobObjId, out Vector3 from, out Vector3 to)
+    {
+        if (MonsterMove.TryGetValue(mobObjId, out var move))
+        {
+            from = move.From;
+            to = move.To;
+            return true;
+        }
+
+        from = to = new Vector3(
+            TpsPrototypeConstants.MobSpawnX,
+            TpsPrototypeConstants.MobSpawnY,
+            TpsPrototypeConstants.MobSpawnZ
+        );
+        return false;
+    }
+
+    public static void SetMobPosition(uint mobObjId, Vector3 position) =>
+        MonsterMove[mobObjId] = new TpsMobMove(position, position, Environment.TickCount64, 0);
+
+    public static void SetMobMove(uint mobObjId, Vector3 from, Vector3 to, int durationMs) =>
+        MonsterMove[mobObjId] = new TpsMobMove(
+            from,
+            to,
+            Environment.TickCount64,
+            Math.Max(0, durationMs)
+        );
 
     public static void SetPendingAim(uint characterId, Vector3 targetPos, Vector3 nowPos) =>
         PendingAim[characterId] = new TpsPendingAim(targetPos, nowPos);

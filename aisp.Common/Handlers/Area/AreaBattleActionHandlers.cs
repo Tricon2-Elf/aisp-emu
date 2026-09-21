@@ -184,10 +184,21 @@ public class AreaBattleAttackExecHandler(
 
         if (session.LockedTargetId == 0 && !FreeAimHitsPrototypeMob(session, execNowPos))
         {
+            var (origin, targetPos) = ResolveFreeAim(session, execNowPos);
+            var mob = TpsCombatTestState.GetMobPosition(targetId);
             logger.LogInformation(
-                "Shot missed Monster {TargetId} (free aim). Tank: {Tank}%",
+                "Shot missed Monster {TargetId} (free aim). Tank: {Tank}% origin=({Ox:0},{Oy:0},{Oz:0}) target=({Tx:0},{Ty:0},{Tz:0}) mob=({Mx:0},{My:0},{Mz:0})",
                 targetId,
-                remainingTank
+                remainingTank,
+                origin.X,
+                origin.Y,
+                origin.Z,
+                targetPos.X,
+                targetPos.Y,
+                targetPos.Z,
+                mob.X,
+                mob.Y,
+                mob.Z
             );
             return;
         }
@@ -258,12 +269,21 @@ public class AreaBattleAttackExecHandler(
     /// </summary>
     private static bool FreeAimHitsPrototypeMob(IPlayerSession session, Vector3 execNowPos)
     {
+        var (origin, targetPos) = ResolveFreeAim(session, execNowPos);
+        return TpsAimHitTest.HitsPrototypeMob(origin, targetPos);
+    }
+
+    private static (Vector3 Origin, Vector3 TargetPos) ResolveFreeAim(
+        IPlayerSession session,
+        Vector3 execNowPos
+    )
+    {
         var aim = TpsCombatTestState.GetPendingAim(session.CharacterId);
         var origin =
             execNowPos != Vector3.Zero ? execNowPos
             : aim.NowPos != Vector3.Zero ? aim.NowPos
             : new Vector3(session.X, session.Y, session.Z);
-        return TpsAimHitTest.HitsPrototypeMob(origin, aim.TargetPos);
+        return (origin, aim.TargetPos);
     }
 }
 
