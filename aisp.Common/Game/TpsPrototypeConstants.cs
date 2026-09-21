@@ -38,6 +38,12 @@ public static class TpsPrototypeConstants
     public const float MobSpawnZ = PlayerSpawnZ + 200f;
     public const int MobSpawnRotation = 180;
 
+    /// <summary>XZ radius of the prototype mob hit cylinder (matches <c>CharaData.CollisionRadius</c> on spawn).</summary>
+    public const float MobCollisionRadius = 60f;
+
+    /// <summary>Y extent of the prototype mob hit cylinder from spawn Y (matches <c>CharaData.TpsActionVerticalRange</c>).</summary>
+    public const float MobTpsActionVerticalRange = 60f;
+
     public const uint MissionTimeLimitSeconds = 300;
     public const uint MissionTargetCount = 40;
 

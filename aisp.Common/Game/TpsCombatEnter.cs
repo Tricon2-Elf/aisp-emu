@@ -302,8 +302,8 @@ public static class TpsCombatEnter
             Visual = new CharaVisual(BloodType.A, 1, 1, 0, mobObjId, 0, 0),
             TpsActionReferenceX = 20f,
             TpsActionReferenceY = 20f,
-            CollisionRadius = 60f,
-            TpsActionVerticalRange = 60f,
+            CollisionRadius = TpsPrototypeConstants.MobCollisionRadius,
+            TpsActionVerticalRange = TpsPrototypeConstants.MobTpsActionVerticalRange,
             // Hostile filter: target action+12 >= 2 and != local (1).
             TpsActionProfileId = TpsPrototypeConstants.MobModelId,
             NamePlate = 1,
