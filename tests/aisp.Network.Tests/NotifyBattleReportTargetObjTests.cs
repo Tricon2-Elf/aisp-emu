@@ -27,4 +27,29 @@ public class NotifyBattleReportTargetObjTests
         Assert.Equal(2_000_001u, reader.ReadUInt());
         Assert.Equal(0u, reader.ReadUInt());
     }
+
+    [Fact]
+    public void TargetPos_ToBytes_MatchesClientReportPlusVec3Layout()
+    {
+        var packet = new NotifyBattleReportTargetPos(
+            attackerObjectId: 10,
+            actionType: 5,
+            actionFlags: 0,
+            skillId: 200090,
+            targetPos: new System.Numerics.Vector3(-9200f, 0.1f, -14285f)
+        );
+
+        var bytes = packet.ToBytes();
+        var reader = new PacketReader(bytes);
+
+        Assert.Equal(29, bytes.Length);
+        Assert.Equal(10u, reader.ReadUInt());
+        Assert.Equal(5u, reader.ReadUInt());
+        Assert.Equal((byte)0, reader.ReadByte());
+        Assert.Equal(200090u, reader.ReadUInt());
+        Assert.Equal(-9200f, reader.ReadFloat());
+        Assert.Equal(0.1f, reader.ReadFloat());
+        Assert.Equal(-14285f, reader.ReadFloat());
+        Assert.Equal(0u, reader.ReadUInt());
+    }
 }

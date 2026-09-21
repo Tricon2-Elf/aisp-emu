@@ -91,14 +91,20 @@ public sealed class AreaBattleAttackHandlerTests
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateHitpoint);
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateTank);
 
-        var recover = session.Sent.Last(packet =>
-            packet.Type == PacketType.NotifyBattleReportTargetObj
-        );
-        var reader = new PacketReader(recover.Payload);
-        Assert.Equal(session.CharacterId, reader.ReadUInt());
-        Assert.Equal(TpsPrototypeConstants.BattleReportRecoverAction, reader.ReadUInt());
-        Assert.Equal((byte)0, reader.ReadByte());
-        Assert.Equal(TpsPrototypeConstants.DefaultSkills[0], reader.ReadUInt());
+        var reports = session
+            .Sent.Where(packet => packet.Type == PacketType.NotifyBattleReportTargetObj)
+            .ToList();
+        Assert.Equal(2, reports.Count);
+
+        var shot = new PacketReader(reports[0].Payload);
+        Assert.Equal(session.CharacterId, shot.ReadUInt());
+        Assert.Equal(TpsPrototypeConstants.BattleReportShotAction, shot.ReadUInt());
+
+        var recover = new PacketReader(reports[1].Payload);
+        Assert.Equal(session.CharacterId, recover.ReadUInt());
+        Assert.Equal(TpsPrototypeConstants.BattleReportRecoverAction, recover.ReadUInt());
+        Assert.Equal((byte)0, recover.ReadByte());
+        Assert.Equal(TpsPrototypeConstants.DefaultSkills[0], recover.ReadUInt());
     }
 
     [Fact]
@@ -201,6 +207,16 @@ public sealed class AreaBattleAttackHandlerTests
 
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateHitpoint);
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateTank);
+        var shot = Assert.Single(
+            session.Sent.Where(packet => packet.Type == PacketType.NotifyBattleReportTargetPos),
+            packet =>
+            {
+                var body = new PacketReader(packet.Payload);
+                body.ReadUInt();
+                return body.ReadUInt() == TpsPrototypeConstants.BattleReportShotAction;
+            }
+        );
+        Assert.Equal(session.CharacterId, new PacketReader(shot.Payload).ReadUInt());
         Assert.Equal(
             hpBefore - TpsPrototypeConstants.AttackDamage,
             TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId)

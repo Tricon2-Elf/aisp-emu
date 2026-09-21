@@ -60,6 +60,14 @@ public static class TpsPrototypeConstants
     public const uint BattleReportAttackAction = 4;
 
     /// <summary>
+    /// CTPSActionReport shot commit (decomp <c>sub_4E63C0</c> case 5): muzzle FX
+    /// (<c>CTPSFxCharaCreate</c> / <c>CTPSTimeBlaze</c>) and gunshot SE
+    /// (<c>CTPSSEPlay</c> / <c>CTPSVoicePlay</c>) from the skill table.
+    /// Action 4 only queues the fire motion and the local exec callback.
+    /// </summary>
+    public const uint BattleReportShotAction = 5;
+
+    /// <summary>
     /// CTPSActionReport switch value that queues <c>CTPSActStateAction</c> phase 0
     /// (decomp <c>sub_4E63C0</c> case 8). Required after attack exec (phase 5)
     /// so the player can fire again. Does not clear the dash run flag.
