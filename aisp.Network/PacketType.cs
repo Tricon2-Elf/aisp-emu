@@ -4170,7 +4170,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_update_heart",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyUpdateHeart = 0x64BC,
 

@@ -236,6 +236,21 @@ public sealed class AreaBattleAttackHandlerTests
             hpBefore - TpsPrototypeConstants.AttackDamage,
             TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId)
         );
+        var heart = Assert.Single(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyUpdateHeart
+        );
+        var heartReader = new PacketReader(heart.Payload);
+        Assert.Equal(TpsPrototypeConstants.MobObjectId, heartReader.ReadUInt());
+        Assert.Equal(
+            (uint)TpsPrototypeConstants.HeartsFromHp(hpBefore - TpsPrototypeConstants.AttackDamage),
+            heartReader.ReadUInt()
+        );
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyDisappearChara
+        );
+        Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.NotifyEmotionChara);
     }
 
     [Fact]
@@ -289,6 +304,15 @@ public sealed class AreaBattleAttackHandlerTests
             hpBefore - TpsPrototypeConstants.AttackDamage,
             TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId)
         );
+    }
+
+    [Fact]
+    public void HeartsFromHp_MapsOneHeartPerShot()
+    {
+        Assert.Equal(5, TpsPrototypeConstants.HeartsFromHp(100));
+        Assert.Equal(4, TpsPrototypeConstants.HeartsFromHp(80));
+        Assert.Equal(1, TpsPrototypeConstants.HeartsFromHp(20));
+        Assert.Equal(0, TpsPrototypeConstants.HeartsFromHp(0));
     }
 
     [Fact]

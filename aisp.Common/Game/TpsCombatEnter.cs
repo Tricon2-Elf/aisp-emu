@@ -256,8 +256,8 @@ public static class TpsCombatEnter
             {
                 Current = TpsPrototypeConstants.DefaultHitPoints,
                 BaseMaximum = TpsPrototypeConstants.DefaultHitPoints,
-                CurrentHearts = 5,
-                MaximumHearts = 5,
+                CurrentHearts = TpsPrototypeConstants.DefaultHearts,
+                MaximumHearts = TpsPrototypeConstants.DefaultHearts,
             };
         }
 
@@ -313,8 +313,8 @@ public static class TpsCombatEnter
                 {
                     Current = TpsPrototypeConstants.DefaultHitPoints,
                     BaseMaximum = TpsPrototypeConstants.DefaultHitPoints,
-                    CurrentHearts = 5,
-                    MaximumHearts = 5,
+                    CurrentHearts = TpsPrototypeConstants.DefaultHearts,
+                    MaximumHearts = TpsPrototypeConstants.DefaultHearts,
                 },
                 Stamina = new StaminaData { Current = 100f, RecoveryRate = 10f },
                 Tank = new TankData

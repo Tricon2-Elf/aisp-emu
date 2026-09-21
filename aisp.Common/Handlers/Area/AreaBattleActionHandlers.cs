@@ -197,16 +197,23 @@ public class AreaBattleAttackExecHandler(
             TpsPrototypeConstants.AttackDamage
         );
 
+        var remHearts = TpsPrototypeConstants.HeartsFromHp(remHp);
         logger.LogInformation(
-            "Shot hit Monster {TargetId}! HP: {Hp}/100, Tank: {Tank}%",
+            "Shot hit Monster {TargetId}! HP: {Hp}/100, Hearts: {Hearts}/5, Tank: {Tank}%",
             targetId,
             remHp,
+            remHearts,
             remainingTank
         );
 
         await session.SendAsync(
             PacketType.NotifyUpdateHitpoint,
             new NotifyUpdateHitpoint(targetId, (uint)remHp).ToBytes(),
+            ct
+        );
+        await session.SendAsync(
+            PacketType.NotifyUpdateHeart,
+            new NotifyUpdateHeart(targetId, (uint)remHearts).ToBytes(),
             ct
         );
 

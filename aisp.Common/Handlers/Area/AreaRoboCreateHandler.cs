@@ -135,8 +135,8 @@ public class AreaRoboCreateHandler(
             {
                 Current = TpsPrototypeConstants.DefaultHitPoints,
                 BaseMaximum = TpsPrototypeConstants.DefaultHitPoints,
-                MaximumHearts = 5,
-                CurrentHearts = 5,
+                MaximumHearts = TpsPrototypeConstants.DefaultHearts,
+                CurrentHearts = TpsPrototypeConstants.DefaultHearts,
             },
             Stamina = new StaminaData { Current = 100f, RecoveryRate = 10f },
             Tank = new TankData
