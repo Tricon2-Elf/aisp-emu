@@ -256,7 +256,7 @@ public class AreaBattleAttackExecHandler(
             execNowPos != Vector3.Zero ? execNowPos
             : aim.NowPos != Vector3.Zero ? aim.NowPos
             : new Vector3(session.X, session.Y, session.Z);
-        return TpsAimHitTest.SegmentHitsPrototypeMob(origin, aim.TargetPos);
+        return TpsAimHitTest.HitsPrototypeMob(origin, aim.TargetPos);
     }
 }
 

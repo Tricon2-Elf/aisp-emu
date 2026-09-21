@@ -5,22 +5,45 @@ namespace aisp.Common.Game;
 /// <summary>
 /// Free-aim hit test against the prototype mob's Y-up collision cylinder.
 /// The client's <c>target_pos</c> is already a world raycast (walls clip the segment);
-/// this only checks whether that segment intersects the mob volume.
+/// this only checks whether that aim lands on the mob volume.
 /// </summary>
 public static class TpsAimHitTest
 {
-    public static bool SegmentHitsPrototypeMob(Vector3 origin, Vector3 target) =>
-        SegmentHitsYCylinder(
-            origin,
-            target,
-            new Vector3(
-                TpsPrototypeConstants.MobSpawnX,
-                TpsPrototypeConstants.MobSpawnY,
-                TpsPrototypeConstants.MobSpawnZ
-            ),
-            TpsPrototypeConstants.MobCollisionRadius,
-            TpsPrototypeConstants.MobTpsActionVerticalRange
+    public static bool HitsPrototypeMob(Vector3 origin, Vector3 target)
+    {
+        var mob = new Vector3(
+            TpsPrototypeConstants.MobSpawnX,
+            TpsPrototypeConstants.MobSpawnY,
+            TpsPrototypeConstants.MobSpawnZ
         );
+        var ymin = mob.Y - TpsPrototypeConstants.MobHitYPad;
+        var height = TpsPrototypeConstants.MobHitHeight + TpsPrototypeConstants.MobHitYPad;
+        var radius = TpsPrototypeConstants.MobHitRadius;
+
+        // TPS camera often plants target_pos on the torso or the ground at the
+        // mob's feet rather than along a feet-to-aim segment that clips the slab.
+        return PointInYCylinder(target, mob, radius, ymin, ymin + height)
+            || SegmentHitsYCylinder(origin, target, mob with { Y = ymin }, radius, height);
+    }
+
+    public static bool SegmentHitsPrototypeMob(Vector3 origin, Vector3 target) =>
+        HitsPrototypeMob(origin, target);
+
+    public static bool PointInYCylinder(
+        Vector3 point,
+        Vector3 cylinderBase,
+        float radius,
+        float ymin,
+        float ymax
+    )
+    {
+        if (point.Y < ymin || point.Y > ymax)
+            return false;
+
+        var dx = point.X - cylinderBase.X;
+        var dz = point.Z - cylinderBase.Z;
+        return dx * dx + dz * dz <= radius * radius;
+    }
 
     /// <summary>
     /// Finite Y-up cylinder: XZ disc of <paramref name="radius"/> at <paramref name="cylinderBase"/>,

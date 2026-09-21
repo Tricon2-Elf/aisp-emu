@@ -20,34 +20,48 @@ public sealed class TpsAimHitTestTests
     [Fact]
     public void HitsWhenAimedAtMobCenter()
     {
-        Assert.True(TpsAimHitTest.SegmentHitsPrototypeMob(Player, Mob));
+        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, Mob));
+    }
+
+    [Fact]
+    public void HitsWhenAimedAtTorso()
+    {
+        var torso = Mob with { Y = Mob.Y + 80f };
+        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, torso));
+    }
+
+    [Fact]
+    public void HitsWhenAimedAtGroundByTheMob()
+    {
+        var groundAtFeet = Mob with { Y = 0f };
+        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, groundAtFeet));
     }
 
     [Fact]
     public void HitsWhenAimedPastTheMob()
     {
         var past = Mob with { Z = Mob.Z + 400f };
-        Assert.True(TpsAimHitTest.SegmentHitsPrototypeMob(Player, past));
+        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, past));
     }
 
     [Fact]
     public void MissesWhenTargetStopsShortOfTheCylinder()
     {
         var wallInFront = Player with { Z = Player.Z + 50f };
-        Assert.False(TpsAimHitTest.SegmentHitsPrototypeMob(Player, wallInFront));
+        Assert.False(TpsAimHitTest.HitsPrototypeMob(Player, wallInFront));
     }
 
     [Fact]
     public void MissesWhenAimedWellAboveTheMob()
     {
         var high = Mob with { Y = Mob.Y + 500f };
-        Assert.False(TpsAimHitTest.SegmentHitsPrototypeMob(Player, high));
+        Assert.False(TpsAimHitTest.HitsPrototypeMob(Player, high));
     }
 
     [Fact]
     public void MissesWhenAimedBesideTheMob()
     {
         var beside = Mob with { X = Mob.X + 400f };
-        Assert.False(TpsAimHitTest.SegmentHitsPrototypeMob(Player, beside));
+        Assert.False(TpsAimHitTest.HitsPrototypeMob(Player, beside));
     }
 }
