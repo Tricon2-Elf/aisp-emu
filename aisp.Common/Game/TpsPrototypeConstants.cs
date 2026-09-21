@@ -44,6 +44,17 @@ public static class TpsPrototypeConstants
     /// <summary>Y extent of the prototype mob hit cylinder from spawn Y (matches <c>CharaData.TpsActionVerticalRange</c>).</summary>
     public const float MobTpsActionVerticalRange = 60f;
 
+    /// <summary>
+    /// Server free-aim volume is larger than the wire collision blob. The TPS camera
+    /// ray hits the torso or the ground at the mob's feet, both of which sit outside
+    /// the 60-unit slab sent on <c>CharaData</c>.
+    /// </summary>
+    public const float MobHitRadius = 120f;
+
+    public const float MobHitHeight = 140f;
+
+    public const float MobHitYPad = 40f;
+
     public const uint MissionTimeLimitSeconds = 300;
     public const uint MissionTargetCount = 40;
 
