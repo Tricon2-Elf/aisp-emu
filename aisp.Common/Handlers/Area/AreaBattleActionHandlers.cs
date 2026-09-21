@@ -148,7 +148,14 @@ public class AreaBattleAttackExecHandler(
 
         await session.SendAsync(ResponseType, new BattleAttackExecResponse(0).ToBytes(), ct);
         await ApplyPrototypeShotAsync(logger, state, session, req.NowPos, ct);
-        // Action 4 leaves TPS phase at 5 (start is rejected). Action 8 queues phase 0.
+        // Action 5 plays skill-table muzzle FX + SE. Action 8 then queues phase 0
+        // so the next start is accepted (action 4 leaves the local phase at 5).
+        await TpsBattleReports.SendAsync(
+            state,
+            session,
+            TpsPrototypeConstants.BattleReportShotAction,
+            ct
+        );
         await TpsBattleReports.SendAsync(
             state,
             session,
@@ -334,19 +341,41 @@ internal static class TpsBattleReports
         CancellationToken ct
     )
     {
-        uint targetId =
-            session.LockedTargetId != 0
-                ? session.LockedTargetId
-                : TpsPrototypeConstants.MobObjectId;
-        var report = new NotifyBattleReportTargetObj(
-            session.CharacterId,
-            actionType,
-            0,
-            skillId,
-            targetId
-        ).ToBytes();
-        await session.SendAsync(PacketType.NotifyBattleReportTargetObj, report, ct);
+        PacketType type;
+        byte[] report;
+        var useTargetPos =
+            session.LockedTargetId == 0
+            && (
+                actionType == TpsPrototypeConstants.BattleReportAttackAction
+                || actionType == TpsPrototypeConstants.BattleReportShotAction
+            );
+        if (useTargetPos)
+        {
+            type = PacketType.NotifyBattleReportTargetPos;
+            report = new NotifyBattleReportTargetPos(
+                session.CharacterId,
+                actionType,
+                0,
+                skillId,
+                TpsCombatTestState.GetPendingAim(session.CharacterId).TargetPos
+            ).ToBytes();
+        }
+        else
+        {
+            type = PacketType.NotifyBattleReportTargetObj;
+            report = new NotifyBattleReportTargetObj(
+                session.CharacterId,
+                actionType,
+                0,
+                skillId,
+                session.LockedTargetId != 0
+                    ? session.LockedTargetId
+                    : TpsPrototypeConstants.MobObjectId
+            ).ToBytes();
+        }
+
+        await session.SendAsync(type, report, ct);
         foreach (var peer in state.GetAreaPeers(session, includeSelf: false))
-            await peer.SendAsync(PacketType.NotifyBattleReportTargetObj, report, ct);
+            await peer.SendAsync(type, report, ct);
     }
 }

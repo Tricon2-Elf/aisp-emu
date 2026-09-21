@@ -3402,7 +3402,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_battle_report_target_pos",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyBattleReportTargetPos = 0x58A2,
 
