@@ -54,30 +54,5 @@ public class AreaSkillExecHandler(ILogger<AreaSkillExecHandler> logger)
         );
 
         await session.SendAsync(ResponseType, new SkillExecResponse(0).ToBytes(), ct);
-
-        if (req.TargetObjId != TpsPrototypeConstants.MobObjectId)
-            return;
-
-        logger.LogInformation("Monster defeated via skill!");
-        await session.SendAsync(
-            PacketType.NotifyEmotionChara,
-            new NotifyEmotionChara(req.TargetObjId, 3).ToBytes(),
-            ct
-        );
-
-        await Task.Delay(1000, ct);
-        await session.SendAsync(
-            PacketType.NotifyDisappearChara,
-            new NotifyDisappearChara(req.TargetObjId).ToBytes(),
-            ct
-        );
-
-        await session.SendAsync(
-            PacketType.NotifyMissionAction,
-            new NotifyMissionAction(2, 0).ToBytes(),
-            ct
-        );
-        // Unnamed pad packet from the prototype skill-kill path.
-        await session.SendAsync((PacketType)0x6E62, new byte[12], ct);
     }
 }

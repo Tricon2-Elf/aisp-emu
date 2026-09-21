@@ -59,9 +59,20 @@ public static class TpsPrototypeConstants
     public const uint MissionTargetCount = 40;
 
     public const int DefaultHitPoints = 100;
+    public const int DefaultHearts = 5;
     public const uint DefaultTank = 100;
-    public const int AttackDamage = 25;
+
+    /// <summary>One shot removes one heart (100 HP / 5 hearts).</summary>
+    public const int AttackDamage = 20;
     public const uint TankConsumePerShot = 1;
+
+    public static int HeartsFromHp(int hitPoints)
+    {
+        if (hitPoints <= 0)
+            return 0;
+
+        return (hitPoints * DefaultHearts + DefaultHitPoints - 1) / DefaultHitPoints;
+    }
 
     /// <summary>
     /// CTPSActionReport switch value that queues the fire motion and the local
