@@ -148,20 +148,15 @@ public class AreaBattleAttackExecHandler(
 
         await session.SendAsync(ResponseType, new BattleAttackExecResponse(0).ToBytes(), ct);
         await ApplyPrototypeShotAsync(logger, state, session, req.NowPos, ct);
-        // Action 5 plays skill-table muzzle FX + SE. Action 8 then queues phase 0
-        // so the next start is accepted (action 4 leaves the local phase at 5).
+        // Action 5 starts CTPSTimeBlaze + SE. Do not send action 8 in the same
+        // tick — that queues phase 0 and cuts the stream off immediately.
         await TpsBattleReports.SendAsync(
             state,
             session,
             TpsPrototypeConstants.BattleReportShotAction,
             ct
         );
-        await TpsBattleReports.SendAsync(
-            state,
-            session,
-            TpsPrototypeConstants.BattleReportRecoverAction,
-            ct
-        );
+        TpsBattleReports.ScheduleRecover(logger, state, session, ct);
     }
 
     internal static async Task ApplyPrototypeShotAsync(
@@ -324,8 +319,65 @@ public class AreaBattleDashFinishHandler(
     }
 }
 
+public class AreaBattleAttackBlazeHandler(ILogger<AreaBattleAttackBlazeHandler> logger)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
+{
+    public PacketType RequestType => PacketType.BattleAttackBlazeRequest;
+    public PacketType ResponseType => PacketType.BattleAttackBlazeResponse;
+    public ServerType ServerType => ServerType.Area;
+
+    public async Task HandleAsync(
+        ReadOnlyMemory<byte> payload,
+        IPlayerSession session,
+        CancellationToken ct = default
+    )
+    {
+        var req = BattleAttackBlazeRequest.FromBytes(payload.Span);
+        TpsCombatTestState.SetPendingAim(session.CharacterId, req.TargetPos, req.NowPos);
+        logger.LogDebug("TPS Combat: Blaze tick from Character {Id}", session.CharacterId);
+        await session.SendAsync(ResponseType, new BattleAttackBlazeResponse(0).ToBytes(), ct);
+    }
+}
+
 internal static class TpsBattleReports
 {
+    public static void ScheduleRecover(
+        ILogger logger,
+        SharedState state,
+        IPlayerSession session,
+        CancellationToken ct
+    )
+    {
+        _ = RecoverAfterShotAsync(logger, state, session, ct);
+    }
+
+    private static async Task RecoverAfterShotAsync(
+        ILogger logger,
+        SharedState state,
+        IPlayerSession session,
+        CancellationToken ct
+    )
+    {
+        try
+        {
+            await Task.Delay(TpsPrototypeConstants.ShotRecoverDelayMs, ct);
+            await SendAsync(state, session, TpsPrototypeConstants.BattleReportRecoverAction, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // map leave / disconnect
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "TPS Combat: delayed recover failed for character {CharacterId}",
+                session.CharacterId
+            );
+        }
+    }
+
     public static Task SendAsync(
         SharedState state,
         IPlayerSession session,
