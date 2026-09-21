@@ -1,3 +1,4 @@
+using System.Numerics;
 using aisp.Common.Game;
 using aisp.Network;
 using aisp.Network.Packets.Area;
@@ -90,6 +91,9 @@ public class AreaBattleAttackStartHandler(
         CancellationToken ct = default
     )
     {
+        var req = BattleAttackStartRequest.FromBytes(payload.Span);
+        TpsCombatTestState.SetPendingAim(session.CharacterId, req.TargetPos, req.NowPos);
+
         logger.LogInformation("TPS Combat: Attack start from Character {Id}", session.CharacterId);
         await session.SendAsync(ResponseType, new BattleAttackStartResponse(0).ToBytes(), ct);
 
@@ -139,10 +143,11 @@ public class AreaBattleAttackExecHandler(
         CancellationToken ct = default
     )
     {
+        var req = BattleAttackExecRequest.FromBytes(payload.Span);
         logger.LogInformation("TPS Combat: Character {Id} fired water gun!", session.CharacterId);
 
         await session.SendAsync(ResponseType, new BattleAttackExecResponse(0).ToBytes(), ct);
-        await ApplyPrototypeShotAsync(logger, state, session, ct);
+        await ApplyPrototypeShotAsync(logger, state, session, req.NowPos, ct);
         // Action 4 leaves TPS phase at 5 (start is rejected). Action 8 queues phase 0.
         await TpsBattleReports.SendAsync(
             state,
@@ -156,6 +161,7 @@ public class AreaBattleAttackExecHandler(
         ILogger logger,
         SharedState state,
         IPlayerSession session,
+        Vector3 execNowPos,
         CancellationToken ct
     )
     {
@@ -173,6 +179,17 @@ public class AreaBattleAttackExecHandler(
             session.LockedTargetId != 0
                 ? session.LockedTargetId
                 : TpsPrototypeConstants.MobObjectId;
+
+        if (session.LockedTargetId == 0 && !FreeAimHitsPrototypeMob(session, execNowPos))
+        {
+            logger.LogInformation(
+                "Shot missed Monster {TargetId} (free aim). Tank: {Tank}%",
+                targetId,
+                remainingTank
+            );
+            return;
+        }
+
         var (remHp, died, kills) = TpsCombatTestState.DealDamage(
             targetId,
             TpsPrototypeConstants.AttackDamage
@@ -225,12 +242,25 @@ public class AreaBattleAttackExecHandler(
             ct
         );
     }
+
+    /// <summary>
+    /// Free-aim uses the client's world-ray <c>target_pos</c> (already clipped to walls)
+    /// and the exec/start <c>now_pos</c> as the shot origin. No server-side world geometry.
+    /// </summary>
+    private static bool FreeAimHitsPrototypeMob(IPlayerSession session, Vector3 execNowPos)
+    {
+        var aim = TpsCombatTestState.GetPendingAim(session.CharacterId);
+        var origin =
+            execNowPos != Vector3.Zero ? execNowPos
+            : aim.NowPos != Vector3.Zero ? aim.NowPos
+            : new Vector3(session.X, session.Y, session.Z);
+        return TpsAimHitTest.SegmentHitsPrototypeMob(origin, aim.TargetPos);
+    }
 }
 
-public class AreaBattleDashExecHandler(
-    ILogger<AreaBattleDashExecHandler> logger,
-    SharedState state
-) : IPacketHandler, IRequiresAuthenticatedSession
+public class AreaBattleDashExecHandler(ILogger<AreaBattleDashExecHandler> logger, SharedState state)
+    : IPacketHandler,
+        IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.BattleDashExecRequest;
     public PacketType ResponseType => PacketType.BattleDashExecResponse;

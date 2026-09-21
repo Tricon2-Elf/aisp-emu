@@ -1,11 +1,15 @@
 using System.Collections.Concurrent;
+using System.Numerics;
 
 namespace aisp.Common.Game;
+
+public readonly record struct TpsPendingAim(Vector3 TargetPos, Vector3 NowPos);
 
 public static class TpsCombatTestState
 {
     private static readonly ConcurrentDictionary<uint, int> MonsterHp = new();
     private static readonly ConcurrentDictionary<uint, uint> PlayerTank = new();
+    private static readonly ConcurrentDictionary<uint, TpsPendingAim> PendingAim = new();
     private static uint _killCount;
 
     public static int GetHp(uint mobObjId) =>
@@ -48,6 +52,12 @@ public static class TpsCombatTestState
         uint mobObjId,
         int hitPoints = TpsPrototypeConstants.DefaultHitPoints
     ) => MonsterHp[mobObjId] = hitPoints;
+
+    public static void SetPendingAim(uint characterId, Vector3 targetPos, Vector3 nowPos) =>
+        PendingAim[characterId] = new TpsPendingAim(targetPos, nowPos);
+
+    public static TpsPendingAim GetPendingAim(uint characterId) =>
+        PendingAim.TryGetValue(characterId, out var aim) ? aim : default;
 
     /// <summary>
     /// Damage is applied on AttackExec. Collapse repeats within one client frame

@@ -1,13 +1,27 @@
+using System.Numerics;
 using aisp.Common.Game;
 using aisp.Common.Handlers.Area;
 using aisp.Common.Tests.Support;
 using aisp.Network;
+using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace aisp.Common.Tests;
 
 public sealed class AreaBattleAttackHandlerTests
 {
+    private static readonly Vector3 PlayerSpawn = new(
+        TpsPrototypeConstants.PlayerSpawnX,
+        TpsPrototypeConstants.PlayerSpawnY,
+        TpsPrototypeConstants.PlayerSpawnZ
+    );
+
+    private static readonly Vector3 MobSpawn = new(
+        TpsPrototypeConstants.MobSpawnX,
+        TpsPrototypeConstants.MobSpawnY,
+        TpsPrototypeConstants.MobSpawnZ
+    );
+
     [Fact]
     public async Task AttackStart_AcksAndSendsBattleReportToShooter()
     {
@@ -165,5 +179,141 @@ public sealed class AreaBattleAttackHandlerTests
         Assert.Equal(TpsPrototypeConstants.BattleReportDashEndAction, reader.ReadUInt());
         Assert.Equal((byte)0, reader.ReadByte());
         Assert.Equal(TpsPrototypeConstants.BattleReportDashEndSkillId, reader.ReadUInt());
+    }
+
+    [Fact]
+    public async Task AttackExec_FreeAimHit_DealsDamage()
+    {
+        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
+        var hpBefore = TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId);
+        var (_, session, start, exec) = CreateBattleHandlers(42_4250, locked: false);
+
+        await start.HandleAsync(
+            WriteVec3s(MobSpawn, PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await exec.HandleAsync(
+            WriteVec3(PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateHitpoint);
+        Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateTank);
+        Assert.Equal(
+            hpBefore - TpsPrototypeConstants.AttackDamage,
+            TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId)
+        );
+    }
+
+    [Fact]
+    public async Task AttackExec_FreeAimMiss_ConsumesTankWithoutHp()
+    {
+        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
+        var hpBefore = TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId);
+        var (_, session, start, exec) = CreateBattleHandlers(42_4251, locked: false);
+        var aimedHigh = MobSpawn with { Y = MobSpawn.Y + 500f };
+
+        await start.HandleAsync(
+            WriteVec3s(aimedHigh, PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await exec.HandleAsync(
+            WriteVec3(PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyUpdateHitpoint
+        );
+        Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateTank);
+        Assert.Equal(hpBefore, TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId));
+    }
+
+    [Fact]
+    public async Task AttackExec_LockHitsEvenIfAimMissesCylinder()
+    {
+        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
+        var hpBefore = TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId);
+        var (_, session, start, exec) = CreateBattleHandlers(42_4252, locked: true);
+        var aimedHigh = MobSpawn with { Y = MobSpawn.Y + 500f };
+
+        await start.HandleAsync(
+            WriteVec3s(aimedHigh, PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await exec.HandleAsync(
+            WriteVec3(PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateHitpoint);
+        Assert.Equal(
+            hpBefore - TpsPrototypeConstants.AttackDamage,
+            TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId)
+        );
+    }
+
+    [Fact]
+    public void BattleAttackStartRequest_ReadsTargetThenNow()
+    {
+        var parsed = BattleAttackStartRequest.FromBytes(WriteVec3s(MobSpawn, PlayerSpawn).Span);
+        Assert.Equal(MobSpawn, parsed.TargetPos);
+        Assert.Equal(PlayerSpawn, parsed.NowPos);
+    }
+
+    private static (
+        SharedState State,
+        CapturingPlayerSession Session,
+        AreaBattleAttackStartHandler Start,
+        AreaBattleAttackExecHandler Exec
+    ) CreateBattleHandlers(uint characterId, bool locked)
+    {
+        var state = new SharedState();
+        var session = new CapturingPlayerSession
+        {
+            CharacterId = characterId,
+            LockedTargetId = locked ? TpsPrototypeConstants.MobObjectId : 0,
+            X = PlayerSpawn.X,
+            Y = PlayerSpawn.Y,
+            Z = PlayerSpawn.Z,
+        };
+        state.RegisterClient(ServerType.Area, session);
+        return (
+            state,
+            session,
+            new AreaBattleAttackStartHandler(
+                NullLogger<AreaBattleAttackStartHandler>.Instance,
+                state
+            ),
+            new AreaBattleAttackExecHandler(NullLogger<AreaBattleAttackExecHandler>.Instance, state)
+        );
+    }
+
+    private static ReadOnlyMemory<byte> WriteVec3(Vector3 value)
+    {
+        var writer = new PacketWriter();
+        writer.Write(value.X);
+        writer.Write(value.Y);
+        writer.Write(value.Z);
+        return writer.ToBytes();
+    }
+
+    private static ReadOnlyMemory<byte> WriteVec3s(Vector3 a, Vector3 b)
+    {
+        var writer = new PacketWriter();
+        writer.Write(a.X);
+        writer.Write(a.Y);
+        writer.Write(a.Z);
+        writer.Write(b.X);
+        writer.Write(b.Y);
+        writer.Write(b.Z);
+        return writer.ToBytes();
     }
 }
