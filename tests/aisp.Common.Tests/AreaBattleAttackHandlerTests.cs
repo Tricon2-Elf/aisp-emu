@@ -94,17 +94,32 @@ public sealed class AreaBattleAttackHandlerTests
         var reports = session
             .Sent.Where(packet => packet.Type == PacketType.NotifyBattleReportTargetObj)
             .ToList();
-        Assert.Equal(2, reports.Count);
+        var shot = Assert.Single(reports);
+        var reader = new PacketReader(shot.Payload);
+        Assert.Equal(session.CharacterId, reader.ReadUInt());
+        Assert.Equal(TpsPrototypeConstants.BattleReportShotAction, reader.ReadUInt());
+        Assert.Equal((byte)0, reader.ReadByte());
+        Assert.Equal(TpsPrototypeConstants.DefaultSkills[0], reader.ReadUInt());
+    }
 
-        var shot = new PacketReader(reports[0].Payload);
-        Assert.Equal(session.CharacterId, shot.ReadUInt());
-        Assert.Equal(TpsPrototypeConstants.BattleReportShotAction, shot.ReadUInt());
+    [Fact]
+    public async Task AttackBlaze_AcksZeroAndStoresAim()
+    {
+        var session = new CapturingPlayerSession { CharacterId = 42_4253 };
+        var handler = new AreaBattleAttackBlazeHandler(
+            NullLogger<AreaBattleAttackBlazeHandler>.Instance
+        );
+        await handler.HandleAsync(
+            WriteVec3s(MobSpawn, PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
 
-        var recover = new PacketReader(reports[1].Payload);
-        Assert.Equal(session.CharacterId, recover.ReadUInt());
-        Assert.Equal(TpsPrototypeConstants.BattleReportRecoverAction, recover.ReadUInt());
-        Assert.Equal((byte)0, recover.ReadByte());
-        Assert.Equal(TpsPrototypeConstants.DefaultSkills[0], recover.ReadUInt());
+        Assert.Single(session.Sent);
+        Assert.Equal(PacketType.BattleAttackBlazeResponse, session.Sent[0].Type);
+        Assert.Equal(0u, new PacketReader(session.Sent[0].Payload).ReadUInt());
+        Assert.Equal(MobSpawn, TpsCombatTestState.GetPendingAim(session.CharacterId).TargetPos);
+        Assert.Equal(PlayerSpawn, TpsCombatTestState.GetPendingAim(session.CharacterId).NowPos);
     }
 
     [Fact]

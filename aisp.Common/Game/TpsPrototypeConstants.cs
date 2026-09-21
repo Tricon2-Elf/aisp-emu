@@ -68,6 +68,13 @@ public static class TpsPrototypeConstants
     public const uint BattleReportShotAction = 5;
 
     /// <summary>
+    /// How long to leave action 5's <c>CTPSTimeBlaze</c> running before action 8.
+    /// Matches the decompile default when the skill row is missing (<c>v88 = 1.0</c>).
+    /// Sending recover in the same tick as the shot report cuts the FX/SE off.
+    /// </summary>
+    public const int ShotRecoverDelayMs = 1000;
+
+    /// <summary>
     /// CTPSActionReport switch value that queues <c>CTPSActStateAction</c> phase 0
     /// (decomp <c>sub_4E63C0</c> case 8). Required after attack exec (phase 5)
     /// so the player can fire again. Does not clear the dash run flag.
