@@ -55,6 +55,16 @@ public static class TpsPrototypeConstants
 
     public const float MobHitYPad = 40f;
 
+    /// <summary>How far the prototype mob may wander from spawn (XZ).</summary>
+    public const float MobWanderRadius = 420f;
+
+    public const float MobWanderStepMin = 90f;
+    public const float MobWanderStepMax = 180f;
+    public const float MobWanderWalkSpeed = 80f;
+    public const float MobWanderRunSpeed = 160f;
+    public const int MobWanderPauseMinMs = 800;
+    public const int MobWanderPauseMaxMs = 2500;
+
     public const uint MissionTimeLimitSeconds = 300;
     public const uint MissionTargetCount = 40;
 

@@ -1,3 +1,4 @@
+using System.Numerics;
 using aisp.Common.DAL.Entities;
 using aisp.Common.DAL.Repositories;
 using aisp.Network;
@@ -177,6 +178,8 @@ public static class TpsCombatEnter
                         ).ToBytes(),
                         ct
                     );
+
+                    await WanderPrototypeMobAsync(session, logger, ct);
                 }
                 catch (OperationCanceledException)
                 {
@@ -362,6 +365,130 @@ public static class TpsCombatEnter
             TpsPrototypeConstants.MobSpawnY,
             TpsPrototypeConstants.MobSpawnZ
         );
+    }
+
+    /// <summary>
+    /// Walk the prototype mob around spawn so free-aim can be tested off the
+    /// initial standing point. Stops on map leave, cancel, or death.
+    /// </summary>
+    private static async Task WanderPrototypeMobAsync(
+        IPlayerSession session,
+        ILogger logger,
+        CancellationToken ct
+    )
+    {
+        var mobObjId = TpsPrototypeConstants.MobObjectId;
+        var rng = Random.Shared;
+
+        while (!ct.IsCancellationRequested && session.IsTpsMode)
+        {
+            if (TpsCombatTestState.GetHp(mobObjId) <= 0)
+                break;
+
+            var current = TpsCombatTestState.GetMobPosition(mobObjId);
+            var dest = NextWanderPoint(rng, current);
+            var dx = dest.X - current.X;
+            var dz = dest.Z - current.Z;
+            if (dx * dx + dz * dz < 1f)
+                dest = current;
+
+            var yaw = YawToward(dx, dz);
+            var gait = rng.Next(2) == 0 ? MovementType.Walking : MovementType.Running;
+            var dist = MathF.Sqrt(dx * dx + dz * dz);
+            var speed =
+                gait == MovementType.Running
+                    ? TpsPrototypeConstants.MobWanderRunSpeed
+                    : TpsPrototypeConstants.MobWanderWalkSpeed;
+            var durationMs = (int)
+                Math.Clamp(
+                    dist / Math.Max(speed, 1f) * 1000f,
+                    TpsPrototypeConstants.MobWanderPauseMinMs,
+                    TpsPrototypeConstants.MobWanderPauseMaxMs
+                );
+
+            TpsCombatTestState.SetMobMove(mobObjId, current, dest, durationMs);
+
+            await session.SendAsync(
+                PacketType.AvatarNotifyMove,
+                new AvatarNotifyMove(
+                    mobObjId,
+                    [
+                        new MovementData(current.X, current.Y, current.Z, yaw, gait),
+                        new MovementData(dest.X, dest.Y, dest.Z, yaw, gait),
+                    ]
+                ).ToBytes(),
+                ct
+            );
+
+            await Task.Delay(durationMs, ct);
+
+            if (!session.IsTpsMode || TpsCombatTestState.GetHp(mobObjId) <= 0)
+                break;
+
+            TpsCombatTestState.SetMobPosition(mobObjId, dest);
+            await session.SendAsync(
+                PacketType.AvatarNotifyMove,
+                new AvatarNotifyMove(
+                    mobObjId,
+                    [new MovementData(dest.X, dest.Y, dest.Z, yaw, MovementType.Stopped)]
+                ).ToBytes(),
+                ct
+            );
+            await session.SendAsync(
+                PacketType.NotifyShowChara,
+                new NotifyShowChara(
+                    mobObjId,
+                    new MovementData(dest.X, dest.Y, dest.Z, yaw, MovementType.Stopped)
+                ).ToBytes(),
+                ct
+            );
+            await Task.Delay(rng.Next(400, 1201), ct);
+        }
+
+        logger.LogDebug("TPS mob {MobObjId} wander stopped", mobObjId);
+    }
+
+    private static Vector3 NextWanderPoint(Random rng, Vector3 current)
+    {
+        var spawn = new Vector3(
+            TpsPrototypeConstants.MobSpawnX,
+            TpsPrototypeConstants.MobSpawnY,
+            TpsPrototypeConstants.MobSpawnZ
+        );
+        var radius = TpsPrototypeConstants.MobWanderRadius;
+        var radiusSq = radius * radius;
+
+        for (var i = 0; i < 8; i++)
+        {
+            var heading = rng.NextSingle() * MathF.Tau;
+            var step =
+                TpsPrototypeConstants.MobWanderStepMin
+                + rng.NextSingle()
+                    * (
+                        TpsPrototypeConstants.MobWanderStepMax
+                        - TpsPrototypeConstants.MobWanderStepMin
+                    );
+            var candidate = new Vector3(
+                current.X + MathF.Sin(heading) * step,
+                TpsPrototypeConstants.MobSpawnY,
+                current.Z + MathF.Cos(heading) * step
+            );
+            var ox = candidate.X - spawn.X;
+            var oz = candidate.Z - spawn.Z;
+            if (ox * ox + oz * oz <= radiusSq)
+                return candidate;
+        }
+
+        return spawn;
+    }
+
+    private static int YawToward(float dx, float dz)
+    {
+        if (dx * dx + dz * dz < 1e-6f)
+            return TpsPrototypeConstants.MobSpawnRotation;
+
+        var deg = (int)MathF.Round(MathF.Atan2(dx, dz) * (180f / MathF.PI));
+        return ((deg % 360) + 360) % 360;
     }
 
     internal static ItemData BuildWaterGunItemBase() =>

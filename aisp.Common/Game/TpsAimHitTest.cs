@@ -11,11 +11,29 @@ public static class TpsAimHitTest
 {
     public static bool HitsPrototypeMob(Vector3 origin, Vector3 target)
     {
-        var mob = new Vector3(
+        var current = TpsCombatTestState.GetMobPosition();
+        if (HitsPrototypeMob(origin, target, current))
+            return true;
+
+        // The client mesh may still be on spawn, mid-step, or already at the
+        // wander destination. Accept all three so shots at the visible body hit.
+        TpsCombatTestState.TryGetMobPath(
+            TpsPrototypeConstants.MobObjectId,
+            out var from,
+            out var to
+        );
+        var spawn = new Vector3(
             TpsPrototypeConstants.MobSpawnX,
             TpsPrototypeConstants.MobSpawnY,
             TpsPrototypeConstants.MobSpawnZ
         );
+        return HitsPrototypeMob(origin, target, from)
+            || HitsPrototypeMob(origin, target, to)
+            || HitsPrototypeMob(origin, target, spawn);
+    }
+
+    public static bool HitsPrototypeMob(Vector3 origin, Vector3 target, Vector3 mob)
+    {
         var ymin = mob.Y - TpsPrototypeConstants.MobHitYPad;
         var height = TpsPrototypeConstants.MobHitHeight + TpsPrototypeConstants.MobHitYPad;
         var radius = TpsPrototypeConstants.MobHitRadius;
