@@ -78,7 +78,10 @@ public static class TpsCombatEnter
         // Mission curtain + start data — without these the black curtain never lifts / countdown never runs.
         await session.SendAsync(
             PacketType.NotifyMissionData,
-            new NotifyMissionData().ToBytes(),
+            new NotifyMissionData(
+                timeLimitSeconds: TpsPrototypeConstants.MissionTimeLimitSeconds,
+                missionRuleType: MissionRuleType.FreeAim
+            ).ToBytes(),
             ct
         );
         await session.SendAsync(
@@ -137,6 +140,17 @@ public static class TpsCombatEnter
                         ct
                     );
 
+                    // RaiseEnd is when the client starts CTPSTimeLimitWindow. The
+                    // duration is 60 * mission-data minutes (object +76), not tm_end.
+                    await session.SendAsync(
+                        PacketType.NotifyMissionData,
+                        new NotifyMissionData(
+                            timeLimitSeconds: TpsPrototypeConstants.MissionTimeLimitSeconds,
+                            missionRuleType: MissionRuleType.FreeAim
+                        ).ToBytes(),
+                        ct
+                    );
+
                     // RaiseStart without RaiseEnd leaves the local TPS controller locked.
                     await session.SendAsync(
                         PacketType.NotifyBattleRaiseEnd,
@@ -172,10 +186,9 @@ public static class TpsCombatEnter
                     );
                     await session.SendAsync(
                         PacketType.NotifyTimelimitShow,
-                        new NotifyTimelimitShow(
-                            0,
-                            TpsPrototypeConstants.MissionTimeLimitSeconds
-                        ).ToBytes(),
+                        NotifyTimelimitShow
+                            .FromRemainingSeconds(TpsPrototypeConstants.MissionTimeLimitSeconds)
+                            .ToBytes(),
                         ct
                     );
 

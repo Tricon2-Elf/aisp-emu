@@ -65,7 +65,8 @@ public static class TpsPrototypeConstants
     public const int MobWanderPauseMinMs = 800;
     public const int MobWanderPauseMaxMs = 2500;
 
-    public const uint MissionTimeLimitSeconds = 300;
+    public const uint MissionTimeLimitSeconds = 30 * 60;
+
     public const uint MissionTargetCount = 40;
 
     public const int DefaultHitPoints = 100;

@@ -130,3 +130,13 @@ public enum NicotvCommentVisibility : uint
     Visible = 0,
     Hidden = 1,
 }
+
+/// <summary>
+/// <c>recv_notify_mission_data</c> dword stored at mission object +36.
+/// FreeAim: hip-fire. LockOn: sticky target lock.
+/// </summary>
+public enum MissionRuleType : uint
+{
+    FreeAim = 1,
+    LockOn = 2,
+}
