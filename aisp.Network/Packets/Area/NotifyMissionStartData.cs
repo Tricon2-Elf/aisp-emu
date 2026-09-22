@@ -6,7 +6,7 @@ public class NotifyMissionStartData(
     uint partyId = 1,
     uint missionId = 603,
     string missionName = "ジョイント！！",
-    uint timeLimitSeconds = 300,
+    uint timeLimitSeconds = 1800,
     string description = "制限時間内に40体をたおせ！！",
     uint targetCount = 40,
     uint leaderCharacterId = 0,
