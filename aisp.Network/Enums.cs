@@ -85,7 +85,6 @@ public enum EmotionCategory : byte
     Etc = 3,
 }
 
-
 /// <summary>
 /// Event select type.
 /// Dialogue: IF/CHL dialogue selection window (same style as client CSV if-selection-start).
@@ -139,4 +138,16 @@ public enum MissionRuleType : uint
 {
     FreeAim = 1,
     LockOn = 2,
+}
+
+/// <summary>
+/// <c>IF::CTPSMultiResultWindow</c> overall rank. Resource 640–644; 0 is D.
+/// </summary>
+public enum MissionResultGrade : uint
+{
+    D = 0,
+    C = 1,
+    B = 2,
+    A = 3,
+    S = 4,
 }
