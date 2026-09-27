@@ -5282,9 +5282,9 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ClientToServer,
         "send_mission_result_close",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
-    MissionResultCloseRequest = 0x75AC,
+    MissionResultCloseRequest = 0x6413,
 
     [PacketMetadata(
         PacketServerType.Area,
@@ -5461,6 +5461,14 @@ public enum PacketType : ushort
         ImplementationState.NotImplemented
     )]
     RequestMissionPartyBreakupRequest = 0x0061,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ClientToServer,
+        "send_request_mission_watch_player",
+        ImplementationState.NotImplemented
+    )]
+    RequestMissionWatchPlayerRequest = 0x75AC,
 
     [PacketMetadata(
         PacketServerType.Area,
