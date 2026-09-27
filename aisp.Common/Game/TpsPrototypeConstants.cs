@@ -65,9 +65,19 @@ public static class TpsPrototypeConstants
     public const int MobWanderPauseMinMs = 800;
     public const int MobWanderPauseMaxMs = 2500;
 
+    /// <summary>
+    /// XZ distance at which the prototype mob may fire. Matches the Charadoll
+    /// <c>TpsActionReferenceX/Y</c> sent on the player (600).
+    /// </summary>
+    public const float MobAttackRange = 600f;
+
+    public const int MobAttackWindupMs = 400;
+    public const int MobAttackIntervalMs = 2200;
+    public const int MobAttackDamage = AttackDamage;
+
     public const uint MissionTimeLimitSeconds = 30 * 60;
 
-    public const uint MissionTargetCount = 40;
+    public const uint MissionTargetCount = 1;
 
     public const int DefaultHitPoints = 100;
     public const int DefaultHearts = 5;

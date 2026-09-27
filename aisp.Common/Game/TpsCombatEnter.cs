@@ -36,6 +36,7 @@ public static class TpsCombatEnter
 
         session.IsTpsMode = true;
         session.NeedsPostLoadSelfAvatarNotify = false;
+        TpsCombatTestState.ResetPlayer(playerObjId);
 
         var myPos = new MovementData(
             session.X,
@@ -316,8 +317,8 @@ public static class TpsCombatEnter
                 Movement = mobSpawnPos,
             },
             Visual = new CharaVisual(BloodType.A, 1, 1, 0, mobObjId, 0, 0),
-            TpsActionReferenceX = 20f,
-            TpsActionReferenceY = 20f,
+            TpsActionReferenceX = TpsPrototypeConstants.MobAttackRange,
+            TpsActionReferenceY = TpsPrototypeConstants.MobAttackRange,
             CollisionRadius = TpsPrototypeConstants.MobCollisionRadius,
             TpsActionVerticalRange = TpsPrototypeConstants.MobTpsActionVerticalRange,
             // Hostile filter: target action+12 >= 2 and != local (1).
@@ -339,6 +340,7 @@ public static class TpsCombatEnter
                     BaseMaximum = TpsPrototypeConstants.DefaultTank,
                 },
                 ActionFlags = 1,
+                ActiveSkillId = TpsPrototypeConstants.DefaultSkills[0],
                 BaseAbilities = new BattleAbilityValues { Values = [50, 50, 50, 50, 50] },
             },
         };
@@ -347,7 +349,7 @@ public static class TpsCombatEnter
         for (var i = 0; i < CharaData.EquipmentSlotCount; i++)
             mobChara.Equips.Add(new ItemSlotInfo(0, 0));
 
-        TpsCombatTestState.ResetMonster(mobObjId);
+        TpsCombatTestState.ResetMonster(mobObjId, ownerCharacterId: session.CharacterId);
 
         // NpcNotifyData instantiates the collidable CChara. InitChara127 then
         // deletes that slot and recreates it as controller type 128.
@@ -395,17 +397,30 @@ public static class TpsCombatEnter
 
         while (!ct.IsCancellationRequested && session.IsTpsMode)
         {
-            if (TpsCombatTestState.GetHp(mobObjId) <= 0)
+            if (
+                TpsCombatTestState.GetHp(mobObjId) <= 0
+                || TpsCombatTestState.GetPlayerHp(session.CharacterId) <= 0
+            )
                 break;
 
             var current = TpsCombatTestState.GetMobPosition(mobObjId);
+            var player = new Vector3(session.X, session.Y, session.Z);
+            if (
+                TpsCombatTestState.GetPlayerHp(session.CharacterId) > 0
+                && TpsMobCombat.IsPlayerInAttackRange(current, player)
+            )
+            {
+                await TpsMobCombat.FireAtPlayerAsync(session, logger, ct);
+                continue;
+            }
+
             var dest = NextWanderPoint(rng, current);
             var dx = dest.X - current.X;
             var dz = dest.Z - current.Z;
             if (dx * dx + dz * dz < 1f)
                 dest = current;
 
-            var yaw = YawToward(dx, dz);
+            var yaw = TpsMobCombat.YawToward(dx, dz);
             var gait = rng.Next(2) == 0 ? MovementType.Walking : MovementType.Running;
             var dist = MathF.Sqrt(dx * dx + dz * dz);
             var speed =
@@ -435,7 +450,11 @@ public static class TpsCombatEnter
 
             await Task.Delay(durationMs, ct);
 
-            if (!session.IsTpsMode || TpsCombatTestState.GetHp(mobObjId) <= 0)
+            if (
+                !session.IsTpsMode
+                || TpsCombatTestState.GetHp(mobObjId) <= 0
+                || TpsCombatTestState.GetPlayerHp(session.CharacterId) <= 0
+            )
                 break;
 
             TpsCombatTestState.SetMobPosition(mobObjId, dest);
@@ -493,15 +512,6 @@ public static class TpsCombatEnter
         }
 
         return spawn;
-    }
-
-    private static int YawToward(float dx, float dz)
-    {
-        if (dx * dx + dz * dz < 1e-6f)
-            return TpsPrototypeConstants.MobSpawnRotation;
-
-        var deg = (int)MathF.Round(MathF.Atan2(dx, dz) * (180f / MathF.PI));
-        return ((deg % 360) + 360) % 360;
     }
 
     internal static ItemData BuildWaterGunItemBase() =>

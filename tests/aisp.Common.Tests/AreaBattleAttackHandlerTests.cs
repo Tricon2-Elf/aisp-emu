@@ -307,6 +307,46 @@ public sealed class AreaBattleAttackHandlerTests
     }
 
     [Fact]
+    public async Task AttackExec_LastOwnedMob_OpensSuccessResults()
+    {
+        const uint mobId = 2000399;
+        var (_, session, start, exec) = CreateBattleHandlers(42_4399, locked: true);
+        session.LockedTargetId = mobId;
+        TpsCombatTestState.ResetPlayer(session.CharacterId);
+        TpsCombatTestState.ResetMonster(
+            mobId,
+            TpsPrototypeConstants.AttackDamage,
+            session.CharacterId
+        );
+
+        await start.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+        await exec.HandleAsync(
+            WriteVec3(PlayerSpawn),
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, TpsCombatTestState.GetHp(mobId));
+        Assert.True(TpsCombatTestState.AllOwnedMobsDefeated(session.CharacterId));
+        var result = Assert.Single(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyMissionResultOpen
+        );
+        Assert.Equal(
+            TpsMissionGameOver.SuccessResultCode,
+            new PacketReader(result.Payload).ReadUInt()
+        );
+        Assert.Contains(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyMissionSituationMessage
+        );
+    }
+
+    [Fact]
     public void HeartsFromHp_MapsOneHeartPerShot()
     {
         Assert.Equal(5, TpsPrototypeConstants.HeartsFromHp(100));
