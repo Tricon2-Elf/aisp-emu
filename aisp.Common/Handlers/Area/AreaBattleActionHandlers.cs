@@ -184,6 +184,7 @@ public class AreaBattleAttackExecHandler(
 
         if (session.LockedTargetId == 0 && !FreeAimHitsPrototypeMob(session, execNowPos))
         {
+            TpsCombatTestState.RecordShot(session.CharacterId, hit: false);
             var (origin, targetPos) = ResolveFreeAim(session, execNowPos);
             var mob = TpsCombatTestState.GetMobPosition(targetId);
             logger.LogInformation(
@@ -203,10 +204,13 @@ public class AreaBattleAttackExecHandler(
             return;
         }
 
+        TpsCombatTestState.RecordShot(session.CharacterId, hit: true);
         var (remHp, died, kills) = TpsCombatTestState.DealDamage(
             targetId,
             TpsPrototypeConstants.AttackDamage
         );
+        if (died)
+            TpsCombatTestState.RecordKill(session.CharacterId);
 
         var remHearts = TpsPrototypeConstants.HeartsFromHp(remHp);
         logger.LogInformation(
@@ -248,6 +252,9 @@ public class AreaBattleAttackExecHandler(
         var unlockNotify = new NotifyBattleTargetUnlock(session.CharacterId).ToBytes();
         foreach (var client in state.GetAreaPeers(session, includeSelf: false))
             await client.SendAsync(PacketType.NotifyBattleTargetUnlock, unlockNotify, ct);
+
+        if (TpsCombatTestState.AllOwnedMobsDefeated(session.CharacterId))
+            await TpsMissionGameOver.SendSuccessAsync(session, logger, ct);
 
         _ = Task.Run(
             async () =>
