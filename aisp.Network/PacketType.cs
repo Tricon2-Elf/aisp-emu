@@ -3690,7 +3690,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_mission_result_open",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyMissionResultOpen = 0xFE40,
 
@@ -3698,7 +3698,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_mission_situation_message",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyMissionSituationMessage = 0x39C6,
 
@@ -3709,6 +3709,14 @@ public enum PacketType : ushort
         ImplementationState.Implemented
     )]
     NotifyMissionStartData = 0xF349,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
+        "recv_mission_outmap_choice_open",
+        ImplementationState.Implemented
+    )]
+    NotifyMissionOutmapChoiceOpen = 0x171B,
 
     [PacketMetadata(
         PacketServerType.Area,
