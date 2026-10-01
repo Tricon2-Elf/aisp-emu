@@ -1,6 +1,6 @@
-# AI-Space Emulator
+# aisp-emu (Ai Sp@ce Server Emulator)
 
-AI-Space Emulator is a fan-made server emulator for the discontinued Japanese MMO **AISp@ce**. The goal of this project is to recreate the original experience for educational purposes and to keep the game playable after its shutdown.
+aisp-emu is a fan-made server emulator for the discontinued Japanese MMO **Ai Sp@ce**. The goal of this project is to recreate the original experience for educational purposes and to keep the game playable after its shutdown.
 
 Test server running at https://aisp.moe/
 Instructions on connecting are on the site
