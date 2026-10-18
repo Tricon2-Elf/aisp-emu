@@ -32,6 +32,8 @@ internal sealed class CapturingPlayerSession : IPlayerSession
     public bool NeedsPostLoadSelfAvatarNotify { get; set; }
     public bool NeedsMotd { get; set; }
     public bool IsTpsMode { get; set; }
+    public float Stamina { get; set; } = 100f;
+    public bool IsSprinting { get; set; }
     public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     public int? ActiveShopId { get; set; }
     public bool PendingEventEndAfterFade { get; set; }

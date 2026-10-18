@@ -165,6 +165,44 @@ public sealed class AreaBattleAttackHandlerTests
         var reader = new PacketReader(report.Payload);
         Assert.Equal(session.CharacterId, reader.ReadUInt());
         Assert.Equal(TpsPrototypeConstants.BattleReportDashAction, reader.ReadUInt());
+        Assert.Equal((byte)0, reader.ReadByte());
+        Assert.Equal(TpsPrototypeConstants.BattleReportDashSkillId, reader.ReadUInt());
+        Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateStamina);
+        Assert.True(session.IsSprinting);
+        session.IsSprinting = false;
+        session.Stamina = TpsPrototypeConstants.StaminaMax;
+    }
+
+    [Fact]
+    public async Task DashExec_RejectsWhenStaminaIsNotFull()
+    {
+        var state = new SharedState();
+        var session = new CapturingPlayerSession { CharacterId = 42_4246 };
+        state.RegisterClient(ServerType.Area, session);
+        session.Stamina = 50f;
+
+        var handler = new AreaBattleDashExecHandler(
+            NullLogger<AreaBattleDashExecHandler>.Instance,
+            state
+        );
+        await handler.HandleAsync(
+            ReadOnlyMemory<byte>.Empty,
+            session,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(1u, new PacketReader(session.Sent[0].Payload).ReadUInt());
+        var report = Assert.Single(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyBattleReportTargetObj
+        );
+        var reader = new PacketReader(report.Payload);
+        reader.ReadUInt();
+        Assert.Equal(TpsPrototypeConstants.BattleReportDashEndAction, reader.ReadUInt());
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyUpdateStamina
+        );
     }
 
     [Fact]

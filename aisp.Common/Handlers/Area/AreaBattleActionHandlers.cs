@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Numerics;
 using aisp.Common.Game;
 using aisp.Network;
@@ -308,7 +309,29 @@ public class AreaBattleDashExecHandler(ILogger<AreaBattleDashExecHandler> logger
         CancellationToken ct = default
     )
     {
-        logger.LogDebug("TPS Combat: Character {Id} executed dash", session.CharacterId);
+        if (session.Stamina < TpsPrototypeConstants.StaminaSprintReady)
+        {
+            logger.LogDebug(
+                "TPS Combat: Sprint rejected for Character {Id} (Stamina not full: {Stamina})",
+                session.CharacterId,
+                session.Stamina
+            );
+            await session.SendAsync(ResponseType, new BattleDashExecResponse(1).ToBytes(), ct);
+            await TpsBattleReports.SendAsync(
+                state,
+                session,
+                TpsPrototypeConstants.BattleReportDashEndAction,
+                TpsPrototypeConstants.BattleReportDashEndSkillId,
+                ct
+            );
+            return;
+        }
+
+        logger.LogDebug(
+            "TPS Combat: Character {Id} executed dash (sprint start)",
+            session.CharacterId
+        );
+        session.IsSprinting = true;
         await session.SendAsync(ResponseType, new BattleDashExecResponse(0).ToBytes(), ct);
 
         // Right-click sets controller+224=1 (keep sliding forward) and phase 7.
@@ -318,8 +341,11 @@ public class AreaBattleDashExecHandler(ILogger<AreaBattleDashExecHandler> logger
             state,
             session,
             TpsPrototypeConstants.BattleReportDashAction,
+            TpsPrototypeConstants.BattleReportDashSkillId,
             ct
         );
+
+        TpsStaminaTick.Ensure(logger, state, session);
     }
 }
 
@@ -338,7 +364,10 @@ public class AreaBattleDashFinishHandler(
         CancellationToken ct = default
     )
     {
-        logger.LogDebug("TPS Combat: Character {Id} finished dash", session.CharacterId);
+        logger.LogDebug(
+            "TPS Combat: Character {Id} finished dash (sprint stop)",
+            session.CharacterId
+        );
         await session.SendAsync(ResponseType, new BattleDashFinishResponse(0).ToBytes(), ct);
 
         // Action 8 only sets phase 0. Right-click dash keeps sliding until
@@ -350,6 +379,101 @@ public class AreaBattleDashFinishHandler(
             TpsPrototypeConstants.BattleReportDashEndSkillId,
             ct
         );
+
+        session.IsSprinting = false;
+        TpsStaminaTick.Ensure(logger, state, session);
+    }
+}
+
+internal static class TpsStaminaTick
+{
+    private static readonly ConcurrentDictionary<Guid, byte> Running = new();
+
+    public static void Ensure(ILogger logger, SharedState state, IPlayerSession session)
+    {
+        if (!Running.TryAdd(session.ConnectionId, 0))
+            return;
+
+        _ = RunAsync(logger, state, session);
+    }
+
+    private static async Task RunAsync(ILogger logger, SharedState state, IPlayerSession session)
+    {
+        var stop = false;
+        try
+        {
+            while (session.IsSprinting || session.Stamina < TpsPrototypeConstants.StaminaMax)
+            {
+                var sprinting = session.IsSprinting;
+                session.Stamina = Math.Clamp(
+                    session.Stamina
+                        + (
+                            sprinting
+                                ? -TpsPrototypeConstants.StaminaDrainPerTick
+                                : TpsPrototypeConstants.StaminaRegenPerTick
+                        ),
+                    0f,
+                    TpsPrototypeConstants.StaminaMax
+                );
+                try
+                {
+                    await session.SendAsync(
+                        PacketType.NotifyUpdateStamina,
+                        new NotifyUpdateStamina(
+                            session.CharacterId,
+                            session.Stamina,
+                            sprinting
+                                ? TpsPrototypeConstants.StaminaDrainSpeed
+                                : TpsPrototypeConstants.StaminaRegenSpeed
+                        ).ToBytes(),
+                        CancellationToken.None
+                    );
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(
+                        ex,
+                        "TPS Combat: stamina tick stopped for character {CharacterId}",
+                        session.CharacterId
+                    );
+                    session.IsSprinting = false;
+                    stop = true;
+                    break;
+                }
+
+                if (sprinting && session.Stamina <= 0f)
+                {
+                    session.IsSprinting = false;
+                    await TpsBattleReports.SendAsync(
+                        state,
+                        session,
+                        TpsPrototypeConstants.BattleReportDashEndAction,
+                        TpsPrototypeConstants.BattleReportDashEndSkillId,
+                        CancellationToken.None
+                    );
+                }
+
+                await Task.Delay(TpsPrototypeConstants.StaminaTickMs);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(
+                ex,
+                "TPS Combat: stamina tick stopped for character {CharacterId}",
+                session.CharacterId
+            );
+            session.IsSprinting = false;
+            stop = true;
+        }
+        finally
+        {
+            Running.TryRemove(session.ConnectionId, out _);
+            if (
+                !stop && (session.IsSprinting || session.Stamina < TpsPrototypeConstants.StaminaMax)
+            )
+                Ensure(logger, state, session);
+        }
     }
 }
 

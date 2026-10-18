@@ -130,6 +130,9 @@ public static class TpsPrototypeConstants
     /// </summary>
     public const uint BattleReportDashAction = 0x1C;
 
+    /// <summary>Skill row used for the dash-begin report (water-gun sprint).</summary>
+    public const uint BattleReportDashSkillId = 200000;
+
     /// <summary>
     /// CTPSActionReport dash-end (decomp <c>sub_4E63C0</c> case 0x1D). Skill id must
     /// be 0, 1, or 2 — any other value is a no-op. Skill 0 queues phase 12, the
@@ -140,6 +143,14 @@ public static class TpsPrototypeConstants
 
     /// <summary>Skill field that selects the skill-0 branch of action 0x1D.</summary>
     public const uint BattleReportDashEndSkillId = 0;
+
+    public const float StaminaMax = 100f;
+    public const float StaminaSprintReady = 99.9f;
+    public const float StaminaDrainPerTick = 3f;
+    public const float StaminaRegenPerTick = 35f;
+    public const float StaminaDrainSpeed = -15f;
+    public const float StaminaRegenSpeed = 150f;
+    public const int StaminaTickMs = 200;
 
     public static readonly uint[] DefaultSkills = [200090, 200000, 200020];
 }

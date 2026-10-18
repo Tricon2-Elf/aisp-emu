@@ -35,6 +35,12 @@ public interface IPlayerSession
     /// <summary>True while the local player is in TPS combat as their Charadoll.</summary>
     bool IsTpsMode { get; set; }
 
+    /// <summary>TPS sprint gauge, 0–100. Implementations start this full.</summary>
+    float Stamina { get; set; }
+
+    /// <summary>True while a TPS dash sprint is held. The stamina tick drains only then.</summary>
+    bool IsSprinting { get; set; }
+
     PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     int? ActiveShopId { get; set; }
     bool PendingEventEndAfterFade { get; set; }
