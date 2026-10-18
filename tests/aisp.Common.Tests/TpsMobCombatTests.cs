@@ -36,21 +36,33 @@ public sealed class TpsMobCombatTests
     }
 
     [Fact]
-    public void DealPlayerDamage_RemovesOneHeart()
+    public async Task MobShot_RemovesOneHeart()
     {
-        const uint playerId = 77;
-        TpsCombatTestState.ResetPlayer(playerId);
-        var (hp, died) = TpsCombatTestState.DealPlayerDamage(
-            playerId,
-            TpsPrototypeConstants.MobAttackDamage
+        var session = new aisp.Common.Tests.Support.CapturingPlayerSession
+        {
+            CharacterId = 77,
+            X = TpsPrototypeConstants.PlayerSpawnX,
+            Y = TpsPrototypeConstants.PlayerSpawnY,
+            Z = TpsPrototypeConstants.PlayerSpawnZ,
+        };
+        var mission = new MissionRegistry().Create(session);
+        var mob = mission.AddPrototypeMob();
+        await mission.TickAsync(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
+            TestContext.Current.CancellationToken
+        );
+        mob.PhaseUntil = 0;
+        await mission.TickAsync(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
+            TestContext.Current.CancellationToken
         );
 
-        Assert.False(died);
+        var hp = mission.FindMember(77)!.HitPoints;
+        Assert.False(mission.Finished);
         Assert.Equal(
             TpsPrototypeConstants.DefaultHitPoints - TpsPrototypeConstants.MobAttackDamage,
             hp
         );
         Assert.Equal(4, TpsPrototypeConstants.HeartsFromHp(hp));
-        TpsCombatTestState.ResetPlayer(playerId);
     }
 }

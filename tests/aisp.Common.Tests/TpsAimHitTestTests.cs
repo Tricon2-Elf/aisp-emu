@@ -68,26 +68,26 @@ public sealed class TpsAimHitTestTests
     [Fact]
     public void HitsWhenMobHasWanderedToTheAimPoint()
     {
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
         var wandered = Mob with { X = Mob.X + 250f, Z = Mob.Z + 80f };
-        TpsCombatTestState.SetMobPosition(TpsPrototypeConstants.MobObjectId, wandered);
+        var mob = new MissionMob { ObjectId = TpsPrototypeConstants.MobObjectId };
+        mob.SetPosition(wandered);
+        var now = Environment.TickCount64;
 
-        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, Mob));
-        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, wandered));
+        Assert.True(TpsAimHitTest.HitsMob(Player, Mob, mob, now));
+        Assert.True(TpsAimHitTest.HitsMob(Player, wandered, mob, now));
         var beside = Mob with { X = Mob.X + 400f };
-        Assert.False(TpsAimHitTest.HitsPrototypeMob(Player, beside));
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
+        Assert.False(TpsAimHitTest.HitsMob(Player, beside, mob, now));
     }
 
     [Fact]
     public void HitsEitherEndOfAnActiveWanderStep()
     {
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
         var dest = Mob with { X = Mob.X + 250f, Z = Mob.Z + 80f };
-        TpsCombatTestState.SetMobMove(TpsPrototypeConstants.MobObjectId, Mob, dest, 10_000);
+        var mob = new MissionMob { ObjectId = TpsPrototypeConstants.MobObjectId };
+        var now = Environment.TickCount64;
+        mob.SetMove(Mob, dest, 10_000, now);
 
-        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, Mob));
-        Assert.True(TpsAimHitTest.HitsPrototypeMob(Player, dest));
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
+        Assert.True(TpsAimHitTest.HitsMob(Player, Mob, mob, now));
+        Assert.True(TpsAimHitTest.HitsMob(Player, dest, mob, now));
     }
 }

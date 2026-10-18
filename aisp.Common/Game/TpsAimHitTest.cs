@@ -9,27 +9,27 @@ namespace aisp.Common.Game;
 /// </summary>
 public static class TpsAimHitTest
 {
-    public static bool HitsPrototypeMob(Vector3 origin, Vector3 target)
+    public static bool HitsMob(Vector3 origin, Vector3 target, MissionMob mob, long now)
     {
-        var current = TpsCombatTestState.GetMobPosition();
+        var current = mob.PositionAt(now);
         if (HitsPrototypeMob(origin, target, current))
             return true;
 
         // The client mesh may still be on spawn, mid-step, or already at the
         // wander destination. Accept all three so shots at the visible body hit.
-        TpsCombatTestState.TryGetMobPath(
-            TpsPrototypeConstants.MobObjectId,
-            out var from,
-            out var to
-        );
         var spawn = new Vector3(
             TpsPrototypeConstants.MobSpawnX,
             TpsPrototypeConstants.MobSpawnY,
             TpsPrototypeConstants.MobSpawnZ
         );
-        return HitsPrototypeMob(origin, target, from)
-            || HitsPrototypeMob(origin, target, to)
-            || HitsPrototypeMob(origin, target, spawn);
+        if (mob.Move is { } move)
+        {
+            return HitsPrototypeMob(origin, target, move.From)
+                || HitsPrototypeMob(origin, target, move.To)
+                || HitsPrototypeMob(origin, target, spawn);
+        }
+
+        return HitsPrototypeMob(origin, target, spawn);
     }
 
     public static bool HitsPrototypeMob(Vector3 origin, Vector3 target, Vector3 mob)
@@ -43,9 +43,6 @@ public static class TpsAimHitTest
         return PointInYCylinder(target, mob, radius, ymin, ymin + height)
             || SegmentHitsYCylinder(origin, target, mob with { Y = ymin }, radius, height);
     }
-
-    public static bool SegmentHitsPrototypeMob(Vector3 origin, Vector3 target) =>
-        HitsPrototypeMob(origin, target);
 
     public static bool PointInYCylinder(
         Vector3 point,

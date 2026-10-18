@@ -20,7 +20,8 @@ public sealed class DirectMapLinkTransitionService(
     IOptions<ServerOptions> serverOptions,
     SharedState state,
     ITextLocaliser localiser,
-    ILogger<DirectMapLinkTransitionService> logger
+    ILogger<DirectMapLinkTransitionService> logger,
+    MissionRegistry? missions = null
 )
 {
     private const uint SelectorSuccess = 0;
@@ -767,8 +768,8 @@ public sealed class DirectMapLinkTransitionService(
         session.IsMapTransitionPending = notifyChangeMap != null;
         session.PendingAreaMapSelection = null;
         // Charadoll control is re-established after Flag=2 map load via EventGetTpsMode.
+        missions?.RemoveMember(session);
         session.IsTpsMode = false;
-        session.LockedTargetId = 0;
 
         state.RegisterClient(ServerType.Area, session);
 

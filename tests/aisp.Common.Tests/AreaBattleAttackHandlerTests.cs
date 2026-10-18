@@ -25,18 +25,10 @@ public sealed class AreaBattleAttackHandlerTests
     [Fact]
     public async Task AttackStart_AcksAndSendsBattleReportToShooter()
     {
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
-        var state = new SharedState();
-        var session = new CapturingPlayerSession
-        {
-            CharacterId = 42_4242,
-            LockedTargetId = TpsPrototypeConstants.MobObjectId,
-        };
-        state.RegisterClient(ServerType.Area, session);
-
+        var (missions, mission, session) = CreateMission(42_4242, locked: true);
         var handler = new AreaBattleAttackStartHandler(
             NullLogger<AreaBattleAttackStartHandler>.Instance,
-            state
+            missions
         );
         await handler.HandleAsync(
             ReadOnlyMemory<byte>.Empty,
@@ -68,18 +60,10 @@ public sealed class AreaBattleAttackHandlerTests
     [Fact]
     public async Task AttackExec_AppliesShotAndAcks()
     {
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
-        var state = new SharedState();
-        var session = new CapturingPlayerSession
-        {
-            CharacterId = 42_4243,
-            LockedTargetId = TpsPrototypeConstants.MobObjectId,
-        };
-        state.RegisterClient(ServerType.Area, session);
-
+        var (missions, _, session) = CreateMission(42_4243, locked: true);
         var handler = new AreaBattleAttackExecHandler(
             NullLogger<AreaBattleAttackExecHandler>.Instance,
-            state
+            missions
         );
         await handler.HandleAsync(
             ReadOnlyMemory<byte>.Empty,
@@ -105,9 +89,10 @@ public sealed class AreaBattleAttackHandlerTests
     [Fact]
     public async Task AttackBlaze_AcksZeroAndStoresAim()
     {
-        var session = new CapturingPlayerSession { CharacterId = 42_4253 };
+        var (missions, mission, session) = CreateMission(42_4253, locked: false);
         var handler = new AreaBattleAttackBlazeHandler(
-            NullLogger<AreaBattleAttackBlazeHandler>.Instance
+            NullLogger<AreaBattleAttackBlazeHandler>.Instance,
+            missions
         );
         await handler.HandleAsync(
             WriteVec3s(MobSpawn, PlayerSpawn),
@@ -118,8 +103,9 @@ public sealed class AreaBattleAttackHandlerTests
         Assert.Single(session.Sent);
         Assert.Equal(PacketType.BattleAttackBlazeResponse, session.Sent[0].Type);
         Assert.Equal(0u, new PacketReader(session.Sent[0].Payload).ReadUInt());
-        Assert.Equal(MobSpawn, TpsCombatTestState.GetPendingAim(session.CharacterId).TargetPos);
-        Assert.Equal(PlayerSpawn, TpsCombatTestState.GetPendingAim(session.CharacterId).NowPos);
+        var aim = mission.FindMember(session.CharacterId)!.Aim;
+        Assert.Equal(MobSpawn, aim.TargetPos);
+        Assert.Equal(PlayerSpawn, aim.NowPos);
     }
 
     [Fact]
@@ -143,13 +129,10 @@ public sealed class AreaBattleAttackHandlerTests
     [Fact]
     public async Task DashExec_AcksAndSendsDashBeginReport()
     {
-        var state = new SharedState();
-        var session = new CapturingPlayerSession { CharacterId = 42_4245 };
-        state.RegisterClient(ServerType.Area, session);
-
+        var (missions, mission, session) = CreateMission(42_4245, locked: false);
         var handler = new AreaBattleDashExecHandler(
             NullLogger<AreaBattleDashExecHandler>.Instance,
-            state
+            missions
         );
         await handler.HandleAsync(
             ReadOnlyMemory<byte>.Empty,
@@ -167,23 +150,23 @@ public sealed class AreaBattleAttackHandlerTests
         Assert.Equal(TpsPrototypeConstants.BattleReportDashAction, reader.ReadUInt());
         Assert.Equal((byte)0, reader.ReadByte());
         Assert.Equal(TpsPrototypeConstants.BattleReportDashSkillId, reader.ReadUInt());
+        await mission.TickAsync(NullLogger.Instance, TestContext.Current.CancellationToken);
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateStamina);
-        Assert.True(session.IsSprinting);
-        session.IsSprinting = false;
-        session.Stamina = TpsPrototypeConstants.StaminaMax;
+        var member = mission.FindMember(session.CharacterId)!;
+        Assert.True(member.IsSprinting);
+        member.IsSprinting = false;
+        member.Stamina = TpsPrototypeConstants.StaminaMax;
     }
 
     [Fact]
     public async Task DashExec_RejectsWhenStaminaIsNotFull()
     {
-        var state = new SharedState();
-        var session = new CapturingPlayerSession { CharacterId = 42_4246 };
-        state.RegisterClient(ServerType.Area, session);
-        session.Stamina = 50f;
+        var (missions, mission, session) = CreateMission(42_4246, locked: false);
+        mission.FindMember(session.CharacterId)!.Stamina = 50f;
 
         var handler = new AreaBattleDashExecHandler(
             NullLogger<AreaBattleDashExecHandler>.Instance,
-            state
+            missions
         );
         await handler.HandleAsync(
             ReadOnlyMemory<byte>.Empty,
@@ -208,17 +191,10 @@ public sealed class AreaBattleAttackHandlerTests
     [Fact]
     public async Task DashFinish_AcksAndSendsDashEndReport()
     {
-        var state = new SharedState();
-        var session = new CapturingPlayerSession
-        {
-            CharacterId = 42_4244,
-            LockedTargetId = TpsPrototypeConstants.MobObjectId,
-        };
-        state.RegisterClient(ServerType.Area, session);
-
+        var (missions, _, session) = CreateMission(42_4244, locked: true);
         var handler = new AreaBattleDashFinishHandler(
             NullLogger<AreaBattleDashFinishHandler>.Instance,
-            state
+            missions
         );
         await handler.HandleAsync(
             ReadOnlyMemory<byte>.Empty,
@@ -243,9 +219,8 @@ public sealed class AreaBattleAttackHandlerTests
     [Fact]
     public async Task AttackExec_FreeAimHit_DealsDamage()
     {
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
-        var hpBefore = TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId);
-        var (_, session, start, exec) = CreateBattleHandlers(42_4250, locked: false);
+        var (_, mission, session, start, exec) = CreateBattleHandlers(42_4250, locked: false);
+        var hpBefore = mission.Mobs[0].HitPoints;
 
         await start.HandleAsync(
             WriteVec3s(MobSpawn, PlayerSpawn),
@@ -270,10 +245,7 @@ public sealed class AreaBattleAttackHandlerTests
             }
         );
         Assert.Equal(session.CharacterId, new PacketReader(shot.Payload).ReadUInt());
-        Assert.Equal(
-            hpBefore - TpsPrototypeConstants.AttackDamage,
-            TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId)
-        );
+        Assert.Equal(hpBefore - TpsPrototypeConstants.AttackDamage, mission.Mobs[0].HitPoints);
         var heart = Assert.Single(
             session.Sent,
             packet => packet.Type == PacketType.NotifyUpdateHeart
@@ -294,9 +266,8 @@ public sealed class AreaBattleAttackHandlerTests
     [Fact]
     public async Task AttackExec_FreeAimMiss_ConsumesTankWithoutHp()
     {
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
-        var hpBefore = TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId);
-        var (_, session, start, exec) = CreateBattleHandlers(42_4251, locked: false);
+        var (_, mission, session, start, exec) = CreateBattleHandlers(42_4251, locked: false);
+        var hpBefore = mission.Mobs[0].HitPoints;
         var aimedHigh = MobSpawn with { Y = MobSpawn.Y + 500f };
 
         await start.HandleAsync(
@@ -315,15 +286,14 @@ public sealed class AreaBattleAttackHandlerTests
             packet => packet.Type == PacketType.NotifyUpdateHitpoint
         );
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateTank);
-        Assert.Equal(hpBefore, TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId));
+        Assert.Equal(hpBefore, mission.Mobs[0].HitPoints);
     }
 
     [Fact]
     public async Task AttackExec_LockHitsEvenIfAimMissesCylinder()
     {
-        TpsCombatTestState.ResetMonster(TpsPrototypeConstants.MobObjectId);
-        var hpBefore = TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId);
-        var (_, session, start, exec) = CreateBattleHandlers(42_4252, locked: true);
+        var (_, mission, session, start, exec) = CreateBattleHandlers(42_4252, locked: true);
+        var hpBefore = mission.Mobs[0].HitPoints;
         var aimedHigh = MobSpawn with { Y = MobSpawn.Y + 500f };
 
         await start.HandleAsync(
@@ -338,24 +308,17 @@ public sealed class AreaBattleAttackHandlerTests
         );
 
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyUpdateHitpoint);
-        Assert.Equal(
-            hpBefore - TpsPrototypeConstants.AttackDamage,
-            TpsCombatTestState.GetHp(TpsPrototypeConstants.MobObjectId)
-        );
+        Assert.Equal(hpBefore - TpsPrototypeConstants.AttackDamage, mission.Mobs[0].HitPoints);
     }
 
     [Fact]
     public async Task AttackExec_LastOwnedMob_OpensSuccessResults()
     {
         const uint mobId = 2000399;
-        var (_, session, start, exec) = CreateBattleHandlers(42_4399, locked: true);
-        session.LockedTargetId = mobId;
-        TpsCombatTestState.ResetPlayer(session.CharacterId);
-        TpsCombatTestState.ResetMonster(
-            mobId,
-            TpsPrototypeConstants.AttackDamage,
-            session.CharacterId
-        );
+        var (_, mission, session, start, exec) = CreateBattleHandlers(42_4399, locked: true);
+        mission.ClearMobs();
+        var mob = mission.AddMob(mobId, TpsPrototypeConstants.AttackDamage, MobSpawn);
+        mission.FindMember(session.CharacterId)!.LockedTargetId = mobId;
 
         await start.HandleAsync(
             ReadOnlyMemory<byte>.Empty,
@@ -368,8 +331,8 @@ public sealed class AreaBattleAttackHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(0, TpsCombatTestState.GetHp(mobId));
-        Assert.True(TpsCombatTestState.AllOwnedMobsDefeated(session.CharacterId));
+        Assert.Equal(0, mob.HitPoints);
+        Assert.All(mission.Mobs, candidate => Assert.True(candidate.HitPoints <= 0));
         var result = Assert.Single(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionResultOpen
@@ -402,30 +365,47 @@ public sealed class AreaBattleAttackHandlerTests
     }
 
     private static (
-        SharedState State,
+        MissionRegistry Missions,
+        MissionInstance Mission,
+        CapturingPlayerSession Session
+    ) CreateMission(uint characterId, bool locked)
+    {
+        var missions = new MissionRegistry();
+        var session = new CapturingPlayerSession
+        {
+            CharacterId = characterId,
+            X = PlayerSpawn.X,
+            Y = PlayerSpawn.Y,
+            Z = PlayerSpawn.Z,
+        };
+        var mission = missions.Create(session);
+        mission.AddPrototypeMob();
+        if (locked)
+            mission.FindMember(characterId)!.LockedTargetId = TpsPrototypeConstants.MobObjectId;
+        return (missions, mission, session);
+    }
+
+    private static (
+        MissionRegistry Missions,
+        MissionInstance Mission,
         CapturingPlayerSession Session,
         AreaBattleAttackStartHandler Start,
         AreaBattleAttackExecHandler Exec
     ) CreateBattleHandlers(uint characterId, bool locked)
     {
-        var state = new SharedState();
-        var session = new CapturingPlayerSession
-        {
-            CharacterId = characterId,
-            LockedTargetId = locked ? TpsPrototypeConstants.MobObjectId : 0,
-            X = PlayerSpawn.X,
-            Y = PlayerSpawn.Y,
-            Z = PlayerSpawn.Z,
-        };
-        state.RegisterClient(ServerType.Area, session);
+        var (missions, mission, session) = CreateMission(characterId, locked);
         return (
-            state,
+            missions,
+            mission,
             session,
             new AreaBattleAttackStartHandler(
                 NullLogger<AreaBattleAttackStartHandler>.Instance,
-                state
+                missions
             ),
-            new AreaBattleAttackExecHandler(NullLogger<AreaBattleAttackExecHandler>.Instance, state)
+            new AreaBattleAttackExecHandler(
+                NullLogger<AreaBattleAttackExecHandler>.Instance,
+                missions
+            )
         );
     }
 

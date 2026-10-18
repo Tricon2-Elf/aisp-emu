@@ -60,8 +60,11 @@ public static class TpsPrototypeConstants
 
     public const float MobWanderStepMin = 90f;
     public const float MobWanderStepMax = 180f;
-    public const float MobWanderWalkSpeed = 80f;
-    public const float MobWanderRunSpeed = 160f;
+
+    /// <summary>Units per second. The client has no timestamp on a move sample, so the mission loop advances the mob at this speed and only sends the distance traveled.</summary>
+    public const float MobWanderWalkSpeed = 20f;
+
+    public const float MobWanderRunSpeed = 40f;
     public const int MobWanderPauseMinMs = 800;
     public const int MobWanderPauseMaxMs = 2500;
 

@@ -39,8 +39,7 @@ public class PlayerSession : IPlayerSession
     public bool NeedsPostLoadSelfAvatarNotify { get; set; }
     public bool NeedsMotd { get; set; }
     public bool IsTpsMode { get; set; }
-    public float Stamina { get; set; } = 100f;
-    public bool IsSprinting { get; set; }
+    public Guid? ActiveMissionId { get; set; }
     public PendingAreaMapSelection? PendingAreaMapSelection { get; set; }
     public int? ActiveShopId { get; set; }
     public bool PendingEventEndAfterFade { get; set; }
@@ -51,7 +50,6 @@ public class PlayerSession : IPlayerSession
     public ServerScriptState? ServerScriptState { get; set; }
     public ISet<uint> AccompanyingRoboIds { get; } = new HashSet<uint>();
     public ISet<uint> VisibleRemoteRoboObjectIds { get; } = new HashSet<uint>();
-    public uint LockedTargetId { get; set; }
     public bool IsAuthenticated => User != null;
 
     public Task SendAsync(PacketType type, byte[] payload, CancellationToken ct = default) =>

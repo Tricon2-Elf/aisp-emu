@@ -12,7 +12,8 @@ public class AreaMapDataEnterEndHandler(
     ILogger<AreaMapDataEnterEndHandler> logger,
     ServerScriptDispatcher? serverScriptDispatcher = null,
     SharedState? state = null,
-    IRoboRepository? roboRepository = null
+    IRoboRepository? roboRepository = null,
+    MissionRegistry? missions = null
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.MapDataEnterEndRequest;
@@ -127,9 +128,15 @@ public class AreaMapDataEnterEndHandler(
             session.CharacterId
         );
 
-        if (roboRepository is not null)
+        if (roboRepository is not null && missions is not null)
         {
-            await TpsCombatEnter.TryEnterAsCharadollAsync(session, roboRepository, logger, ct);
+            await TpsCombatEnter.TryEnterAsCharadollAsync(
+                session,
+                roboRepository,
+                logger,
+                missions,
+                ct
+            );
         }
         else
         {

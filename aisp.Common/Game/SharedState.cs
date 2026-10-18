@@ -23,7 +23,10 @@ public class SharedState
     > _roboLastMovement = new();
 
     private readonly ConcurrentDictionary<Guid, int> _circleChatSessions = new();
-    private readonly ConcurrentDictionary<(Guid ConnectionId, int CircleId, long JoinedAtTicks), byte> _circleChatHistoryReplays = new();
+    private readonly ConcurrentDictionary<
+        (Guid ConnectionId, int CircleId, long JoinedAtTicks),
+        byte
+    > _circleChatHistoryReplays = new();
     private readonly ConcurrentDictionary<int, ActivePlacardComment> _activePlacardComments = new();
     private readonly object _friendLinkPlacardLock = new();
     private readonly Dictionary<uint, ActiveFriendLinkPlacard> _friendLinkPlacardsById = [];
@@ -40,6 +43,9 @@ public class SharedState
     public IReadOnlyCollection<IPlayerSession> AreaClients => GetServerClients(ServerType.Area);
 
     public readonly long StartTimeUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+    /// <summary>Set from startup so a dropped area connection leaves its mission.</summary>
+    public MissionRegistry? Missions { get; set; }
 
     public SharedState()
         : this(new SessionStore(), new SessionClientRegistry(), new PendingTransitionStore()) { }
@@ -130,6 +136,11 @@ public class SharedState
                 placardViewers = GetAreaPeers(areaSession);
                 TryRemoveFriendLinkPlacard(areaSession.CharacterId, out removedPlacard);
             }
+
+            if (areaSession is not null)
+                Missions?.RemoveMember(areaSession);
+            else
+                Missions?.RemoveByConnection(clientId);
         }
 
         _circleChatSessions.TryRemove(clientId, out _);

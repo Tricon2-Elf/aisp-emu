@@ -112,6 +112,7 @@ internal class Program
         builder.Services.AddSingleton<ITextLocaliser, TextLocaliser>();
         builder.Services.AddSingleton<IWordFilter, WordFilter>();
         builder.Services.AddSingleton<IItemBaseListCache, ItemBaseListCache>();
+        builder.Services.AddSingleton<MissionRegistry>();
         builder.Services.AddSingleton<SharedState>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<ServerOptions>>().Value;
@@ -119,18 +120,17 @@ internal class Program
             var sessionClientRegistry = new SessionClientRegistry();
             var pendingTransitionStore = new PendingTransitionStore();
 
-            if (options.UseDistributedSessionPresence)
-            {
-                return new SharedState(
+            SharedState state = options.UseDistributedSessionPresence
+                ? new SharedState(
                     sessionStore,
                     sessionClientRegistry,
                     pendingTransitionStore,
                     sp.GetRequiredService<ISessionPresenceRepository>(),
                     sp.GetRequiredService<IPendingMapTransferRepository>()
-                );
-            }
-
-            return new SharedState(sessionStore, sessionClientRegistry, pendingTransitionStore);
+                )
+                : new SharedState(sessionStore, sessionClientRegistry, pendingTransitionStore);
+            state.Missions = sp.GetRequiredService<MissionRegistry>();
+            return state;
         });
         // Add all IPacketHandler classsess
         builder.Services.Scan(scan =>

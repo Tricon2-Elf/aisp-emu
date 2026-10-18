@@ -8,7 +8,8 @@ namespace aisp.Common.Handlers.Area;
 
 public class AreaEventGetTpsModeRequestHandler(
     ILogger<AreaEventGetTpsModeRequestHandler> logger,
-    IRoboRepository roboRepository
+    IRoboRepository roboRepository,
+    MissionRegistry missions
 ) : IPacketHandler, IRequiresAuthenticatedSession
 {
     public PacketType RequestType => PacketType.EventGetTpsModeRequest;
@@ -47,6 +48,12 @@ public class AreaEventGetTpsModeRequestHandler(
             return;
         }
 
-        await TpsCombatEnter.TryEnterAsCharadollAsync(session, roboRepository, logger, ct);
+        await TpsCombatEnter.TryEnterAsCharadollAsync(
+            session,
+            roboRepository,
+            logger,
+            missions,
+            ct
+        );
     }
 }

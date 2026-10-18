@@ -18,42 +18,15 @@ public static class TpsMissionGameOver
     public const string FailMessage = "ミッション失敗！！";
     public const string SuccessMessage = "ミッション成功！！";
 
-    public static async Task SendAsync(IPlayerSession session, ILogger logger, CancellationToken ct)
-    {
-        if (!TpsCombatTestState.TryFinishMission(session.CharacterId))
-            return;
-
-        logger.LogInformation("TPS game over for character {CharacterId}", session.CharacterId);
-
-        foreach (var mobObjId in TpsCombatTestState.DeactivateMobsFor(session.CharacterId))
-        {
-            await session.SendAsync(
-                PacketType.NotifyDisappearChara,
-                new NotifyDisappearChara(mobObjId).ToBytes(),
-                ct
-            );
-        }
-
-        await session.SendAsync(
-            PacketType.NotifyEmotionChara,
-            new NotifyEmotionChara(session.CharacterId, 3).ToBytes(),
-            ct
-        );
-        await SendResultUiAsync(session, FailMessage, FailResultCode, cleared: false, ct);
-    }
-
-    public static async Task SendSuccessAsync(
-        IPlayerSession session,
+    public static Task FailAsync(
+        MissionInstance mission,
         ILogger logger,
+        uint emotionCharacterId,
         CancellationToken ct
-    )
-    {
-        if (!TpsCombatTestState.TryFinishMission(session.CharacterId))
-            return;
+    ) => FinishAsync(mission, logger, emotionCharacterId, cleared: false, ct);
 
-        logger.LogInformation("TPS mission clear for character {CharacterId}", session.CharacterId);
-        await SendResultUiAsync(session, SuccessMessage, SuccessResultCode, cleared: true, ct);
-    }
+    public static Task ClearAsync(MissionInstance mission, ILogger logger, CancellationToken ct) =>
+        FinishAsync(mission, logger, emotionCharacterId: 0, cleared: true, ct);
 
     public static MissionResultGrade GradeFor(bool cleared, TpsMissionStats stats)
     {
@@ -75,39 +48,69 @@ public static class TpsMissionGameOver
         return MissionResultGrade.C;
     }
 
-    private static async Task SendResultUiAsync(
-        IPlayerSession session,
-        string message,
-        uint resultCode,
+    private static async Task FinishAsync(
+        MissionInstance mission,
+        ILogger logger,
+        uint emotionCharacterId,
         bool cleared,
         CancellationToken ct
     )
     {
-        var stats = TpsCombatTestState.GetMissionStats(session.CharacterId);
-        var grade = GradeFor(cleared, stats);
+        if (!mission.TryMarkFinished())
+            return;
 
-        await session.SendAsync(
-            PacketType.NotifyMissionAction,
-            new NotifyMissionAction(MissionActionEnd).ToBytes(),
-            ct
+        logger.LogInformation(
+            cleared ? "TPS mission {MissionId} cleared" : "TPS mission {MissionId} failed",
+            mission.Id
         );
-        await session.SendAsync(
-            PacketType.NotifyMissionSituationMessage,
-            new NotifyMissionSituationMessage(message).ToBytes(),
-            ct
-        );
-        await session.SendAsync(
-            PacketType.NotifyMissionResultOpen,
-            new NotifyMissionResultOpen(
-                resultCode,
-                (uint)grade,
-                session.Character?.Name ?? "Player",
-                stats.Downs,
-                stats.Kills,
-                stats.HitRatePercent,
-                stats.ClearTimeSeconds
-            ).ToBytes(),
-            ct
-        );
+
+        var now = Environment.TickCount64;
+        foreach (var member in mission.Members)
+        {
+            if (!cleared)
+            {
+                foreach (var mob in mission.Mobs)
+                {
+                    mob.HitPoints = 0;
+                    await member.Session.SendAsync(
+                        PacketType.NotifyDisappearChara,
+                        new NotifyDisappearChara(mob.ObjectId).ToBytes(),
+                        ct
+                    );
+                }
+
+                await member.Session.SendAsync(
+                    PacketType.NotifyEmotionChara,
+                    new NotifyEmotionChara(emotionCharacterId, 3).ToBytes(),
+                    ct
+                );
+            }
+
+            var stats = member.Stats(now);
+            var grade = GradeFor(cleared, stats);
+            await member.Session.SendAsync(
+                PacketType.NotifyMissionAction,
+                new NotifyMissionAction(MissionActionEnd).ToBytes(),
+                ct
+            );
+            await member.Session.SendAsync(
+                PacketType.NotifyMissionSituationMessage,
+                new NotifyMissionSituationMessage(cleared ? SuccessMessage : FailMessage).ToBytes(),
+                ct
+            );
+            await member.Session.SendAsync(
+                PacketType.NotifyMissionResultOpen,
+                new NotifyMissionResultOpen(
+                    cleared ? SuccessResultCode : FailResultCode,
+                    (uint)grade,
+                    member.Session.Character?.Name ?? "Player",
+                    stats.Downs,
+                    stats.Kills,
+                    stats.HitRatePercent,
+                    stats.ClearTimeSeconds
+                ).ToBytes(),
+                ct
+            );
+        }
     }
 }

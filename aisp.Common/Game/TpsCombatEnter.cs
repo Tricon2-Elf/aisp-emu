@@ -17,11 +17,14 @@ public static class TpsCombatEnter
         IPlayerSession session,
         IRoboRepository roboRepository,
         ILogger logger,
+        MissionRegistry missions,
         CancellationToken ct = default
     )
     {
-        if (session.IsTpsMode)
+        if (missions.TryGet(session) is not null)
             return true;
+
+        missions.Create(session);
 
         uint playerObjId = session.CharacterId;
         var myRobo = await roboRepository.GetAsync(checked((int)playerObjId), 1u, ct);
@@ -34,9 +37,7 @@ public static class TpsCombatEnter
             return false;
         }
 
-        session.IsTpsMode = true;
         session.NeedsPostLoadSelfAvatarNotify = false;
-        TpsCombatTestState.ResetPlayer(playerObjId);
 
         var myPos = new MovementData(
             session.X,
@@ -175,7 +176,11 @@ public static class TpsCombatEnter
                     );
 
                     await Task.Delay(500, ct);
-                    await SpawnPrototypeMobAsync(session, logger, ct);
+                    if (missions.TryGet(session) is not { } live)
+                        return;
+
+                    await SpawnPrototypeMobAsync(live, logger, ct);
+                    live.StartLoop(logger);
 
                     await session.SendAsync(
                         PacketType.NotifyMissionAction,
@@ -192,8 +197,6 @@ public static class TpsCombatEnter
                             .ToBytes(),
                         ct
                     );
-
-                    await WanderPrototypeMobAsync(session, logger, ct);
                 }
                 catch (OperationCanceledException)
                 {
@@ -292,12 +295,14 @@ public static class TpsCombatEnter
     }
 
     private static async Task SpawnPrototypeMobAsync(
-        IPlayerSession session,
+        MissionInstance mission,
         ILogger logger,
         CancellationToken ct
     )
     {
-        uint mobObjId = TpsPrototypeConstants.MobObjectId;
+        var mob = mission.AddPrototypeMob();
+        uint mobObjId = mob.ObjectId;
+        var session = mission.Members[0].Session;
         var mobSpawnPos = new MovementData(
             TpsPrototypeConstants.MobSpawnX,
             TpsPrototypeConstants.MobSpawnY,
@@ -349,29 +354,38 @@ public static class TpsCombatEnter
         for (var i = 0; i < CharaData.EquipmentSlotCount; i++)
             mobChara.Equips.Add(new ItemSlotInfo(0, 0));
 
-        TpsCombatTestState.ResetMonster(mobObjId, ownerCharacterId: session.CharacterId);
-
         // NpcNotifyData instantiates the collidable CChara. InitChara127 then
         // deletes that slot and recreates it as controller type 128.
-        await session.SendAsync(
-            PacketType.NpcNotifyData,
-            new NpcNotifyData(0, mobObjId, mobChara).ToBytes(),
-            ct
-        );
-
-        // First MonsterData dword is not the slot id (that is Chara.SlotId).
-        // uint at +628 is m_Type; default 1 selects the enemy controller path.
         var monsterData = new MonsterData(0, mobChara);
-        await session.SendAsync(
-            PacketType.NotifyMonsterData,
-            new NotifyMonsterData(monsterData).ToBytes(),
-            ct
-        );
-        await session.SendAsync(
-            PacketType.NotifyShowChara,
-            new NotifyShowChara(mobObjId, mobSpawnPos).ToBytes(),
-            ct
-        );
+        foreach (var member in mission.Members)
+        {
+            await member.Session.SendAsync(
+                PacketType.NpcNotifyData,
+                new NpcNotifyData(0, mobObjId, mobChara).ToBytes(),
+                ct
+            );
+            // First MonsterData dword is not the slot id (that is Chara.SlotId).
+            // uint at +628 is m_Type; default 1 selects the enemy controller path.
+            await member.Session.SendAsync(
+                PacketType.NotifyMonsterData,
+                new NotifyMonsterData(monsterData).ToBytes(),
+                ct
+            );
+            await member.Session.SendAsync(
+                PacketType.NotifyShowChara,
+                new NotifyShowChara(mobObjId, mobSpawnPos).ToBytes(),
+                ct
+            );
+            await member.Session.SendAsync(
+                PacketType.NotifyUpdateMoveSpeed,
+                new NotifyUpdateMoveSpeed(
+                    mobObjId,
+                    TpsPrototypeConstants.MobWanderWalkSpeed,
+                    TpsPrototypeConstants.MobWanderRunSpeed
+                ).ToBytes(),
+                ct
+            );
+        }
 
         logger.LogInformation(
             "TPS mob {MobObjId} spawned at ({X}, {Y}, {Z})",
@@ -380,138 +394,6 @@ public static class TpsCombatEnter
             TpsPrototypeConstants.MobSpawnY,
             TpsPrototypeConstants.MobSpawnZ
         );
-    }
-
-    /// <summary>
-    /// Walk the prototype mob around spawn so free-aim can be tested off the
-    /// initial standing point. Stops on map leave, cancel, or death.
-    /// </summary>
-    private static async Task WanderPrototypeMobAsync(
-        IPlayerSession session,
-        ILogger logger,
-        CancellationToken ct
-    )
-    {
-        var mobObjId = TpsPrototypeConstants.MobObjectId;
-        var rng = Random.Shared;
-
-        while (!ct.IsCancellationRequested && session.IsTpsMode)
-        {
-            if (
-                TpsCombatTestState.GetHp(mobObjId) <= 0
-                || TpsCombatTestState.GetPlayerHp(session.CharacterId) <= 0
-            )
-                break;
-
-            var current = TpsCombatTestState.GetMobPosition(mobObjId);
-            var player = new Vector3(session.X, session.Y, session.Z);
-            if (
-                TpsCombatTestState.GetPlayerHp(session.CharacterId) > 0
-                && TpsMobCombat.IsPlayerInAttackRange(current, player)
-            )
-            {
-                await TpsMobCombat.FireAtPlayerAsync(session, logger, ct);
-                continue;
-            }
-
-            var dest = NextWanderPoint(rng, current);
-            var dx = dest.X - current.X;
-            var dz = dest.Z - current.Z;
-            if (dx * dx + dz * dz < 1f)
-                dest = current;
-
-            var yaw = TpsMobCombat.YawToward(dx, dz);
-            var gait = rng.Next(2) == 0 ? MovementType.Walking : MovementType.Running;
-            var dist = MathF.Sqrt(dx * dx + dz * dz);
-            var speed =
-                gait == MovementType.Running
-                    ? TpsPrototypeConstants.MobWanderRunSpeed
-                    : TpsPrototypeConstants.MobWanderWalkSpeed;
-            var durationMs = (int)
-                Math.Clamp(
-                    dist / Math.Max(speed, 1f) * 1000f,
-                    TpsPrototypeConstants.MobWanderPauseMinMs,
-                    TpsPrototypeConstants.MobWanderPauseMaxMs
-                );
-
-            TpsCombatTestState.SetMobMove(mobObjId, current, dest, durationMs);
-
-            await session.SendAsync(
-                PacketType.AvatarNotifyMove,
-                new AvatarNotifyMove(
-                    mobObjId,
-                    [
-                        new MovementData(current.X, current.Y, current.Z, yaw, gait),
-                        new MovementData(dest.X, dest.Y, dest.Z, yaw, gait),
-                    ]
-                ).ToBytes(),
-                ct
-            );
-
-            await Task.Delay(durationMs, ct);
-
-            if (
-                !session.IsTpsMode
-                || TpsCombatTestState.GetHp(mobObjId) <= 0
-                || TpsCombatTestState.GetPlayerHp(session.CharacterId) <= 0
-            )
-                break;
-
-            TpsCombatTestState.SetMobPosition(mobObjId, dest);
-            await session.SendAsync(
-                PacketType.AvatarNotifyMove,
-                new AvatarNotifyMove(
-                    mobObjId,
-                    [new MovementData(dest.X, dest.Y, dest.Z, yaw, MovementType.Stopped)]
-                ).ToBytes(),
-                ct
-            );
-            await session.SendAsync(
-                PacketType.NotifyShowChara,
-                new NotifyShowChara(
-                    mobObjId,
-                    new MovementData(dest.X, dest.Y, dest.Z, yaw, MovementType.Stopped)
-                ).ToBytes(),
-                ct
-            );
-            await Task.Delay(rng.Next(400, 1201), ct);
-        }
-
-        logger.LogDebug("TPS mob {MobObjId} wander stopped", mobObjId);
-    }
-
-    private static Vector3 NextWanderPoint(Random rng, Vector3 current)
-    {
-        var spawn = new Vector3(
-            TpsPrototypeConstants.MobSpawnX,
-            TpsPrototypeConstants.MobSpawnY,
-            TpsPrototypeConstants.MobSpawnZ
-        );
-        var radius = TpsPrototypeConstants.MobWanderRadius;
-        var radiusSq = radius * radius;
-
-        for (var i = 0; i < 8; i++)
-        {
-            var heading = rng.NextSingle() * MathF.Tau;
-            var step =
-                TpsPrototypeConstants.MobWanderStepMin
-                + rng.NextSingle()
-                    * (
-                        TpsPrototypeConstants.MobWanderStepMax
-                        - TpsPrototypeConstants.MobWanderStepMin
-                    );
-            var candidate = new Vector3(
-                current.X + MathF.Sin(heading) * step,
-                TpsPrototypeConstants.MobSpawnY,
-                current.Z + MathF.Cos(heading) * step
-            );
-            var ox = candidate.X - spawn.X;
-            var oz = candidate.Z - spawn.Z;
-            if (ox * ox + oz * oz <= radiusSq)
-                return candidate;
-        }
-
-        return spawn;
     }
 
     internal static ItemData BuildWaterGunItemBase() =>

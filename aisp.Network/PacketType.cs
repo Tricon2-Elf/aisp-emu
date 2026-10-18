@@ -4202,7 +4202,7 @@ public enum PacketType : ushort
         PacketServerType.Area,
         PacketDirection.ServerToClient,
         "recv_notify_update_move_speed",
-        ImplementationState.NotImplemented
+        ImplementationState.Implemented
     )]
     NotifyUpdateMoveSpeed = 0xB091,
 

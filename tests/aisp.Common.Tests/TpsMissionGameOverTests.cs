@@ -12,18 +12,27 @@ public sealed class TpsMissionGameOverTests
     public async Task SendAsync_OpensFailUi()
     {
         var session = new CapturingPlayerSession { CharacterId = 99, IsTpsMode = true };
-        TpsCombatTestState.ResetPlayer(session.CharacterId);
+        var mission = new MissionRegistry().Create(session);
         const uint wipeMobId = 2000099;
-        TpsCombatTestState.ResetMonster(wipeMobId, ownerCharacterId: session.CharacterId);
-        Assert.True(TpsCombatTestState.GetHp(wipeMobId) > 0);
+        var mob = mission.AddMob(
+            wipeMobId,
+            TpsPrototypeConstants.DefaultHitPoints,
+            new System.Numerics.Vector3(
+                TpsPrototypeConstants.MobSpawnX,
+                TpsPrototypeConstants.MobSpawnY,
+                TpsPrototypeConstants.MobSpawnZ
+            )
+        );
+        Assert.True(mob.HitPoints > 0);
 
-        await TpsMissionGameOver.SendAsync(
-            session,
+        await TpsMissionGameOver.FailAsync(
+            mission,
             NullLogger.Instance,
+            session.CharacterId,
             TestContext.Current.CancellationToken
         );
 
-        Assert.Equal(0, TpsCombatTestState.GetHp(wipeMobId));
+        Assert.Equal(0, mob.HitPoints);
         Assert.Contains(
             session.Sent,
             packet =>
@@ -60,16 +69,25 @@ public sealed class TpsMissionGameOverTests
     public async Task SendSuccessAsync_OpensClearUi()
     {
         var session = new CapturingPlayerSession { CharacterId = 199, IsTpsMode = true };
-        TpsCombatTestState.ResetPlayer(session.CharacterId);
+        var mission = new MissionRegistry().Create(session);
         const uint clearMobId = 2000299;
-        TpsCombatTestState.ResetMonster(clearMobId, ownerCharacterId: session.CharacterId);
-        TpsCombatTestState.RecordShot(session.CharacterId, hit: true);
-        TpsCombatTestState.DealDamage(clearMobId, TpsPrototypeConstants.DefaultHitPoints);
-        TpsCombatTestState.RecordKill(session.CharacterId);
-        Assert.True(TpsCombatTestState.AllOwnedMobsDefeated(session.CharacterId));
+        var mob = mission.AddMob(
+            clearMobId,
+            0,
+            new System.Numerics.Vector3(
+                TpsPrototypeConstants.MobSpawnX,
+                TpsPrototypeConstants.MobSpawnY,
+                TpsPrototypeConstants.MobSpawnZ
+            )
+        );
+        var member = mission.FindMember(session.CharacterId)!;
+        member.Shots = 1;
+        member.Hits = 1;
+        member.Kills = 1;
+        Assert.Equal(0, mob.HitPoints);
 
-        await TpsMissionGameOver.SendSuccessAsync(
-            session,
+        await TpsMissionGameOver.ClearAsync(
+            mission,
             NullLogger.Instance,
             TestContext.Current.CancellationToken
         );

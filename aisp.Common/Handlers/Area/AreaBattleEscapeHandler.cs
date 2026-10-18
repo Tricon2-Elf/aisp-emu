@@ -5,9 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Area;
 
-public class AreaBattleEscapeHandler(ILogger<AreaBattleEscapeHandler> logger)
-    : IPacketHandler,
-        IRequiresAuthenticatedSession
+public class AreaBattleEscapeHandler(
+    ILogger<AreaBattleEscapeHandler> logger,
+    MissionRegistry missions
+) : IPacketHandler, IRequiresAuthenticatedSession
 {
     // Unnamed client opcode used when leaving TPS mode via Escape.
     public PacketType RequestType => (PacketType)44845;
@@ -25,7 +26,7 @@ public class AreaBattleEscapeHandler(ILogger<AreaBattleEscapeHandler> logger)
             session.CharacterId
         );
 
-        if (session.IsTpsMode)
+        if (missions.TryGet(session) is not null)
         {
             await session.SendAsync(
                 PacketType.NotifyMissionOutmapChoiceOpen,
