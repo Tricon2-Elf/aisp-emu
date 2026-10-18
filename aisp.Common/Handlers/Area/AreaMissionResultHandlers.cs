@@ -22,6 +22,7 @@ public class AreaMissionResultCloseHandler(ILogger<AreaMissionResultCloseHandler
             "Mission result closed for character {CharacterId}",
             session.CharacterId
         );
+        session.IsTpsMode = false;
         return Task.CompletedTask;
     }
 }
@@ -34,16 +35,24 @@ public class AreaMissionOutmapChoiceOpenRHandler(
     public PacketType ResponseType => (PacketType)0;
     public ServerType ServerType => ServerType.Area;
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         ReadOnlyMemory<byte> payload,
         IPlayerSession session,
         CancellationToken ct = default
     )
     {
+        var result = 0u;
+        if (payload.Length >= 4)
+            result = new PacketReader(payload.Span).ReadUInt();
+
         logger.LogInformation(
-            "Mission out-map choice from character {CharacterId}",
+            "Mission out-map choice {Result} from character {CharacterId}",
+            result,
             session.CharacterId
         );
-        return Task.CompletedTask;
+
+        // 0 confirms leaving. That ends the mission as a fail while TPS mode is still active.
+        if (result == 0 && session.IsTpsMode)
+            await TpsMissionGameOver.SendAsync(session, logger, ct);
     }
 }

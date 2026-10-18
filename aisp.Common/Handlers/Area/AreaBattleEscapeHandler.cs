@@ -1,5 +1,6 @@
 using aisp.Common.Game;
 using aisp.Network;
+using aisp.Network.Packets.Area;
 using Microsoft.Extensions.Logging;
 
 namespace aisp.Common.Handlers.Area;
@@ -13,13 +14,24 @@ public class AreaBattleEscapeHandler(ILogger<AreaBattleEscapeHandler> logger)
     public PacketType ResponseType => (PacketType)0;
     public ServerType ServerType => ServerType.Area;
 
-    public Task HandleAsync(
+    public async Task HandleAsync(
         ReadOnlyMemory<byte> payload,
         IPlayerSession session,
         CancellationToken ct = default
     )
     {
-        logger.LogInformation("Character {Id} pressed Escape in TPS mode.", session.CharacterId);
-        return Task.CompletedTask;
+        logger.LogInformation(
+            "Character {Id} pressed Escape in TPS mode. Opening confirmation dialog.",
+            session.CharacterId
+        );
+
+        if (session.IsTpsMode)
+        {
+            await session.SendAsync(
+                PacketType.NotifyMissionOutmapChoiceOpen,
+                new NotifyMissionOutmapChoiceOpen().ToBytes(),
+                ct
+            );
+        }
     }
 }

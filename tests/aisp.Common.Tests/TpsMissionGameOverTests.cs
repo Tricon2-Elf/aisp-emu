@@ -35,7 +35,7 @@ public sealed class TpsMissionGameOverTests
             packet => packet.Type == PacketType.NotifyMissionSituationMessage
         );
         Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyMissionResultOpen);
-        Assert.Contains(
+        Assert.DoesNotContain(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionOutmapChoiceOpen
         );
@@ -79,7 +79,7 @@ public sealed class TpsMissionGameOverTests
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionSituationMessage
         );
-        Assert.Contains(
+        Assert.DoesNotContain(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionOutmapChoiceOpen
         );

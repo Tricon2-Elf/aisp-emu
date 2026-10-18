@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace aisp.Common.Game;
 
 /// <summary>
-/// Prototype mission end: situation banner, result window, then the out-map confirm.
+/// Prototype mission end: situation banner, then the result window.
+/// The leave-mission confirm is opened by Escape, not here, so a clear does not show it.
 /// Mission action 7 tears down the TPS combat HUD (decomp <c>sub_4DEAA0</c> case 7).
 /// Result dword 0 is fail, 1 is clear (<c>CTPSResultOpenCmd</c> / <c>sub_4F12A0</c>).
 /// </summary>
@@ -106,11 +107,6 @@ public static class TpsMissionGameOver
                 stats.HitRatePercent,
                 stats.ClearTimeSeconds
             ).ToBytes(),
-            ct
-        );
-        await session.SendAsync(
-            PacketType.NotifyMissionOutmapChoiceOpen,
-            new NotifyMissionOutmapChoiceOpen().ToBytes(),
             ct
         );
     }
