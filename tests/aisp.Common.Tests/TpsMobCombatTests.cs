@@ -47,6 +47,7 @@ public sealed class TpsMobCombatTests
         };
         var mission = new MissionRegistry().Create(session);
         var mob = mission.AddPrototypeMob();
+        mob.HasSentPath = true;
         await mission.TickAsync(
             Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
             TestContext.Current.CancellationToken

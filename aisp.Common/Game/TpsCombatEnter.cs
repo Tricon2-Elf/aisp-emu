@@ -376,15 +376,6 @@ public static class TpsCombatEnter
                 new NotifyShowChara(mobObjId, mobSpawnPos).ToBytes(),
                 ct
             );
-            await member.Session.SendAsync(
-                PacketType.NotifyUpdateMoveSpeed,
-                new NotifyUpdateMoveSpeed(
-                    mobObjId,
-                    TpsPrototypeConstants.MobWanderWalkSpeed,
-                    TpsPrototypeConstants.MobWanderRunSpeed
-                ).ToBytes(),
-                ct
-            );
         }
 
         logger.LogInformation(

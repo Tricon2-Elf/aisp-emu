@@ -7,6 +7,7 @@ public enum MovementType : byte
     Stopped = 0,
     Walking = 1,
     Running = 3,
+    SetTarget = 6,
 }
 
 /// <summary>Movement sample. <see cref="Rotation"/> is degrees; converted to wire half-degrees in <see cref="ToBytes"/>.</summary>

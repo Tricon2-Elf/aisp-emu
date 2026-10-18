@@ -50,6 +50,9 @@ public sealed class MissionMob
     public Vector3 AttackTargetPos { get; set; }
     public bool Disappeared { get; set; }
 
+    /// <summary>True after the client has been given a current position and a different destination.</summary>
+    public bool HasSentPath { get; set; }
+
     public Vector3 PositionAt(long now)
     {
         if (Move is not { } move || move.DurationMs <= 0)
@@ -588,18 +591,7 @@ public sealed class MissionInstance
                     TpsPrototypeConstants.MobWanderPauseMinMs,
                     TpsPrototypeConstants.MobWanderPauseMaxMs
                 );
-            Fanout(outbound, MobHold(mob, move.To, move.Yaw));
-            var shown = new MovementData(
-                move.To.X,
-                move.To.Y,
-                move.To.Z,
-                move.Yaw,
-                MovementType.Stopped
-            );
-            Fanout(
-                outbound,
-                (PacketType.NotifyShowChara, new NotifyShowChara(mob.ObjectId, shown).ToBytes())
-            );
+            // Do not send a stop here. A path with no separate destination is read as the origin.
         }
 
         var current = mob.PositionAt(now);
@@ -663,16 +655,25 @@ public sealed class MissionInstance
         if (mob.AttackPhase != MobAttackPhase.Idle)
             return;
 
+        if (mob.Move is not null || now < mob.PauseUntil)
+            return;
+
+        // The first move has to be a real current→new path. A stop, or one sample,
+        // is what makes the client put the mob at the origin.
+        if (!mob.HasSentPath)
+        {
+            BeginWander(outbound, mob, current, now);
+            return;
+        }
+
         if (target is not null && now >= mob.NextAttackTick)
         {
-            var yaw = TpsMobCombat.YawToward(target.X - current.X, target.Z - current.Z);
             mob.Position = current;
             mob.Move = null;
             mob.AttackPhase = MobAttackPhase.Windup;
             mob.PhaseUntil = now + TpsPrototypeConstants.MobAttackWindupMs;
             mob.AttackTargetId = target.CharacterId;
             mob.AttackTargetPos = target.Position;
-            Fanout(outbound, MobHold(mob, current, yaw));
             Fanout(
                 outbound,
                 BuildMobReport(mob, TpsPrototypeConstants.BattleReportAttackAction, target)
@@ -680,9 +681,14 @@ public sealed class MissionInstance
             return;
         }
 
-        if (mob.Move is not null || now < mob.PauseUntil)
-            return;
+        BeginWander(outbound, mob, current, now);
+    }
 
+    /// <summary>
+    /// Current position, then the destination. The client uses a missing first sample as the origin.
+    /// </summary>
+    private void BeginWander(List<Outbound> outbound, MissionMob mob, Vector3 current, long now)
+    {
         var dest = NextWanderPoint(current);
         var dx = dest.X - current.X;
         var dz = dest.Z - current.Z;
@@ -695,8 +701,9 @@ public sealed class MissionInstance
                 : TpsPrototypeConstants.MobWanderWalkSpeed;
         var durationMs = (int)Math.Clamp(dist / Math.Max(speed, 1f) * 1000f, 1d, 30_000d);
         mob.SetMove(current, dest, durationMs, now, walkYaw, gait);
-        // The client treats a move as a two-point path. A single sample, or a second
-        // sample only a few units away, leaves that destination at the origin.
+        mob.HasSentPath = true;
+        // Animation 6 stores the destination on the enemy controller. The walk
+        // samples are what the controller follows; without the target sample it follows the origin.
         Fanout(
             outbound,
             (
@@ -704,21 +711,12 @@ public sealed class MissionInstance
                 new AvatarNotifyMove(
                     mob.ObjectId,
                     [
+                        new MovementData(dest.X, dest.Y, dest.Z, walkYaw, MovementType.SetTarget),
                         new MovementData(current.X, current.Y, current.Z, walkYaw, gait),
                         new MovementData(dest.X, dest.Y, dest.Z, walkYaw, gait),
                     ]
                 ).ToBytes()
             )
-        );
-    }
-
-    /// <summary>Two copies of <paramref name="at"/>, so the path destination is that point.</summary>
-    private static (PacketType Type, byte[] Body) MobHold(MissionMob mob, Vector3 at, int yaw)
-    {
-        var here = new MovementData(at.X, at.Y, at.Z, yaw, MovementType.Stopped);
-        return (
-            PacketType.AvatarNotifyMove,
-            new AvatarNotifyMove(mob.ObjectId, [here, here]).ToBytes()
         );
     }
 
