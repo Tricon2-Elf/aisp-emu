@@ -4241,6 +4241,14 @@ public enum PacketType : ushort
     [PacketMetadata(
         PacketServerType.Area,
         PacketDirection.ServerToClient,
+        "recv_notify_update_stamina",
+        ImplementationState.Implemented
+    )]
+    NotifyUpdateStamina = 0x749C,
+
+    [PacketMetadata(
+        PacketServerType.Area,
+        PacketDirection.ServerToClient,
         "recv_notify_update_status_point",
         ImplementationState.NotImplemented
     )]
