@@ -28,6 +28,9 @@ public class AreaEventScriptPlayHandler(
         )
             return;
 
+        if (await TpsMissionGameOver.TryPresentClearAsync(session, ct))
+            return;
+
         var request = EventScriptPlayRequest.FromBytes(payload.Span);
         if (request.Result != 0)
         {

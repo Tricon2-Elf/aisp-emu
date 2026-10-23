@@ -28,7 +28,6 @@ public sealed class TpsMissionGameOverTests
         await TpsMissionGameOver.FailAsync(
             mission,
             NullLogger.Instance,
-            session.CharacterId,
             TestContext.Current.CancellationToken
         );
 
@@ -39,14 +38,25 @@ public sealed class TpsMissionGameOverTests
                 packet.Type == PacketType.NotifyDisappearChara
                 && new PacketReader(packet.Payload).ReadUInt() == wipeMobId
         );
-        Assert.Contains(
+        Assert.DoesNotContain(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionSituationMessage
         );
-        Assert.Contains(session.Sent, packet => packet.Type == PacketType.NotifyMissionResultOpen);
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyMissionResultOpen
+        );
         Assert.DoesNotContain(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionOutmapChoiceOpen
+        );
+        var script = Assert.Single(
+            session.Sent,
+            packet => packet.Type == PacketType.EventScriptPlayNotify
+        );
+        Assert.Equal(
+            new EventScriptPlayNotify(TpsMissionGameOver.LoseScriptLabel()).ToBytes(),
+            script.Payload
         );
         Assert.Contains(
             session.Sent,
@@ -54,6 +64,12 @@ public sealed class TpsMissionGameOverTests
                 packet.Type == PacketType.NotifyMissionAction
                 && new PacketReader(packet.Payload).ReadUInt()
                     == TpsMissionGameOver.MissionActionEnd
+        );
+        Assert.True(
+            await TpsMissionGameOver.TryPresentClearAsync(
+                session,
+                TestContext.Current.CancellationToken
+            )
         );
         var failResult = Assert.Single(
             session.Sent,
@@ -93,9 +109,27 @@ public sealed class TpsMissionGameOverTests
         );
 
         Assert.DoesNotContain(session.Sent, packet => packet.Type == PacketType.NotifyEmotionChara);
-        Assert.Contains(
+        Assert.DoesNotContain(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionSituationMessage
+        );
+        Assert.DoesNotContain(
+            session.Sent,
+            packet => packet.Type == PacketType.NotifyMissionResultOpen
+        );
+        var script = Assert.Single(
+            session.Sent,
+            packet => packet.Type == PacketType.EventScriptPlayNotify
+        );
+        Assert.Equal(
+            new EventScriptPlayNotify(TpsMissionGameOver.WinScriptLabel()).ToBytes(),
+            script.Payload
+        );
+        Assert.True(
+            await TpsMissionGameOver.TryPresentClearAsync(
+                session,
+                TestContext.Current.CancellationToken
+            )
         );
         Assert.DoesNotContain(
             session.Sent,

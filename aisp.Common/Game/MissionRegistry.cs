@@ -56,6 +56,7 @@ public sealed class MissionRegistry
         var mission = TryGet(session);
         session.ActiveMissionId = null;
         session.IsTpsMode = false;
+        TpsMissionGameOver.CancelPendingClear(session.ConnectionId);
         if (mission is null)
             return;
 

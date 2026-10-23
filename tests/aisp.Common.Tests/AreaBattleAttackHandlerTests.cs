@@ -333,6 +333,13 @@ public sealed class AreaBattleAttackHandlerTests
 
         Assert.Equal(0, mob.HitPoints);
         Assert.All(mission.Mobs, candidate => Assert.True(candidate.HitPoints <= 0));
+        Assert.Contains(session.Sent, packet => packet.Type == PacketType.EventScriptPlayNotify);
+        Assert.True(
+            await TpsMissionGameOver.TryPresentClearAsync(
+                session,
+                TestContext.Current.CancellationToken
+            )
+        );
         var result = Assert.Single(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionResultOpen
@@ -341,7 +348,7 @@ public sealed class AreaBattleAttackHandlerTests
             TpsMissionGameOver.SuccessResultCode,
             new PacketReader(result.Payload).ReadUInt()
         );
-        Assert.Contains(
+        Assert.DoesNotContain(
             session.Sent,
             packet => packet.Type == PacketType.NotifyMissionSituationMessage
         );

@@ -56,7 +56,7 @@ public class AreaMissionOutmapChoiceOpenRHandler(
         // 0 confirms leaving. That ends the mission as a fail.
         if (result == 0 && missions.TryGet(session) is { } mission)
         {
-            await TpsMissionGameOver.FailAsync(mission, logger, session.CharacterId, ct);
+            await TpsMissionGameOver.FailAsync(mission, logger, ct);
             missions.RemoveMember(session);
         }
     }

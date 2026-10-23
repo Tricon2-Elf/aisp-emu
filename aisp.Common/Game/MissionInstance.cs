@@ -497,8 +497,8 @@ public sealed class MissionInstance
         }
 
         await SendAllAsync(outbound, ct);
-        if (failCharacterId is uint fallen)
-            await TpsMissionGameOver.FailAsync(this, logger, fallen, ct);
+        if (failCharacterId is not null)
+            await TpsMissionGameOver.FailAsync(this, logger, ct);
     }
 
     private async Task RunLoopAsync(ILogger logger, CancellationToken ct)
